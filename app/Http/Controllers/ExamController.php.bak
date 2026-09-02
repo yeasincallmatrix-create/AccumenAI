@@ -1,0 +1,449 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Batch;
+use App\Models\Exam;
+use App\Models\ExamResult;
+use App\Models\Institute;
+use App\Models\InstituteUser;
+use App\Models\Result;
+use Illuminate\Contracts\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\View\View;
+
+class ExamController extends Controller
+{
+    private const STATUSES = ['scheduled', 'ongoing', 'completed', 'cancelled'];
+
+    private const EXAMS_COLUMNS = ['serial', 'title', 'course', 'batch', 'subjects', 'date', 'marks', 'students', 'status', 'action'];
+
+    private const RESULTS_COLUMNS = ['serial', 'student', 'student_id', 'batch', 'total_marks', 'obtained', 'percentage', 'grade', 'status', 'published_at'];
+
+    public function index(Request $request): View
+    {
+        $activeTab = $request->query('tab', 'exams');
+        if (! in_array($activeTab, ['exams', 'results'], true)) {
+            $activeTab = 'exams';
+        }
+
+        $q = trim((string) $request->query('q'));
+        $batchId = $request->query('batch_id');
+        $status = $request->query('status');
+        $resultBatchId = $request->query('result_batch_id');
+        $resultStatus = $request->query('result_status');
+
+        $examQuery = Exam::query()
+            ->with(['batch:id,name,batch_code', 'course:id,name', 'subjects.subject:id,name'])
+            ->withCount('results')
+            ->when($q !== '', fn (Builder $query) => $query->where('title', 'like', "%{$q}%"))
+            ->when($batchId, fn (Builder $query) => $query->where('batch_id', (int) $batchId))
+            ->when($status, fn (Builder $query) => $query->where('status', $status))
+            ->latest('id');
+
+        $exams = (clone $examQuery)->paginate(20)->withQueryString();
+        // NOTE: allExams/allResults removed — previously (clone $examQuery)->get() fetched
+        // the entire filtered table into memory for print-only tables, doubling queries
+        // and causing 30s timeout on large datasets. Print now reuses the paginated
+        // collection; full export should use a dedicated export endpoint with chunking.
+
+        $visibleExamColumns = $request->user()->preference('columns_exams', self::EXAMS_COLUMNS);
+        $visibleExamColumns = array_values(array_intersect(self::EXAMS_COLUMNS, (array) $visibleExamColumns));
+
+        $resultQuery = Result::query()
+            ->with(['student:id,first_name,last_name,student_id_number', 'batch:id,name,batch_code', 'course:id,name'])
+            ->withCount('certificate')
+            ->when($rq = trim((string) $request->query('rq')), function (Builder $query) use ($rq) {
+                $query->whereHas('student', fn (Builder $w) => $w->where('first_name', 'like', "%{$rq}%")
+                    ->orWhere('last_name', 'like', "%{$rq}%")
+                    ->orWhere('student_id_number', 'like', "%{$rq}%"));
+            })
+            ->when($resultBatchId, fn (Builder $query) => $query->where('batch_id', (int) $resultBatchId))
+            ->when($resultStatus, fn (Builder $query) => $query->where('result_status', $resultStatus))
+            ->latest('id');
+
+        $results = (clone $resultQuery)->paginate(20)->withQueryString();
+
+        $visibleResultColumns = $request->user()->preference('columns_exam_results', self::RESULTS_COLUMNS);
+        $visibleResultColumns = array_values(array_intersect(self::RESULTS_COLUMNS, (array) $visibleResultColumns));
+
+        $batches = Batch::query()
+            ->orderBy('name')
+            ->with(['course.subjects:id,name'])
+            ->get(['id', 'name', 'batch_code', 'institute_id', 'course_id']);
+
+        return view('exams.index', [
+            'activeTab' => $activeTab,
+            'exams' => $exams,
+            'visibleExamColumns' => $visibleExamColumns,
+            'results' => $results,
+            'visibleResultColumns' => $visibleResultColumns,
+            
+            'q' => $q,
+            'rq' => $request->query('rq'),
+            'batchId' => $batchId,
+            'status' => $status,
+            'resultBatchId' => $resultBatchId,
+            'resultStatus' => $resultStatus,
+            'batches' => $batches,
+            'sendExamSubjects' => $batches
+                ->mapWithKeys(fn (Batch $batch) => [
+                    $batch->id => $batch->course?->subjects?->map(fn ($subject) => [
+                        'id' => $subject->id,
+                        'name' => $subject->name,
+                    ])->unique('id')->values()->all() ?? [],
+                ])
+                ->all(),
+        ]);
+    }
+
+    public function sendToExam(Request $request, Batch $batch): RedirectResponse|JsonResponse
+    {
+        $data = $request->validate([
+            'title' => [
+                'required', 'string', 'max:150',
+                Rule::unique('exams', 'title')->where(fn ($q) => $q->where('institute_id', $batch->institute_id)),
+            ],
+            'exam_date' => ['sometimes', 'nullable', 'date'],
+            'subject_dates' => ['nullable', 'array'],
+            'subject_dates.*' => ['nullable', 'date'],
+            'subjects' => ['required', 'array', 'min:1'],
+            'subjects.*' => ['integer', 'distinct'],
+            'marks' => ['required', 'array'],
+            'marks.*.written' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:1000000'],
+            'marks.*.practical' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:1000000'],
+            'marks.*.viva' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:1000000'],
+            'marks.*.attendance' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:1000000'],
+            'marks.*.other' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:1000000'],
+            'pass_marks' => ['nullable', 'array'],
+            'pass_marks.*' => ['nullable', 'numeric', 'min:0', 'max:1000000'],
+        ], [
+            'title.unique' => mawa_lang('exams.title_unique'),
+        ]);
+
+        $subjectIds = collect($data['subjects'])
+            ->filter(fn ($id) => isset($data['marks'][$id]))
+            ->values();
+
+        $totalMarks = $subjectIds->sum(fn ($id) => (float) ($data['marks'][$id]['written'] ?? 0)
+            + (float) ($data['marks'][$id]['practical'] ?? 0)
+            + (float) ($data['marks'][$id]['viva'] ?? 0)
+            + (float) ($data['marks'][$id]['attendance'] ?? 0)
+            + (float) ($data['marks'][$id]['other'] ?? 0));
+
+        if ($subjectIds->isEmpty() || $totalMarks <= 0) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => mawa_lang('exams.marks_required'),
+                    'errors' => ['marks' => [mawa_lang('exams.marks_required')]],
+                ], 422);
+            }
+
+            return back()->withErrors(['marks' => mawa_lang('exams.marks_required')]);
+        }
+
+        $examDate = isset($data['exam_date']) && $data['exam_date'] !== '' && $data['exam_date'] !== null
+            ? Carbon::parse($data['exam_date'])->format('Y-m-d H:i:s')
+            : now();
+
+        $exam = Exam::create([
+            'institute_id' => $batch->institute_id,
+            'course_id' => $batch->course_id,
+            'batch_id' => $batch->id,
+            'title' => $data['title'],
+            'exam_date' => $examDate,
+            'full_marks' => $totalMarks,
+            'pass_marks' => round($totalMarks * 0.4, 2),
+            'written_percent' => 0,
+            'practical_percent' => 0,
+            'viva_percent' => 0,
+            'status' => 'scheduled',
+            'created_by' => $request->user() instanceof InstituteUser ? $request->user()->id : null,
+        ]);
+
+        foreach ($subjectIds as $id) {
+            $subjectTotal = (float) ($data['marks'][$id]['practical'] ?? 0)
+                + (float) ($data['marks'][$id]['viva'] ?? 0);
+            $subjectPass = $data['pass_marks'][$id] ?? null;
+            $subjectPass = ($subjectPass !== null && $subjectPass !== '')
+                ? round((float) $subjectPass, 2)
+                : round($subjectTotal * 0.4, 2);
+
+            $exam->subjects()->create([
+                'subject_id' => $id,
+                'written_marks' => (float) ($data['marks'][$id]['written'] ?? 0),
+                'practical_marks' => (float) ($data['marks'][$id]['practical'] ?? 0),
+                'viva_marks' => (float) ($data['marks'][$id]['viva'] ?? 0),
+                'attendance_marks' => (float) ($data['marks'][$id]['attendance'] ?? 0),
+                'other_marks' => (float) ($data['marks'][$id]['other'] ?? 0),
+                'pass_marks' => $subjectPass,
+                'exam_date' => isset($data['subject_dates'][$id]) && $data['subject_dates'][$id] !== '' && $data['subject_dates'][$id] !== null
+                    ? Carbon::parse($data['subject_dates'][$id])->format('Y-m-d H:i:s')
+                    : $examDate,
+            ]);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => mawa_lang('exams.created'),
+                'data' => ['id' => $exam->id, 'url' => route('exams.show', $exam)],
+            ]);
+        }
+
+        return redirect()->route('exams.show', $exam)->with('status', mawa_lang('exams.created'));
+    }
+
+    public function show(Exam $exam): View
+    {
+        $exam->load([
+            'batch:id,name,batch_code',
+            'course:id,name',
+            'subjects.subject:id,name',
+            'results.student:id,first_name,last_name,student_id,student_id_number,phone',
+            'batch.enrollments.student:id,first_name,last_name,student_id,student_id_number,phone',
+        ]);
+
+        $students = $exam->batch->enrollments
+            ->sortBy(fn ($enrollment) => (string) $enrollment->roll_no)
+            ->values();
+
+        $results = $exam->results->keyBy(fn ($result) => $result->student_id.'-'.$result->subject_id);
+
+        return view('exams.show', [
+            'exam' => $exam,
+            'students' => $students,
+            'results' => $results,
+        ]);
+    }
+
+    public function update(Request $request, Exam $exam): RedirectResponse|JsonResponse
+    {
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:150'],
+            'exam_date' => ['required', 'date'],
+            'full_marks' => ['required', 'numeric', 'min:1', 'max:1000000'],
+            'pass_marks' => ['required', 'numeric', 'min:0', 'lte:full_marks'],
+            'written_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'practical_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'viva_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'status' => ['required', Rule::in(self::STATUSES)],
+        ]);
+
+        $data['exam_date'] = Carbon::parse($data['exam_date'])->format('Y-m-d H:i:s');
+
+        $exam->update($data);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => mawa_lang('exams.updated'),
+                'data' => ['id' => $exam->id],
+            ]);
+        }
+
+        return redirect()->route('exams.show', $exam)->with('status', mawa_lang('exams.updated'));
+    }
+
+    public function saveMarks(Request $request, Exam $exam): RedirectResponse|JsonResponse
+    {
+        // Legacy exams (created before subject support) post a plain marks array.
+        if ($exam->subjects->isEmpty() && $request->has('marks')) {
+            return $this->saveLegacyMarks($request, $exam);
+        }
+
+        $data = $request->validate([
+            'written' => ['nullable', 'array'],
+            'written.*.*' => ['nullable', 'numeric', 'min:0', 'max:1000000'],
+            'practical' => ['nullable', 'array'],
+            'practical.*.*' => ['nullable', 'numeric', 'min:0', 'max:1000000'],
+            'viva' => ['nullable', 'array'],
+            'viva.*.*' => ['nullable', 'numeric', 'min:0', 'max:1000000'],
+            'attendance' => ['nullable', 'array'],
+            'attendance.*.*' => ['nullable', 'numeric', 'min:0', 'max:1000000'],
+            'other' => ['nullable', 'array'],
+            'other.*.*' => ['nullable', 'numeric', 'min:0', 'max:1000000'],
+            'remarks' => ['nullable', 'array'],
+            'remarks.*.*' => ['nullable', 'string', 'max:255'],
+            'pass_marks' => ['nullable', 'array'],
+            'pass_marks.*' => ['nullable', 'numeric', 'min:0', 'max:1000000'],
+        ]);
+
+        $passMarks = (float) $exam->pass_marks;
+
+        $examSubjects = $exam->subjects->pluck('id')->all();
+        $students = $exam->batch->enrollments->pluck('student_id')->all();
+
+        $subjectPassMarks = [];
+        foreach ($exam->subjects as $subject) {
+            $subjectPassMarks[$subject->id] = $subject->pass_marks !== null
+                ? (float) $subject->pass_marks
+                : $passMarks;
+        }
+
+        DB::transaction(function () use ($request, $exam, $data, $passMarks, $students, $subjectPassMarks) {
+            // subjects present in the submitted payload
+            $submittedSubjects = array_unique(array_merge(
+                array_keys($data['written'] ?? []),
+                array_keys($data['practical'] ?? []),
+                array_keys($data['viva'] ?? []),
+                array_keys($data['attendance'] ?? []),
+                array_keys($data['other'] ?? []),
+                array_keys($data['pass_marks'] ?? []),
+                array_keys($data['remarks'] ?? [])
+            ));
+
+            foreach ($submittedSubjects as $subjectId) {
+                if (isset($data['pass_marks'][$subjectId]) && $data['pass_marks'][$subjectId] !== null && $data['pass_marks'][$subjectId] !== '') {
+                    $subjectPassMarks[$subjectId] = (float) $data['pass_marks'][$subjectId];
+                    $exam->subjects()->where('subject_id', $subjectId)->update([
+                        'pass_marks' => round((float) $data['pass_marks'][$subjectId], 2),
+                    ]);
+                }
+
+                $threshold = (float) ($subjectPassMarks[$subjectId] ?? $passMarks);
+
+                foreach ($students as $studentId) {
+                    $written = isset($data['written'][$subjectId][$studentId]) && $data['written'][$subjectId][$studentId] !== '' && $data['written'][$subjectId][$studentId] !== null
+                        ? (float) $data['written'][$subjectId][$studentId]
+                        : null;
+                    $practical = isset($data['practical'][$subjectId][$studentId]) && $data['practical'][$subjectId][$studentId] !== '' && $data['practical'][$subjectId][$studentId] !== null
+                        ? (float) $data['practical'][$subjectId][$studentId]
+                        : null;
+                    $viva = isset($data['viva'][$subjectId][$studentId]) && $data['viva'][$subjectId][$studentId] !== '' && $data['viva'][$subjectId][$studentId] !== null
+                        ? (float) $data['viva'][$subjectId][$studentId]
+                        : null;
+                    $attendance = isset($data['attendance'][$subjectId][$studentId]) && $data['attendance'][$subjectId][$studentId] !== '' && $data['attendance'][$subjectId][$studentId] !== null
+                        ? (float) $data['attendance'][$subjectId][$studentId]
+                        : null;
+                    $other = isset($data['other'][$subjectId][$studentId]) && $data['other'][$subjectId][$studentId] !== '' && $data['other'][$subjectId][$studentId] !== null
+                        ? (float) $data['other'][$subjectId][$studentId]
+                        : null;
+
+                    if ($written === null && $practical === null && $viva === null && $attendance === null && $other === null) {
+                        ExamResult::where('exam_id', $exam->id)
+                            ->where('student_id', $studentId)
+                            ->where('subject_id', $subjectId)
+                            ->delete();
+
+                        continue;
+                    }
+
+                    $total = (float) ($written ?? 0) + (float) ($practical ?? 0) + (float) ($viva ?? 0) + (float) ($attendance ?? 0) + (float) ($other ?? 0);
+
+                    ExamResult::updateOrCreate(
+                        ['exam_id' => $exam->id, 'student_id' => (int) $studentId, 'subject_id' => (int) $subjectId],
+                        [
+                            'institute_id' => $exam->institute_id,
+                            'marks_obtained' => $total,
+                            'written_marks' => $written,
+                            'practical_marks' => $practical,
+                            'viva_marks' => $viva,
+                            'attendance_marks' => $attendance,
+                            'other_marks' => $other,
+                            'result_status' => $total >= $threshold ? 'pass' : 'fail',
+                            'remarks' => $data['remarks'][$subjectId][$studentId] ?? null,
+                            'entered_by' => $request->user() instanceof InstituteUser ? $request->user()->id : null,
+                        ]
+                    );
+                }
+            }
+        });
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => mawa_lang('exams.marks_saved'),
+                'data' => ['id' => $exam->id],
+            ]);
+        }
+
+        return redirect()->route('exams.show', $exam)->with('status', mawa_lang('exams.marks_saved'));
+    }
+
+    private function saveLegacyMarks(Request $request, Exam $exam): RedirectResponse|JsonResponse
+    {
+        $data = $request->validate([
+            'marks' => ['required', 'array'],
+            'marks.*' => ['nullable', 'numeric', 'min:0', 'max:'.(float) $exam->full_marks],
+            'remarks.*' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        DB::transaction(function () use ($request, $exam, $data) {
+            foreach ($data['marks'] as $studentId => $marks) {
+                if ($marks === null || $marks === '') {
+                    ExamResult::where('exam_id', $exam->id)->where('student_id', $studentId)->delete();
+
+                    continue;
+                }
+
+                $pass = (float) $exam->pass_marks;
+
+                ExamResult::updateOrCreate(
+                    ['exam_id' => $exam->id, 'student_id' => (int) $studentId, 'subject_id' => null],
+                    [
+                        'institute_id' => $exam->institute_id,
+                        'marks_obtained' => (float) $marks,
+                        'result_status' => (float) $marks >= $pass ? 'pass' : 'fail',
+                        'remarks' => $data['remarks'][$studentId] ?? null,
+                        'entered_by' => $request->user() instanceof InstituteUser ? $request->user()->id : null,
+                    ]
+                );
+            }
+        });
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => mawa_lang('exams.marks_saved'),
+                'data' => ['id' => $exam->id],
+            ]);
+        }
+
+        return redirect()->route('exams.show', $exam)->with('status', mawa_lang('exams.marks_saved'));
+    }
+
+    public function destroy(Request $request, Exam $exam): RedirectResponse|JsonResponse
+    {
+        $instituteId = (int) $request->user()->institute_id;
+        if ((int) $exam->institute_id !== $instituteId) {
+            abort(403);
+        }
+
+        $hasResults = ExamResult::where('exam_id', $exam->id)->exists();
+        if ($hasResults) {
+            $msg = 'Cannot delete exam because it has student results. Delete the results first or archive the exam.';
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return redirect()->back()->with('error', $msg);
+        }
+
+        DB::transaction(function () use ($exam) {
+            $exam->subjects()->delete();
+            // Use forceDelete for permanent deletion (Exam has no SoftDeletes, delete is hard)
+            if (method_exists($exam, 'forceDelete')) {
+                $exam->forceDelete();
+            } else {
+                $exam->delete();
+            }
+        });
+
+        $msg = 'Exam deleted successfully.';
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $msg,
+                'data' => ['id' => $exam->id],
+            ]);
+        }
+
+        return redirect()->route('exams.index')->with('success', $msg);
+    }
+}
