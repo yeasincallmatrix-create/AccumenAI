@@ -145,11 +145,11 @@ class TwoFactorChallengeController extends Controller
             $current = $available[0] ?? 'totp';
         }
 
-        // Separate rate limiting per method — platform DB → default
+        // Separate rate limiting per method — minimum 10 for all except super user (platform_admin)
         $perUserKey = $current . ':user:'.$guardName.':'.$user->getKey();
         $ipKey = $current . ':ip:'.$request->ip();
-        $maxUser = \App\Services\Identity\TwoFactorMethodService::maxFailedAttempts();
-        $maxIp = 10;
+        $maxUser = \App\Services\Identity\TwoFactorMethodService::effectiveMaxFailedAttempts($guardName);
+        $maxIp = $guardName === 'platform_admin' ? 10 : 30;
         if (RateLimiter::tooManyAttempts($perUserKey, $maxUser) || RateLimiter::tooManyAttempts($ipKey, $maxIp)) {
             try { \App\Services\Identity\IdentityAuditService::log($user->getKey(), $current.'_throttled', '2fa', ['guard'=>$guardName]); } catch (\Throwable $e) {}
             return back()->withErrors(['code' => 'Too many attempts. Try again later.'])->withInput();

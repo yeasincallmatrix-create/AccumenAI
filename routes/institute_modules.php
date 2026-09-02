@@ -1457,23 +1457,7 @@ Route::middleware($tenant)->group(function () {
         Route::post('institutes/{institute}/entitlements/{entitlement}/extend', [$adminEntitle, 'extend'])->name('institutes.entitlements.extend');
     });
 
-    // ─── ADMIN GEO ─────────────────────────────────────────────────────────
-    $adminGeo = \App\Http\Controllers\Admin\GeoAdminController::class;
-    $adminGeoImp = \App\Http\Controllers\Admin\GeoImportController::class;
-
-    Route::middleware(['auth:platform_admin', 'verified'])->prefix('admin')->name('admin.')->group(function () use ($adminGeo, $adminGeoImp) {
-        Route::get('geo', [$adminGeo, 'index'])->name('geo.index');
-        Route::get('geo/create', [$adminGeo, 'createCountry'])->name('geo.countries.create');
-        Route::post('geo/countries', [$adminGeo, 'storeCountry'])->name('geo.countries.store');
-        Route::get('geo/{country}/edit', [$adminGeo, 'edit'])->name('geo.edit');
-        Route::put('geo/{country}', [$adminGeo, 'update'])->name('geo.update');
-        Route::post('geo/{country}/toggle', [$adminGeo, 'toggleStatus'])->name('geo.toggle');
-        Route::get('geo/imports', [$adminGeoImp, 'index'])->name('geo.imports');
-        Route::post('geo/imports', [$adminGeoImp, 'store'])->name('geo.imports.store');
-        Route::post('geo/imports/validate', [$adminGeoImp, 'validatePackage'])->name('geo.imports.validate');
-        Route::post('geo/imports/run', [$adminGeoImp, 'run'])->name('geo.imports.run');
-        Route::get('geo/imports/status', [$adminGeoImp, 'status'])->name('geo.imports.status');
-    });
+    // ─── ADMIN GEO moved outside tenant — see bottom of file (public GEO section) ──
 
     // NOTE: admin/industry-settings and admin/themes are defined in routes/web.php
     // outside the tenant scope — do NOT re-define them here.
@@ -1687,6 +1671,23 @@ Route::middleware($tenant)->group(function () {
 $geo = \App\Http\Controllers\GeoController::class;
 Route::get('geo/levels/{country}', [$geo, 'levels'])->name('geo.levels');
 Route::get('geo/units', [$geo, 'units'])->name('geo.units');
+
+// ─── ADMIN GEO (platform_admin outside tenant — fixes import not working) ──
+$adminGeo = \App\Http\Controllers\Admin\GeoAdminController::class;
+$adminGeoImp = \App\Http\Controllers\Admin\GeoImportController::class;
+Route::middleware(['auth:platform_admin', 'verified'])->prefix('admin')->name('admin.')->group(function () use ($adminGeo, $adminGeoImp) {
+    Route::get('geo', [$adminGeo, 'index'])->name('geo.index');
+    Route::get('geo/create', [$adminGeo, 'createCountry'])->name('geo.countries.create');
+    Route::post('geo/countries', [$adminGeo, 'storeCountry'])->name('geo.countries.store');
+    Route::get('geo/{country}/edit', [$adminGeo, 'edit'])->name('geo.edit');
+    Route::put('geo/{country}', [$adminGeo, 'update'])->name('geo.update');
+    Route::post('geo/{country}/toggle', [$adminGeo, 'toggleStatus'])->name('geo.toggle');
+    Route::get('geo/imports', [$adminGeoImp, 'index'])->name('geo.imports');
+    Route::post('geo/imports', [$adminGeoImp, 'store'])->name('geo.imports.store');
+    Route::post('geo/imports/{import}/validate', [$adminGeoImp, 'validatePackage'])->name('geo.imports.validate');
+    Route::post('geo/imports/{import}/run', [$adminGeoImp, 'run'])->name('geo.imports.run');
+    Route::get('geo/imports/{import}/status', [$adminGeoImp, 'status'])->name('geo.imports.status');
+});
 
 // Admin Grading aliases — platform_admin outside tenant (overrides tenant aliases for correct guard)
 Route::middleware(['auth:platform_admin', 'verified'])->group(function () {

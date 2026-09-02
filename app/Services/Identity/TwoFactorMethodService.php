@@ -113,6 +113,23 @@ class TwoFactorMethodService
         return 10;
     }
 
+    /**
+     * Guard-aware effective limit — minimum 10 for all except platform_admin.
+     * When no setting, super user 5, others 10.
+     */
+    public static function effectiveMaxFailedAttempts(string $guardName): int
+    {
+        $v = Setting::get('2fa.max_failed');
+        if ($v === null || $v === '') {
+            return $guardName === 'platform_admin' ? 5 : 10;
+        }
+        $base = max(1, min(20, (int) $v));
+        if ($guardName === 'platform_admin') {
+            return max(5, $base);
+        }
+        return max(10, $base);
+    }
+
     public static function challengeExpiryMinutes(): int
     {
         $v = Setting::get('2fa.challenge_expiry');

@@ -45,14 +45,14 @@
             </div>
         </div>
 
-        <div id="importError" class="alert alert-danger mt-3 d-none"></div>
+                <div id="importError" class="alert alert-danger mt-3 d-none"></div>
 
         <div id="progressCard" class="mt-3 d-none">
             <div class="table-toolbar">
                 <div class="toolbar-info" id="progressLabel"><i class="bi bi-arrow-repeat"></i> Processing…</div>
             </div>
             <div class="progress mt-2" style="height:20px;">
-                <div id="progressBar" class="progress-bar" role="progressbar" style="width:0%"></div>
+                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width:0%"></div>
             </div>
             <div class="small text-muted mt-2" id="progressStats"></div>
             <pre id="progressErrors" class="bg-light border rounded small p-2 mt-2 d-none" style="white-space:pre-wrap;"></pre>
@@ -69,6 +69,19 @@
                 <i class="bi bi-stop-fill"></i> Stop
             </button>
         </div>
+
+        {{-- Global waiting overlay while uploading / validating / importing --}}
+        <div id="geoLoadingOverlay" class="d-none" style="position:fixed;inset:0;background:rgba(255,255,255,.78);backdrop-filter:blur(2px);z-index:1055;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+            <div class="spinner-border text-primary" role="status" style="width:3rem;height:3rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <div id="geoLoadingText" class="mt-3 fw-semibold text-dark">Uploading… please wait</div>
+            <div class="small text-muted mt-1">Do not close or reload the page</div>
+        </div>
+        <style>
+            #geoLoadingOverlay.d-flex{display:flex !important;}
+            #geoLoadingOverlay.d-none{display:none !important;}
+        </style>
     </form>
 </div>
 
@@ -124,7 +137,8 @@
 @section('scripts')
 <script>
 (function () {
-    var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    var tokenEl = document.querySelector('meta[name="csrf-token"]');
+    var token = tokenEl ? tokenEl.getAttribute('content') : '';
     var form = document.getElementById('geoImportForm');
     var fileInput = document.getElementById('file');
     var countryInput = document.getElementById('country_id');
@@ -137,12 +151,39 @@
     var progressLabel = document.getElementById('progressLabel');
     var progressStats = document.getElementById('progressStats');
     var progressErrors = document.getElementById('progressErrors');
+    var overlay = document.getElementById('geoLoadingOverlay');
+    var overlayText = document.getElementById('geoLoadingText');
 
     function showError(msg) {
         errorBox.textContent = msg || 'Operation failed.';
         errorBox.classList.remove('d-none');
+        // auto-scroll to error
+        try { errorBox.scrollIntoView({behavior:'smooth', block:'center'}); } catch(e){}
     }
-    function hideError() { errorBox.classList.add('d-none'); }
+    function hideError() { errorBox.classList.add('d-none'); errorBox.textContent=''; }
+
+    function showLoading(text){
+        if(overlay){
+            overlayText.textContent = text || 'Processing… please wait';
+            overlay.classList.remove('d-none');
+            overlay.classList.add('d-flex');
+        }
+        btnRun.disabled = true; btnValidate.disabled = true;
+        // add spinner to buttons visually
+        btnRun.style.opacity = '.7'; btnValidate.style.opacity = '.7';
+    }
+    function hideLoading(){
+        if(overlay){
+            overlay.classList.add('d-none');
+            overlay.classList.remove('d-flex');
+        }
+        btnRun.disabled = false; btnValidate.disabled = false;
+        btnRun.style.opacity = ''; btnValidate.style.opacity = '';
+    }
+
+    function parseJsonSafe(text){
+        try { return JSON.parse(text); } catch(e){ return null; }
+    }
 
     function post(url, fd) {
         return fetch(url, {
@@ -150,23 +191,33 @@
             headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
             body: fd === undefined ? new FormData(form) : fd
         }).then(function (resp) {
-            return resp.json().then(function (data) {
-                if (!data.success) { throw new Error(data.message || 'Request failed.'); }
-                return data;
-            }).catch(function () {
-                if (resp.ok) { throw new Error('Invalid server response.'); }
-                var msg = resp.status === 422 ? 'Validation failed. Check the form.' : 'Server error.';
-                throw new Error(msg);
+            return resp.text().then(function (text) {
+                var data = parseJsonSafe(text);
+                if (data && typeof data.success !== 'undefined') {
+                    if (!data.success) {
+                        // Surface Laravel validation errors nicely
+                        var msg = data.message || 'Request failed.';
+                        if (data.errors) {
+                            var first = Object.values(data.errors)[0];
+                            if (Array.isArray(first)) msg = first[0];
+                        }
+                        if (data.data && data.data.error_summary) msg = data.data.error_summary;
+                        throw new Error(msg);
+                    }
+                    return data;
+                }
+                // Non-JSON or unexpected shape
+                if (!resp.ok) {
+                    var fallback = data && data.message ? data.message : text.substring(0,300);
+                    throw new Error('Server error ('+resp.status+'): ' + fallback);
+                }
+                throw new Error('Invalid server response.');
             });
         });
     }
 
     function postEmpty(url) {
         return post(url, new FormData());
-    }
-
-    function gotAnImport(data) {
-        return data && data.data && data.data.import;
     }
 
     function renderProgress(p) {
@@ -182,73 +233,103 @@
             + skipped + ' skipped · ' + dups + ' duplicates · ' + errors + ' errors';
 
         if (finished) {
-            progressLabel.textContent = p.status === 'failed' ? 'Finished with errors.' : 'Finished.';
+            progressLabel.textContent = p.status === 'failed' ? 'Finished with errors.' : (p.status === 'validated' ? 'Validation finished.' : 'Import completed.');
             progressBar.style.width = '100%';
-            btnRun.classList.add('d-none');
-            btnValidate.classList.add('d-none');
+            progressBar.classList.remove('progress-bar-animated');
             btnStop.classList.add('d-none');
+            hideLoading();
+            // re-enable Configure buttons visually
+            btnRun.classList.remove('d-none');
+            btnValidate.classList.remove('d-none');
+            if (p.status !== 'failed' && errors === 0) {
+                setTimeout(function(){ location.reload(); }, 1200);
+            }
         } else {
-            progressBar.style.width = Math.min(95, (total % 50) + 40) + '%';
+            // indeterminate while importing
+            var pct = total > 0 ? Math.min(95, Math.round((inserted+updated)/Math.max(1,total)*100)) : 45;
+            if (pct < 10) pct = 45;
+            progressBar.style.width = pct + '%';
+            progressBar.classList.add('progress-bar-animated');
         }
         if (p.error_summary) {
             progressErrors.textContent = p.error_summary;
             progressErrors.classList.remove('d-none');
+        } else {
+            progressErrors.classList.add('d-none');
+            progressErrors.textContent = '';
         }
     }
 
     function safeId(v) {
-        // Guard: prevent "[object HTMLInputElement]" if an element was passed instead of its value
         if (v === null || v === undefined) return '';
         var s = String(v).trim();
         if (!s || s.indexOf('[object') !== -1 || s.indexOf('%5Bobject') !== -1) return '';
-        // Only numeric IDs expected
         if (!/^\d+$/.test(s)) return '';
         return s;
     }
+
+    function validateForm(){
+        hideError();
+        if (!countryInput.value) { showError('Please select a country.'); countryInput.focus(); return false; }
+        if (!fileInput.files || !fileInput.files.length) { showError('Please choose a file (.jsonl, .json, .csv).'); fileInput.focus(); return false; }
+        var f = fileInput.files[0];
+        var ext = (f.name.split('.').pop()||'').toLowerCase();
+        if (['jsonl','ndjson','json','csv'].indexOf(ext)===-1) { showError('Unsupported file type. Allowed: jsonl, ndjson, json, csv.'); return false; }
+        if (f.size > 102400*1024) { showError('File exceeds 100 MB limit.'); return false; }
+        return true;
+    }
+
+    function uploadOnly() {
+        if (!validateForm()) return Promise.reject(new Error('Fix form errors.'));
+        hideError();
+        showLoading('Uploading file… please wait');
+        progressCard.classList.remove('d-none');
+        progressLabel.textContent = 'Uploading…';
+        progressBar.style.width = '30%';
+        return post('{{ route("admin.geo.imports.store") }}', new FormData(form)).then(function (data) {
+            progressBar.style.width = '55%';
+            return data;
+        }).catch(function (err) {
+            hideLoading();
+            progressCard.classList.add('d-none');
+            showError(err.message);
+            throw err;
+        });
+    }
+
     function startPoll(importId) {
         importId = safeId(importId);
-        if (!importId) { showError('Invalid import ID.'); return; }
+        if (!importId) { hideLoading(); showError('Invalid import ID.'); return; }
         progressCard.classList.remove('d-none');
+        showLoading('Importing… please wait');
+        progressLabel.textContent = 'Importing…';
         var stopped = false;
         btnStop.classList.remove('d-none');
-        btnStop.onclick = function () { stopped = true; btnStop.classList.add('d-none'); };
+        btnStop.onclick = function () { stopped = true; btnStop.classList.add('d-none'); hideLoading(); showError('Import stopped by user.'); };
 
         function tick() {
             fetch('{{ route("admin.geo.imports.status", ["import" => "ID"]) }}'.replace('ID', encodeURIComponent(importId)), {
-                headers: { 'Accept': 'application/json' }
-            }).then(function (resp) {
-                return resp.json();
-            }).then(function (data) {
-                if (!data.success) { throw new Error(data.message || 'Server error.'); }
+                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': token }
+            }).then(function (resp) { return resp.text().then(function(t){ var d=parseJsonSafe(t); if(!d||!d.success) throw new Error((d&&d.message)||'Status check failed ('+resp.status+')'); return d; }); }).then(function (data) {
                 var p = data.data.import;
                 renderProgress(p);
-                if (['completed', 'failed', 'validated'].indexOf(p.status) !== -1) { return; }
-                return postEmpty('{{ route("admin.geo.imports.run", ["import" => "ID"]) }}'.replace('ID', encodeURIComponent(importId))
-                    .then(function (rd) {
-                        var np = rd.data.import;
-                        renderProgress(np);
-                        if (stopped) { return; }
-                        setTimeout(tick, 600);
-                    });
+                if (['completed', 'failed', 'validated'].indexOf(p.status) !== -1) { hideLoading(); return; }
+                // trigger next batch
+                return postEmpty('{{ route("admin.geo.imports.run", ["import" => "ID"]) }}'.replace('ID', encodeURIComponent(importId))).then(function (rd) {
+                    var np = rd.data.import;
+                    renderProgress(np);
+                    if (['completed', 'failed', 'validated'].indexOf(np.status) !== -1) { hideLoading(); return; }
+                    if (stopped) { hideLoading(); return; }
+                    overlayText.textContent = 'Importing… ' + (np.inserted_records + np.updated_records) + ' / ' + np.total_records + ' processed';
+                    setTimeout(tick, 600);
+                });
             }).catch(function (err) {
+                hideLoading();
                 showError(err.message);
                 btnStop.classList.add('d-none');
             });
         }
         tick();
-    }
-
-    function uploadOnly() {
-        hideError();
-        btnRun.disabled = true; btnValidate.disabled = true;
-        return post('{{ route("admin.geo.imports.store") }}', new FormData(form)).then(function (data) {
-            btnRun.disabled = false; btnValidate.disabled = false;
-            return data;
-        }).catch(function (err) {
-            btnRun.disabled = false; btnValidate.disabled = false;
-            showError(err.message);
-            throw err;
-        });
     }
 
     btnValidate.addEventListener('click', function () {
@@ -257,20 +338,33 @@
             if (!vid) { throw new Error('Invalid import ID returned.'); }
             progressCard.classList.remove('d-none');
             progressLabel.textContent = 'Validating…';
+            showLoading('Validating package… please wait');
+            progressBar.style.width = '70%';
             return postEmpty('{{ route("admin.geo.imports.validate", ["import" => "ID"]) }}'.replace('ID', encodeURIComponent(vid)));
         }).then(function (data) {
             renderProgress(data.data.import);
-            location.reload();
-        }).catch(function () {});
+            hideLoading();
+        }).catch(function (err) {
+            hideLoading();
+            if (err.message !== 'Fix form errors.') showError(err.message);
+        });
     });
 
     btnRun.addEventListener('click', function () {
         uploadOnly().then(function (data) {
             var rid = safeId(data.data.import.id);
             if (!rid) { throw new Error('Invalid import ID returned.'); }
+            hideLoading(); // upload done, tick will show loading again
             startPoll(rid);
-        }).catch(function () {});
+        }).catch(function (err) {
+            hideLoading();
+            if (err.message !== 'Fix form errors.') {/* already shown */}
+        });
     });
+
+    // UX: clear error on change
+    countryInput.addEventListener('change', hideError);
+    fileInput.addEventListener('change', function(){ hideError(); if(fileInput.files.length) progressLabel.textContent = fileInput.files[0].name + ' ready'; });
 })();
 </script>
 @endsection

@@ -33,7 +33,7 @@ Route::prefix('guardian')->name('guardian.')->group(function () {
     // ---- Guest: login / password reset ----
     Route::get('login', [GuardianLoginController::class, 'showLoginForm'])->name('login');
     Route::post('login', [GuardianLoginController::class, 'login'])
-        ->middleware('throttle:10,15')
+        ->middleware('throttle:30,15')
         ->name('login.submit');
 
     Route::get('forgot-password', [GuardianForgotPasswordController::class, 'showLinkRequestForm'])

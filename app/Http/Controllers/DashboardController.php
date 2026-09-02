@@ -161,10 +161,16 @@ class DashboardController extends Controller
      */
     protected function workspaceDashboard()
     {
-        $membership = Workspace::membership();
         $user = Auth::guard('web')->user();
-
         abort_unless($user instanceof User, 403);
+        // Incomplete onboarding (OTP verified but org/address not done) — block dashboard and resume same step
+        if (\App\Http\Controllers\Auth\RegistrationFlowController::isOnboardingIncomplete($user)) {
+            $resume = \App\Http\Controllers\Auth\RegistrationFlowController::resumeRouteForUser($user) ?? 'register.organization';
+            return redirect()->route($resume);
+        }
+
+        $membership = Workspace::membership();
+
         abort_if($membership === null, 403, 'No active organization selected.');
 
         $institute = $membership->institution;

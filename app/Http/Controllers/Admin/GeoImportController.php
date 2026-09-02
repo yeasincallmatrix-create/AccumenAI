@@ -88,10 +88,17 @@ class GeoImportController extends Controller
     /** Dry-run the package without writing (mode stays read-only). */
     public function validatePackage(Request $request, GeoImport $import): JsonResponse
     {
+        if (! Storage::disk('local')->exists($this->storedRelativePath($import))) {
+            return $this->importResponse(false, 'Package file not found on server. Please re-upload.');
+        }
         $provider = $this->providerFor($import);
         $service = GeoImportService::fromConfig();
 
-        $report = $service->validate($provider, $import->country);
+        try {
+            $report = $service->validate($provider, $import->country);
+        } catch (\Throwable $e) {
+            return $this->importResponse(false, 'Validation failed: '.$e->getMessage());
+        }
 
         $import->forceFill([
             'mode' => 'validate',
@@ -115,18 +122,29 @@ class GeoImportController extends Controller
      */
     public function run(Request $request, GeoImport $import): JsonResponse
     {
+        if (in_array($import->status, ['completed', 'failed', 'validated'], true) && $import->status !== 'importing' && $import->total_records > 0 && $import->status === 'validated') {
+            // Allow validated -> importing transition
+        }
         if (in_array($import->status, ['completed', 'failed'], true)) {
             return $this->importResponse(true, 'Import already finished.', $this->importPayload($import));
+        }
+
+        if (! Storage::disk('local')->exists($this->storedRelativePath($import))) {
+            return $this->importResponse(false, 'Package file not found. Please re-upload.');
         }
 
         $provider = $this->providerFor($import);
         $service = GeoImportService::fromConfig();
 
-        $report = $service->runBatch(
-            $import,
-            $provider,
-            (int) config('geo.import.records_per_request', 2000)
-        );
+        try {
+            $report = $service->runBatch(
+                $import,
+                $provider,
+                (int) config('geo.import.records_per_request', 2000)
+            );
+        } catch (\Throwable $e) {
+            return $this->importResponse(false, 'Import failed: '.$e->getMessage());
+        }
 
         return $this->importResponse(true, 'Batch processed.', ['import' => $this->importPayload($import)]);
     }

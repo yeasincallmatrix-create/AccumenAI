@@ -154,9 +154,11 @@ class GuardianLoginController extends Controller
 
         $user->increment('failed_login_count');
 
-        if ($user->failed_login_count >= $this->lockoutThreshold) {
+        $threshold = \App\Services\Platform\PlatformSettingsService::effectiveLoginThreshold($this->guardName);
+        $minutes = \App\Services\Platform\PlatformSettingsService::effectiveLockoutMinutes($this->guardName);
+        if ($user->failed_login_count >= $threshold) {
             $user->forceFill([
-                'locked_until' => now()->addMinutes($this->lockoutMinutes),
+                'locked_until' => now()->addMinutes($minutes),
                 'failed_login_count' => 0,
             ])->save();
         }

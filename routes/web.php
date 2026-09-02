@@ -61,11 +61,11 @@ Route::middleware(['auth:platform_admin', 'verified'])->prefix('super-admin')->n
 // Public — portal auth (guest, throttled)
 Route::get('login', [UserLoginController::class, 'showLoginForm'])->name('login');
 Route::post('login', [UserLoginController::class, 'login'])->name('login.submit')
-    ->middleware('throttle:10,15');
+    ->middleware('throttle:30,15'); // relaxed for all except super user — minimum 10 guaranteed, smooth for shared IP
 
 Route::get('admin/login', [PlatformAdminLoginController::class, 'showLoginForm'])->name('admin.login');
 Route::post('admin/login', [PlatformAdminLoginController::class, 'login'])->name('admin.login.submit')
-    ->middleware('throttle:10,15');
+    ->middleware('throttle:10,15'); // super user stays strict
 
 // institute/login permanently removed — redirect to original unified login (web guard)
 // Old bookmarks / cached forms hitting /institute/login will 301 to /login
@@ -114,6 +114,14 @@ Route::middleware(['auth:platform_admin,institute_user,web', 'verified'])->group
 
 // Public Home — AccumenAI landing (no auth, Tailwind + Bootstrap Icons) — PHASE: IMPLEMENT_ACCUMENAI_HOME_PAGE
 Route::get('/', function (\Illuminate\Http\Request $request) {
+    // Block dashboard for incomplete onboarding — resume same step after logout
+    if (\Illuminate\Support\Facades\Auth::guard('web')->check()) {
+        $u = \Illuminate\Support\Facades\Auth::guard('web')->user();
+        if ($u && \App\Http\Controllers\Auth\RegistrationFlowController::isOnboardingIncomplete($u)) {
+            $resume = \App\Http\Controllers\Auth\RegistrationFlowController::resumeRouteForUser($u) ?? 'register.organization';
+            return redirect()->route($resume);
+        }
+    }
     // Authenticated users see their dashboard at root for backward compat
     if (\Illuminate\Support\Facades\Auth::guard('platform_admin')->check()
         || \Illuminate\Support\Facades\Auth::guard('institute_user')->check()

@@ -30,7 +30,23 @@ class RegistrationFlowController extends Controller
     public function showAccount(Request $request): View|RedirectResponse
     {
         if ($request->user('web')) {
+            $user = $request->user('web');
+            if (self::isOnboardingIncomplete($user)) {
+                $resume = self::resumeRouteForUser($user) ?? 'register.organization';
+                // Restore session for middleware continuity
+                $pending = self::findPendingForUser($user);
+                if ($pending) {
+                    session([self::PENDING_ID => $pending->id, self::SESSION_KEY => ['email' => $pending->email, 'verified' => true, 'step' => 2]]);
+                }
+                return redirect()->route($resume);
+            }
             return redirect()->route('dashboard');
+        }
+        // Guest with verified pending session should skip to next step
+        $pending = $this->resolvePending($request);
+        if ($pending && $pending->isVerified()) {
+            if (empty($pending->organization_data)) return redirect()->route('register.organization');
+            if (empty($pending->address_data)) return redirect()->route('register.address');
         }
         return view('auth.register-account', [
             'email' => session(self::SESSION_KEY . '.email'),
@@ -63,7 +79,20 @@ class RegistrationFlowController extends Controller
         if (! \App\Services\Identity\EmailDomainPolicy::isAllowed($normalizedEmail)) {
             return back()->withErrors(['email' => 'Email domain is not allowed.'])->withInput();
         }
-        // Cross-table duplicate + pending check
+        // Cross-table duplicate + pending check — allow resumable onboarding (OTP verified but org not done)
+        $hasUser = \App\Models\User::where('email', $normalizedEmail)->exists();
+        $hasPendingVerified = PendingRegistration::where('email', $normalizedEmail)->whereNotNull('verified_at')->exists();
+        if ($hasUser && $hasPendingVerified) {
+            $tmpUser = \App\Models\User::where('email', $normalizedEmail)->first();
+            if ($tmpUser && self::isOnboardingIncomplete($tmpUser)) {
+                $resume = self::resumeRouteForUser($tmpUser) ?? 'register.organization';
+                $pendingResume = self::findPendingForUser($tmpUser);
+                if ($pendingResume) {
+                    session([self::PENDING_ID => $pendingResume->id, self::SESSION_KEY => ['email' => $pendingResume->email, 'verified' => true, 'step' => 2]]);
+                    return redirect()->route($resume);
+                }
+            }
+        }
         if (\App\Models\User::where('email', $normalizedEmail)->exists()
             || \App\Models\InstituteUser::where('email', $normalizedEmail)->exists()
             || \App\Models\PlatformAdmin::where('email', $normalizedEmail)->exists()
@@ -74,7 +103,13 @@ class RegistrationFlowController extends Controller
             if ($existingPending && $existingPending->expires_at && $existingPending->expires_at->isPast()) {
                 $existingPending->delete();
             } else if (\App\Models\User::where('email', $normalizedEmail)->exists() || \App\Models\InstituteUser::where('email', $normalizedEmail)->exists() || \App\Models\PlatformAdmin::where('email', $normalizedEmail)->exists()) {
-                return back()->withErrors(['email' => 'Email already taken.'])->withInput();
+                // Verified pending with incomplete onboarding already handled above — now it's true duplicate
+                $maybePending = PendingRegistration::where('email', $normalizedEmail)->whereNotNull('verified_at')->first();
+                if ($maybePending && ! $maybePending->isAbandonedExpired() && self::findPendingForUser(\App\Models\User::where('email', $normalizedEmail)->first() ?? new \App\Models\User(['email' => $normalizedEmail]))) {
+                    // still resumable, don't block
+                } else {
+                    return back()->withErrors(['email' => 'Email already taken.'])->withInput();
+                }
             }
         }
 
@@ -166,8 +201,13 @@ class RegistrationFlowController extends Controller
             throw $e;
         }
 
+        // Requirement: OTP verified = successful registration (User created) but no dashboard until steps complete.
+        $this->ensureUserFromPending($pending->fresh());
+
         $request->session()->regenerate();
         session([self::SESSION_KEY . '.verified' => true, self::SESSION_KEY . '.step' => 2]);
+        // Re-store pending id after regenerate to keep resumable via session + DB (email)
+        session([self::PENDING_ID => $pending->id]);
         // Clear rate limiter on success
         \Illuminate\Support\Facades\RateLimiter::clear($throttleKey);
 
@@ -314,13 +354,6 @@ class RegistrationFlowController extends Controller
         $addr = $pending->address_data ?? [];
         $geoAddress = $this->geoAddress($org['country']);
 
-        // Double-check no user created meanwhile
-        if (\App\Models\User::where('email', $pending->email)->exists()) {
-            $pending->delete();
-            session()->forget([self::PENDING_ID, self::SESSION_KEY]);
-            return redirect()->route('login')->withErrors(['email' => 'Email already registered. Please login.']);
-        }
-
         $ownerRoleId = Role::query()->where('slug', 'institute-owner')->value('id');
         abort_unless($ownerRoleId !== null, 422, 'The institute-owner role is not configured.');
 
@@ -331,21 +364,32 @@ class RegistrationFlowController extends Controller
             // Lock pending row to prevent concurrent finalization
             $lockedPending = PendingRegistration::whereKey($pending->id)->lockForUpdate()->first();
             if (!$lockedPending) throw new \Illuminate\Validation\ValidationException(validator([],[]), response()->redirectToRoute('register.account'));
-            if (\App\Models\User::where('email', $lockedPending->email)->exists()) {
-                throw \Illuminate\Validation\ValidationException::withMessages(['email' => ['Email already registered.']]);
+            // User may already exist (created at OTP verification for resumable flow) — reuse it
+            $existingUser = \App\Models\User::where('email', $lockedPending->email)->first();
+            if ($existingUser) {
+                $user = $existingUser;
+                // Update profile fields from organization step if missing
+                $user->forceFill([
+                    'name' => trim($org['first_name'].' '.$org['last_name']),
+                    'first_name' => $org['first_name'],
+                    'last_name' => $org['last_name'],
+                    'phone' => $org['phone'] ?? $user->phone,
+                    'email_verified_at' => $user->email_verified_at ?? now(),
+                ])->save();
+            } else {
+                $user = User::create([
+                    'name' => trim($org['first_name'].' '.$org['last_name']),
+                    'first_name' => $org['first_name'],
+                    'last_name' => $org['last_name'],
+                    'email' => $pending->email,
+                    'phone' => $org['phone'],
+                    'preferred_language' => mawa_current_lang(),
+                    'password_hash' => $pending->password_hash,
+                    'status' => 'active',
+                    'account_type' => 'owner',
+                    'email_verified_at' => now(),
+                ]);
             }
-            $user = User::create([
-                'name' => trim($org['first_name'].' '.$org['last_name']),
-                'first_name' => $org['first_name'],
-                'last_name' => $org['last_name'],
-                'email' => $pending->email,
-                'phone' => $org['phone'],
-                'preferred_language' => mawa_current_lang(),
-                'password_hash' => $pending->password_hash,
-                'status' => 'active',
-                'account_type' => 'owner',
-                'email_verified_at' => now(),
-            ]);
 
             $institute = Institute::create([
                 'name' => $org['organization_name'],
@@ -420,10 +464,21 @@ class RegistrationFlowController extends Controller
     protected function resolvePending(Request $request): ?PendingRegistration
     {
         $id = session(self::PENDING_ID);
-        if (!$id) return null;
-        $pending = PendingRegistration::find($id);
+        $pending = $id ? PendingRegistration::find($id) : null;
+        // Fallback: resume via authenticated user (after logout) — continue from same step
+        if (!$pending && $request->user('web')) {
+            $email = $request->user('web')->email;
+            $pending = PendingRegistration::where('email', $email)
+                ->whereNotNull('verified_at')
+                ->latest('id')->first();
+            if ($pending && !$pending->isAbandonedExpired() && !$pending->isGraceExpired()) {
+                // Restore session for continuity
+                session([self::PENDING_ID => $pending->id, self::SESSION_KEY => ['email' => $pending->email, 'verified' => true, 'step' => $this->detectStep($pending)]]);
+                return $pending;
+            }
+            return null;
+        }
         if (!$pending) {
-            session()->forget([self::PENDING_ID, self::SESSION_KEY]);
             return null;
         }
         // Schedule is NOT security boundary — enforce synchronously
@@ -438,10 +493,67 @@ class RegistrationFlowController extends Controller
         // Prevent tampering: session email must match pending email
         $sessionEmail = session(self::SESSION_KEY . '.email');
         if ($sessionEmail && $sessionEmail !== $pending->email) {
-            session()->forget([self::PENDING_ID, self::SESSION_KEY]);
-            return null;
+            // Allow authenticated user email to override session tampering check for resume
+            $authEmail = $request->user('web')?->email;
+            if ($authEmail !== $pending->email) {
+                session()->forget([self::PENDING_ID, self::SESSION_KEY]);
+                return null;
+            }
         }
         return $pending;
+    }
+
+    public static function findPendingForUser(\App\Models\User $user): ?PendingRegistration
+    {
+        return self::findPendingForUserStatic($user);
+    }
+
+    public static function resumeRouteForUser(\App\Models\User $user): ?string
+    {
+        $pending = self::findPendingForUserStatic($user);
+        if (!$pending || $pending->isAbandonedExpired()) return null;
+        if (empty($pending->organization_data)) return 'register.organization';
+        if (empty($pending->address_data)) return 'register.address';
+        return null; // completed — no redirect
+    }
+
+    protected static function findPendingForUserStatic(\App\Models\User $user): ?PendingRegistration
+    {
+        $p = PendingRegistration::where('email', $user->email)->whereNotNull('verified_at')->latest('id')->first();
+        if (!$p || $p->isAbandonedExpired() || $p->isGraceExpired()) return null;
+        return $p;
+    }
+
+    protected function detectStep(PendingRegistration $pending): int
+    {
+        if (!$pending->isVerified()) return 1;
+        if (empty($pending->organization_data)) return 2;
+        if (empty($pending->address_data)) return 3;
+        return 4;
+    }
+
+    public static function isOnboardingIncomplete(\App\Models\User $user): bool
+    {
+        $p = self::findPendingForUserStatic($user);
+        return $p !== null && !$p->isAbandonedExpired();
+    }
+
+    protected function ensureUserFromPending(PendingRegistration $pending): \App\Models\User
+    {
+        $existing = \App\Models\User::where('email', $pending->email)->first();
+        if ($existing) return $existing;
+        $local = explode('@', $pending->email)[0] ?? 'User';
+        return \App\Models\User::create([
+            'name' => ucfirst($local),
+            'first_name' => ucfirst($local),
+            'last_name' => '',
+            'email' => $pending->email,
+            'password_hash' => $pending->password_hash,
+            'status' => 'active',
+            'account_type' => 'owner',
+            'email_verified_at' => now(),
+            'preferred_language' => function_exists('mawa_current_lang') ? mawa_current_lang() : 'en',
+        ]);
     }
 
     protected function remainingCooldown(PendingRegistration $pending): int

@@ -137,12 +137,39 @@ class PlatformSettingsService
     public static function loginSecuritySettings(): array
     {
         return [
-            'login.max_attempts' => self::get('login.max_attempts', '5'),
+            'login.max_attempts' => self::get('login.max_attempts', '10'),
             'login.lockout_duration' => self::get('login.lockout_duration', '15'),
             'login.session_lifetime' => self::get('login.session_lifetime', '120'),
             'login.remember_me' => self::get('login.remember_me', '1'),
             'login.2fa_challenge_lifetime' => self::get('login.2fa_challenge_lifetime', '10'),
             'password.min_length' => self::get('password.min_length', '8'),
         ];
+    }
+
+    /**
+     * Effective login threshold for guard — minimum 10 for all except platform_admin (super user).
+     * Super user stays strict (5) when no explicit setting; regular users floor at 10.
+     */
+    public static function effectiveLoginThreshold(string $guardName): int
+    {
+        $rawVal = \App\Models\Setting::get('login.max_attempts');
+        if ($rawVal === null || $rawVal === '') {
+            return $guardName === 'platform_admin' ? 5 : 10;
+        }
+        $raw = (int) $rawVal;
+        if ($guardName === 'platform_admin') {
+            return max(5, min(20, $raw ?: 5));
+        }
+        return max(10, min(20, $raw ?: 10));
+    }
+
+    public static function effectiveLockoutMinutes(string $guardName): int
+    {
+        $raw = (int) (self::get('login.lockout_duration', '15') ?? 15);
+        if ($guardName === 'platform_admin') {
+            return max(5, min(60, $raw ?: 15));
+        }
+        // Regular users: shorter lockout for smoother UX (5 min default if misconfigured)
+        return max(5, min(60, $raw ?: 15));
     }
 }
