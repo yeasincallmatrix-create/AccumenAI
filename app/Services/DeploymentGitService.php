@@ -278,17 +278,27 @@ class DeploymentGitService
     protected function runArtisanCommands(string &$logRef = ''): string
     {
         $out = '';
+        // Corrected order for 2GB optimization: clear first, then cache. cache:clear AFTER cache destroys config/route cache (bug fix).
+        // Route cache has fallback to route:clear due to duplicate name (admin.certificates.requests-columns) - see routes/web.php
         $commands = [
             'php artisan migrate --force 2>&1',
+            'php artisan optimize:clear 2>&1',
             'php artisan config:cache 2>&1',
-            'php artisan route:cache 2>&1',
             'php artisan view:cache 2>&1',
-            'php artisan cache:clear 2>&1',
+            'php artisan event:cache 2>&1',
         ];
         foreach ($commands as $cmd) {
             $out .= "\n[Artisan] {$cmd}\n";
             $result = $this->runShell($cmd, 300);
             $out .= $result . "\n";
+        }
+        // Route cache with graceful fallback: if serialization fails (duplicate name), clear instead
+        $out .= "\n[Artisan] php artisan route:cache 2>&1 (with fallback)\n";
+        $routeResult = $this->runShell('php artisan route:cache 2>&1', 300);
+        $out .= $routeResult . "\n";
+        if (str_contains(strtolower($routeResult), 'unable to prepare route') || str_contains(strtolower($routeResult), 'logicexception') || str_contains(strtolower($routeResult), 'already been assigned')) {
+            $out .= "[Artisan] Route cache failed — falling back to route:clear (duplicate route name, non-blocking)\n";
+            $out .= $this->runShell('php artisan route:clear 2>&1', 300) . "\n";
         }
         return $out;
     }

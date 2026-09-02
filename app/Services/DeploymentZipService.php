@@ -178,19 +178,29 @@ class DeploymentZipService
     public function runArtisanCommands(): string
     {
         $log = '';
+        // Corrected for 2GB cPanel optimization: clear BEFORE cache, no destructive clear after. Add event:cache; handle route duplicate fallback.
         $commands = [
             'composer install --no-interaction --prefer-dist --optimize-autoloader 2>&1' => 300,
             'php artisan migrate --force 2>&1' => 300,
-            'php artisan cache:clear 2>&1' => 120,
-            'php artisan config:clear 2>&1' => 120,
+            'php artisan optimize:clear 2>&1' => 120,
             'php artisan config:cache 2>&1' => 120,
-            'php artisan route:cache 2>&1' => 120,
             'php artisan view:cache 2>&1' => 120,
+            'php artisan event:cache 2>&1' => 120,
         ];
         foreach ($commands as $cmd => $timeout) {
             $log .= "\n[Artisan] {$cmd}\n";
             $out = @shell_exec($cmd);
             $log .= ($out !== null ? (string) $out : '[no output]') . "\n";
+        }
+        // Route cache with fallback for duplicate name (admin.certificates.requests-columns)
+        $log .= "\n[Artisan] php artisan route:cache 2>&1 (with fallback)\n";
+        $routeOut = @shell_exec('php artisan route:cache 2>&1');
+        $routeOut = $routeOut !== null ? (string) $routeOut : '[no output]';
+        $log .= $routeOut . "\n";
+        if (str_contains(strtolower($routeOut), 'unable to prepare route') || str_contains(strtolower($routeOut), 'logicexception') || str_contains(strtolower($routeOut), 'already been assigned')) {
+            $log .= "[Artisan] Route cache failed — falling back to route:clear\n";
+            $fallback = @shell_exec('php artisan route:clear 2>&1');
+            $log .= ($fallback !== null ? (string) $fallback : '[no output]') . "\n";
         }
         return $log;
     }

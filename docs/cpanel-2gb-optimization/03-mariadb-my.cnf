@@ -1,0 +1,38 @@
+# MariaDB 10.11.18 — 2GB RAM tuning — 50-70 concurrent users
+# Apply via: WHM > SQL Services > MySQL/MariaDB Configuration or edit /etc/my.cnf then systemctl restart mariadb
+# Baseline local XAMPP: innodb_buffer_pool_size 16M, innodb_log_file_size 5M (my.ini:144-146) — dev only, prod needs below
+# Validate: mysql -e "SHOW VARIABLES LIKE 'innodb_buffer_pool_size'; SHOW VARIABLES LIKE 'max_connections'"
+
+[mysqld]
+# InnoDB — largest gain for Laravel (sessions, cache, queue jobs)
+innodb_buffer_pool_size = 512M        # 25% of 2GB (not 50% — leaves RAM for FPM+Apache). Range 512M-700M for 2GB
+innodb_buffer_pool_instances = 1      # 1 for <1GB pool, 2 if 700M+
+innodb_log_file_size = 128M
+innodb_log_buffer_size = 16M
+innodb_flush_log_at_trx_commit = 2    # 1=ACID safest, 2=faster (1s flush, ok for cPanel)
+innodb_flush_method = O_DIRECT
+innodb_file_per_table = 1
+# Connections
+max_connections = 100                 # Laravel 60MB*12 FPM ≈ 12 DB conn + queue + cron; 100 safe, 151 default too high for 2GB
+max_connect_errors = 100000
+wait_timeout = 28800
+interactive_timeout = 28800
+# Temp tables (for reports, finance, exams)
+tmp_table_size = 32M
+max_heap_table_size = 32M
+sort_buffer_size = 2M
+read_buffer_size = 1M
+join_buffer_size = 1M
+# Query cache off for 10.11 (deprecated)
+query_cache_type = 0
+query_cache_size = 0
+# Slow log for verification
+slow_query_log = 1
+slow_query_log_file = /var/log/mysql/slow.log
+long_query_time = 2
+# Charset
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+[mysqldump]
+quick
+max_allowed_packet = 64M

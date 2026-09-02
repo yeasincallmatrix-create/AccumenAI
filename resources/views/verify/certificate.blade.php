@@ -32,48 +32,50 @@
         </div>
 
         <div class="verify-details">
-            <div class="text-center mb-4">
+            <div class="verify-identity mb-4">
                 @if($certificate->student?->photo)
                     <img src="{{ $certificate->student->photo_url }}" alt="{{ $certificate->student->full_name ?? 'Student' }}" class="verify-photo">
                 @else
                     <div class="verify-photo verify-photo-placeholder"><i class="bi bi-person-fill"></i></div>
                 @endif
-                <div class="verify-student-name">{{ $certificate->student->full_name ?? trim(($certificate->student->first_name ?? '').' '.($certificate->student->last_name ?? '')) ?: '—' }}</div>
-                <div class="verify-course-name">{{ $certificate->course->name ?? '—' }}</div>
+                <div class="verify-identity-text">
+                    <div class="verify-student-name">{{ $certificate->student->full_name ?? trim(($certificate->student->first_name ?? '').' '.($certificate->student->last_name ?? '')) ?: '—' }}</div>
+                    <div class="verify-course-name">{{ $certificate->course->name ?? '—' }}</div>
+                </div>
             </div>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="verify-label">Father Name</label>
-                    <div class="verify-value">{{ $certificate->student->father_name ?? '—' }}</div>
+            <div class="verify-info-list">
+                <div class="verify-row">
+                    <span class="verify-label">Father Name</span>
+                    <span class="verify-value">{{ $certificate->student->father_name ?? '—' }}</span>
                 </div>
-                <div class="col-md-6">
-                    <label class="verify-label">Certificate No</label>
-                    <div class="verify-value font-monospace">{{ $certificate->certificate_number ?? '—' }}</div>
+                <div class="verify-row">
+                    <span class="verify-label">Certificate No</span>
+                    <span class="verify-value font-monospace">{{ $certificate->certificate_number ?? '—' }}</span>
                 </div>
-                <div class="col-12">
-                    <label class="verify-label">Subjects Covered</label>
+                <div class="verify-row verify-row-subjects">
+                    <span class="verify-label">Subjects Covered</span>
                     @php $verifySubjects = $certificate->course?->subjects ? $certificate->course->subjects->sortBy(function($s){ $map=['ARC Welding'=>1,'TIG'=>2,'MIG'=>3]; return $map[$s->name] ?? 99; }) : collect(); @endphp
                     @if($verifySubjects->isNotEmpty())
-                        <div class="d-flex flex-wrap gap-2 mt-1">
+                        <span class="verify-value d-flex flex-wrap gap-2">
                             @foreach($verifySubjects as $subject)
                                 <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">{{ $subject->name }}</span>
                             @endforeach
-                        </div>
+                        </span>
                     @else
-                        <div class="verify-value text-muted small">No subjects listed</div>
+                        <span class="verify-value text-muted small">No subjects listed</span>
                     @endif
                 </div>
-                <div class="col-md-4">
-                    <label class="verify-label">NID No</label>
-                    <div class="verify-value">{{ $certificate->student->nid_number ?? '—' }}</div>
+                <div class="verify-row">
+                    <span class="verify-label">NID No</span>
+                    <span class="verify-value">{{ $certificate->student->nid_number ?? '—' }}</span>
                 </div>
-                <div class="col-md-4">
-                    <label class="verify-label">Passport No</label>
-                    <div class="verify-value">{{ $certificate->student->passport_number ?? '—' }}</div>
+                <div class="verify-row">
+                    <span class="verify-label">Passport No</span>
+                    <span class="verify-value">{{ $certificate->student->passport_number ?? '—' }}</span>
                 </div>
-                <div class="col-md-4">
-                    <label class="verify-label">Date of Issue</label>
-                    <div class="verify-value">{{ $certificate->issue_date?->format('d M Y') ?? $certificate->created_at?->format('d M Y') ?? '—' }}</div>
+                <div class="verify-row">
+                    <span class="verify-label">Date of Issue</span>
+                    <span class="verify-value">{{ $certificate->issue_date?->format('d M Y') ?? $certificate->created_at?->format('d M Y') ?? '—' }}</span>
                 </div>
             </div>
 
@@ -138,12 +140,24 @@
     .verify-badge { font-size: 12px; letter-spacing: .6px; padding: 6px 12px; border-radius: 30px; }
     .verify-sub { margin: 12px 0 0; font-size: 14px; }
     .verify-details { padding: 24px; }
-    .verify-photo { width: 110px; height: 110px; border-radius: 12px; object-fit: cover; border: 3px solid var(--bs-primary); box-shadow: 0 4px 12px rgba(13,110,253,.15); margin: 0 auto 12px; display: block; }
-    .verify-photo-placeholder { width: 110px; height: 110px; border-radius: 12px; background: #e9ecef; display: flex; align-items: center; justify-content: center; font-size: 48px; color: #adb5bd; margin: 0 auto 12px; }
-    .verify-student-name { font-weight: 800; font-size: 20px; color: #212529; margin-bottom: 2px; }
-    .verify-course-name { font-size: 14px; color: #495057; font-weight: 600; }
-    .verify-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: #6c757d; margin-bottom: 2px; }
-    .verify-value { font-weight: 600; font-size: 15px; }
+    /* Passport size ratio 35mm x 45mm => 7:9 => aspect-ratio 35/45 */
+    .verify-photo { width: 135px; height: 173px; aspect-ratio: 35 / 45; border-radius: 8px; object-fit: cover; border: 3px solid var(--bs-primary); box-shadow: 0 4px 12px rgba(13,110,253,.15); display: block; flex-shrink: 0; margin: 0 auto; }
+    .verify-photo-placeholder { width: 135px; height: 173px; aspect-ratio: 35 / 45; border-radius: 8px; background: #e9ecef; display: flex; align-items: center; justify-content: center; font-size: 48px; color: #adb5bd; flex-shrink: 0; margin: 0 auto; }
+    .verify-identity { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; }
+    .verify-identity-text { text-align: center; }
+    .verify-student-name { font-weight: 800; font-size: 20px; color: #212529; margin-bottom: 2px; text-align: center; }
+    .verify-course-name { font-size: 14px; color: #495057; font-weight: 600; text-align: center; }
+    .verify-info-list { display: flex; flex-direction: column; }
+    .verify-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(13,110,253,.08); text-align: left; }
+    .verify-row:last-child { border-bottom: 0; }
+    .verify-label { min-width: 145px; flex-shrink: 0; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: #6c757d; margin: 0; text-align: left; }
+    .verify-value { font-weight: 600; font-size: 14px; text-align: left; flex: 1; }
+    .verify-row-subjects { align-items: flex-start; }
+    @media (max-width: 576px) {
+        .verify-row { flex-direction: column; align-items: flex-start; gap: 4px; }
+        .verify-label { min-width: 0; }
+        .verify-photo, .verify-photo-placeholder { width: 120px; height: 154px; }
+    }
     .verify-footer {
         padding: 12px 24px;
         border-top: 1px dashed rgba(13, 110, 253, .18);
