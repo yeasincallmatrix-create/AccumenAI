@@ -1569,6 +1569,7 @@ return [
         'owner_registered' => 'Your owner account is ready. Create or join an organization to get started.',
         'forgot_password_title' => 'Forgot Password',
         'forgot_password_hint' => 'Enter the email address associated with your account, and we will email you a password reset link.',
+        'forgot_password_link' => 'Forgot Password?',
         'send_reset_link' => 'Send password reset link',
         'reset_link_sent' => 'If that email address exists, a password reset link has been sent to it.',
         'password_reset_title' => 'Reset Password',
