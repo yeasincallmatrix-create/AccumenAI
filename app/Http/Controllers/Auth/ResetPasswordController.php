@@ -42,13 +42,8 @@ class ResetPasswordController extends Controller
             'token' => $request->input('token'),
         ];
 
-        // Tenant-safe reset: try each broker that could own the email until one succeeds.
-        // This avoids mis-routing when the same email exists across User/PlatformAdmin/InstituteUser
-        // (email is unique per table but not cross-table) and keeps password_reset_tokens PK=email
-        // compatible with Laravel's stock DatabaseTokenRepository (single shared table).
-        // Global UNI on users/institute_users/platform_admins.email already prevents intra-table
-        // cross-tenant collisions; guardians use a separate dedicated form/broker.
-        $brokers = ['platform_admins', 'users', 'institute_users'];
+        // Tenant-safe reset — super admin excluded per policy (no password recovery for super admin)
+        $brokers = ['users', 'institute_users'];
         $status = null;
         foreach ($brokers as $broker) {
             $status = Password::broker($broker)->reset($credentials, function ($user, string $password) {
@@ -90,10 +85,6 @@ class ResetPasswordController extends Controller
     protected function brokerForEmail(string $email): PasswordBroker
     {
         $normalized = EmailNormalizer::normalize($email);
-        if (PlatformAdmin::query()->where('email', $normalized)->exists()) {
-            return Password::broker('platform_admins');
-        }
-
         if (User::query()->where('email', $normalized)->exists()) {
             return Password::broker('users');
         }

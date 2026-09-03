@@ -27,10 +27,9 @@ class ForgotPasswordController extends Controller
         // Generic audit without revealing existence
         IdentityAuditService::log(null, 'password_reset_requested', 'email', ['ip' => $request->ip()]);
 
-        // Probe all portals with normalized email. Only the broker that actually owns the email will issue a link;
-        // response is identical either way so we never reveal which portal (if any) the address belongs to.
+        // Probe portals — super admin (platform_admins) excluded per policy (no password recovery for super admin)
         $sent = false;
-        foreach (['users', 'institute_users', 'platform_admins'] as $broker) {
+        foreach (['users', 'institute_users'] as $broker) {
             $status = Password::broker($broker)->sendResetLink(['email' => $normalized]);
             if ($status === Password::RESET_LINK_SENT) {
                 $sent = true;

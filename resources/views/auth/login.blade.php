@@ -67,7 +67,7 @@
                                 <input id="remember" type="checkbox" name="remember" class="form-check-input">
                                 <label class="form-check-label" for="remember">{{ mawa_e('auth.remember_me') }}</label>
                             </div>
-                            @if ($errors->any())
+                            @if ($errors->any() && $portal !== 'admin')
                                 <a class="small text-decoration-none" href="{{ route('password.request') }}"><i class="bi bi-key me-1"></i>{{ mawa_e('auth.forgot_password_link') }}</a>
                             @endif
                         </div>
