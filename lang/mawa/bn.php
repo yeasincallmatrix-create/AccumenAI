@@ -1865,7 +1865,7 @@ return [
         'login_title' => 'Parent Login',
         'login_hint' => 'For guardians of our students — a read-only view of your child\'s progress.',
         'forgot_password_title' => 'Forgot Password',
-        'forgot_password_link' => 'Forgot password?',
+        'forgot_password_link' => 'Forgot Password?',
         'back_to_other_portals' => 'Looking for another portal?',
         'dashboard_title' => 'Parent Dashboard',
         'dashboard_welcome' => 'Welcome, :name',

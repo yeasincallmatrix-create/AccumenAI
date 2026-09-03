@@ -62,9 +62,14 @@
                             <input id="password" type="password" class="form-control" name="password" required autocomplete="current-password">
                         </div>
 
-                        <div class="mb-4 form-check">
-                            <input id="remember" type="checkbox" name="remember" class="form-check-input">
-                            <label class="form-check-label" for="remember">{{ mawa_e('auth.remember_me') }}</label>
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div class="form-check mb-0">
+                                <input id="remember" type="checkbox" name="remember" class="form-check-input">
+                                <label class="form-check-label" for="remember">{{ mawa_e('auth.remember_me') }}</label>
+                            </div>
+                            @if ($errors->any())
+                                <a class="small text-decoration-none" href="{{ route('password.request') }}"><i class="bi bi-key me-1"></i>{{ mawa_e('auth.forgot_password_link') }}</a>
+                            @endif
                         </div>
 
                         <button class="btn btn-primary auth-btn w-100" type="submit">
