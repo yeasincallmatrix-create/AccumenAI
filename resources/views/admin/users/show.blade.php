@@ -10,7 +10,7 @@
         <h6>Global Account</h6>
         <div class="small text-muted">ID {{ $user->id }} · UUID {{ $user->uuid }} · Created {{ $user->created_at }}</div>
         <div class="mt-2"><x-uid-with-copy :uid="$user->uid" label="User UID" /></div>
-        <div class="mt-3"><strong>Businesses / Memberships ({{ $user->memberships->count() }})</strong></div>
+        <div class="mt-3"><strong>Businesses / Memberships ({{ $user->memberships?->count() ?? 0 }})</strong></div>
         <div class="table-responsive mt-2">
             <table class="table table-sm align-middle mb-0">
                 <thead><tr><th>Institute</th><th>Role</th><th>Status</th><th>Joined</th></tr></thead>

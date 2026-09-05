@@ -406,9 +406,6 @@ class RegistrationFlowController extends Controller
                 'status' => 'active',
             ]);
 
-            // Legacy location fields
-            $this->syncLegacyLocationFields($institute, $addr);
-
             app(MembershipService::class)->assign($user, $institute->id, $ownerRoleId, [
                 'branch_id' => null,
                 'status' => 'active',
@@ -593,18 +590,6 @@ class RegistrationFlowController extends Controller
             'address_label' => config('geo-labels.localities.'.$country->iso2, config('geo-labels.defaults.locality', 'Address')),
             'zip_first' => $country->iso2 === 'BD',
         ];
-    }
-
-    protected function syncLegacyLocationFields(Institute $institute, array $data): void
-    {
-        $ids = array_filter(array_map('intval', [$data['admin_1_id'] ?? null, $data['admin_2_id'] ?? null, $data['admin_3_id'] ?? null]));
-        if ($ids === []) return;
-        $names = \App\Models\AdministrativeUnit::query()->whereIn('id', $ids)->pluck('name', 'id');
-        $institute->forceFill([
-            'division' => $names->get((int) ($data['admin_1_id'] ?? 0)),
-            'district' => $names->get((int) ($data['admin_2_id'] ?? 0)),
-            'upazila' => $names->get((int) ($data['admin_3_id'] ?? 0)),
-        ])->save();
     }
 
     protected function uniqueSlug(string $name): string

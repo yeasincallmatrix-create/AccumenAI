@@ -24,7 +24,6 @@ use App\Services\StudentAcademicExitService;
 use App\Services\StudentAcademicHistoryService;
 use App\Services\StudentAcademicLifecycleService;
 use App\Services\AcademicCumulativeService;
-use App\Support\BdGeo;
 use App\Support\GeoHierarchy;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\QueryException;
@@ -110,7 +109,6 @@ class StudentController extends Controller
             'sort' => $sort,
             'dir' => $dir,
             'instituteId' => $instituteId,
-            'geo' => $this->geo($instituteId),
             'country' => $this->instituteCountry($instituteId),
             'defaultCountryId' => $this->instituteCountryId($instituteId),
             'editData' => $editData,
@@ -128,7 +126,6 @@ class StudentController extends Controller
             'student' => $student,
             'branches' => $this->branches($request->user()->institute_id),
             'nextNumber' => Student::nextStudentNumber($request->user()->institute_id),
-            'geo' => $this->geo($request->user()->institute_id),
             'country' => $this->instituteCountry($request->user()->institute_id),
             'countries' => config('countries'),
             'defaultCountryId' => $this->instituteCountryId($request->user()->institute_id),
@@ -202,7 +199,6 @@ class StudentController extends Controller
             'results' => $results,
             'batches' => $batches,
             'branches' => $this->branches($request->user()->institute_id),
-            'geo' => $this->geo($request->user()->institute_id),
             'country' => $this->instituteCountry($request->user()->institute_id),
             'defaultCountryId' => $this->instituteCountryId($request->user()->institute_id),
             'presentAddress' => $this->addressData($student, 'present_', $this->instituteCountryId($request->user()->institute_id)),
@@ -451,7 +447,6 @@ class StudentController extends Controller
             'student' => $student,
             'branches' => $this->branches($request->user()->institute_id),
             'nextNumber' => null,
-            'geo' => $this->geo($request->user()->institute_id),
             'country' => $this->instituteCountry($request->user()->institute_id),
             'countries' => config('countries'),
             'defaultCountryId' => $this->instituteCountryId($request->user()->institute_id),
@@ -589,16 +584,6 @@ class StudentController extends Controller
         return Branch::where('institute_id', $instituteId)->orderBy('name')->get();
     }
 
-    private function geo(int $instituteId): array
-    {
-        return [
-            'lang' => mawa_current_lang(),
-            'divisions' => BdGeo::divisions(),
-            'districts' => BdGeo::districts(),
-            'upazilas' => BdGeo::upazilas(),
-        ];
-    }
-
     /**
      * Data for the country-neutral <x-address> component: the dynamic level
      * labels (from the per-country config) plus the location options for the
@@ -718,9 +703,6 @@ class StudentController extends Controller
             'birth_cert_number' => $student->birth_cert_number,
             'passport_number' => $student->passport_number,
             'blood_group' => $student->blood_group,
-            'present_division_id' => $student->present_division_id,
-            'present_district_id' => $student->present_district_id,
-            'present_upazila_id' => $student->present_upazila_id,
             'present_country_id' => $student->present_country_id,
             'present_admin_1_id' => $student->present_admin_1_id,
             'present_admin_2_id' => $student->present_admin_2_id,
@@ -728,9 +710,6 @@ class StudentController extends Controller
             'present_post_office' => $student->present_post_office,
             'present_zip_code' => $student->present_zip_code,
             'present_address' => $student->present_address,
-            'permanent_division_id' => $student->permanent_division_id,
-            'permanent_district_id' => $student->permanent_district_id,
-            'permanent_upazila_id' => $student->permanent_upazila_id,
             'permanent_country_id' => $student->permanent_country_id,
             'permanent_admin_1_id' => $student->permanent_admin_1_id,
             'permanent_admin_2_id' => $student->permanent_admin_2_id,

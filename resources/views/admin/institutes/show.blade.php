@@ -96,7 +96,7 @@
         <dt class="col-sm-4">Website</dt><dd class="col-sm-8">{{ $institute->website ?? '—' }}</dd>
         <dt class="col-sm-4">Address</dt><dd class="col-sm-8">{{ $institute->address ?? '—' }}</dd>
         <dt class="col-sm-4">Location</dt><dd class="col-sm-8">
-            {{ collect([$institute->division, $institute->district, $institute->upazila])->filter()->implode(', ') ?: '—' }}
+            {{ collect([$institute->adminLevel1?->name, $institute->adminLevel2?->name, $institute->adminLevel3?->name])->filter()->implode(', ') ?: '—' }}
         </dd>
         <dt class="col-sm-4">Founded</dt><dd class="col-sm-8">{{ $institute->founded_year ?? '—' }}</dd>
         <dt class="col-sm-4">Registered</dt><dd class="col-sm-8">{{ $institute->created_at->format('d M Y') }}</dd>

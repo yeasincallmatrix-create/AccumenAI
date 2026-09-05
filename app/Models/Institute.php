@@ -211,6 +211,21 @@ class Institute extends Model
         return $this->belongsTo(Country::class, 'country_id');
     }
 
+    public function adminLevel1(): BelongsTo
+    {
+        return $this->belongsTo(AdministrativeUnit::class, 'admin_level_1_id');
+    }
+
+    public function adminLevel2(): BelongsTo
+    {
+        return $this->belongsTo(AdministrativeUnit::class, 'admin_level_2_id');
+    }
+
+    public function adminLevel3(): BelongsTo
+    {
+        return $this->belongsTo(AdministrativeUnit::class, 'admin_level_3_id');
+    }
+
     public function academicYears(): HasMany
     {
         return $this->hasMany(AcademicYear::class);

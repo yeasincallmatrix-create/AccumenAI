@@ -41,13 +41,6 @@
             if ($l3 && $names->has($l3)) { $parts[] = $names[$l3]; }
             if ($l2 && $names->has($l2)) { $parts[] = $names[$l2]; }
             if ($l1 && $names->has($l1)) { $parts[] = $names[$l1]; }
-        } else {
-            $divisionId = $student->{$type . '_division_id'};
-            $districtId = $student->{$type . '_district_id'};
-            $upazilaId = $student->{$type . '_upazila_id'};
-            if ($divisionId) { $parts[] = \App\Support\BdGeo::divisionName($divisionId) ?? $divisionId; }
-            if ($districtId) { $parts[] = \App\Support\BdGeo::districtName($districtId) ?? $districtId; }
-            if ($upazilaId) { $parts[] = \App\Support\BdGeo::upazilaName($upazilaId) ?? $upazilaId; }
         }
         if ($student->{$type . '_post_office'}) { $parts[] = $student->{$type . '_post_office'}; }
         if ($student->{$type . '_zip_code'}) { $parts[] = 'ZIP ' . $student->{$type . '_zip_code'}; }

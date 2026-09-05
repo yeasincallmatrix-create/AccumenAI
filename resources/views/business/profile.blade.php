@@ -160,9 +160,9 @@
                 <h2 class="h6 fw-bold mb-3"><i class="bi bi-geo-alt me-2 text-primary"></i>Address &amp; Location</h2>
                 <dl class="row mb-0 biz-kv">
                     <dt class="col-sm-5">Country</dt><dd class="col-sm-7">{{ $institute->country ?: 'Not provided' }}</dd>
-                    <dt class="col-sm-5">Division</dt><dd class="col-sm-7">{{ $institute->division ?: 'Not provided' }}</dd>
-                    <dt class="col-sm-5">District</dt><dd class="col-sm-7">{{ $institute->district ?: 'Not provided' }}</dd>
-                    <dt class="col-sm-5">Upazila / City</dt><dd class="col-sm-7">{{ $institute->upazila ?: 'Not provided' }}</dd>
+                    <dt class="col-sm-5">Division</dt><dd class="col-sm-7">{{ $institute->adminLevel1?->name ?: 'Not provided' }}</dd>
+                    <dt class="col-sm-5">District</dt><dd class="col-sm-7">{{ $institute->adminLevel2?->name ?: 'Not provided' }}</dd>
+                    <dt class="col-sm-5">Upazila / City</dt><dd class="col-sm-7">{{ $institute->adminLevel3?->name ?: 'Not provided' }}</dd>
                     <dt class="col-sm-5">Address</dt><dd class="col-sm-7">{{ $institute->address ?: 'Not provided' }}</dd>
                     <dt class="col-sm-5">Postal Code</dt><dd class="col-sm-7">{{ $institute->postal_code ?: 'Not provided' }}</dd>
                     <dt class="col-sm-5">Google Map</dt>

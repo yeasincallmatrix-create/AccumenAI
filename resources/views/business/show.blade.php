@@ -164,8 +164,8 @@
                             @if ($institute->postal_code) , {{ $institute->postal_code }} @endif
                         </li>
                     @endif
-                    @if ($institute->division || $institute->district || $institute->upazila)
-                        <li class="mb-2"><i class="bi bi-map me-2 text-muted"></i>{{ collect([$institute->upazila, $institute->district, $institute->division])->filter()->implode(', ') }}</li>
+                    @if ($institute->adminLevel1 || $institute->adminLevel2 || $institute->adminLevel3)
+                        <li class="mb-2"><i class="bi bi-map me-2 text-muted"></i>{{ collect([$institute->adminLevel3?->name, $institute->adminLevel2?->name, $institute->adminLevel1?->name])->filter()->implode(', ') }}</li>
                     @endif
                     @if ($institute->country)
                         <li class="mb-2"><i class="bi bi-globe me-2 text-muted"></i>{{ $institute->country }}</li>

@@ -217,7 +217,7 @@
                         <td data-col="institute" @if(!in_array('institute', $visibleColumns, true)) style="display:none" @endif>
                             <a class="fw-semibold text-decoration-none" href="{{ route('admin.institutes.show', $institute) }}">{{ $institute->name }}</a>
                             <div class="text-muted small">
-                                {{ $institute->institute_code ?? $institute->slug }} &middot; {{ $institute->district ?? '—' }}
+                                {{ $institute->institute_code ?? $institute->slug }} &middot; {{ $institute->adminLevel2?->name ?? '—' }}
                             </div>
                         </td>
                         <td data-col="uid" @if(!in_array('uid', $visibleColumns, true)) style="display:none" @endif>

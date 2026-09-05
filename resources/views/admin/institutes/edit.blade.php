@@ -97,16 +97,37 @@
                 <input type="text" id="address" name="address" class="form-control" value="{{ old('address', $institute->address) }}">
             </div>
             <div class="col-md-4">
-                <label class="form-label" for="division">Division</label>
-                <input type="text" id="division" name="division" class="form-control" value="{{ old('division', $institute->division) }}">
+                <label class="form-label" for="admin_level_1_id">Division</label>
+                <select id="admin_level_1_id" name="admin_level_1_id" class="form-select" data-country-id="{{ $institute->country_id }}">
+                    <option value="">— Select —</option>
+                    @foreach($divisions as $division)
+                        <option value="{{ $division->id }}" {{ old('admin_level_1_id', $institute->admin_level_1_id) == $division->id ? 'selected' : '' }}>
+                            {{ $division->name }}
+                        </option>
+                    @endforeach
+                </select>
             </div>
             <div class="col-md-4">
-                <label class="form-label" for="district">District</label>
-                <input type="text" id="district" name="district" class="form-control" value="{{ old('district', $institute->district) }}">
+                <label class="form-label" for="admin_level_2_id">District</label>
+                <select id="admin_level_2_id" name="admin_level_2_id" class="form-select">
+                    <option value="">— Select —</option>
+                    @foreach($districts as $district)
+                        <option value="{{ $district->id }}" {{ old('admin_level_2_id', $institute->admin_level_2_id) == $district->id ? 'selected' : '' }}>
+                            {{ $district->name }}
+                        </option>
+                    @endforeach
+                </select>
             </div>
             <div class="col-md-4">
-                <label class="form-label" for="upazila">Upazila</label>
-                <input type="text" id="upazila" name="upazila" class="form-control" value="{{ old('upazila', $institute->upazila) }}">
+                <label class="form-label" for="admin_level_3_id">Upazila</label>
+                <select id="admin_level_3_id" name="admin_level_3_id" class="form-select">
+                    <option value="">— Select —</option>
+                    @foreach($upazilas as $upazila)
+                        <option value="{{ $upazila->id }}" {{ old('admin_level_3_id', $institute->admin_level_3_id) == $upazila->id ? 'selected' : '' }}>
+                            {{ $upazila->name }}
+                        </option>
+                    @endforeach
+                </select>
             </div>
         </div>
     </div>
@@ -200,3 +221,52 @@
     <button class="btn btn-primary" type="submit"><i class="bi bi-check-lg"></i> Save Changes</button>
 </form>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var countryId = document.getElementById('admin_level_1_id').dataset.countryId;
+    var divisionSelect = document.getElementById('admin_level_1_id');
+    var districtSelect = document.getElementById('admin_level_2_id');
+    var upazilaSelect = document.getElementById('admin_level_3_id');
+
+    function loadUnits(level, parentId, targetSelect, keepValue) {
+        if (!countryId) return;
+        var url = '{{ route("geo.units") }}?country_id=' + countryId + '&level=' + level;
+        if (parentId) url += '&parent_id=' + parentId;
+
+        fetch(url)
+            .then(function(r) { return r.json(); })
+            .then(function(res) {
+                var units = (res.data && res.data.units) ? res.data.units : [];
+                var previous = keepValue || targetSelect.value;
+                targetSelect.innerHTML = '<option value="">— Select —</option>';
+                units.forEach(function(u) {
+                    var opt = document.createElement('option');
+                    opt.value = u.id;
+                    opt.textContent = u.name;
+                    if (u.id == previous) opt.selected = true;
+                    targetSelect.appendChild(opt);
+                });
+            });
+    }
+
+    divisionSelect.addEventListener('change', function() {
+        var divisionId = this.value;
+        districtSelect.innerHTML = '<option value="">— Select —</option>';
+        upazilaSelect.innerHTML = '<option value="">— Select —</option>';
+        if (divisionId) {
+            loadUnits(2, divisionId, districtSelect);
+        }
+    });
+
+    districtSelect.addEventListener('change', function() {
+        var districtId = this.value;
+        upazilaSelect.innerHTML = '<option value="">— Select —</option>';
+        if (districtId) {
+            loadUnits(3, districtId, upazilaSelect);
+        }
+    });
+});
+</script>
+@endpush

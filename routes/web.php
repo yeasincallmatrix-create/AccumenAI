@@ -345,6 +345,26 @@ Route::middleware(['auth:platform_admin', 'verified'])->prefix('admin')->name('a
     Route::post('deploy/git', [\App\Http\Controllers\Admin\DeployController::class, 'gitDeploy'])->name('deploy.git')->middleware(['permission:admin.deploy', 'throttle:5,60']);
     Route::post('deploy/zip', [\App\Http\Controllers\Admin\DeployController::class, 'zipDeploy'])->name('deploy.zip')->middleware(['permission:admin.deploy', 'throttle:5,60']);
     Route::post('deploy/rollback/{logId}', [\App\Http\Controllers\Admin\DeployController::class, 'rollback'])->name('deploy.rollback')->whereNumber('logId')->middleware(['permission:admin.deploy', 'throttle:5,60']);
+
+    // Comprehensive Git Management
+    Route::get('deploy/git-management', [\App\Http\Controllers\Admin\GitController::class, 'index'])->name('git.index')->middleware('permission:admin.deploy');
+    Route::get('deploy/git/status', [\App\Http\Controllers\Admin\GitController::class, 'status'])->name('git.status')->middleware('permission:admin.deploy');
+    Route::get('deploy/git/log', [\App\Http\Controllers\Admin\GitController::class, 'log'])->name('git.log')->middleware('permission:admin.deploy');
+    Route::get('deploy/git/diff', [\App\Http\Controllers\Admin\GitController::class, 'diff'])->name('git.diff')->middleware('permission:admin.deploy');
+    Route::post('deploy/git/pull', [\App\Http\Controllers\Admin\GitController::class, 'pull'])->name('git.pull')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::post('deploy/git/push', [\App\Http\Controllers\Admin\GitController::class, 'push'])->name('git.push')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::post('deploy/git/branch/create', [\App\Http\Controllers\Admin\GitController::class, 'createBranch'])->name('git.branch.create')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::post('deploy/git/branch/switch', [\App\Http\Controllers\Admin\GitController::class, 'switchBranch'])->name('git.branch.switch')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::post('deploy/git/branch/delete', [\App\Http\Controllers\Admin\GitController::class, 'deleteBranch'])->name('git.branch.delete')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::post('deploy/git/branch/merge', [\App\Http\Controllers\Admin\GitController::class, 'mergeBranch'])->name('git.branch.merge')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::post('deploy/git/stash', [\App\Http\Controllers\Admin\GitController::class, 'stash'])->name('git.stash')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::post('deploy/git/stash/pop', [\App\Http\Controllers\Admin\GitController::class, 'stashPop'])->name('git.stash.pop')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::post('deploy/git/stash/drop', [\App\Http\Controllers\Admin\GitController::class, 'stashDrop'])->name('git.stash.drop')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::post('deploy/git/reset', [\App\Http\Controllers\Admin\GitController::class, 'reset'])->name('git.reset')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::post('deploy/git/remote/add', [\App\Http\Controllers\Admin\GitController::class, 'addRemote'])->name('git.remote.add')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::post('deploy/git/remote/remove', [\App\Http\Controllers\Admin\GitController::class, 'removeRemote'])->name('git.remote.remove')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::get('deploy/git/remote', [\App\Http\Controllers\Admin\GitController::class, 'remotes'])->name('git.remote.list')->middleware('permission:admin.deploy');
+    Route::get('deploy/git/stash/list', [\App\Http\Controllers\Admin\GitController::class, 'stashList'])->name('git.stash.list')->middleware('permission:admin.deploy');
 });
 
 // DEV — Page Marker (temporary tool, gated by PageMarker::enabled())

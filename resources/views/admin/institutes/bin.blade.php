@@ -194,7 +194,7 @@
                         <td data-col="serial" class="text-muted" @if(!in_array('serial', $visibleColumns, true)) style="display:none" @endif>{{ $institutes->firstItem() + $loop->index }}</td>
                         <td data-col="institute" @if(!in_array('institute', $visibleColumns, true)) style="display:none" @endif>
                             <div class="fw-semibold">{{ $institute->name }}</div>
-                            <div class="text-muted small">{{ $institute->institute_code ?? $institute->slug }} &middot; {{ $institute->district ?? '—' }}</div>
+                            <div class="text-muted small">{{ $institute->institute_code ?? $institute->slug }} &middot; {{ $institute->adminLevel2?->name ?? '—' }}</div>
                         </td>
                         <td data-col="owner" @if(!in_array('owner', $visibleColumns, true)) style="display:none" @endif>
                             @php

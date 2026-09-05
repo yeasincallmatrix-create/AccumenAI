@@ -132,8 +132,6 @@ class InstituteCreationController extends Controller
                 'status' => 'active',
             ]);
 
-            $this->syncLegacyLocationFields($institute, $data);
-
             app(MembershipService::class)->assign($user, $institute->id, $ownerRoleId, [
                 'branch_id' => null,
                 'status' => 'active',
@@ -228,34 +226,6 @@ class InstituteCreationController extends Controller
             'address_label' => config('geo-labels.localities.'.$country->iso2, config('geo-labels.defaults.locality', 'Address')),
             'zip_first' => $country->iso2 === 'BD',
         ];
-    }
-
-    /**
-     * Keep the legacy division/district/upazila free-text columns in sync with
-     * the structured administrative-unit ids so admin views that still read the
-     * old columns keep showing sensible location names.
-     */
-    protected function syncLegacyLocationFields(Institute $institute, array $data): void
-    {
-        $ids = array_filter(array_map('intval', [
-            $data['admin_1_id'] ?? null,
-            $data['admin_2_id'] ?? null,
-            $data['admin_3_id'] ?? null,
-        ]));
-
-        if ($ids === []) {
-            return;
-        }
-
-        $names = AdministrativeUnit::query()
-            ->whereIn('id', $ids)
-            ->pluck('name', 'id');
-
-        $institute->forceFill([
-            'division' => $names->get((int) ($data['admin_1_id'] ?? 0)),
-            'district' => $names->get((int) ($data['admin_2_id'] ?? 0)),
-            'upazila' => $names->get((int) ($data['admin_3_id'] ?? 0)),
-        ])->save();
     }
 
     /**

@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Support\BdGeo;
 use App\Support\GeoHierarchy;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -76,14 +75,8 @@ abstract class StudentFormRequest extends FormRequest
             'permanent_admin_1_id' => ['nullable', 'integer'],
             'permanent_admin_2_id' => ['nullable', 'integer'],
             'permanent_admin_3_id' => ['nullable', 'integer'],
-            'present_division_id' => ['nullable', 'string', 'max:10', Rule::in(array_keys(BdGeo::DIVISIONS))],
-            'present_district_id' => ['nullable', 'string', 'max:10', Rule::in(array_keys(BdGeo::DISTRICTS))],
-            'present_upazila_id' => ['nullable', 'string', 'max:10', Rule::in(array_keys(BdGeo::UPAZILAS))],
             'present_post_office' => ['nullable', 'string', 'max:100'],
             'present_zip_code' => ['nullable', 'string', 'max:10'],
-            'permanent_division_id' => ['nullable', 'string', 'max:10', Rule::in(array_keys(BdGeo::DIVISIONS))],
-            'permanent_district_id' => ['nullable', 'string', 'max:10', Rule::in(array_keys(BdGeo::DISTRICTS))],
-            'permanent_upazila_id' => ['nullable', 'string', 'max:10', Rule::in(array_keys(BdGeo::UPAZILAS))],
             'permanent_post_office' => ['nullable', 'string', 'max:100'],
             'permanent_zip_code' => ['nullable', 'string', 'max:10'],
             'national_id_or_birth_certificate' => ['nullable', 'string', 'max:40'],

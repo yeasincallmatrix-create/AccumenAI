@@ -67,14 +67,8 @@ class Student extends Model
         'country',
         'present_address',
         'permanent_address',
-        'present_division_id',
-        'present_district_id',
-        'present_upazila_id',
         'present_post_office',
         'present_zip_code',
-        'permanent_division_id',
-        'permanent_district_id',
-        'permanent_upazila_id',
         'permanent_post_office',
         'permanent_zip_code',
         'present_country_id',
@@ -397,6 +391,36 @@ class Student extends Model
     public function rejector(): BelongsTo
     {
         return $this->belongsTo(InstituteUser::class, 'rejected_by');
+    }
+
+    public function presentDivision(): BelongsTo
+    {
+        return $this->belongsTo(AdministrativeUnit::class, 'present_admin_1_id');
+    }
+
+    public function presentDistrict(): BelongsTo
+    {
+        return $this->belongsTo(AdministrativeUnit::class, 'present_admin_2_id');
+    }
+
+    public function presentUpazila(): BelongsTo
+    {
+        return $this->belongsTo(AdministrativeUnit::class, 'present_admin_3_id');
+    }
+
+    public function permanentDivision(): BelongsTo
+    {
+        return $this->belongsTo(AdministrativeUnit::class, 'permanent_admin_1_id');
+    }
+
+    public function permanentDistrict(): BelongsTo
+    {
+        return $this->belongsTo(AdministrativeUnit::class, 'permanent_admin_2_id');
+    }
+
+    public function permanentUpazila(): BelongsTo
+    {
+        return $this->belongsTo(AdministrativeUnit::class, 'permanent_admin_3_id');
     }
 
     public function getPhotoUrlAttribute(): string

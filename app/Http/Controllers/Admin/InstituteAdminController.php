@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AdministrativeUnit;
 use App\Models\Certificate;
 use App\Models\HrEmployee;
 use App\Models\Institute;
@@ -257,6 +258,14 @@ class InstituteAdminController extends Controller
 
     public function edit(Institute $institute): View
     {
+        $countryId = $institute->country_id;
+        $geoLevels = $countryId
+            ? AdministrativeUnit::where('country_id', $countryId)->where('status', true)
+                ->join('administrative_levels', 'administrative_levels.id', '=', 'administrative_units.administrative_level_id')
+                ->select('administrative_units.*', 'administrative_levels.level_number')
+                ->get()->groupBy('level_number')
+            : collect();
+
         return view('admin.institutes.edit', [
             'institute' => $institute,
             'packages' => SubscriptionPackage::orderBy('name')->get(),
@@ -265,6 +274,9 @@ class InstituteAdminController extends Controller
             'subIndustries' => $institute->industry !== null
                 ? IndustryRules::subIndustries($institute->country ?? '', $institute->industry)
                 : [],
+            'divisions' => $geoLevels->get(1, collect()),
+            'districts' => $geoLevels->get(2, collect()),
+            'upazilas' => $geoLevels->get(3, collect()),
         ]);
     }
 
@@ -283,9 +295,9 @@ class InstituteAdminController extends Controller
             'email' => ['nullable', 'email', 'max:150'],
             'website' => ['nullable', 'string', 'max:150'],
             'address' => ['nullable', 'string', 'max:255'],
-            'division' => ['nullable', 'string', 'max:80'],
-            'district' => ['nullable', 'string', 'max:80'],
-            'upazila' => ['nullable', 'string', 'max:80'],
+            'admin_level_1_id' => ['nullable', 'integer', 'exists:administrative_units,id'],
+            'admin_level_2_id' => ['nullable', 'integer', 'exists:administrative_units,id'],
+            'admin_level_3_id' => ['nullable', 'integer', 'exists:administrative_units,id'],
             'founded_year' => ['nullable', 'integer', 'between:1950,2100'],
             'country' => ['nullable', 'string', 'max:80', Rule::in(array_keys(config('countries', [])))],
             'industry' => ['nullable', 'string', 'max:60', Rule::in(array_keys(IndustryRules::industries($institute->country)))],
