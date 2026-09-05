@@ -1,0 +1,668 @@
+{"level":1,"code":"BD.D1","name":"Chattagram","name_bn":"চট্টগ্রাম","parent_code":null,"postal_code":null,"latitude":"22.3569","longitude":"91.7832"}
+{"level":1,"code":"BD.D2","name":"Rajshahi","name_bn":"রাজশাহী","parent_code":null,"postal_code":null,"latitude":"24.3636","longitude":"88.6241"}
+{"level":1,"code":"BD.D3","name":"Khulna","name_bn":"খুলনা","parent_code":null,"postal_code":null,"latitude":"22.8456","longitude":"89.5403"}
+{"level":1,"code":"BD.D4","name":"Barisal","name_bn":"বরিশাল","parent_code":null,"postal_code":null,"latitude":"22.7010","longitude":"90.3535"}
+{"level":1,"code":"BD.D5","name":"Sylhet","name_bn":"সিলেট","parent_code":null,"postal_code":null,"latitude":"24.8949","longitude":"91.6897"}
+{"level":1,"code":"BD.D6","name":"Dhaka","name_bn":"ঢাকা","parent_code":null,"postal_code":null,"latitude":"23.8103","longitude":"90.4125"}
+{"level":1,"code":"BD.D7","name":"Rangpur","name_bn":"রংপুর","parent_code":null,"postal_code":null,"latitude":"25.7439","longitude":"89.2752"}
+{"level":1,"code":"BD.D8","name":"Mymensingh","name_bn":"ময়মনসিংহ","parent_code":null,"postal_code":null,"latitude":"24.7471","longitude":"90.4203"}
+{"level":2,"code":"BD.T1","name":"Comilla","name_bn":"কুমিল্লা","parent_code":"BD.D1","postal_code":null,"latitude":"23.443569","longitude":"91.022804"}
+{"level":2,"code":"BD.T2","name":"Feni","name_bn":"ফেনী","parent_code":"BD.D1","postal_code":null,"latitude":"23.026261","longitude":"91.416559"}
+{"level":2,"code":"BD.T3","name":"Chandpur","name_bn":"চাঁদপুর","parent_code":"BD.D1","postal_code":null,"latitude":"23.943301","longitude":"91.085614"}
+{"level":2,"code":"BD.T4","name":"Lakshmipur","name_bn":"লক্ষ্মীপুর","parent_code":"BD.D1","postal_code":null,"latitude":"22.693680","longitude":"92.247108"}
+{"level":2,"code":"BD.T5","name":"Noakhali","name_bn":"নোয়াখালী","parent_code":"BD.D1","postal_code":null,"latitude":"22.816271","longitude":"91.127233"}
+{"level":2,"code":"BD.T6","name":"Chattogram","name_bn":"চট্টগ্রাম","parent_code":"BD.D1","postal_code":null,"latitude":"23.254218","longitude":"90.762013"}
+{"level":2,"code":"BD.T7","name":"Cox's Bazar","name_bn":"কক্সবাজার","parent_code":"BD.D1","postal_code":null,"latitude":"22.879012","longitude":"90.844827"}
+{"level":2,"code":"BD.T8","name":"Khagrachhari","name_bn":"খাগড়াছড়ি","parent_code":"BD.D1","postal_code":null,"latitude":"22.354688","longitude":"91.841874"}
+{"level":2,"code":"BD.T9","name":"Bandarban","name_bn":"বান্দরবান","parent_code":"BD.D1","postal_code":null,"latitude":"21.517809","longitude":"92.036239"}
+{"level":2,"code":"BD.T10","name":"Rangamati","name_bn":"রাঙ্গামাটি","parent_code":"BD.D1","postal_code":null,"latitude":"23.067807","longitude":"91.926992"}
+{"level":2,"code":"BD.T11","name":"Mymensingh","name_bn":"ময়মনসিংহ","parent_code":"BD.D1","postal_code":null,"latitude":"21.827589","longitude":"92.346329"}
+{"level":2,"code":"BD.T12","name":"Sherpur","name_bn":"শেরপুর","parent_code":"BD.D1","postal_code":5841,"latitude":"24.378794","longitude":"89.611302"}
+{"level":2,"code":"BD.T13","name":"Jamalpur","name_bn":"জামালপুর","parent_code":"BD.D1","postal_code":2000,"latitude":"24.076380","longitude":"89.388265"}
+{"level":2,"code":"BD.T14","name":"Netrokona","name_bn":"নেত্রকোণা","parent_code":"BD.D1","postal_code":null,"latitude":"24.828616","longitude":"89.357043"}
+{"level":2,"code":"BD.T15","name":"Sunamganj","name_bn":"সুনামগঞ্জ","parent_code":"BD.D1","postal_code":null,"latitude":"24.422090","longitude":"88.687936"}
+{"level":2,"code":"BD.T16","name":"Sylhet","name_bn":"সিলেট","parent_code":"BD.D1","postal_code":null,"latitude":"24.369644","longitude":"89.062694"}
+{"level":2,"code":"BD.T17","name":"Habiganj","name_bn":"হবিগঞ্জ","parent_code":"BD.D2","postal_code":null,"latitude":"25.069519","longitude":"89.090371"}
+{"level":2,"code":"BD.T18","name":"Moulvibazar","name_bn":"মৌলভীবাজার","parent_code":"BD.D2","postal_code":null,"latitude":"24.750642","longitude":"88.274840"}
+{"level":2,"code":"BD.T19","name":"Dhaka","name_bn":"ঢাকা","parent_code":"BD.D2","postal_code":1206,"latitude":"24.903360","longitude":"88.769317"}
+{"level":2,"code":"BD.T20","name":"Faridpur","name_bn":"ফরিদপুর","parent_code":"BD.D2","postal_code":null,"latitude":"23.088290","longitude":"89.180498"}
+{"level":2,"code":"BD.T21","name":"Gopalganj","name_bn":"গোপালগঞ্জ","parent_code":"BD.D2","postal_code":null,"latitude":"22.559416","longitude":"89.103276"}
+{"level":2,"code":"BD.T22","name":"Madaripur","name_bn":"মাদারীপুর","parent_code":"BD.D2","postal_code":null,"latitude":"23.763582","longitude":"88.684257"}
+{"level":2,"code":"BD.T23","name":"Rajbari","name_bn":"রাজবাড়ী","parent_code":"BD.D2","postal_code":null,"latitude":"23.129479","longitude":"89.586969"}
+{"level":2,"code":"BD.T24","name":"Shariatpur","name_bn":"শরীয়তপুর","parent_code":"BD.D2","postal_code":null,"latitude":"23.588493","longitude":"88.845935"}
+{"level":2,"code":"BD.T25","name":"Tangail","name_bn":"টাঙ্গাইল","parent_code":"BD.D2","postal_code":null,"latitude":"23.913532","longitude":"89.067232"}
+{"level":2,"code":"BD.T26","name":"Kishoreganj","name_bn":"কিশোরগঞ্জ","parent_code":"BD.D3","postal_code":null,"latitude":"23.449333","longitude":"89.436627"}
+{"level":2,"code":"BD.T27","name":"Manikganj","name_bn":"মানিকগঞ্জ","parent_code":"BD.D3","postal_code":null,"latitude":"22.747618","longitude":"89.516342"}
+{"level":2,"code":"BD.T28","name":"Munshiganj","name_bn":"মুন্সিগঞ্জ","parent_code":"BD.D3","postal_code":null,"latitude":"22.557718","longitude":"89.767548"}
+{"level":2,"code":"BD.T29","name":"Narayanganj","name_bn":"নারায়ণগঞ্জ","parent_code":"BD.D3","postal_code":null,"latitude":"23.493042","longitude":"89.081746"}
+{"level":2,"code":"BD.T30","name":"Narsingdi","name_bn":"নরসিংদী","parent_code":"BD.D3","postal_code":null,"latitude":"22.562469","longitude":"90.174312"}
+{"level":2,"code":"BD.T31","name":"Gazipur","name_bn":"গাজীপুর","parent_code":"BD.D3","postal_code":null,"latitude":"22.229942","longitude":"90.391651"}
+{"level":2,"code":"BD.T32","name":"Brahmanbaria","name_bn":"ব্রাহ্মণবাড়িয়া","parent_code":"BD.D3","postal_code":null,"latitude":"22.558251","longitude":"90.004479"}
+{"level":2,"code":"BD.T33","name":"Barguna","name_bn":"বরগুনা","parent_code":"BD.D3","postal_code":null,"latitude":"22.809794","longitude":"90.330889"}
+{"level":2,"code":"BD.T34","name":"Barishal","name_bn":"বরিশাল","parent_code":"BD.D4","postal_code":null,"latitude":"22.408093","longitude":"90.770038"}
+{"level":2,"code":"BD.T35","name":"Bhola","name_bn":"ভোলা","parent_code":"BD.D4","postal_code":null,"latitude":"22.158524","longitude":"90.106401"}
+{"level":2,"code":"BD.T36","name":"Jhalakathi","name_bn":"ঝালকাঠি","parent_code":"BD.D4","postal_code":null,"latitude":"24.888112","longitude":"91.933031"}
+{"level":2,"code":"BD.T37","name":"Patuakhali","name_bn":"পটুয়াখালী","parent_code":"BD.D4","postal_code":null,"latitude":"24.490873","longitude":"91.924643"}
+{"level":2,"code":"BD.T38","name":"Pirojpur","name_bn":"পিরোজপুর","parent_code":"BD.D4","postal_code":null,"latitude":"24.366782","longitude":"91.408870"}
+{"level":2,"code":"BD.T39","name":"Bogura","name_bn":"বগুড়া","parent_code":"BD.D5","postal_code":null,"latitude":"24.953344","longitude":"91.324535"}
+{"level":2,"code":"BD.T40","name":"Joypurhat","name_bn":"যশোর","parent_code":"BD.D5","postal_code":null,"latitude":"24.012890","longitude":"90.759422"}
+{"level":2,"code":"BD.T41","name":"Naogaon","name_bn":"নওগাঁ","parent_code":"BD.D5","postal_code":null,"latitude":"24.021116","longitude":"90.408675"}
+{"level":2,"code":"BD.T42","name":"Natore","name_bn":"নাটোর","parent_code":"BD.D5","postal_code":null,"latitude":"23.226583","longitude":"90.410201"}
+{"level":2,"code":"BD.T43","name":"Chapainawabganj","name_bn":"চাঁপাইনবাবগঞ্জ","parent_code":"BD.D6","postal_code":null,"latitude":"23.701010","longitude":"90.563774"}
+{"level":2,"code":"BD.T44","name":"Pabna","name_bn":"পাবনা","parent_code":"BD.D6","postal_code":null,"latitude":"24.361382","longitude":"89.976421"}
+{"level":2,"code":"BD.T45","name":"Sirajganj","name_bn":"সিরাজগঞ্জ","parent_code":"BD.D6","postal_code":null,"latitude":"24.355699","longitude":"90.910975"}
+{"level":2,"code":"BD.T46","name":"Dinajpur","name_bn":"দিনাজপুর","parent_code":"BD.D6","postal_code":null,"latitude":"23.852592","longitude":"89.949180"}
+{"level":2,"code":"BD.T47","name":"Gaibandha","name_bn":"গাইবান্ধা","parent_code":"BD.D6","postal_code":null,"latitude":"23.766719","longitude":"90.378666"}
+{"level":2,"code":"BD.T48","name":"Kurigram","name_bn":"কুড়িগ্রাম","parent_code":"BD.D6","postal_code":null,"latitude":"23.511949","longitude":"90.408185"}
+{"level":2,"code":"BD.T49","name":"Lalmonirhat","name_bn":"লালমনিরহাট","parent_code":"BD.D6","postal_code":null,"latitude":"23.730891","longitude":"89.567201"}
+{"level":2,"code":"BD.T50","name":"Nilphamari","name_bn":"নীলফামারী","parent_code":"BD.D6","postal_code":null,"latitude":"23.185112","longitude":"90.166856"}
+{"level":2,"code":"BD.T51","name":"Panchagarh","name_bn":"পঞ্চগড়","parent_code":"BD.D6","postal_code":null,"latitude":"23.090428","longitude":"89.896211"}
+{"level":2,"code":"BD.T52","name":"Rangpur","name_bn":"রংপুর","parent_code":"BD.D6","postal_code":null,"latitude":"23.462476","longitude":"89.836007"}
+{"level":2,"code":"BD.T53","name":"Thakurgaon","name_bn":"ঠাকুরগাঁও","parent_code":"BD.D6","postal_code":null,"latitude":"26.298017","longitude":"88.556493"}
+{"level":2,"code":"BD.T54","name":"Rajshahi","name_bn":"রাজশাহী","parent_code":"BD.D6","postal_code":null,"latitude":"25.598746","longitude":"88.815541"}
+{"level":2,"code":"BD.T55","name":"Bagerhat","name_bn":"বাগেরহাট","parent_code":"BD.D7","postal_code":null,"latitude":"26.054193","longitude":"89.245282"}
+{"level":2,"code":"BD.T56","name":"Chuadanga","name_bn":"চুয়াডাঙ্গা","parent_code":"BD.D7","postal_code":null,"latitude":"26.001267","longitude":"88.933549"}
+{"level":2,"code":"BD.T57","name":"Jessore","name_bn":"যশোর","parent_code":"BD.D7","postal_code":null,"latitude":"25.293830","longitude":"89.504474"}
+{"level":2,"code":"BD.T58","name":"Jhenaidah","name_bn":"ঝিনাইদহ","parent_code":"BD.D7","postal_code":null,"latitude":"25.968394","longitude":"88.299106"}
+{"level":2,"code":"BD.T59","name":"Khulna","name_bn":"খুলনা","parent_code":"BD.D7","postal_code":null,"latitude":"25.718739","longitude":"89.245678"}
+{"level":2,"code":"BD.T60","name":"Kushtia","name_bn":"কুষ্টিয়া","parent_code":"BD.D7","postal_code":null,"latitude":"25.769868","longitude":"89.690775"}
+{"level":2,"code":"BD.T61","name":"Magura","name_bn":"মাগুরা","parent_code":"BD.D7","postal_code":null,"latitude":"25.082676","longitude":"90.080420"}
+{"level":2,"code":"BD.T62","name":"Meherpur","name_bn":"মেহেরপুর","parent_code":"BD.D8","postal_code":null,"latitude":"24.728417","longitude":"90.430505"}
+{"level":2,"code":"BD.T63","name":"Narail","name_bn":"নড়াইল","parent_code":"BD.D8","postal_code":null,"latitude":"24.994780","longitude":"89.828167"}
+{"level":2,"code":"BD.T64","name":"Satkhira","name_bn":"সাতক্ষীরা","parent_code":"BD.D8","postal_code":null,"latitude":"24.859339","longitude":"90.855848"}
+{"level":3,"code":"BD.U1","name":"Debidwar","name_bn":"দেবিদ্বার","parent_code":"BD.T1","postal_code":null,"latitude":"23.5797482","longitude":"90.99808648"}
+{"level":3,"code":"BD.U2","name":"Barura","name_bn":"বরুড়া","parent_code":"BD.T1","postal_code":3560,"latitude":"23.35688513","longitude":"91.04002614"}
+{"level":3,"code":"BD.U3","name":"Brahmanpara","name_bn":"ব্রাহ্মণপাড়া","parent_code":"BD.T1","postal_code":3526,"latitude":"23.64701097","longitude":"91.09595838"}
+{"level":3,"code":"BD.U4","name":"Chandina","name_bn":"চান্দিনা","parent_code":"BD.T1","postal_code":3510,"latitude":"23.44627926","longitude":"90.94481512"}
+{"level":3,"code":"BD.U5","name":"Chauddagram","name_bn":"চৌদ্দগ্রাম","parent_code":"BD.T1","postal_code":null,"latitude":"23.22183679","longitude":"91.27969434"}
+{"level":3,"code":"BD.U6","name":"Daudkandi","name_bn":"দাউদকান্দি","parent_code":"BD.T1","postal_code":3518,"latitude":"23.50293787","longitude":"90.77310239"}
+{"level":3,"code":"BD.U7","name":"Homna","name_bn":"হোমনা","parent_code":"BD.T1","postal_code":3546,"latitude":"23.68000235","longitude":"90.81149876"}
+{"level":3,"code":"BD.U8","name":"Laksam","name_bn":"লাকসাম","parent_code":"BD.T1","postal_code":3572,"latitude":"23.23144364","longitude":"91.10487647"}
+{"level":3,"code":"BD.U9","name":"Muradnagar","name_bn":"মুরাদনগর","parent_code":"BD.T1","postal_code":3543,"latitude":"23.67809628","longitude":"90.94281174"}
+{"level":3,"code":"BD.U10","name":"Nangalkot","name_bn":"নাঙ্গলকোট","parent_code":"BD.T1","postal_code":null,"latitude":"23.14025225","longitude":"91.20909928"}
+{"level":3,"code":"BD.U11","name":"Comilla Sadar","name_bn":"কুমিল্লা সদর","parent_code":"BD.T1","postal_code":3501,"latitude":"23.47977528","longitude":"91.15674514"}
+{"level":3,"code":"BD.U12","name":"Meghna","name_bn":"মেঘনা","parent_code":"BD.T1","postal_code":null,"latitude":"23.62583999","longitude":"90.69021175"}
+{"level":3,"code":"BD.U13","name":"Monohargonj","name_bn":"মনোহরগঞ্জ","parent_code":"BD.T1","postal_code":null,"latitude":"23.13846962","longitude":"91.0667073"}
+{"level":3,"code":"BD.U14","name":"Sadarsouth","name_bn":"সদর দক্ষিণ","parent_code":"BD.T1","postal_code":null,"latitude":"23.38833515","longitude":"91.20221146"}
+{"level":3,"code":"BD.U15","name":"Titas","name_bn":"তিতাস","parent_code":"BD.T1","postal_code":null,"latitude":"23.59090553","longitude":"90.79551033"}
+{"level":3,"code":"BD.U16","name":"Burichang","name_bn":"বুড়িচং","parent_code":"BD.T1","postal_code":3520,"latitude":"23.53518256","longitude":"91.11687246"}
+{"level":3,"code":"BD.U17","name":"Lalmai","name_bn":"লালমাই","parent_code":"BD.T1","postal_code":null,"latitude":"23.29766555","longitude":"91.15944077"}
+{"level":3,"code":"BD.U18","name":"Chhagalnaiya","name_bn":"ছাগলনাইয়া","parent_code":"BD.T2","postal_code":null,"latitude":"23.02016933","longitude":"91.50651106"}
+{"level":3,"code":"BD.U19","name":"Feni Sadar","name_bn":"ফেনী সদর","parent_code":"BD.T2","postal_code":3901,"latitude":"22.99071311","longitude":"91.41585715"}
+{"level":3,"code":"BD.U20","name":"Sonagazi","name_bn":"সোনাগাজী","parent_code":"BD.T2","postal_code":3932,"latitude":"22.85375019","longitude":"91.396878"}
+{"level":3,"code":"BD.U21","name":"Fulgazi","name_bn":"ফুলগাজী","parent_code":"BD.T2","postal_code":null,"latitude":"23.11846473","longitude":"91.44164398"}
+{"level":3,"code":"BD.U22","name":"Parshuram","name_bn":"পরশুরাম","parent_code":"BD.T2","postal_code":null,"latitude":"23.20244186","longitude":"91.43849193"}
+{"level":3,"code":"BD.U23","name":"Daganbhuiyan","name_bn":"দাগনভূঞা","parent_code":"BD.T2","postal_code":null,"latitude":"22.97202602","longitude":"91.29997117"}
+{"level":3,"code":"BD.U24","name":"Brahmanbaria Sadar","name_bn":"ব্রাহ্মণবাড়িয়া সদর","parent_code":"BD.T3","postal_code":null,"latitude":"23.94993121","longitude":"91.11594537"}
+{"level":3,"code":"BD.U25","name":"Kasba","name_bn":"কসবা","parent_code":"BD.T3","postal_code":3462,"latitude":"23.76086796","longitude":"91.13132405"}
+{"level":3,"code":"BD.U26","name":"Nasirnagar","name_bn":"নাসিরনগর","parent_code":"BD.T3","postal_code":3441,"latitude":"24.18226005","longitude":"91.1871252"}
+{"level":3,"code":"BD.U27","name":"Sarail","name_bn":"সরাইল","parent_code":"BD.T3","postal_code":3432,"latitude":"24.10250867","longitude":"91.11323753"}
+{"level":3,"code":"BD.U28","name":"Ashuganj","name_bn":"আশুগঞ্জ","parent_code":"BD.T3","postal_code":null,"latitude":"24.01814155","longitude":"91.01833745"}
+{"level":3,"code":"BD.U29","name":"Akhaura","name_bn":"আখাউড়া","parent_code":"BD.T3","postal_code":3450,"latitude":"23.8406693","longitude":"91.1901894"}
+{"level":3,"code":"BD.U30","name":"Nabinagar","name_bn":"নবীনগর","parent_code":"BD.T3","postal_code":3419,"latitude":"23.86327014","longitude":"90.979673"}
+{"level":3,"code":"BD.U31","name":"Bancharampur","name_bn":"বাঞ্ছারামপুর","parent_code":"BD.T3","postal_code":null,"latitude":"23.78053412","longitude":"90.80732254"}
+{"level":3,"code":"BD.U32","name":"Bijoynagar","name_bn":"বিজয়নগর","parent_code":"BD.T3","postal_code":null,"latitude":"23.99153007","longitude":"91.22736838"}
+{"level":3,"code":"BD.U33","name":"Rangamati Sadar","name_bn":"রাঙ্গামাটি সদর","parent_code":"BD.T4","postal_code":4500,"latitude":"22.64512234","longitude":"92.20136392"}
+{"level":3,"code":"BD.U34","name":"Kaptai","name_bn":"কাপ্তাই","parent_code":"BD.T4","postal_code":4531,"latitude":"22.46236678","longitude":"92.20166334"}
+{"level":3,"code":"BD.U35","name":"Kawkhali","name_bn":"কাউখালী","parent_code":"BD.T4","postal_code":null,"latitude":"22.62348916","longitude":"92.0122707"}
+{"level":3,"code":"BD.U36","name":"Baghaichari","name_bn":"বাঘাইছড়ি","parent_code":"BD.T4","postal_code":null,"latitude":"23.38280723","longitude":"92.23714299"}
+{"level":3,"code":"BD.U37","name":"Barkal","name_bn":"বরকল","parent_code":"BD.T4","postal_code":null,"latitude":"22.83095905","longitude":"92.34613321"}
+{"level":3,"code":"BD.U38","name":"Langadu","name_bn":"লংগদু","parent_code":"BD.T4","postal_code":null,"latitude":"22.97008989","longitude":"92.21665497"}
+{"level":3,"code":"BD.U39","name":"Rajasthali","name_bn":"রাজস্থলী","parent_code":"BD.T4","postal_code":null,"latitude":"22.371584","longitude":"92.2445794"}
+{"level":3,"code":"BD.U40","name":"Belaichari","name_bn":"বিলাইছড়ি","parent_code":"BD.T4","postal_code":null,"latitude":"22.2574125","longitude":"92.48313972"}
+{"level":3,"code":"BD.U41","name":"Juraichari","name_bn":"জুরাছড়ি","parent_code":"BD.T4","postal_code":null,"latitude":"22.55930901","longitude":"92.45549633"}
+{"level":3,"code":"BD.U42","name":"Naniarchar","name_bn":"নানিয়ারচর","parent_code":"BD.T4","postal_code":null,"latitude":"22.83365535","longitude":"92.07263493"}
+{"level":3,"code":"BD.U43","name":"Noakhali Sadar","name_bn":"নোয়াখালী সদর","parent_code":"BD.T5","postal_code":3811,"latitude":"22.80832731","longitude":"91.04870857"}
+{"level":3,"code":"BD.U44","name":"Companiganj","name_bn":"কোম্পানীগঞ্জ","parent_code":"BD.T5","postal_code":null,"latitude":"22.75865966","longitude":"91.30075882"}
+{"level":3,"code":"BD.U45","name":"Begumganj","name_bn":"বেগমগঞ্জ","parent_code":"BD.T5","postal_code":3831,"latitude":"22.93091025","longitude":"91.09425854"}
+{"level":3,"code":"BD.U46","name":"Hatia","name_bn":"হাতিয়া","parent_code":"BD.T5","postal_code":null,"latitude":"22.3481622","longitude":"91.09140468"}
+{"level":3,"code":"BD.U47","name":"Subarnachar","name_bn":"সুবর্ণচর","parent_code":"BD.T5","postal_code":null,"latitude":"22.61923455","longitude":"91.15640167"}
+{"level":3,"code":"BD.U48","name":"Kabirhat","name_bn":"কবিরহাট","parent_code":"BD.T5","postal_code":null,"latitude":"22.81087606","longitude":"91.19933235"}
+{"level":3,"code":"BD.U49","name":"Senbug","name_bn":"সেনবাগ","parent_code":"BD.T5","postal_code":null,"latitude":"22.99063881","longitude":"91.21267406"}
+{"level":3,"code":"BD.U50","name":"Chatkhil","name_bn":"চাটখিল","parent_code":"BD.T5","postal_code":3879,"latitude":"23.0533338","longitude":"90.96372295"}
+{"level":3,"code":"BD.U51","name":"Sonaimori","name_bn":"সোনাইমুড়ী","parent_code":"BD.T5","postal_code":null,"latitude":"23.0262944","longitude":"91.07783166"}
+{"level":3,"code":"BD.U52","name":"Haimchar","name_bn":"হাইমচর","parent_code":"BD.T6","postal_code":null,"latitude":"23.076609","longitude":"90.61716648"}
+{"level":3,"code":"BD.U53","name":"Kachua","name_bn":"কচুয়া","parent_code":"BD.T6","postal_code":3630,"latitude":"23.35926547","longitude":"90.88289267"}
+{"level":3,"code":"BD.U54","name":"Shahrasti","name_bn":"শাহরাস্তি","parent_code":"BD.T6","postal_code":3623,"latitude":"23.20587855","longitude":"90.95691718"}
+{"level":3,"code":"BD.U55","name":"Chandpur Sadar","name_bn":"চাঁদপুর সদর","parent_code":"BD.T6","postal_code":3602,"latitude":"23.23175162","longitude":"90.6513703"}
+{"level":3,"code":"BD.U56","name":"Matlab South","name_bn":"মতলব দক্ষিণ","parent_code":"BD.T6","postal_code":null,"latitude":"23.34815058","longitude":"90.74730936"}
+{"level":3,"code":"BD.U57","name":"Hajiganj","name_bn":"হাজীগঞ্জ","parent_code":"BD.T6","postal_code":3611,"latitude":"23.25779613","longitude":"90.83747836"}
+{"level":3,"code":"BD.U58","name":"Matlab North","name_bn":"মতলব উত্তর","parent_code":"BD.T6","postal_code":null,"latitude":"23.4101348","longitude":"90.64106338"}
+{"level":3,"code":"BD.U59","name":"Faridgonj","name_bn":"ফরিদগঞ্জ","parent_code":"BD.T6","postal_code":null,"latitude":"23.1441551","longitude":"90.76190402"}
+{"level":3,"code":"BD.U60","name":"Lakshmipur Sadar","name_bn":"লক্ষ্মীপুর সদর","parent_code":"BD.T7","postal_code":null,"latitude":"22.91127372","longitude":"90.84389751"}
+{"level":3,"code":"BD.U61","name":"Kamalnagar","name_bn":"কমলনগর","parent_code":"BD.T7","postal_code":null,"latitude":"22.75743615","longitude":"90.8537509"}
+{"level":3,"code":"BD.U62","name":"Raipur","name_bn":"রায়পুর","parent_code":"BD.T7","postal_code":null,"latitude":"23.00469424","longitude":"90.73152598"}
+{"level":3,"code":"BD.U63","name":"Ramgati","name_bn":"রামগতি","parent_code":"BD.T7","postal_code":null,"latitude":"22.62490396","longitude":"90.92223747"}
+{"level":3,"code":"BD.U64","name":"Ramganj","name_bn":"রামগঞ্জ","parent_code":"BD.T7","postal_code":3721,"latitude":"23.09675351","longitude":"90.87272553"}
+{"level":3,"code":"BD.U65","name":"Rangunia","name_bn":"রাঙ্গুনিয়া","parent_code":"BD.T8","postal_code":4361,"latitude":"22.46617757","longitude":"92.06834682"}
+{"level":3,"code":"BD.U66","name":"Sitakunda","name_bn":"সীতাকুন্ড","parent_code":"BD.T8","postal_code":4312,"latitude":"22.54303233","longitude":"91.65690147"}
+{"level":3,"code":"BD.U67","name":"Mirsharai","name_bn":"মীরসরাই","parent_code":"BD.T8","postal_code":4321,"latitude":"22.80385025","longitude":"91.54756079"}
+{"level":3,"code":"BD.U68","name":"Patiya","name_bn":"পটিয়া","parent_code":"BD.T8","postal_code":4371,"latitude":"22.29314167","longitude":"91.98742056"}
+{"level":3,"code":"BD.U69","name":"Sandwip","name_bn":"সন্দ্বীপ","parent_code":"BD.T8","postal_code":4300,"latitude":"22.5106171","longitude":"91.45787931"}
+{"level":3,"code":"BD.U70","name":"Banshkhali","name_bn":"বাঁশখালী","parent_code":"BD.T8","postal_code":null,"latitude":"22.01727076","longitude":"91.9380992"}
+{"level":3,"code":"BD.U71","name":"Boalkhali","name_bn":"বোয়ালখালী","parent_code":"BD.T8","postal_code":4366,"latitude":"22.37729487","longitude":"91.96622113"}
+{"level":3,"code":"BD.U72","name":"Anwara","name_bn":"আনোয়ারা","parent_code":"BD.T8","postal_code":null,"latitude":"22.19757387","longitude":"91.8786927"}
+{"level":3,"code":"BD.U73","name":"Chandanaish","name_bn":"চন্দনাইশ","parent_code":"BD.T8","postal_code":null,"latitude":"22.21239926","longitude":"92.06454009"}
+{"level":3,"code":"BD.U74","name":"Satkania","name_bn":"সাতকানিয়া","parent_code":"BD.T8","postal_code":4387,"latitude":"22.10592592","longitude":"92.05950882"}
+{"level":3,"code":"BD.U75","name":"Lohagara","name_bn":"লোহাগাড়া","parent_code":"BD.T8","postal_code":4398,"latitude":"21.98607426","longitude":"92.11204876"}
+{"level":3,"code":"BD.U76","name":"Hathazari","name_bn":"হাটহাজারী","parent_code":"BD.T8","postal_code":4331,"latitude":"22.526199","longitude":"91.79785039"}
+{"level":3,"code":"BD.U77","name":"Fatikchhari","name_bn":"ফটিকছড়ি","parent_code":"BD.T8","postal_code":4352,"latitude":"22.75545823","longitude":"91.74886747"}
+{"level":3,"code":"BD.U78","name":"Raozan","name_bn":"রাউজান","parent_code":"BD.T8","postal_code":4349,"latitude":"22.51965128","longitude":"91.91727933"}
+{"level":3,"code":"BD.U79","name":"Karnafuli","name_bn":"কর্ণফুলী","parent_code":"BD.T8","postal_code":null,"latitude":"22.28719585","longitude":"91.8460119"}
+{"level":3,"code":"BD.U80","name":"Coxsbazar Sadar","name_bn":"কক্সবাজার সদর","parent_code":"BD.T9","postal_code":null,"latitude":"21.46611549","longitude":"92.01564253"}
+{"level":3,"code":"BD.U81","name":"Chakaria","name_bn":"চকরিয়া","parent_code":"BD.T9","postal_code":null,"latitude":"21.74110917","longitude":"92.0517345"}
+{"level":3,"code":"BD.U82","name":"Kutubdia","name_bn":"কুতুবদিয়া","parent_code":"BD.T9","postal_code":4720,"latitude":"21.83800675","longitude":"91.86254458"}
+{"level":3,"code":"BD.U83","name":"Ukhiya","name_bn":"উখিয়া","parent_code":"BD.T9","postal_code":null,"latitude":"21.22806282","longitude":"92.11533645"}
+{"level":3,"code":"BD.U84","name":"Moheshkhali","name_bn":"মহেশখালী","parent_code":"BD.T9","postal_code":null,"latitude":"21.60718915","longitude":"91.91955884"}
+{"level":3,"code":"BD.U85","name":"Pekua","name_bn":"পেকুয়া","parent_code":"BD.T9","postal_code":null,"latitude":"21.81593944","longitude":"91.94474478"}
+{"level":3,"code":"BD.U86","name":"Ramu","name_bn":"রামু","parent_code":"BD.T9","postal_code":4730,"latitude":"21.43878767","longitude":"92.12036409"}
+{"level":3,"code":"BD.U87","name":"Teknaf","name_bn":"টেকনাফ","parent_code":"BD.T9","postal_code":4761,"latitude":"20.96925113","longitude":"92.23706771"}
+{"level":3,"code":"BD.U88","name":"Khagrachhari Sadar","name_bn":"খাগড়াছড়ি সদর","parent_code":"BD.T10","postal_code":null,"latitude":"23.15840266","longitude":"91.9983411"}
+{"level":3,"code":"BD.U89","name":"Dighinala","name_bn":"দিঘীনালা","parent_code":"BD.T10","postal_code":null,"latitude":"23.41579635","longitude":"92.05900408"}
+{"level":3,"code":"BD.U90","name":"Panchari","name_bn":"পানছড়ি","parent_code":"BD.T10","postal_code":null,"latitude":"23.34218676","longitude":"91.92458743"}
+{"level":3,"code":"BD.U91","name":"Laxmichhari","name_bn":"লক্ষীছড়ি","parent_code":"BD.T10","postal_code":4470,"latitude":"22.78361647","longitude":"91.93107935"}
+{"level":3,"code":"BD.U92","name":"Mohalchari","name_bn":"মহালছড়ি","parent_code":"BD.T10","postal_code":null,"latitude":"22.9835062","longitude":"92.04945547"}
+{"level":3,"code":"BD.U93","name":"Manikchari","name_bn":"মানিকছড়ি","parent_code":"BD.T10","postal_code":null,"latitude":"22.85186911","longitude":"91.8267801"}
+{"level":3,"code":"BD.U94","name":"Ramgarh","name_bn":"রামগড়","parent_code":"BD.T10","postal_code":null,"latitude":"22.95403742","longitude":"91.77612993"}
+{"level":3,"code":"BD.U95","name":"Matiranga","name_bn":"মাটিরাঙ্গা","parent_code":"BD.T10","postal_code":4450,"latitude":"23.16268454","longitude":"91.85491132"}
+{"level":3,"code":"BD.U96","name":"Guimara","name_bn":"গুইমারা","parent_code":"BD.T10","postal_code":null,"latitude":"22.95816063","longitude":"91.92264133"}
+{"level":3,"code":"BD.U97","name":"Bandarban Sadar","name_bn":"বান্দরবান সদর","parent_code":"BD.T11","postal_code":4600,"latitude":"22.06545533","longitude":"92.23266601"}
+{"level":3,"code":"BD.U98","name":"Alikadam","name_bn":"আলীকদম","parent_code":"BD.T11","postal_code":4650,"latitude":"21.59618578","longitude":"92.40337107"}
+{"level":3,"code":"BD.U99","name":"Naikhongchhari","name_bn":"নাইক্ষ্যংছড়ি","parent_code":"BD.T11","postal_code":null,"latitude":"21.47139618","longitude":"92.24297656"}
+{"level":3,"code":"BD.U100","name":"Rowangchhari","name_bn":"রোয়াংছড়ি","parent_code":"BD.T11","postal_code":null,"latitude":"22.1994028","longitude":"92.35191016"}
+{"level":3,"code":"BD.U101","name":"Lama","name_bn":"লামা","parent_code":"BD.T11","postal_code":null,"latitude":"21.81028832","longitude":"92.21156194"}
+{"level":3,"code":"BD.U102","name":"Ruma","name_bn":"রুমা","parent_code":"BD.T11","postal_code":4620,"latitude":"22.00777832","longitude":"92.44855183"}
+{"level":3,"code":"BD.U103","name":"Thanchi","name_bn":"থানচি","parent_code":"BD.T11","postal_code":4641,"latitude":"21.64261732","longitude":"92.53326194"}
+{"level":3,"code":"BD.U104","name":"Belkuchi","name_bn":"বেলকুচি","parent_code":"BD.T12","postal_code":6740,"latitude":"24.29793","longitude":"89.70147902"}
+{"level":3,"code":"BD.U105","name":"Chauhali","name_bn":"চৌহালি","parent_code":"BD.T12","postal_code":null,"latitude":"24.13944642","longitude":"89.75743944"}
+{"level":3,"code":"BD.U106","name":"Kamarkhand","name_bn":"কামারখন্দ","parent_code":"BD.T12","postal_code":null,"latitude":"24.37750815","longitude":"89.64226021"}
+{"level":3,"code":"BD.U107","name":"Kazipur","name_bn":"কাজীপুর","parent_code":"BD.T12","postal_code":6712,"latitude":"24.67158952","longitude":"89.68890716"}
+{"level":3,"code":"BD.U108","name":"Raigonj","name_bn":"রায়গঞ্জ","parent_code":"BD.T12","postal_code":null,"latitude":"24.49221055","longitude":"89.51526376"}
+{"level":3,"code":"BD.U109","name":"Shahjadpur","name_bn":"শাহজাদপুর","parent_code":"BD.T12","postal_code":6772,"latitude":"24.16297216","longitude":"89.63072075"}
+{"level":3,"code":"BD.U110","name":"Sirajganj Sadar","name_bn":"সিরাজগঞ্জ সদর","parent_code":"BD.T12","postal_code":6701,"latitude":"24.4942697","longitude":"89.68960995"}
+{"level":3,"code":"BD.U111","name":"Tarash","name_bn":"তাড়াশ","parent_code":"BD.T12","postal_code":6780,"latitude":"24.44537456","longitude":"89.35780269"}
+{"level":3,"code":"BD.U112","name":"Ullapara","name_bn":"উল্লাপাড়া","parent_code":"BD.T12","postal_code":6762,"latitude":"24.32784904","longitude":"89.51823326"}
+{"level":3,"code":"BD.U113","name":"Sujanagar","name_bn":"সুজানগর","parent_code":"BD.T13","postal_code":6661,"latitude":"23.89782952","longitude":"89.51401384"}
+{"level":3,"code":"BD.U114","name":"Ishurdi","name_bn":"ঈশ্বরদী","parent_code":"BD.T13","postal_code":null,"latitude":"24.08017137","longitude":"89.09433764"}
+{"level":3,"code":"BD.U115","name":"Bhangura","name_bn":"ভাঙ্গুড়া","parent_code":"BD.T13","postal_code":6640,"latitude":"24.23892741","longitude":"89.39638738"}
+{"level":3,"code":"BD.U116","name":"Pabna Sadar","name_bn":"পাবনা সদর","parent_code":"BD.T13","postal_code":6602,"latitude":"23.99489442","longitude":"89.28112247"}
+{"level":3,"code":"BD.U117","name":"Bera","name_bn":"বেড়া","parent_code":"BD.T13","postal_code":6680,"latitude":"23.94251893","longitude":"89.65718472"}
+{"level":3,"code":"BD.U118","name":"Atghoria","name_bn":"আটঘরিয়া","parent_code":"BD.T13","postal_code":6610,"latitude":"24.10741607","longitude":"89.28274572"}
+{"level":3,"code":"BD.U119","name":"Chatmohar","name_bn":"চাটমোহর","parent_code":"BD.T13","postal_code":6630,"latitude":"24.22410244","longitude":"89.30321873"}
+{"level":3,"code":"BD.U120","name":"Santhia","name_bn":"সাঁথিয়া","parent_code":"BD.T13","postal_code":null,"latitude":"24.04342759","longitude":"89.51589956"}
+{"level":3,"code":"BD.U121","name":"Faridpur","name_bn":"ফরিদপুর","parent_code":"BD.T13","postal_code":null,"latitude":"24.15813002","longitude":"89.44947783"}
+{"level":3,"code":"BD.U122","name":"Kahaloo","name_bn":"কাহালু","parent_code":"BD.T14","postal_code":null,"latitude":"24.83250864","longitude":"89.25142354"}
+{"level":3,"code":"BD.U123","name":"Bogra Sadar","name_bn":"বগুড়া সদর","parent_code":"BD.T14","postal_code":null,"latitude":"24.89539917","longitude":"89.35605547"}
+{"level":3,"code":"BD.U124","name":"Shariakandi","name_bn":"সারিয়াকান্দি","parent_code":"BD.T14","postal_code":null,"latitude":"24.8789082","longitude":"89.61656334"}
+{"level":3,"code":"BD.U125","name":"Shajahanpur","name_bn":"শাজাহানপুর","parent_code":"BD.T14","postal_code":null,"latitude":"24.76021686","longitude":"89.3755597"}
+{"level":3,"code":"BD.U126","name":"Dupchanchia","name_bn":"দুপচাচিঁয়া","parent_code":"BD.T14","postal_code":null,"latitude":"24.88236608","longitude":"89.13984044"}
+{"level":3,"code":"BD.U127","name":"Adamdighi","name_bn":"আদমদিঘি","parent_code":"BD.T14","postal_code":5890,"latitude":"24.80008982","longitude":"89.05968137"}
+{"level":3,"code":"BD.U128","name":"Nondigram","name_bn":"নন্দিগ্রাম","parent_code":"BD.T14","postal_code":null,"latitude":"24.68118488","longitude":"89.22715695"}
+{"level":3,"code":"BD.U129","name":"Sonatala","name_bn":"সোনাতলা","parent_code":"BD.T14","postal_code":null,"latitude":"24.99736498","longitude":"89.51417967"}
+{"level":3,"code":"BD.U130","name":"Dhunot","name_bn":"ধুনট","parent_code":"BD.T14","postal_code":null,"latitude":"24.68260297","longitude":"89.55015673"}
+{"level":3,"code":"BD.U131","name":"Gabtali","name_bn":"গাবতলী","parent_code":"BD.T14","postal_code":null,"latitude":"24.8872405","longitude":"89.46482964"}
+{"level":3,"code":"BD.U132","name":"Sherpur","name_bn":"শেরপুর","parent_code":"BD.T14","postal_code":5841,"latitude":"24.62867573","longitude":"89.42257132"}
+{"level":3,"code":"BD.U133","name":"Shibganj","name_bn":"শিবগঞ্জ","parent_code":"BD.T14","postal_code":5810,"latitude":"25.01683461","longitude":"89.30649345"}
+{"level":3,"code":"BD.U134","name":"Paba","name_bn":"পবা","parent_code":"BD.T15","postal_code":null,"latitude":"24.33813369","longitude":"88.59074395"}
+{"level":3,"code":"BD.U135","name":"Durgapur","name_bn":"দুর্গাপুর","parent_code":"BD.T15","postal_code":6240,"latitude":"24.46827737","longitude":"88.76089517"}
+{"level":3,"code":"BD.U136","name":"Mohonpur","name_bn":"মোহনপুর","parent_code":"BD.T15","postal_code":null,"latitude":"24.55475052","longitude":"88.64078614"}
+{"level":3,"code":"BD.U137","name":"Charghat","name_bn":"চারঘাট","parent_code":"BD.T15","postal_code":6270,"latitude":"24.30119249","longitude":"88.77510723"}
+{"level":3,"code":"BD.U138","name":"Puthia","name_bn":"পুঠিয়া","parent_code":"BD.T15","postal_code":null,"latitude":"24.41148732","longitude":"88.82735743"}
+{"level":3,"code":"BD.U139","name":"Bagha","name_bn":"বাঘা","parent_code":"BD.T15","postal_code":6281,"latitude":"24.20594533","longitude":"88.833999"}
+{"level":3,"code":"BD.U140","name":"Godagari","name_bn":"গোদাগাড়ী","parent_code":"BD.T15","postal_code":6290,"latitude":"24.48314948","longitude":"88.41492417"}
+{"level":3,"code":"BD.U141","name":"Tanore","name_bn":"তানোর","parent_code":"BD.T15","postal_code":null,"latitude":"24.61985872","longitude":"88.53090746"}
+{"level":3,"code":"BD.U142","name":"Bagmara","name_bn":"বাগমারা","parent_code":"BD.T15","postal_code":6250,"latitude":"24.59364101","longitude":"88.80923132"}
+{"level":3,"code":"BD.U143","name":"Natore Sadar","name_bn":"নাটোর সদর","parent_code":"BD.T16","postal_code":6402,"latitude":"24.39709793","longitude":"88.98996421"}
+{"level":3,"code":"BD.U144","name":"Singra","name_bn":"সিংড়া","parent_code":"BD.T16","postal_code":6450,"latitude":"24.52440832","longitude":"89.18430739"}
+{"level":3,"code":"BD.U145","name":"Baraigram","name_bn":"বড়াইগ্রাম","parent_code":"BD.T16","postal_code":null,"latitude":"24.27323686","longitude":"89.14997336"}
+{"level":3,"code":"BD.U146","name":"Bagatipara","name_bn":"বাগাতিপাড়া","parent_code":"BD.T16","postal_code":null,"latitude":"24.31324989","longitude":"88.94790182"}
+{"level":3,"code":"BD.U147","name":"Lalpur","name_bn":"লালপুর","parent_code":"BD.T16","postal_code":null,"latitude":"24.1997875","longitude":"88.98571935"}
+{"level":3,"code":"BD.U148","name":"Gurudaspur","name_bn":"গুরুদাসপুর","parent_code":"BD.T16","postal_code":null,"latitude":"24.37372702","longitude":"89.20538766"}
+{"level":3,"code":"BD.U149","name":"Naldanga","name_bn":"নলডাঙ্গা","parent_code":"BD.T16","postal_code":7351,"latitude":"24.50600164","longitude":"88.97560756"}
+{"level":3,"code":"BD.U150","name":"Akkelpur","name_bn":"আক্কেলপুর","parent_code":"BD.T17","postal_code":5940,"latitude":"24.93348532","longitude":"89.04202677"}
+{"level":3,"code":"BD.U151","name":"Kalai","name_bn":"কালাই","parent_code":"BD.T17","postal_code":5930,"latitude":"25.07808103","longitude":"89.19883986"}
+{"level":3,"code":"BD.U152","name":"Khetlal","name_bn":"ক্ষেতলাল","parent_code":"BD.T17","postal_code":5920,"latitude":"25.02338997","longitude":"89.11766883"}
+{"level":3,"code":"BD.U153","name":"Panchbibi","name_bn":"পাঁচবিবি","parent_code":"BD.T17","postal_code":5910,"latitude":"25.20498364","longitude":"89.07186488"}
+{"level":3,"code":"BD.U154","name":"Joypurhat Sadar","name_bn":"জয়পুরহাট সদর","parent_code":"BD.T17","postal_code":5900,"latitude":"25.10765486","longitude":"89.02145393"}
+{"level":3,"code":"BD.U155","name":"Chapainawabganj Sadar","name_bn":"চাঁপাইনবাবগঞ্জ সদর","parent_code":"BD.T18","postal_code":null,"latitude":"24.56534241","longitude":"88.25806499"}
+{"level":3,"code":"BD.U156","name":"Gomostapur","name_bn":"গোমস্তাপুর","parent_code":"BD.T18","postal_code":null,"latitude":"24.85857325","longitude":"88.35544732"}
+{"level":3,"code":"BD.U157","name":"Nachol","name_bn":"নাচোল","parent_code":"BD.T18","postal_code":6311,"latitude":"24.72706303","longitude":"88.3963179"}
+{"level":3,"code":"BD.U158","name":"Bholahat","name_bn":"ভোলাহাট","parent_code":"BD.T18","postal_code":6330,"latitude":"24.89721664","longitude":"88.20949302"}
+{"level":3,"code":"BD.U159","name":"Shibganj","name_bn":"শিবগঞ্জ","parent_code":"BD.T18","postal_code":5810,"latitude":"24.70501636","longitude":"88.1548792"}
+{"level":3,"code":"BD.U160","name":"Mohadevpur","name_bn":"মহাদেবপুর","parent_code":"BD.T19","postal_code":null,"latitude":"24.9218421","longitude":"88.76365987"}
+{"level":3,"code":"BD.U161","name":"Badalgachi","name_bn":"বদলগাছী","parent_code":"BD.T19","postal_code":null,"latitude":"24.96745176","longitude":"88.94253758"}
+{"level":3,"code":"BD.U162","name":"Patnitala","name_bn":"পত্নিতলা","parent_code":"BD.T19","postal_code":null,"latitude":"25.07753255","longitude":"88.71459304"}
+{"level":3,"code":"BD.U163","name":"Dhamoirhat","name_bn":"ধামইরহাট","parent_code":"BD.T19","postal_code":null,"latitude":"25.13051337","longitude":"88.82415793"}
+{"level":3,"code":"BD.U164","name":"Niamatpur","name_bn":"নিয়ামতপুর","parent_code":"BD.T19","postal_code":6520,"latitude":"24.83045479","longitude":"88.55021021"}
+{"level":3,"code":"BD.U165","name":"Manda","name_bn":"মান্দা","parent_code":"BD.T19","postal_code":null,"latitude":"24.74630479","longitude":"88.71198704"}
+{"level":3,"code":"BD.U166","name":"Atrai","name_bn":"আত্রাই","parent_code":"BD.T19","postal_code":null,"latitude":"24.62478302","longitude":"88.98907491"}
+{"level":3,"code":"BD.U167","name":"Raninagar","name_bn":"রাণীনগর","parent_code":"BD.T19","postal_code":6591,"latitude":"24.71172597","longitude":"89.02014859"}
+{"level":3,"code":"BD.U168","name":"Naogaon Sadar","name_bn":"নওগাঁ সদর","parent_code":"BD.T19","postal_code":6500,"latitude":"24.81201412","longitude":"88.89803358"}
+{"level":3,"code":"BD.U169","name":"Porsha","name_bn":"পোরশা","parent_code":"BD.T19","postal_code":null,"latitude":"24.99497575","longitude":"88.51736573"}
+{"level":3,"code":"BD.U170","name":"Sapahar","name_bn":"সাপাহার","parent_code":"BD.T19","postal_code":6540,"latitude":"25.11935869","longitude":"88.53071648"}
+{"level":3,"code":"BD.U171","name":"Manirampur","name_bn":"মণিরামপুর","parent_code":"BD.T20","postal_code":null,"latitude":"23.00645606","longitude":"89.21986148"}
+{"level":3,"code":"BD.U172","name":"Abhaynagar","name_bn":"অভয়নগর","parent_code":"BD.T20","postal_code":null,"latitude":"23.01770386","longitude":"89.41968215"}
+{"level":3,"code":"BD.U173","name":"Bagherpara","name_bn":"বাঘারপাড়া","parent_code":"BD.T20","postal_code":null,"latitude":"23.24253049","longitude":"89.3353901"}
+{"level":3,"code":"BD.U174","name":"Chougachha","name_bn":"চৌগাছা","parent_code":"BD.T20","postal_code":null,"latitude":"23.26325264","longitude":"89.02328652"}
+{"level":3,"code":"BD.U175","name":"Jhikargacha","name_bn":"ঝিকরগাছা","parent_code":"BD.T20","postal_code":null,"latitude":"23.06873072","longitude":"89.05428478"}
+{"level":3,"code":"BD.U176","name":"Keshabpur","name_bn":"কেশবপুর","parent_code":"BD.T20","postal_code":7450,"latitude":"22.88037398","longitude":"89.23152615"}
+{"level":3,"code":"BD.U177","name":"Jessore Sadar","name_bn":"যশোর সদর","parent_code":"BD.T20","postal_code":null,"latitude":"23.18247843","longitude":"89.21885642"}
+{"level":3,"code":"BD.U178","name":"Sharsha","name_bn":"শার্শা","parent_code":"BD.T20","postal_code":null,"latitude":"23.04479212","longitude":"88.94109704"}
+{"level":3,"code":"BD.U179","name":"Assasuni","name_bn":"আশাশুনি","parent_code":"BD.T21","postal_code":null,"latitude":"22.51924727","longitude":"89.18743219"}
+{"level":3,"code":"BD.U180","name":"Debhata","name_bn":"দেবহাটা","parent_code":"BD.T21","postal_code":null,"latitude":"22.5965225","longitude":"89.01346306"}
+{"level":3,"code":"BD.U181","name":"Kalaroa","name_bn":"কলারোয়া","parent_code":"BD.T21","postal_code":9415,"latitude":"22.88034049","longitude":"89.03019097"}
+{"level":3,"code":"BD.U182","name":"Satkhira Sadar","name_bn":"সাতক্ষীরা সদর","parent_code":"BD.T21","postal_code":9403,"latitude":"22.72028952","longitude":"89.03826939"}
+{"level":3,"code":"BD.U183","name":"Shyamnagar","name_bn":"শ্যামনগর","parent_code":"BD.T21","postal_code":null,"latitude":"22.01217711","longitude":"89.18060186"}
+{"level":3,"code":"BD.U184","name":"Tala","name_bn":"তালা","parent_code":"BD.T21","postal_code":null,"latitude":"22.73989638","longitude":"89.21059096"}
+{"level":3,"code":"BD.U185","name":"Kaliganj","name_bn":"কালিগঞ্জ","parent_code":"BD.T21","postal_code":1720,"latitude":"22.44743606","longitude":"89.06238055"}
+{"level":3,"code":"BD.U186","name":"Mujibnagar","name_bn":"মুজিবনগর","parent_code":"BD.T22","postal_code":null,"latitude":"23.66804173","longitude":"88.62066855"}
+{"level":3,"code":"BD.U187","name":"Meherpur Sadar","name_bn":"মেহেরপুর সদর","parent_code":"BD.T22","postal_code":7101,"latitude":"23.7652793","longitude":"88.6614059"}
+{"level":3,"code":"BD.U188","name":"Gangni","name_bn":"গাংনী","parent_code":"BD.T22","postal_code":7110,"latitude":"23.85742395","longitude":"88.77069557"}
+{"level":3,"code":"BD.U189","name":"Narail Sadar","name_bn":"নড়াইল সদর","parent_code":"BD.T23","postal_code":7500,"latitude":"23.15493941","longitude":"89.49509628"}
+{"level":3,"code":"BD.U190","name":"Lohagara","name_bn":"লোহাগড়া","parent_code":"BD.T23","postal_code":4398,"latitude":"23.20424901","longitude":"89.6241797"}
+{"level":3,"code":"BD.U191","name":"Kalia","name_bn":"কালিয়া","parent_code":"BD.T23","postal_code":7520,"latitude":"23.02924849","longitude":"89.64163082"}
+{"level":3,"code":"BD.U192","name":"Chuadanga Sadar","name_bn":"চুয়াডাঙ্গা সদর","parent_code":"BD.T24","postal_code":7200,"latitude":"23.58945721","longitude":"88.88544829"}
+{"level":3,"code":"BD.U193","name":"Alamdanga","name_bn":"আলমডাঙ্গা","parent_code":"BD.T24","postal_code":7210,"latitude":"23.72952308","longitude":"88.90824581"}
+{"level":3,"code":"BD.U194","name":"Damurhuda","name_bn":"দামুড়হুদা","parent_code":"BD.T24","postal_code":7222,"latitude":"23.59201621","longitude":"88.73978174"}
+{"level":3,"code":"BD.U195","name":"Jibannagar","name_bn":"জীবননগর","parent_code":"BD.T24","postal_code":null,"latitude":"23.44297578","longitude":"88.85026481"}
+{"level":3,"code":"BD.U196","name":"Kushtia Sadar","name_bn":"কুষ্টিয়া সদর","parent_code":"BD.T25","postal_code":7003,"latitude":"23.82447726","longitude":"89.08978509"}
+{"level":3,"code":"BD.U197","name":"Kumarkhali","name_bn":"কুমারখালী","parent_code":"BD.T25","postal_code":7010,"latitude":"23.85817582","longitude":"89.21033767"}
+{"level":3,"code":"BD.U198","name":"Khoksa","name_bn":"খোকসা","parent_code":"BD.T25","postal_code":null,"latitude":"23.8108428","longitude":"89.30040417"}
+{"level":3,"code":"BD.U199","name":"Mirpur","name_bn":"মিরপুর","parent_code":"BD.T25","postal_code":1216,"latitude":"23.89715846","longitude":"88.98617202"}
+{"level":3,"code":"BD.U200","name":"Daulatpur","name_bn":"দৌলতপুর","parent_code":"BD.T25","postal_code":null,"latitude":"24.03425965","longitude":"88.83553965"}
+{"level":3,"code":"BD.U201","name":"Bheramara","name_bn":"ভেড়ামারা","parent_code":"BD.T25","postal_code":7042,"latitude":"24.0562809","longitude":"88.98115536"}
+{"level":3,"code":"BD.U202","name":"Shalikha","name_bn":"শালিখা","parent_code":"BD.T26","postal_code":null,"latitude":"23.34769219","longitude":"89.35926814"}
+{"level":3,"code":"BD.U203","name":"Sreepur","name_bn":"শ্রীপুর","parent_code":"BD.T26","postal_code":1743,"latitude":"23.59766202","longitude":"89.42412163"}
+{"level":3,"code":"BD.U204","name":"Magura Sadar","name_bn":"মাগুরা সদর","parent_code":"BD.T26","postal_code":7600,"latitude":"23.45188316","longitude":"89.41242724"}
+{"level":3,"code":"BD.U205","name":"Mohammadpur","name_bn":"মহম্মদপুর","parent_code":"BD.T26","postal_code":1207,"latitude":"23.40009353","longitude":"89.55069065"}
+{"level":3,"code":"BD.U206","name":"Paikgasa","name_bn":"পাইকগাছা","parent_code":"BD.T27","postal_code":null,"latitude":"22.59006747","longitude":"89.34020164"}
+{"level":3,"code":"BD.U207","name":"Fultola","name_bn":"ফুলতলা","parent_code":"BD.T27","postal_code":null,"latitude":"22.94830901","longitude":"89.45416809"}
+{"level":3,"code":"BD.U208","name":"Digholia","name_bn":"দিঘলিয়া","parent_code":"BD.T27","postal_code":null,"latitude":"22.92151447","longitude":"89.55377852"}
+{"level":3,"code":"BD.U209","name":"Rupsha","name_bn":"রূপসা","parent_code":"BD.T27","postal_code":null,"latitude":"22.81922745","longitude":"89.63623389"}
+{"level":3,"code":"BD.U210","name":"Terokhada","name_bn":"তেরখাদা","parent_code":"BD.T27","postal_code":null,"latitude":"22.91397441","longitude":"89.65512323"}
+{"level":3,"code":"BD.U211","name":"Dumuria","name_bn":"ডুমুরিয়া","parent_code":"BD.T27","postal_code":null,"latitude":"22.80576338","longitude":"89.39802703"}
+{"level":3,"code":"BD.U212","name":"Botiaghata","name_bn":"বটিয়াঘাটা","parent_code":"BD.T27","postal_code":null,"latitude":"22.71333993","longitude":"89.51491534"}
+{"level":3,"code":"BD.U213","name":"Dakop","name_bn":"দাকোপ","parent_code":"BD.T27","postal_code":null,"latitude":"22.24203107","longitude":"89.52637642"}
+{"level":3,"code":"BD.U214","name":"Koyra","name_bn":"কয়রা","parent_code":"BD.T27","postal_code":9291,"latitude":"22.07788302","longitude":"89.3950567"}
+{"level":3,"code":"BD.U215","name":"Fakirhat","name_bn":"ফকিরহাট","parent_code":"BD.T28","postal_code":9372,"latitude":"22.74261933","longitude":"89.66610277"}
+{"level":3,"code":"BD.U216","name":"Bagerhat Sadar","name_bn":"বাগেরহাট সদর","parent_code":"BD.T28","postal_code":9300,"latitude":"22.6761286","longitude":"89.76267481"}
+{"level":3,"code":"BD.U217","name":"Mollahat","name_bn":"মোল্লাহাট","parent_code":"BD.T28","postal_code":9383,"latitude":"22.8841779","longitude":"89.77298864"}
+{"level":3,"code":"BD.U218","name":"Sarankhola","name_bn":"শরণখোলা","parent_code":"BD.T28","postal_code":null,"latitude":"22.06308526","longitude":"89.82172027"}
+{"level":3,"code":"BD.U219","name":"Rampal","name_bn":"রামপাল","parent_code":"BD.T28","postal_code":9341,"latitude":"22.59031343","longitude":"89.65135819"}
+{"level":3,"code":"BD.U220","name":"Morrelganj","name_bn":"মোড়েলগঞ্জ","parent_code":"BD.T28","postal_code":null,"latitude":"22.48332119","longitude":"89.83422475"}
+{"level":3,"code":"BD.U221","name":"Kachua","name_bn":"কচুয়া","parent_code":"BD.T28","postal_code":3630,"latitude":"22.65213817","longitude":"89.87394519"}
+{"level":3,"code":"BD.U222","name":"Mongla","name_bn":"মোংলা","parent_code":"BD.T28","postal_code":null,"latitude":"22.11653738","longitude":"89.65966488"}
+{"level":3,"code":"BD.U223","name":"Chitalmari","name_bn":"চিতলমারী","parent_code":"BD.T28","postal_code":9361,"latitude":"22.81113978","longitude":"89.86525389"}
+{"level":3,"code":"BD.U224","name":"Jhenaidah Sadar","name_bn":"ঝিনাইদহ সদর","parent_code":"BD.T29","postal_code":7301,"latitude":"23.51638682","longitude":"89.15753517"}
+{"level":3,"code":"BD.U225","name":"Shailkupa","name_bn":"শৈলকুপা","parent_code":"BD.T29","postal_code":null,"latitude":"23.66362143","longitude":"89.24261925"}
+{"level":3,"code":"BD.U226","name":"Harinakundu","name_bn":"হরিণাকুন্ডু","parent_code":"BD.T29","postal_code":7310,"latitude":"23.64350865","longitude":"89.07686969"}
+{"level":3,"code":"BD.U227","name":"Kaliganj","name_bn":"কালীগঞ্জ","parent_code":"BD.T29","postal_code":1720,"latitude":"23.36959471","longitude":"89.15233514"}
+{"level":3,"code":"BD.U228","name":"Kotchandpur","name_bn":"কোটচাঁদপুর","parent_code":"BD.T29","postal_code":7330,"latitude":"23.44497008","longitude":"89.00141696"}
+{"level":3,"code":"BD.U229","name":"Moheshpur","name_bn":"মহেশপুর","parent_code":"BD.T29","postal_code":null,"latitude":"23.32017163","longitude":"88.85970006"}
+{"level":3,"code":"BD.U230","name":"Jhalakathi Sadar","name_bn":"ঝালকাঠি সদর","parent_code":"BD.T30","postal_code":null,"latitude":"22.67977942","longitude":"90.19275327"}
+{"level":3,"code":"BD.U231","name":"Kathalia","name_bn":"কাঠালিয়া","parent_code":"BD.T30","postal_code":8431,"latitude":"22.41941257","longitude":"90.10206117"}
+{"level":3,"code":"BD.U232","name":"Nalchity","name_bn":"নলছিটি","parent_code":"BD.T30","postal_code":null,"latitude":"22.6010276","longitude":"90.27149045"}
+{"level":3,"code":"BD.U233","name":"Rajapur","name_bn":"রাজাপুর","parent_code":"BD.T30","postal_code":8410,"latitude":"22.54965797","longitude":"90.13094414"}
+{"level":3,"code":"BD.U234","name":"Bauphal","name_bn":"বাউফল","parent_code":"BD.T31","postal_code":8621,"latitude":"22.43734658","longitude":"90.54648458"}
+{"level":3,"code":"BD.U235","name":"Patuakhali Sadar","name_bn":"পটুয়াখালী সদর","parent_code":"BD.T31","postal_code":8602,"latitude":"22.33453254","longitude":"90.32931509"}
+{"level":3,"code":"BD.U236","name":"Dumki","name_bn":"দুমকি","parent_code":"BD.T31","postal_code":null,"latitude":"22.44825458","longitude":"90.37305019"}
+{"level":3,"code":"BD.U237","name":"Dashmina","name_bn":"দশমিনা","parent_code":"BD.T31","postal_code":8630,"latitude":"22.25076067","longitude":"90.55428617"}
+{"level":3,"code":"BD.U238","name":"Kalapara","name_bn":"কলাপাড়া","parent_code":"BD.T31","postal_code":null,"latitude":"21.93370908","longitude":"90.22168667"}
+{"level":3,"code":"BD.U239","name":"Mirzaganj","name_bn":"মির্জাগঞ্জ","parent_code":"BD.T31","postal_code":null,"latitude":"22.35550943","longitude":"90.21740561"}
+{"level":3,"code":"BD.U240","name":"Galachipa","name_bn":"গলাচিপা","parent_code":"BD.T31","postal_code":8640,"latitude":"22.14780512","longitude":"90.46051826"}
+{"level":3,"code":"BD.U241","name":"Rangabali","name_bn":"রাঙ্গাবালী","parent_code":"BD.T31","postal_code":null,"latitude":"21.93161968","longitude":"90.43046083"}
+{"level":3,"code":"BD.U242","name":"Pirojpur Sadar","name_bn":"পিরোজপুর সদর","parent_code":"BD.T32","postal_code":8501,"latitude":"22.60920201","longitude":"89.97934666"}
+{"level":3,"code":"BD.U243","name":"Nazirpur","name_bn":"নাজিরপুর","parent_code":"BD.T32","postal_code":8540,"latitude":"22.76993652","longitude":"89.97482465"}
+{"level":3,"code":"BD.U244","name":"Kawkhali","name_bn":"কাউখালী","parent_code":"BD.T32","postal_code":null,"latitude":"22.60625111","longitude":"90.05726044"}
+{"level":3,"code":"BD.U245","name":"Zianagar","name_bn":"জিয়ানগর","parent_code":"BD.T32","postal_code":null,"latitude":"22.46620998","longitude":"89.96524888"}
+{"level":3,"code":"BD.U246","name":"Bhandaria","name_bn":"ভান্ডারিয়া","parent_code":"BD.T32","postal_code":8550,"latitude":"22.45182375","longitude":"90.01974753"}
+{"level":3,"code":"BD.U247","name":"Mathbaria","name_bn":"মঠবাড়ীয়া","parent_code":"BD.T32","postal_code":8565,"latitude":"22.2829089","longitude":"89.94927971"}
+{"level":3,"code":"BD.U248","name":"Nesarabad","name_bn":"নেছারাবাদ","parent_code":"BD.T32","postal_code":null,"latitude":"22.72142509","longitude":"90.08564362"}
+{"level":3,"code":"BD.U249","name":"Barisal Sadar","name_bn":"বরিশাল সদর","parent_code":"BD.T33","postal_code":null,"latitude":"22.71481106","longitude":"90.40960035"}
+{"level":3,"code":"BD.U250","name":"Bakerganj","name_bn":"বাকেরগঞ্জ","parent_code":"BD.T33","postal_code":8281,"latitude":"22.55478164","longitude":"90.39007461"}
+{"level":3,"code":"BD.U251","name":"Babuganj","name_bn":"বাবুগঞ্জ","parent_code":"BD.T33","postal_code":8210,"latitude":"22.82461621","longitude":"90.31272617"}
+{"level":3,"code":"BD.U252","name":"Wazirpur","name_bn":"উজিরপুর","parent_code":"BD.T33","postal_code":null,"latitude":"22.86574877","longitude":"90.16497331"}
+{"level":3,"code":"BD.U253","name":"Banaripara","name_bn":"বানারীপাড়া","parent_code":"BD.T33","postal_code":8530,"latitude":"22.81118715","longitude":"90.12916707"}
+{"level":3,"code":"BD.U254","name":"Gournadi","name_bn":"গৌরনদী","parent_code":"BD.T33","postal_code":null,"latitude":"22.96981456","longitude":"90.24285253"}
+{"level":3,"code":"BD.U255","name":"Agailjhara","name_bn":"আগৈলঝাড়া","parent_code":"BD.T33","postal_code":null,"latitude":"22.9676431","longitude":"90.14047232"}
+{"level":3,"code":"BD.U256","name":"Mehendiganj","name_bn":"মেহেন্দিগঞ্জ","parent_code":"BD.T33","postal_code":null,"latitude":"22.81597145","longitude":"90.51901486"}
+{"level":3,"code":"BD.U257","name":"Muladi","name_bn":"মুলাদী","parent_code":"BD.T33","postal_code":8252,"latitude":"22.95514912","longitude":"90.37599974"}
+{"level":3,"code":"BD.U258","name":"Hizla","name_bn":"হিজলা","parent_code":"BD.T33","postal_code":null,"latitude":"22.9628024","longitude":"90.55182414"}
+{"level":3,"code":"BD.U259","name":"Bhola Sadar","name_bn":"ভোলা সদর","parent_code":"BD.T34","postal_code":8300,"latitude":"22.70723511","longitude":"90.6305403"}
+{"level":3,"code":"BD.U260","name":"Borhan Sddin","name_bn":"বোরহান উদ্দিন","parent_code":"BD.T34","postal_code":null,"latitude":"22.48540881","longitude":"90.71537999"}
+{"level":3,"code":"BD.U261","name":"Charfesson","name_bn":"চরফ্যাশন","parent_code":"BD.T34","postal_code":null,"latitude":"22.04486186","longitude":"90.72459883"}
+{"level":3,"code":"BD.U262","name":"Doulatkhan","name_bn":"দৌলতখান","parent_code":"BD.T34","postal_code":8310,"latitude":"22.6420874","longitude":"90.74547893"}
+{"level":3,"code":"BD.U263","name":"Monpura","name_bn":"মনপুরা","parent_code":"BD.T34","postal_code":null,"latitude":"22.22216484","longitude":"90.94308102"}
+{"level":3,"code":"BD.U264","name":"Tazumuddin","name_bn":"তজুমদ্দিন","parent_code":"BD.T34","postal_code":null,"latitude":"22.45254839","longitude":"90.85981809"}
+{"level":3,"code":"BD.U265","name":"Lalmohan","name_bn":"লালমোহন","parent_code":"BD.T34","postal_code":null,"latitude":"22.30234352","longitude":"90.77136962"}
+{"level":3,"code":"BD.U266","name":"Amtali","name_bn":"আমতলী","parent_code":"BD.T35","postal_code":8710,"latitude":"22.14650328","longitude":"90.27003676"}
+{"level":3,"code":"BD.U267","name":"Barguna Sadar","name_bn":"বরগুনা সদর","parent_code":"BD.T35","postal_code":8700,"latitude":"22.12684969","longitude":"90.10169624"}
+{"level":3,"code":"BD.U268","name":"Betagi","name_bn":"বেতাগী","parent_code":"BD.T35","postal_code":8740,"latitude":"22.34818523","longitude":"90.14935951"}
+{"level":3,"code":"BD.U269","name":"Bamna","name_bn":"বামনা","parent_code":"BD.T35","postal_code":8730,"latitude":"22.27232966","longitude":"90.05729578"}
+{"level":3,"code":"BD.U270","name":"Pathorghata","name_bn":"পাথরঘাটা","parent_code":"BD.T35","postal_code":null,"latitude":"22.08967959","longitude":"89.95942885"}
+{"level":3,"code":"BD.U271","name":"Taltali","name_bn":"তালতলি","parent_code":"BD.T35","postal_code":null,"latitude":"21.96759531","longitude":"90.10058791"}
+{"level":3,"code":"BD.U272","name":"Balaganj","name_bn":"বালাগঞ্জ","parent_code":"BD.T36","postal_code":3127,"latitude":"24.68865059","longitude":"91.82992075"}
+{"level":3,"code":"BD.U273","name":"Beanibazar","name_bn":"বিয়ানীবাজার","parent_code":"BD.T36","postal_code":null,"latitude":"24.84934837","longitude":"92.15957094"}
+{"level":3,"code":"BD.U274","name":"Bishwanath","name_bn":"বিশ্বনাথ","parent_code":"BD.T36","postal_code":3130,"latitude":"24.83470762","longitude":"91.72814054"}
+{"level":3,"code":"BD.U275","name":"Companiganj","name_bn":"কোম্পানীগঞ্জ","parent_code":"BD.T36","postal_code":null,"latitude":"25.0799183","longitude":"91.77309913"}
+{"level":3,"code":"BD.U276","name":"Fenchuganj","name_bn":"ফেঞ্চুগঞ্জ","parent_code":"BD.T36","postal_code":3116,"latitude":"24.69358233","longitude":"91.96304017"}
+{"level":3,"code":"BD.U277","name":"Golapganj","name_bn":"গোলাপগঞ্জ","parent_code":"BD.T36","postal_code":3164,"latitude":"24.81047474","longitude":"92.01838458"}
+{"level":3,"code":"BD.U278","name":"Gowainghat","name_bn":"গোয়াইনঘাট","parent_code":"BD.T36","postal_code":null,"latitude":"25.08145524","longitude":"91.95895822"}
+{"level":3,"code":"BD.U279","name":"Jaintiapur","name_bn":"জৈন্তাপুর","parent_code":"BD.T36","postal_code":null,"latitude":"25.05799543","longitude":"92.1045136"}
+{"level":3,"code":"BD.U280","name":"Kanaighat","name_bn":"কানাইঘাট","parent_code":"BD.T36","postal_code":3181,"latitude":"24.9932219","longitude":"92.21911505"}
+{"level":3,"code":"BD.U281","name":"Sylhet Sadar","name_bn":"সিলেট সদর","parent_code":"BD.T36","postal_code":3106,"latitude":"24.94433953","longitude":"91.84586196"}
+{"level":3,"code":"BD.U282","name":"Zakiganj","name_bn":"জকিগঞ্জ","parent_code":"BD.T36","postal_code":null,"latitude":"24.92531685","longitude":"92.36786009"}
+{"level":3,"code":"BD.U283","name":"Dakshinsurma","name_bn":"দক্ষিণ সুরমা","parent_code":"BD.T36","postal_code":null,"latitude":"24.81711992","longitude":"91.87712889"}
+{"level":3,"code":"BD.U284","name":"Osmaninagar","name_bn":"ওসমানী নগর","parent_code":"BD.T36","postal_code":null,"latitude":"24.70336209","longitude":"91.73194607"}
+{"level":3,"code":"BD.U285","name":"Barlekha","name_bn":"বড়লেখা","parent_code":"BD.T37","postal_code":null,"latitude":"24.70854578","longitude":"92.17635211"}
+{"level":3,"code":"BD.U286","name":"Kamolganj","name_bn":"কমলগঞ্জ","parent_code":"BD.T37","postal_code":null,"latitude":"24.31685165","longitude":"91.86015204"}
+{"level":3,"code":"BD.U287","name":"Kulaura","name_bn":"কুলাউড়া","parent_code":"BD.T37","postal_code":3237,"latitude":"24.48996524","longitude":"92.01511303"}
+{"level":3,"code":"BD.U288","name":"Moulvibazar Sadar","name_bn":"মৌলভীবাজার সদর","parent_code":"BD.T37","postal_code":3203,"latitude":"24.4993968","longitude":"91.71316807"}
+{"level":3,"code":"BD.U289","name":"Rajnagar","name_bn":"রাজনগর","parent_code":"BD.T37","postal_code":3240,"latitude":"24.56522658","longitude":"91.86352334"}
+{"level":3,"code":"BD.U290","name":"Sreemangal","name_bn":"শ্রীমঙ্গল","parent_code":"BD.T37","postal_code":null,"latitude":"24.30220515","longitude":"91.69901682"}
+{"level":3,"code":"BD.U291","name":"Juri","name_bn":"জুড়ী","parent_code":"BD.T37","postal_code":null,"latitude":"24.55392188","longitude":"92.14517559"}
+{"level":3,"code":"BD.U292","name":"Nabiganj","name_bn":"নবীগঞ্জ","parent_code":"BD.T38","postal_code":3373,"latitude":"24.57071941","longitude":"91.54818498"}
+{"level":3,"code":"BD.U293","name":"Bahubal","name_bn":"বাহুবল","parent_code":"BD.T38","postal_code":3310,"latitude":"24.36138845","longitude":"91.54463994"}
+{"level":3,"code":"BD.U294","name":"Ajmiriganj","name_bn":"আজমিরীগঞ্জ","parent_code":"BD.T38","postal_code":null,"latitude":"24.55351135","longitude":"91.28139364"}
+{"level":3,"code":"BD.U295","name":"Baniachong","name_bn":"বানিয়াচং","parent_code":"BD.T38","postal_code":null,"latitude":"24.49883031","longitude":"91.36685634"}
+{"level":3,"code":"BD.U296","name":"Lakhai","name_bn":"লাখাই","parent_code":"BD.T38","postal_code":null,"latitude":"24.29851486","longitude":"91.26089226"}
+{"level":3,"code":"BD.U297","name":"Chunarughat","name_bn":"চুনারুঘাট","parent_code":"BD.T38","postal_code":3321,"latitude":"24.18000387","longitude":"91.51582163"}
+{"level":3,"code":"BD.U298","name":"Habiganj Sadar","name_bn":"হবিগঞ্জ সদর","parent_code":"BD.T38","postal_code":3302,"latitude":"24.35093059","longitude":"91.41578016"}
+{"level":3,"code":"BD.U299","name":"Madhabpur","name_bn":"মাধবপুর","parent_code":"BD.T38","postal_code":3331,"latitude":"24.12035765","longitude":"91.33739435"}
+{"level":3,"code":"BD.U300","name":"Sunamganj Sadar","name_bn":"সুনামগঞ্জ সদর","parent_code":"BD.T39","postal_code":3001,"latitude":"25.0538758","longitude":"91.39998186"}
+{"level":3,"code":"BD.U301","name":"South Sunamganj","name_bn":"দক্ষিণ সুনামগঞ্জ","parent_code":"BD.T39","postal_code":null,"latitude":"24.9123799","longitude":"91.40777623"}
+{"level":3,"code":"BD.U302","name":"Bishwambarpur","name_bn":"বিশ্বম্ভরপুর","parent_code":"BD.T39","postal_code":null,"latitude":"25.10888415","longitude":"91.31523834"}
+{"level":3,"code":"BD.U303","name":"Chhatak","name_bn":"ছাতক","parent_code":"BD.T39","postal_code":3080,"latitude":"24.94892153","longitude":"91.61454158"}
+{"level":3,"code":"BD.U304","name":"Jagannathpur","name_bn":"জগন্নাথপুর","parent_code":"BD.T39","postal_code":null,"latitude":"24.75016803","longitude":"91.55672295"}
+{"level":3,"code":"BD.U305","name":"Dowarabazar","name_bn":"দোয়ারাবazar","parent_code":"BD.T39","postal_code":null,"latitude":"25.07164732","longitude":"91.56119491"}
+{"level":3,"code":"BD.U306","name":"Tahirpur","name_bn":"তাহিরপুর","parent_code":"BD.T39","postal_code":3030,"latitude":"25.12901357","longitude":"91.16369632"}
+{"level":3,"code":"BD.U307","name":"Dharmapasha","name_bn":"ধর্মপাশা","parent_code":"BD.T39","postal_code":2450,"latitude":"24.9442515","longitude":"91.0637998"}
+{"level":3,"code":"BD.U308","name":"Jamalganj","name_bn":"জামালগঞ্জ","parent_code":"BD.T39","postal_code":null,"latitude":"24.95589373","longitude":"91.20325709"}
+{"level":3,"code":"BD.U309","name":"Shalla","name_bn":"শাল্লা","parent_code":"BD.T39","postal_code":null,"latitude":"24.68747144","longitude":"91.25886283"}
+{"level":3,"code":"BD.U310","name":"Derai","name_bn":"দিরাই","parent_code":"BD.T39","postal_code":null,"latitude":"24.78742253","longitude":"91.33608142"}
+{"level":3,"code":"BD.U311","name":"Belabo","name_bn":"বেলাবো","parent_code":"BD.T40","postal_code":1640,"latitude":"24.10145744","longitude":"90.84873217"}
+{"level":3,"code":"BD.U312","name":"Monohardi","name_bn":"মনোহরদী","parent_code":"BD.T40","postal_code":null,"latitude":"24.16079951","longitude":"90.73076261"}
+{"level":3,"code":"BD.U313","name":"Narsingdi Sadar","name_bn":"নরসিংদী সদর","parent_code":"BD.T40","postal_code":1605,"latitude":"23.86911891","longitude":"90.70802254"}
+{"level":3,"code":"BD.U314","name":"Palash","name_bn":"পলাশ","parent_code":"BD.T40","postal_code":1612,"latitude":"23.95637032","longitude":"90.64990826"}
+{"level":3,"code":"BD.U315","name":"Raipura","name_bn":"রায়পুরা","parent_code":"BD.T40","postal_code":null,"latitude":"23.96194635","longitude":"90.8720913"}
+{"level":3,"code":"BD.U316","name":"Shibpur","name_bn":"শিবপুর","parent_code":"BD.T40","postal_code":1620,"latitude":"24.02764768","longitude":"90.74701282"}
+{"level":3,"code":"BD.U317","name":"Kaliganj","name_bn":"কালীগঞ্জ","parent_code":"BD.T41","postal_code":1720,"latitude":"23.96481774","longitude":"90.55522821"}
+{"level":3,"code":"BD.U318","name":"Kaliakair","name_bn":"কালিয়াকৈর","parent_code":"BD.T41","postal_code":null,"latitude":"24.10221402","longitude":"90.26555217"}
+{"level":3,"code":"BD.U319","name":"Kapasia","name_bn":"কাপাসিয়া","parent_code":"BD.T41","postal_code":null,"latitude":"24.14779535","longitude":"90.60046014"}
+{"level":3,"code":"BD.U320","name":"Gazipur Sadar","name_bn":"গাজীপুর সদর","parent_code":"BD.T41","postal_code":1703,"latitude":"24.08486105","longitude":"90.42475588"}
+{"level":3,"code":"BD.U321","name":"Sreepur","name_bn":"শ্রীপুর","parent_code":"BD.T41","postal_code":1743,"latitude":"24.20580898","longitude":"90.44362975"}
+{"level":3,"code":"BD.U322","name":"Shariatpur Sadar","name_bn":"শরিয়তপুর সদর","parent_code":"BD.T42","postal_code":8001,"latitude":"23.21884243","longitude":"90.31670125"}
+{"level":3,"code":"BD.U323","name":"Naria","name_bn":"নড়িয়া","parent_code":"BD.T42","postal_code":8021,"latitude":"23.30575605","longitude":"90.4276623"}
+{"level":3,"code":"BD.U324","name":"Zajira","name_bn":"জাজিরা","parent_code":"BD.T42","postal_code":null,"latitude":"23.36558386","longitude":"90.3236872"}
+{"level":3,"code":"BD.U325","name":"Gosairhat","name_bn":"গোসাইরহাট","parent_code":"BD.T42","postal_code":8050,"latitude":"23.08167785","longitude":"90.45694826"}
+{"level":3,"code":"BD.U326","name":"Bhedarganj","name_bn":"ভেদরগঞ্জ","parent_code":"BD.T42","postal_code":null,"latitude":"23.24773906","longitude":"90.51356683"}
+{"level":3,"code":"BD.U327","name":"Damudya","name_bn":"ডামুড্যা","parent_code":"BD.T42","postal_code":null,"latitude":"23.13989972","longitude":"90.42264111"}
+{"level":3,"code":"BD.U328","name":"Araihazar","name_bn":"আড়াইহাজার","parent_code":"BD.T43","postal_code":1450,"latitude":"23.76432347","longitude":"90.66936209"}
+{"level":3,"code":"BD.U329","name":"Bandar","name_bn":"বন্দর","parent_code":"BD.T43","postal_code":1410,"latitude":"23.64094241","longitude":"90.54550603"}
+{"level":3,"code":"BD.U330","name":"Narayanganj Sadar","name_bn":"নারায়নগঞ্জ সদর","parent_code":"BD.T43","postal_code":1400,"latitude":"23.61270286","longitude":"90.46967182"}
+{"level":3,"code":"BD.U331","name":"Rupganj","name_bn":"রূপগঞ্জ","parent_code":"BD.T43","postal_code":1460,"latitude":"23.81242547","longitude":"90.54002928"}
+{"level":3,"code":"BD.U332","name":"Sonargaon","name_bn":"সোনারগাঁ","parent_code":"BD.T43","postal_code":null,"latitude":"23.67465419","longitude":"90.59430133"}
+{"level":3,"code":"BD.U333","name":"Basail","name_bn":"বাসাইল","parent_code":"BD.T44","postal_code":1920,"latitude":"24.23384013","longitude":"90.04024194"}
+{"level":3,"code":"BD.U334","name":"Bhuapur","name_bn":"ভুয়াপুর","parent_code":"BD.T44","postal_code":1960,"latitude":"24.47720074","longitude":"89.81588907"}
+{"level":3,"code":"BD.U335","name":"Delduar","name_bn":"দেলদুয়ার","parent_code":"BD.T44","postal_code":1910,"latitude":"24.14750937","longitude":"89.93895701"}
+{"level":3,"code":"BD.U336","name":"Ghatail","name_bn":"ঘাটাইল","parent_code":"BD.T44","postal_code":1982,"latitude":"24.47370046","longitude":"90.05304586"}
+{"level":3,"code":"BD.U337","name":"Gopalpur","name_bn":"গোপালপুর","parent_code":"BD.T44","postal_code":1990,"latitude":"24.57241619","longitude":"89.90181619"}
+{"level":3,"code":"BD.U338","name":"Madhupur","name_bn":"মধুপুর","parent_code":"BD.T44","postal_code":1997,"latitude":"24.65012904","longitude":"90.06228115"}
+{"level":3,"code":"BD.U339","name":"Mirzapur","name_bn":"মির্জাপুর","parent_code":"BD.T44","postal_code":1941,"latitude":"24.11805874","longitude":"90.10720089"}
+{"level":3,"code":"BD.U340","name":"Nagarpur","name_bn":"নাগরপুর","parent_code":"BD.T44","postal_code":1937,"latitude":"24.05062667","longitude":"89.87547056"}
+{"level":3,"code":"BD.U341","name":"Sakhipur","name_bn":"সখিপুর","parent_code":"BD.T44","postal_code":1951,"latitude":"24.30626157","longitude":"90.1748612"}
+{"level":3,"code":"BD.U342","name":"Tangail Sadar","name_bn":"টাঙ্গাইল সদর","parent_code":"BD.T44","postal_code":1901,"latitude":"24.25962298","longitude":"89.86705123"}
+{"level":3,"code":"BD.U343","name":"Kalihati","name_bn":"কালিহাতী","parent_code":"BD.T44","postal_code":1973,"latitude":"24.3596877","longitude":"89.94673602"}
+{"level":3,"code":"BD.U344","name":"Dhanbari","name_bn":"ধনবাড়ী","parent_code":"BD.T44","postal_code":null,"latitude":"24.68753433","longitude":"89.93350156"}
+{"level":3,"code":"BD.U345","name":"Itna","name_bn":"ইটনা","parent_code":"BD.T45","postal_code":2390,"latitude":"24.55093334","longitude":"91.08404973"}
+{"level":3,"code":"BD.U346","name":"Katiadi","name_bn":"কটিয়াদী","parent_code":"BD.T45","postal_code":2331,"latitude":"24.2952187","longitude":"90.82084672"}
+{"level":3,"code":"BD.U347","name":"Bhairab","name_bn":"ভৈরব","parent_code":"BD.T45","postal_code":null,"latitude":"24.10221109","longitude":"90.98120406"}
+{"level":3,"code":"BD.U348","name":"Tarail","name_bn":"তাড়াইল","parent_code":"BD.T45","postal_code":2316,"latitude":"24.55087077","longitude":"90.89053903"}
+{"level":3,"code":"BD.U349","name":"Hossainpur","name_bn":"হোসেনপুর","parent_code":"BD.T45","postal_code":null,"latitude":"24.44832765","longitude":"90.66335442"}
+{"level":3,"code":"BD.U350","name":"Pakundia","name_bn":"পাকুন্দিয়া","parent_code":"BD.T45","postal_code":2302,"latitude":"24.32148898","longitude":"90.69366131"}
+{"level":3,"code":"BD.U351","name":"Kuliarchar","name_bn":"কুলিয়ারচর","parent_code":"BD.T45","postal_code":2341,"latitude":"24.15311063","longitude":"90.88661308"}
+{"level":3,"code":"BD.U352","name":"Kishoreganj Sadar","name_bn":"কিশোরগঞ্জ সদর","parent_code":"BD.T45","postal_code":2301,"latitude":"24.42594991","longitude":"90.78325593"}
+{"level":3,"code":"BD.U353","name":"Karimgonj","name_bn":"করিমগঞ্জ","parent_code":"BD.T45","postal_code":null,"latitude":"24.45434037","longitude":"90.89635343"}
+{"level":3,"code":"BD.U354","name":"Bajitpur","name_bn":"বাজিতপুর","parent_code":"BD.T45","postal_code":2336,"latitude":"24.2266224","longitude":"90.94846361"}
+{"level":3,"code":"BD.U355","name":"Austagram","name_bn":"অষ্টগ্রাম","parent_code":"BD.T45","postal_code":null,"latitude":"24.32358689","longitude":"91.12249556"}
+{"level":3,"code":"BD.U356","name":"Mithamoin","name_bn":"মিঠামইন","parent_code":"BD.T45","postal_code":2371,"latitude":"24.43314857","longitude":"91.11090071"}
+{"level":3,"code":"BD.U357","name":"Nikli","name_bn":"নিকলী","parent_code":"BD.T45","postal_code":2360,"latitude":"24.33828073","longitude":"90.96093837"}
+{"level":3,"code":"BD.U358","name":"Harirampur","name_bn":"হরিরামপুর","parent_code":"BD.T46","postal_code":null,"latitude":"23.72066709","longitude":"89.94587763"}
+{"level":3,"code":"BD.U359","name":"Saturia","name_bn":"সাটুরিয়া","parent_code":"BD.T46","postal_code":1811,"latitude":"23.95847921","longitude":"90.00104205"}
+{"level":3,"code":"BD.U360","name":"Manikganj Sadar","name_bn":"মানিকগঞ্জ সদর","parent_code":"BD.T46","postal_code":1804,"latitude":"23.83665517","longitude":"90.02995338"}
+{"level":3,"code":"BD.U361","name":"Gior","name_bn":"ঘিওর","parent_code":"BD.T46","postal_code":null,"latitude":"23.87441371","longitude":"89.90388194"}
+{"level":3,"code":"BD.U362","name":"Shibaloy","name_bn":"শিবালয়","parent_code":"BD.T46","postal_code":null,"latitude":"23.83837419","longitude":"89.81082872"}
+{"level":3,"code":"BD.U363","name":"Doulatpur","name_bn":"দৌলতপুর","parent_code":"BD.T46","postal_code":null,"latitude":"23.95619414","longitude":"89.79863832"}
+{"level":3,"code":"BD.U364","name":"Singiar","name_bn":"সিংগাইর","parent_code":"BD.T46","postal_code":null,"latitude":"23.78336259","longitude":"90.15404116"}
+{"level":3,"code":"BD.U365","name":"Savar","name_bn":"সাভার","parent_code":"BD.T47","postal_code":1348,"latitude":"23.87995122","longitude":"90.28057123"}
+{"level":3,"code":"BD.U366","name":"Dhamrai","name_bn":"ধামরাই","parent_code":"BD.T47","postal_code":1350,"latitude":"23.93897826","longitude":"90.14080346"}
+{"level":3,"code":"BD.U367","name":"Keraniganj","name_bn":"কেরাণীগঞ্জ","parent_code":"BD.T47","postal_code":1312,"latitude":"23.69433062","longitude":"90.34365782"}
+{"level":3,"code":"BD.U368","name":"Nawabganj","name_bn":"নবাবগঞ্জ","parent_code":"BD.T47","postal_code":1323,"latitude":"23.67242589","longitude":"90.16080129"}
+{"level":3,"code":"BD.U369","name":"Dohar","name_bn":"দোহার","parent_code":"BD.T47","postal_code":null,"latitude":"23.60157963","longitude":"90.10840628"}
+{"level":3,"code":"BD.U370","name":"Munshiganj Sadar","name_bn":"মুন্সিগঞ্জ সদর","parent_code":"BD.T48","postal_code":1503,"latitude":"23.48746746","longitude":"90.52607222"}
+{"level":3,"code":"BD.U371","name":"Sreenagar","name_bn":"শ্রীনগর","parent_code":"BD.T48","postal_code":1557,"latitude":"23.54637332","longitude":"90.26358225"}
+{"level":3,"code":"BD.U372","name":"Sirajdikhan","name_bn":"সিরাজদিখান","parent_code":"BD.T48","postal_code":1542,"latitude":"23.59764523","longitude":"90.35802481"}
+{"level":3,"code":"BD.U373","name":"Louhajanj","name_bn":"লৌহজং","parent_code":"BD.T48","postal_code":null,"latitude":"23.46915976","longitude":"90.34353188"}
+{"level":3,"code":"BD.U374","name":"Gajaria","name_bn":"গজারিয়া","parent_code":"BD.T48","postal_code":1510,"latitude":"23.54722572","longitude":"90.62901939"}
+{"level":3,"code":"BD.U375","name":"Tongibari","name_bn":"টংগীবাড়ি","parent_code":"BD.T48","postal_code":null,"latitude":"23.47479103","longitude":"90.45275509"}
+{"level":3,"code":"BD.U376","name":"Rajbari Sadar","name_bn":"রাজবাড়ী সদর","parent_code":"BD.T49","postal_code":7710,"latitude":"23.71718423","longitude":"89.65606415"}
+{"level":3,"code":"BD.U377","name":"Goalanda","name_bn":"গোয়ালন্দ","parent_code":"BD.T49","postal_code":null,"latitude":"23.75575567","longitude":"89.76518481"}
+{"level":3,"code":"BD.U378","name":"Pangsa","name_bn":"পাংশা","parent_code":"BD.T49","postal_code":null,"latitude":"23.78899188","longitude":"89.38777563"}
+{"level":3,"code":"BD.U379","name":"Baliakandi","name_bn":"বালিয়াকান্দি","parent_code":"BD.T49","postal_code":7730,"latitude":"23.65063781","longitude":"89.55170229"}
+{"level":3,"code":"BD.U380","name":"Kalukhali","name_bn":"কালুখালী","parent_code":"BD.T49","postal_code":null,"latitude":"23.74188518","longitude":"89.47527823"}
+{"level":3,"code":"BD.U381","name":"Madaripur Sadar","name_bn":"মাদারীপুর সদর","parent_code":"BD.T50","postal_code":7901,"latitude":"23.19122006","longitude":"90.17839699"}
+{"level":3,"code":"BD.U382","name":"Shibchar","name_bn":"শিবচর","parent_code":"BD.T50","postal_code":null,"latitude":"23.37319972","longitude":"90.17594971"}
+{"level":3,"code":"BD.U383","name":"Kalkini","name_bn":"কালকিনি","parent_code":"BD.T50","postal_code":7920,"latitude":"23.06702105","longitude":"90.28068024"}
+{"level":3,"code":"BD.U384","name":"Rajoir","name_bn":"রাজৈর","parent_code":"BD.T50","postal_code":7911,"latitude":"23.20208039","longitude":"90.03856994"}
+{"level":3,"code":"BD.U385","name":"Gopalganj Sadar","name_bn":"গোপালগঞ্জ সদর","parent_code":"BD.T51","postal_code":8102,"latitude":"23.06056181","longitude":"89.84767364"}
+{"level":3,"code":"BD.U386","name":"Kashiani","name_bn":"কাশিয়ানী","parent_code":"BD.T51","postal_code":8133,"latitude":"23.19131338","longitude":"89.79519002"}
+{"level":3,"code":"BD.U387","name":"Tungipara","name_bn":"টুংগীপাড়া","parent_code":"BD.T51","postal_code":8121,"latitude":"22.92359515","longitude":"89.90223546"}
+{"level":3,"code":"BD.U388","name":"Kotalipara","name_bn":"কোটালীপাড়া","parent_code":"BD.T51","postal_code":8110,"latitude":"23.01051938","longitude":"90.02019937"}
+{"level":3,"code":"BD.U389","name":"Muksudpur","name_bn":"মুকসুদপুর","parent_code":"BD.T51","postal_code":null,"latitude":"23.26614945","longitude":"89.91575687"}
+{"level":3,"code":"BD.U390","name":"Faridpur Sadar","name_bn":"ফরিদপুর সদর","parent_code":"BD.T52","postal_code":7802,"latitude":"23.5974305","longitude":"89.81272444"}
+{"level":3,"code":"BD.U391","name":"Alfadanga","name_bn":"আলফাডাঙ্গা","parent_code":"BD.T52","postal_code":7870,"latitude":"23.29513493","longitude":"89.67033006"}
+{"level":3,"code":"BD.U392","name":"Boalmari","name_bn":"বোয়ালমারী","parent_code":"BD.T52","postal_code":7860,"latitude":"23.39867627","longitude":"89.69242212"}
+{"level":3,"code":"BD.U393","name":"Sadarpur","name_bn":"সদরপুর","parent_code":"BD.T52","postal_code":7822,"latitude":"23.49841249","longitude":"90.05092519"}
+{"level":3,"code":"BD.U394","name":"Nagarkanda","name_bn":"নগরকান্দা","parent_code":"BD.T52","postal_code":7840,"latitude":"23.43433249","longitude":"89.89562244"}
+{"level":3,"code":"BD.U395","name":"Bhanga","name_bn":"ভাঙ্গা","parent_code":"BD.T52","postal_code":7830,"latitude":"23.38910046","longitude":"90.0100025"}
+{"level":3,"code":"BD.U396","name":"Charbhadrasan","name_bn":"চরভদ্রাসন","parent_code":"BD.T52","postal_code":7810,"latitude":"23.59005054","longitude":"89.98012695"}
+{"level":3,"code":"BD.U397","name":"Madhukhali","name_bn":"মধুখালী","parent_code":"BD.T52","postal_code":null,"latitude":"23.54110013","longitude":"89.61112757"}
+{"level":3,"code":"BD.U398","name":"Saltha","name_bn":"সালথা","parent_code":"BD.T52","postal_code":null,"latitude":"23.41804522","longitude":"89.80078563"}
+{"level":3,"code":"BD.U399","name":"Panchagarh Sadar","name_bn":"পঞ্চগড় সদর","parent_code":"BD.T53","postal_code":null,"latitude":"26.36478029","longitude":"88.591095"}
+{"level":3,"code":"BD.U400","name":"Debiganj","name_bn":"দেবীগঞ্জ","parent_code":"BD.T53","postal_code":null,"latitude":"26.12695233","longitude":"88.7173732"}
+{"level":3,"code":"BD.U401","name":"Boda","name_bn":"বোদা","parent_code":"BD.T53","postal_code":null,"latitude":"26.23502554","longitude":"88.61881927"}
+{"level":3,"code":"BD.U402","name":"Atwari","name_bn":"আটোয়ারী","parent_code":"BD.T53","postal_code":null,"latitude":"26.25081731","longitude":"88.42459873"}
+{"level":3,"code":"BD.U403","name":"Tetulia","name_bn":"তেতুলিয়া","parent_code":"BD.T53","postal_code":5030,"latitude":"26.51251074","longitude":"88.43057717"}
+{"level":3,"code":"BD.U404","name":"Nawabganj","name_bn":"নবাবগঞ্জ","parent_code":"BD.T54","postal_code":1323,"latitude":"25.42088957","longitude":"89.09055668"}
+{"level":3,"code":"BD.U405","name":"Birganj","name_bn":"বীরগঞ্জ","parent_code":"BD.T54","postal_code":5220,"latitude":"25.92942183","longitude":"88.62578221"}
+{"level":3,"code":"BD.U406","name":"Ghoraghat","name_bn":"ঘোড়াঘাট","parent_code":"BD.T54","postal_code":5291,"latitude":"25.28733313","longitude":"89.21475129"}
+{"level":3,"code":"BD.U407","name":"Birampur","name_bn":"বিরামপুর","parent_code":"BD.T54","postal_code":null,"latitude":"25.3799376","longitude":"88.96340196"}
+{"level":3,"code":"BD.U408","name":"Parbatipur","name_bn":"পার্বতীপুর","parent_code":"BD.T54","postal_code":5250,"latitude":"25.61976841","longitude":"88.92296933"}
+{"level":3,"code":"BD.U409","name":"Bochaganj","name_bn":"বোচাগঞ্জ","parent_code":"BD.T54","postal_code":null,"latitude":"25.786215","longitude":"88.45332443"}
+{"level":3,"code":"BD.U410","name":"Kaharol","name_bn":"কাহারোল","parent_code":"BD.T54","postal_code":null,"latitude":"25.80245749","longitude":"88.5985003"}
+{"level":3,"code":"BD.U411","name":"Fulbari","name_bn":"ফুলবাড়ী","parent_code":"BD.T54","postal_code":null,"latitude":"25.47137881","longitude":"88.90073652"}
+{"level":3,"code":"BD.U412","name":"Dinajpur Sadar","name_bn":"দিনাজপুর সদর","parent_code":"BD.T54","postal_code":5201,"latitude":"25.60820914","longitude":"88.67571762"}
+{"level":3,"code":"BD.U413","name":"Hakimpur","name_bn":"হাকিমপুর","parent_code":"BD.T54","postal_code":null,"latitude":"25.29276704","longitude":"89.06120429"}
+{"level":3,"code":"BD.U414","name":"Khansama","name_bn":"খানসামা","parent_code":"BD.T54","postal_code":5230,"latitude":"25.87170113","longitude":"88.76460004"}
+{"level":3,"code":"BD.U415","name":"Birol","name_bn":"বিরল","parent_code":"BD.T54","postal_code":null,"latitude":"25.6468912","longitude":"88.54722616"}
+{"level":3,"code":"BD.U416","name":"Chirirbandar","name_bn":"চিরিরবন্দর","parent_code":"BD.T54","postal_code":5240,"latitude":"25.666732","longitude":"88.78325675"}
+{"level":3,"code":"BD.U417","name":"Lalmonirhat Sadar","name_bn":"লালমনিরহাট সদর","parent_code":"BD.T55","postal_code":5502,"latitude":"25.87870187","longitude":"89.4533625"}
+{"level":3,"code":"BD.U418","name":"Kaliganj","name_bn":"কালীগঞ্জ","parent_code":"BD.T55","postal_code":1720,"latitude":"25.98561274","longitude":"89.24170563"}
+{"level":3,"code":"BD.U419","name":"Hatibandha","name_bn":"হাতীবান্ধা","parent_code":"BD.T55","postal_code":5530,"latitude":"26.12026719","longitude":"89.1436277"}
+{"level":3,"code":"BD.U420","name":"Patgram","name_bn":"পাটগ্রাম","parent_code":"BD.T55","postal_code":5541,"latitude":"26.34342513","longitude":"89.01951962"}
+{"level":3,"code":"BD.U421","name":"Aditmari","name_bn":"আদিতমারী","parent_code":"BD.T55","postal_code":5510,"latitude":"25.94295908","longitude":"89.36819323"}
+{"level":3,"code":"BD.U422","name":"Syedpur","name_bn":"সৈয়দপুর","parent_code":"BD.T56","postal_code":null,"latitude":"25.80367107","longitude":"88.92050498"}
+{"level":3,"code":"BD.U423","name":"Domar","name_bn":"ডোমার","parent_code":"BD.T56","postal_code":5341,"latitude":"26.15958625","longitude":"88.82543146"}
+{"level":3,"code":"BD.U424","name":"Dimla","name_bn":"ডিমলা","parent_code":"BD.T56","postal_code":5350,"latitude":"26.17310954","longitude":"88.9738563"}
+{"level":3,"code":"BD.U425","name":"Jaldhaka","name_bn":"জলঢাকা","parent_code":"BD.T56","postal_code":5330,"latitude":"26.03119206","longitude":"88.99362175"}
+{"level":3,"code":"BD.U426","name":"Kishorganj","name_bn":"কিশোরগঞ্জ","parent_code":"BD.T56","postal_code":null,"latitude":"25.89799915","longitude":"89.03314087"}
+{"level":3,"code":"BD.U427","name":"Nilphamari Sadar","name_bn":"নীলফামারী সদর","parent_code":"BD.T56","postal_code":5300,"latitude":"25.94204608","longitude":"88.85474141"}
+{"level":3,"code":"BD.U428","name":"Sadullapur","name_bn":"সাদুল্লাপুর","parent_code":"BD.T57","postal_code":null,"latitude":"25.39485471","longitude":"89.42568996"}
+{"level":3,"code":"BD.U429","name":"Gaibandha Sadar","name_bn":"গাইবান্ধা সদর","parent_code":"BD.T57","postal_code":5700,"latitude":"25.35001584","longitude":"89.56561501"}
+{"level":3,"code":"BD.U430","name":"Palashbari","name_bn":"পলাশবাড়ী","parent_code":"BD.T57","postal_code":5730,"latitude":"25.26506469","longitude":"89.39175132"}
+{"level":3,"code":"BD.U431","name":"Saghata","name_bn":"সাঘাটা","parent_code":"BD.T57","postal_code":null,"latitude":"25.1251917","longitude":"89.56345058"}
+{"level":3,"code":"BD.U432","name":"Gobindaganj","name_bn":"গোবিন্দগঞ্জ","parent_code":"BD.T57","postal_code":5740,"latitude":"25.15773216","longitude":"89.36972742"}
+{"level":3,"code":"BD.U433","name":"Sundarganj","name_bn":"সুন্দরগঞ্জ","parent_code":"BD.T57","postal_code":5721,"latitude":"25.51016336","longitude":"89.56182562"}
+{"level":3,"code":"BD.U434","name":"Phulchari","name_bn":"ফুলছড়ি","parent_code":"BD.T57","postal_code":null,"latitude":"25.25378546","longitude":"89.65325858"}
+{"level":3,"code":"BD.U435","name":"Thakurgaon Sadar","name_bn":"ঠাকুরগাঁও সদর","parent_code":"BD.T58","postal_code":5103,"latitude":"26.07173216","longitude":"88.46375411"}
+{"level":3,"code":"BD.U436","name":"Pirganj","name_bn":"পীরগঞ্জ","parent_code":"BD.T58","postal_code":5470,"latitude":"25.84245298","longitude":"88.36790187"}
+{"level":3,"code":"BD.U437","name":"Ranisankail","name_bn":"রাণীশংকৈল","parent_code":"BD.T58","postal_code":null,"latitude":"25.94076753","longitude":"88.24587287"}
+{"level":3,"code":"BD.U438","name":"Haripur","name_bn":"হরিপুর","parent_code":"BD.T58","postal_code":null,"latitude":"25.87881874","longitude":"88.15452214"}
+{"level":3,"code":"BD.U439","name":"Baliadangi","name_bn":"বালিয়াডাঙ্গী","parent_code":"BD.T58","postal_code":5140,"latitude":"26.10819674","longitude":"88.2634769"}
+{"level":3,"code":"BD.U440","name":"Rangpur Sadar","name_bn":"রংপুর সদর","parent_code":"BD.T59","postal_code":5402,"latitude":"25.75121974","longitude":"89.15060773"}
+{"level":3,"code":"BD.U441","name":"Gangachara","name_bn":"গংগাচড়া","parent_code":"BD.T59","postal_code":5410,"latitude":"25.88015073","longitude":"89.20096031"}
+{"level":3,"code":"BD.U442","name":"Taragonj","name_bn":"তারাগঞ্জ","parent_code":"BD.T59","postal_code":null,"latitude":"25.78336557","longitude":"89.03331225"}
+{"level":3,"code":"BD.U443","name":"Badargonj","name_bn":"বদরগঞ্জ","parent_code":"BD.T59","postal_code":null,"latitude":"25.66776884","longitude":"89.05492385"}
+{"level":3,"code":"BD.U444","name":"Mithapukur","name_bn":"মিঠাপুকুর","parent_code":"BD.T59","postal_code":5460,"latitude":"25.57212022","longitude":"89.26091919"}
+{"level":3,"code":"BD.U445","name":"Pirgonj","name_bn":"পীরগঞ্জ","parent_code":"BD.T59","postal_code":null,"latitude":"25.42579893","longitude":"89.27470198"}
+{"level":3,"code":"BD.U446","name":"Kaunia","name_bn":"কাউনিয়া","parent_code":"BD.T59","postal_code":5441,"latitude":"25.76638064","longitude":"89.39371603"}
+{"level":3,"code":"BD.U447","name":"Pirgacha","name_bn":"পীরগাছা","parent_code":"BD.T59","postal_code":null,"latitude":"25.66502233","longitude":"89.422271"}
+{"level":3,"code":"BD.U448","name":"Kurigram Sadar","name_bn":"কুড়িগ্রাম সদর","parent_code":"BD.T60","postal_code":5600,"latitude":"25.82725828","longitude":"89.69146386"}
+{"level":3,"code":"BD.U449","name":"Nageshwari","name_bn":"নাগেশ্বরী","parent_code":"BD.T60","postal_code":null,"latitude":"25.95992217","longitude":"89.73954435"}
+{"level":3,"code":"BD.U450","name":"Bhurungamari","name_bn":"ভুরুঙ্গামারী","parent_code":"BD.T60","postal_code":5670,"latitude":"26.11552584","longitude":"89.69340888"}
+{"level":3,"code":"BD.U451","name":"Phulbari","name_bn":"ফুলবাড়ী","parent_code":"BD.T60","postal_code":5260,"latitude":"25.94768997","longitude":"89.571724"}
+{"level":3,"code":"BD.U452","name":"Rajarhat","name_bn":"রাজারহাট","parent_code":"BD.T60","postal_code":5611,"latitude":"25.78741372","longitude":"89.54159745"}
+{"level":3,"code":"BD.U453","name":"Ulipur","name_bn":"উলিপুর","parent_code":"BD.T60","postal_code":5621,"latitude":"25.68970821","longitude":"89.66873442"}
+{"level":3,"code":"BD.U454","name":"Chilmari","name_bn":"চিলমারী","parent_code":"BD.T60","postal_code":5630,"latitude":"25.56393785","longitude":"89.71820959"}
+{"level":3,"code":"BD.U455","name":"Rowmari","name_bn":"রৌমারী","parent_code":"BD.T60","postal_code":null,"latitude":"25.59306707","longitude":"89.82808122"}
+{"level":3,"code":"BD.U456","name":"Charrajibpur","name_bn":"চর রাজিবপুর","parent_code":"BD.T60","postal_code":null,"latitude":"25.44429196","longitude":"89.76420813"}
+{"level":3,"code":"BD.U457","name":"Sherpur Sadar","name_bn":"শেরপুর সদর","parent_code":"BD.T61","postal_code":null,"latitude":"24.99084023","longitude":"90.02163529"}
+{"level":3,"code":"BD.U458","name":"Nalitabari","name_bn":"নালিতাবাড়ী","parent_code":"BD.T61","postal_code":2111,"latitude":"25.11729884","longitude":"90.18440043"}
+{"level":3,"code":"BD.U459","name":"Sreebordi","name_bn":"শ্রীবরদী","parent_code":"BD.T61","postal_code":null,"latitude":"25.16484943","longitude":"89.95713439"}
+{"level":3,"code":"BD.U460","name":"Nokla","name_bn":"নকলা","parent_code":"BD.T61","postal_code":null,"latitude":"24.95798125","longitude":"90.18478482"}
+{"level":3,"code":"BD.U461","name":"Jhenaigati","name_bn":"ঝিনাইগাতী","parent_code":"BD.T61","postal_code":null,"latitude":"25.18241144","longitude":"90.05414329"}
+{"level":3,"code":"BD.U462","name":"Fulbaria","name_bn":"ফুলবাড়ীয়া","parent_code":"BD.T62","postal_code":2216,"latitude":"24.58684471","longitude":"90.25615763"}
+{"level":3,"code":"BD.U463","name":"Trishal","name_bn":"ত্রিশাল","parent_code":"BD.T62","postal_code":2221,"latitude":"24.56370418","longitude":"90.41044074"}
+{"level":3,"code":"BD.U464","name":"Bhaluka","name_bn":"ভালুকা","parent_code":"BD.T62","postal_code":2240,"latitude":"24.38161662","longitude":"90.35390162"}
+{"level":3,"code":"BD.U465","name":"Muktagacha","name_bn":"মুক্তাগাছা","parent_code":"BD.T62","postal_code":null,"latitude":"24.74426562","longitude":"90.20554409"}
+{"level":3,"code":"BD.U466","name":"Mymensingh Sadar","name_bn":"ময়মনসিংহ সদর","parent_code":"BD.T62","postal_code":2202,"latitude":"24.84613696","longitude":"90.26415422"}
+{"level":3,"code":"BD.U467","name":"Dhobaura","name_bn":"ধোবাউড়া","parent_code":"BD.T62","postal_code":2416,"latitude":"25.10122351","longitude":"90.52558027"}
+{"level":3,"code":"BD.U468","name":"Phulpur","name_bn":"ফুলপুর","parent_code":"BD.T62","postal_code":2251,"latitude":"24.95293883","longitude":"90.35294374"}
+{"level":3,"code":"BD.U469","name":"Haluaghat","name_bn":"হালুয়াঘাট","parent_code":"BD.T62","postal_code":2261,"latitude":"25.08413627","longitude":"90.35208288"}
+{"level":3,"code":"BD.U470","name":"Gouripur","name_bn":"গৌরীপুর","parent_code":"BD.T62","postal_code":2270,"latitude":"24.75653851","longitude":"90.58614903"}
+{"level":3,"code":"BD.U471","name":"Gafargaon","name_bn":"গফরগাঁও","parent_code":"BD.T62","postal_code":null,"latitude":"24.39365628","longitude":"90.54992728"}
+{"level":3,"code":"BD.U472","name":"Iswarganj","name_bn":"ঈশ্বরগঞ্জ","parent_code":"BD.T62","postal_code":null,"latitude":"24.64475383","longitude":"90.59950915"}
+{"level":3,"code":"BD.U473","name":"Nandail","name_bn":"নান্দাইল","parent_code":"BD.T62","postal_code":2291,"latitude":"24.54947402","longitude":"90.67677784"}
+{"level":3,"code":"BD.U474","name":"Tarakanda","name_bn":"তারাকান্দা","parent_code":"BD.T62","postal_code":null,"latitude":"24.86413144","longitude":"90.46339735"}
+{"level":3,"code":"BD.U475","name":"Jamalpur Sadar","name_bn":"জামালপুর সদর","parent_code":"BD.T63","postal_code":null,"latitude":"24.84275893","longitude":"90.01524092"}
+{"level":3,"code":"BD.U476","name":"Melandah","name_bn":"মেলান্দহ","parent_code":"BD.T63","postal_code":2011,"latitude":"24.95599302","longitude":"89.82798691"}
+{"level":3,"code":"BD.U477","name":"Islampur","name_bn":"ইসলামপুর","parent_code":"BD.T63","postal_code":2021,"latitude":"25.07564439","longitude":"89.76306354"}
+{"level":3,"code":"BD.U478","name":"Dewangonj","name_bn":"দেওয়ানগঞ্জ","parent_code":"BD.T63","postal_code":2030,"latitude":"25.2679709","longitude":"89.76630949"}
+{"level":3,"code":"BD.U479","name":"Sarishabari","name_bn":"সরিষাবাড়ী","parent_code":"BD.T63","postal_code":null,"latitude":"24.72155439","longitude":"89.83061407"}
+{"level":3,"code":"BD.U480","name":"Madarganj","name_bn":"মাদারগঞ্জ","parent_code":"BD.T63","postal_code":2041,"latitude":"24.88510913","longitude":"89.74178896"}
+{"level":3,"code":"BD.U481","name":"Bokshiganj","name_bn":"বকশীগঞ্জ","parent_code":"BD.T63","postal_code":null,"latitude":"25.2144324","longitude":"89.85216642"}
+{"level":3,"code":"BD.U482","name":"Barhatta","name_bn":"বারহাট্টা","parent_code":"BD.T64","postal_code":2440,"latitude":"24.92234073","longitude":"90.88506443"}
+{"level":3,"code":"BD.U483","name":"Durgapur","name_bn":"দুর্গাপুর","parent_code":"BD.T64","postal_code":6240,"latitude":"25.0890702","longitude":"90.6833433"}
+{"level":3,"code":"BD.U484","name":"Kendua","name_bn":"কেন্দুয়া","parent_code":"BD.T64","postal_code":2480,"latitude":"24.67804297","longitude":"90.80216919"}
+{"level":3,"code":"BD.U485","name":"Atpara","name_bn":"আটপাড়া","parent_code":"BD.T64","postal_code":2470,"latitude":"24.79395945","longitude":"90.87706885"}
+{"level":3,"code":"BD.U486","name":"Madan","name_bn":"মদন","parent_code":"BD.T64","postal_code":2490,"latitude":"24.67829123","longitude":"90.96698729"}
+{"level":3,"code":"BD.U487","name":"Khaliajuri","name_bn":"খালিয়াজুরী","parent_code":"BD.T64","postal_code":2460,"latitude":"24.70497783","longitude":"91.12181656"}
+{"level":3,"code":"BD.U488","name":"Kalmakanda","name_bn":"কলমাকান্দা","parent_code":"BD.T64","postal_code":2430,"latitude":"25.07759048","longitude":"90.85761154"}
+{"level":3,"code":"BD.U489","name":"Mohongonj","name_bn":"মোহনগঞ্জ","parent_code":"BD.T64","postal_code":null,"latitude":"24.827911","longitude":"91.02336058"}
+{"level":3,"code":"BD.U490","name":"Purbadhala","name_bn":"পূর্বধলা","parent_code":"BD.T64","postal_code":null,"latitude":"24.93402036","longitude":"90.60294175"}
+{"level":3,"code":"BD.U491","name":"Netrokona Sadar","name_bn":"নেত্রকোণা সদর","parent_code":"BD.T64","postal_code":null,"latitude":"24.88718661","longitude":"90.73811233"}
+{"level":3,"code":"BD.U492","name":"Eidgaon","name_bn":"ঈদগাঁও","parent_code":"BD.T9","postal_code":null,"latitude":"21.55582075","longitude":"92.05915783"}
+{"level":3,"code":"BD.U493","name":"Madhyanagar","name_bn":"মধ্যনগর","parent_code":"BD.T39","postal_code":null,"latitude":"25.09020205","longitude":"91.0132659"}
+{"level":3,"code":"BD.U494","name":"Dasar","name_bn":"ডাসার","parent_code":"BD.T50","postal_code":null,"latitude":"23.09203776","longitude":"90.16068434"}
+{"level":3,"code":"BD.U495","name":"Adabor","name_bn":"আদাবর","parent_code":"BD.T47","postal_code":null,"latitude":"23.7732898","longitude":"90.35483119999999"}
+{"level":3,"code":"BD.U496","name":"Badda","name_bn":"বাড্ডা","parent_code":"BD.T47","postal_code":null,"latitude":"23.7805462","longitude":"90.4266584"}
+{"level":3,"code":"BD.U497","name":"Bangshal","name_bn":"বংশাল","parent_code":"BD.T47","postal_code":null,"latitude":"23.71814","longitude":"90.4007384"}
+{"level":3,"code":"BD.U498","name":"Biman Bandar","name_bn":"বিমানবন্দর","parent_code":"BD.T47","postal_code":null,"latitude":"23.851232","longitude":"90.407657"}
+{"level":3,"code":"BD.U499","name":"Cantonment","name_bn":"ক্যান্টনমেন্ট","parent_code":"BD.T47","postal_code":null,"latitude":"23.8282405","longitude":"90.3889622"}
+{"level":3,"code":"BD.U500","name":"Chawkbazar","name_bn":"চকবাজার","parent_code":"BD.T47","postal_code":null,"latitude":"23.7170356","longitude":"90.39632189999999"}
+{"level":3,"code":"BD.U501","name":"Darus Salam","name_bn":"দারুস সালাম","parent_code":"BD.T47","postal_code":null,"latitude":"23.7784999","longitude":"90.35306659999999"}
+{"level":3,"code":"BD.U502","name":"Demark","name_bn":"ডেমরা","parent_code":"BD.T47","postal_code":null,"latitude":"23.804093","longitude":"90.4152376"}
+{"level":3,"code":"BD.U503","name":"Dhanmondi","name_bn":"ধানমন্ডি","parent_code":"BD.T47","postal_code":1209,"latitude":"23.7461495","longitude":"90.3742307"}
+{"level":3,"code":"BD.U504","name":"Gendaria","name_bn":"গেণ্ডারিয়া","parent_code":"BD.T47","postal_code":null,"latitude":"23.7024528","longitude":"90.4260691"}
+{"level":3,"code":"BD.U505","name":"Gulshan","name_bn":"গুলশান","parent_code":"BD.T47","postal_code":1213,"latitude":"23.794798","longitude":"90.4142694"}
+{"level":3,"code":"BD.U506","name":"Hazaribagh","name_bn":"হাজারীবাগ","parent_code":"BD.T47","postal_code":null,"latitude":"23.744724","longitude":"90.359551"}
+{"level":3,"code":"BD.U507","name":"Jatrabari","name_bn":"যাত্রাবাড়ী","parent_code":"BD.T47","postal_code":1236,"latitude":"23.7106102","longitude":"90.43490919999999"}
+{"level":3,"code":"BD.U508","name":"Kadamtali","name_bn":"কদমতলী","parent_code":"BD.T47","postal_code":null,"latitude":"23.7017913","longitude":"90.3948498"}
+{"level":3,"code":"BD.U509","name":"Kafrul","name_bn":"কাফরুল","parent_code":"BD.T47","postal_code":null,"latitude":"23.7895638","longitude":"90.39131719999999"}
+{"level":3,"code":"BD.U510","name":"Kalabagan","name_bn":"কলাবাগান","parent_code":"BD.T47","postal_code":null,"latitude":"23.7494231","longitude":"90.3830754"}
+{"level":3,"code":"BD.U511","name":"Kamrangirchar","name_bn":"কামরাঙ্গীরচর","parent_code":"BD.T47","postal_code":null,"latitude":"23.7182214","longitude":"90.367774"}
+{"level":3,"code":"BD.U512","name":"Khilgaon","name_bn":"খিলগাঁও","parent_code":"BD.T47","postal_code":1219,"latitude":"23.7566389","longitude":"90.4643906"}
+{"level":3,"code":"BD.U513","name":"Khilkhet","name_bn":"খিলক্ষেত","parent_code":"BD.T47","postal_code":1229,"latitude":"23.8311224","longitude":"90.4243013"}
+{"level":3,"code":"BD.U514","name":"Kotwali","name_bn":"কোতোয়ালী","parent_code":"BD.T47","postal_code":null,"latitude":"23.7106805","longitude":"90.4089838"}
+{"level":3,"code":"BD.U515","name":"Lalbagh","name_bn":"লালবাগ","parent_code":"BD.T47","postal_code":null,"latitude":"23.7181758","longitude":"90.3866074"}
+{"level":3,"code":"BD.U516","name":"Mirpur","name_bn":"মিরপুর","parent_code":"BD.T47","postal_code":1216,"latitude":"23.8151741","longitude":"90.3632786"}
+{"level":3,"code":"BD.U517","name":"Mohammadpur","name_bn":"মোহাম্মদপুর","parent_code":"BD.T47","postal_code":1207,"latitude":"23.7661639","longitude":"90.3588734"}
+{"level":3,"code":"BD.U518","name":"Motijheel","name_bn":"মতিঝিল","parent_code":"BD.T47","postal_code":1222,"latitude":"23.7329724","longitude":"90.417231"}
+{"level":3,"code":"BD.U519","name":"New Market","name_bn":"নিউ মার্কেট","parent_code":"BD.T47","postal_code":null,"latitude":"23.7331937","longitude":"90.3837664"}
+{"level":3,"code":"BD.U520","name":"Pallabi","name_bn":"পল্লবী","parent_code":"BD.T47","postal_code":null,"latitude":"23.8283088","longitude":"90.36071369999999"}
+{"level":3,"code":"BD.U521","name":"Paltan","name_bn":"পল্টন","parent_code":"BD.T47","postal_code":null,"latitude":"23.7322458","longitude":"90.4107509"}
+{"level":3,"code":"BD.U522","name":"Ramna","name_bn":"রমনা","parent_code":"BD.T47","postal_code":1217,"latitude":"23.7330218","longitude":"90.3983829"}
+{"level":3,"code":"BD.U523","name":"Rampura","name_bn":"রামপুরা","parent_code":"BD.T47","postal_code":null,"latitude":"23.7612256","longitude":"90.420766"}
+{"level":3,"code":"BD.U524","name":"Rupnagar","name_bn":"রূপনগর","parent_code":"BD.T47","postal_code":null,"latitude":"23.7771725","longitude":"90.43638279999999"}
+{"level":3,"code":"BD.U525","name":"Sabujbagh","name_bn":"সবুজবাগ","parent_code":"BD.T47","postal_code":null,"latitude":"23.7383544","longitude":"90.42921249999999"}
+{"level":3,"code":"BD.U526","name":"Shah Ali","name_bn":"শাহ আলী","parent_code":"BD.T47","postal_code":null,"latitude":"23.8035611","longitude":"90.3508276"}
+{"level":3,"code":"BD.U527","name":"Shahbagh","name_bn":"শাহবাগ","parent_code":"BD.T47","postal_code":null,"latitude":"23.7397263","longitude":"90.394261"}
+{"level":3,"code":"BD.U528","name":"Sher-e-Bangla Nagar","name_bn":"শেরেবাংলা নগর","parent_code":"BD.T47","postal_code":null,"latitude":"23.7717497","longitude":"90.37718950000001"}
+{"level":3,"code":"BD.U529","name":"Shyampur","name_bn":"শ্যামপুর","parent_code":"BD.T47","postal_code":null,"latitude":"23.6852903","longitude":"90.44552"}
+{"level":3,"code":"BD.U530","name":"Sutrapur","name_bn":"সূত্রাপুর","parent_code":"BD.T47","postal_code":1100,"latitude":"23.7121399","longitude":"90.4195876"}
+{"level":3,"code":"BD.U531","name":"Tejgaon","name_bn":"তেজগাঁও","parent_code":"BD.T47","postal_code":1215,"latitude":"23.759815","longitude":"90.39131719999999"}
+{"level":3,"code":"BD.U532","name":"Tejgaon Industrial Area","name_bn":"তেজগাঁও শিল্পাঞ্চল","parent_code":"BD.T47","postal_code":1208,"latitude":"23.7657287","longitude":"90.4054498"}
+{"level":3,"code":"BD.U533","name":"Turag","name_bn":"তুরাগ","parent_code":"BD.T47","postal_code":null,"latitude":"23.8762949","longitude":"90.36860779999999"}
+{"level":3,"code":"BD.U534","name":"Uttara East","name_bn":"উত্তরা পূর্ব","parent_code":"BD.T47","postal_code":null,"latitude":"23.8728511","longitude":"90.39131719999999"}
+{"level":3,"code":"BD.U535","name":"Uttara West","name_bn":"উত্তরা পশ্চিম","parent_code":"BD.T47","postal_code":null,"latitude":"23.8758187","longitude":"90.38745639999999"}
+{"level":3,"code":"BD.U536","name":"Vatara","name_bn":"ভাটারা","parent_code":"BD.T47","postal_code":null,"latitude":"23.80135","longitude":"90.4337304"}
+{"level":3,"code":"BD.U537","name":"Wari","name_bn":"ওয়ারী","parent_code":"BD.T48","postal_code":null,"latitude":"23.4609812","longitude":"90.2843096"}
+{"level":3,"code":"BD.U538","name":"Hatirjheel","name_bn":"হাতিরঝিল","parent_code":"BD.T47","postal_code":null,"latitude":"23.769424","longitude":"90.41428529999999"}
+{"level":3,"code":"BD.U539","name":"Vashantek","name_bn":"ভাষানটেক","parent_code":"BD.T47","postal_code":null,"latitude":"23.8049579","longitude":"90.3876764"}
+{"level":3,"code":"BD.U540","name":"Akbar Shah","name_bn":"আকবর শাহ","parent_code":"BD.T8","postal_code":null,"latitude":"22.372957","longitude":"91.7803765"}
+{"level":3,"code":"BD.U541","name":"Bakalia","name_bn":"বাকলিয়া","parent_code":"BD.T8","postal_code":null,"latitude":"22.3530007","longitude":"91.8562218"}
+{"level":3,"code":"BD.U542","name":"Bayezid Bostami","name_bn":"বায়োজিদ বোস্তামী","parent_code":"BD.T8","postal_code":null,"latitude":"22.3638193","longitude":"91.8260079"}
+{"level":3,"code":"BD.U543","name":"Chandgaon","name_bn":"চাঁান্দগাঁও","parent_code":"BD.T8","postal_code":null,"latitude":"22.3887509","longitude":"91.8562218"}
+{"level":3,"code":"BD.U544","name":"Chittagong Kotwali","name_bn":"কোতোয়ালী","parent_code":"BD.T8","postal_code":null,"latitude":"22.3414146","longitude":"91.8269573"}
+{"level":3,"code":"BD.U545","name":"Double Mooring","name_bn":"ডাবলমুরিং","parent_code":"BD.T8","postal_code":null,"latitude":"22.3297149","longitude":"91.80745859999999"}
+{"level":3,"code":"BD.U546","name":"Epz","name_bn":"ইপিজেড","parent_code":"BD.T8","postal_code":null,"latitude":"22.2805989","longitude":"91.78475449999999"}
+{"level":3,"code":"BD.U547","name":"Halishahar","name_bn":"হালিশহর","parent_code":"BD.T8","postal_code":null,"latitude":"22.318119","longitude":"91.77822669999999"}
+{"level":3,"code":"BD.U548","name":"Karnaphuli","name_bn":"কর্ণফুলী","parent_code":"BD.T8","postal_code":null,"latitude":"22.2833245","longitude":"91.7872056"}
+{"level":3,"code":"BD.U549","name":"Khulshi","name_bn":"খুলশী","parent_code":"BD.T8","postal_code":null,"latitude":"22.3614768","longitude":"91.814013"}
+{"level":3,"code":"BD.U550","name":"Panchlaish","name_bn":"পাঁচলাইশ","parent_code":"BD.T8","postal_code":null,"latitude":"22.3621872","longitude":"91.8342716"}
+{"level":3,"code":"BD.U551","name":"Pahartali","name_bn":"পাহাড়তলী","parent_code":"BD.T8","postal_code":null,"latitude":"22.3657883","longitude":"91.77822669999999"}
+{"level":3,"code":"BD.U552","name":"Patenga","name_bn":"পতেঙ্গা","parent_code":"BD.T8","postal_code":null,"latitude":"22.2391378","longitude":"91.81446489999999"}
+{"level":3,"code":"BD.U553","name":"Sadarghat","name_bn":"সদরঘাট","parent_code":"BD.T8","postal_code":null,"latitude":"22.3237868","longitude":"91.8227155"}
+{"level":3,"code":"BD.U554","name":"Boalia","name_bn":"বোয়ালিয়া","parent_code":"BD.T15","postal_code":null,"latitude":"24.3747269","longitude":"88.6041329"}
+{"level":3,"code":"BD.U555","name":"Rajpara","name_bn":"রাজপাড়া","parent_code":"BD.T15","postal_code":null,"latitude":"24.3735078","longitude":"88.5722344"}
+{"level":3,"code":"BD.U556","name":"Motihar","name_bn":"মতিহার","parent_code":"BD.T15","postal_code":null,"latitude":"24.3616628","longitude":"88.6270882"}
+{"level":3,"code":"BD.U557","name":"Shah Makhdum","name_bn":"শাহ মখদুম","parent_code":"BD.T15","postal_code":null,"latitude":"24.3935517","longitude":"88.6117692"}
+{"level":3,"code":"BD.U558","name":"Chandrima","name_bn":"চন্দ্রিমা","parent_code":"BD.T15","postal_code":null,"latitude":"24.3746497","longitude":"88.60036649999999"}
+{"level":3,"code":"BD.U559","name":"Katakhali","name_bn":"কাটাখালী","parent_code":"BD.T15","postal_code":null,"latitude":"24.2103421","longitude":"89.225325"}
+{"level":3,"code":"BD.U560","name":"Belpukur","name_bn":"বেলপুকুর","parent_code":"BD.T15","postal_code":null,"latitude":"24.3650145","longitude":"88.7244071"}
+{"level":3,"code":"BD.U561","name":"Airport","name_bn":"বিমানবন্দর","parent_code":"BD.T15","postal_code":null,"latitude":"24.7105776","longitude":"88.94138650000001"}
+{"level":3,"code":"BD.U562","name":"Kashia Danga","name_bn":"কাশিয়াডাঙ্গা","parent_code":"BD.T15","postal_code":null,"latitude":"24.5202514","longitude":"88.54444749999999"}
+{"level":3,"code":"BD.U563","name":"Karnaher","name_bn":"কর্ণহার","parent_code":"BD.T15","postal_code":null,"latitude":"24.3746497","longitude":"88.60036649999999"}
+{"level":3,"code":"BD.U564","name":"Damkura","name_bn":"দামকুড়া","parent_code":"BD.T15","postal_code":null,"latitude":"24.4064398","longitude":"88.5232509"}
+{"level":3,"code":"BD.U565","name":"Khulna Sadar Thana","name_bn":"খুলনা সদর থানা","parent_code":"BD.T27","postal_code":null,"latitude":"22.8171194","longitude":"89.56485990000002"}
+{"level":3,"code":"BD.U566","name":"Sonadanga","name_bn":"সোনাডাঙ্গা","parent_code":"BD.T27","postal_code":null,"latitude":"22.8247809","longitude":"89.5379687"}
+{"level":3,"code":"BD.U567","name":"Khalishpur","name_bn":"খালিশপুর","parent_code":"BD.T27","postal_code":null,"latitude":"22.8624819","longitude":"89.5298607"}
+{"level":3,"code":"BD.U568","name":"Daulatpur","name_bn":"দৌলতপুর","parent_code":"BD.T27","postal_code":null,"latitude":"22.8634453","longitude":"89.5167298"}
+{"level":3,"code":"BD.U569","name":"Khan Jahan Ali","name_bn":"খান জাহান আলী","parent_code":"BD.T27","postal_code":null,"latitude":"22.8618196","longitude":"89.51164100000001"}
+{"level":3,"code":"BD.U570","name":"Harintana","name_bn":"হরিণটানা","parent_code":"BD.T27","postal_code":null,"latitude":"22.7905968","longitude":"89.5650908"}
+{"level":3,"code":"BD.U571","name":"Aranghata","name_bn":"আড়ংঘাটা","parent_code":"BD.T27","postal_code":null,"latitude":"22.8723313","longitude":"89.5002027"}
+{"level":3,"code":"BD.U572","name":"Labanchara","name_bn":"লবণচরা","parent_code":"BD.T27","postal_code":null,"latitude":"22.7848147","longitude":"89.5775779"}
+{"level":3,"code":"BD.U573","name":"Kotwali Model","name_bn":"কোতোয়ালী মডেল","parent_code":"BD.T33","postal_code":null,"latitude":"22.7063099","longitude":"90.37181939999999"}
+{"level":3,"code":"BD.U574","name":"Kawnia","name_bn":"কাউনিয়া","parent_code":"BD.T33","postal_code":null,"latitude":"22.7177927","longitude":"90.3583606"}
+{"level":3,"code":"BD.U575","name":"Bandar Thana","name_bn":"বন্দর থানা","parent_code":"BD.T33","postal_code":null,"latitude":"22.7132876","longitude":"90.3496278"}
+{"level":3,"code":"BD.U576","name":"Airport Thana","name_bn":"বিমানবন্দর থানা","parent_code":"BD.T33","postal_code":null,"latitude":"22.7571957","longitude":"90.31593699999999"}
+{"level":3,"code":"BD.U577","name":"Kotwali","name_bn":"কোতোয়ালী","parent_code":"BD.T36","postal_code":null,"latitude":"24.8889156","longitude":"91.8653709"}
+{"level":3,"code":"BD.U578","name":"Jalalabad","name_bn":"জালালাবাদ","parent_code":"BD.T36","postal_code":null,"latitude":"24.9089724","longitude":"91.862321"}
+{"level":3,"code":"BD.U579","name":"Shah Poran","name_bn":"শাহ পরান","parent_code":"BD.T36","postal_code":null,"latitude":"24.8995551","longitude":"91.8724244"}
+{"level":3,"code":"BD.U580","name":"South Surma","name_bn":"দক্ষিণ সুরমা","parent_code":"BD.T36","postal_code":null,"latitude":"24.9047808","longitude":"91.86000790000001"}
+{"level":3,"code":"BD.U581","name":"Gazerpara","name_bn":"গাজীপুর","parent_code":"BD.T36","postal_code":null,"latitude":"24.8173923","longitude":"91.8922193"}
+{"level":3,"code":"BD.U582","name":"Moglabazar","name_bn":"মোগলাবাজার","parent_code":"BD.T36","postal_code":null,"latitude":"24.9047808","longitude":"91.86000790000001"}
+{"level":3,"code":"BD.U583","name":"Airport","name_bn":"বিমানবন্দর","parent_code":"BD.T36","postal_code":null,"latitude":"24.9583415","longitude":"91.8707201"}
+{"level":3,"code":"BD.U584","name":"Tongu East","name_bn":"টঙ্গী পূর্ব","parent_code":"BD.T41","postal_code":null,"latitude":"23.9905079","longitude":"90.3877184"}
+{"level":3,"code":"BD.U585","name":"Tongi West","name_bn":"টঙ্গী পশ্চিম","parent_code":"BD.T41","postal_code":null,"latitude":"23.9170359","longitude":"90.39008369999999"}
+{"level":3,"code":"BD.U586","name":"Gachha","name_bn":"গাছা","parent_code":"BD.T41","postal_code":null,"latitude":"23.9383393","longitude":"90.367774"}
+{"level":3,"code":"BD.U587","name":"Basan","name_bn":"বাসন","parent_code":"BD.T41","postal_code":null,"latitude":"23.9888988","longitude":"90.36542039999999"}
+{"level":3,"code":"BD.U588","name":"Konabari","name_bn":"কোনাবাড়ী","parent_code":"BD.T41","postal_code":null,"latitude":"24.0112973","longitude":"90.3219053"}
+{"level":3,"code":"BD.U589","name":"Kashimpur","name_bn":"কাশিমপুর","parent_code":"BD.T41","postal_code":null,"latitude":"23.9845353","longitude":"90.3219053"}
+{"level":3,"code":"BD.U590","name":"Pubail","name_bn":"পুবাইল","parent_code":"BD.T41","postal_code":null,"latitude":"23.9172755","longitude":"90.45967209999999"}
+{"level":3,"code":"BD.U591","name":"Kotwali","name_bn":"কোতোয়ালী","parent_code":"BD.T59","postal_code":null,"latitude":"25.7474729","longitude":"89.2503799"}
+{"level":3,"code":"BD.U592","name":"Parshuram","name_bn":"পরশুরাম","parent_code":"BD.T59","postal_code":null,"latitude":"25.7840157","longitude":"89.2335484"}
+{"level":3,"code":"BD.U593","name":"Tajhat","name_bn":"তাজহাট","parent_code":"BD.T59","postal_code":null,"latitude":"25.7252732","longitude":"89.2799033"}
+{"level":3,"code":"BD.U594","name":"Mahiganj","name_bn":"মহীগঞ্জ","parent_code":"BD.T59","postal_code":null,"latitude":"25.7292047","longitude":"89.29098189999999"}
+{"level":3,"code":"BD.U595","name":"Haragach","name_bn":"হারাগাছ","parent_code":"BD.T59","postal_code":null,"latitude":"25.8151583","longitude":"89.3321823"}
+{"level":3,"code":"BD.U596","name":"Hajiratat","name_bn":"হাজীরহাট","parent_code":"BD.T59","postal_code":null,"latitude":"25.7493938","longitude":"89.26108649999999"}
