@@ -375,12 +375,19 @@ class ModuleAccessService
 
     protected function isIndustryCompatible(Institute $institute, string $moduleKey): bool
     {
-        // Currently only education is industry-gated (CheckModuleAccess:53). Preserve hierarchy.
-        // Do not invent new mappings; use existing industry_rules via CheckModuleAccess logic.
-        if ($moduleKey === 'education' && $institute->industry !== null && $institute->industry !== 'education') {
-            return false;
+        $industry = $institute->industry ?? null;
+
+        // Industry modules: only compatible with matching institute industry
+        $industryModuleMap = [
+            'education' => 'education',
+            'healthcare' => 'medical',
+            'training_center' => 'training_center',
+        ];
+
+        if (in_array($moduleKey, array_values($industryModuleMap), true)) {
+            return ($industryModuleMap[$moduleKey] ?? null) === $industry;
         }
-        // All other modules are core (industry null) — compatible with any industry
+
         return true;
     }
 

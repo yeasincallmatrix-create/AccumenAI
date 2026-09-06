@@ -120,10 +120,14 @@ class AppServiceProvider extends ServiceProvider
         // Any change to institute package must invalidate the cached enabled-modules.
         Institute::created(function (Institute $institute) {
             app(ModuleAccessService::class)->flushCache($institute->id);
+            self::syncIndustryModule($institute);
         });
         Institute::updated(function (Institute $institute) {
             if ($institute->wasChanged('package_id') || $institute->wasChanged('status') || $institute->wasChanged('industry')) {
                 app(ModuleAccessService::class)->flushCache($institute->id);
+            }
+            if ($institute->wasChanged('industry')) {
+                self::syncIndustryModule($institute);
             }
         });
         Institute::deleted(function (Institute $institute) {
@@ -417,5 +421,45 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('institute', $institute);
             }
         });
+    }
+
+    /**
+     * Auto-assign / swap the industry module based on institute's industry.
+     * Each institute gets exactly one industry module as its primary scope:
+     *   education      → education
+     *   healthcare     → medical
+     *   training_center → training_center
+     *
+     * Other industries get no industry module. Admin can manually add
+     * additional industry modules via entitlements, but the primary
+     * one is always driven by the institute's industry field.
+     */
+    protected static function syncIndustryModule(Institute $institute): void
+    {
+        $industryModuleMap = [
+            'education' => 'education',
+            'healthcare' => 'medical',
+            'training_center' => 'training_center',
+        ];
+
+        $desiredModule = $industryModuleMap[$institute->industry ?? ''] ?? null;
+
+        // Deactivate all industry modules first
+        foreach (array_values($industryModuleMap) as $moduleKey) {
+            \App\Models\InstituteModuleOverride::updateOrCreate(
+                ['institute_id' => $institute->id, 'module_key' => $moduleKey],
+                ['enabled' => false]
+            );
+        }
+
+        // Activate the matching one
+        if ($desiredModule && \App\Models\ModuleRegistry::where('key', $desiredModule)->where('status', 'active')->exists()) {
+            \App\Models\InstituteModuleOverride::updateOrCreate(
+                ['institute_id' => $institute->id, 'module_key' => $desiredModule],
+                ['enabled' => true]
+            );
+        }
+
+        app(\App\Services\ModuleAccessService::class)->flushCache($institute->id);
     }
 }
