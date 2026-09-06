@@ -1,0 +1,147 @@
+@extends('layouts.institute')
+
+@section('title', 'Prescription — AccumenAI')
+
+@section('content')
+<div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <div class="page-header-text">
+        <h4 class="page-header-title">
+            {{ $prescription->prescription_number }}
+            @if($prescription->is_finalized)
+                <span class="badge bg-success">Finalized</span>
+            @else
+                <span class="badge bg-warning text-dark">Draft</span>
+            @endif
+        </h4>
+    </div>
+    <div class="page-header-actions">
+        @if(!$prescription->is_finalized)
+            <a class="btn btn-warning" href="{{ route('medical.prescriptions.edit', $prescription) }}">
+                <i class="bi bi-pencil me-1"></i>Edit
+            </a>
+            <form action="{{ route('medical.prescriptions.finalize', $prescription) }}" method="POST" class="d-inline">
+                @csrf
+                <button type="submit" class="btn btn-success"
+                        onclick="return confirm('Finalize this prescription? It can no longer be edited.')">
+                    <i class="bi bi-check-all me-1"></i>Finalize
+                </button>
+            </form>
+        @else
+            <a class="btn btn-primary" href="{{ route('medical.prescriptions.print', $prescription) }}">
+                <i class="bi bi-printer me-1"></i>Print
+            </a>
+        @endif
+        <a class="btn btn-secondary" href="{{ route('medical.prescriptions.index') }}">
+            <i class="bi bi-arrow-left me-1"></i>Back
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h6 class="mb-0">Prescription Info</h6></div>
+            <div class="card-body">
+                <p><strong>Patient:</strong>
+                    @if($prescription->patient)
+                        <a href="{{ route('medical.patients.show', $prescription->patient) }}">{{ $prescription->patient->full_name }}</a>
+                        <span class="text-muted">({{ $prescription->patient->mr_number }})</span>
+                    @else
+                        N/A
+                    @endif
+                </p>
+                <p><strong>Doctor:</strong> {{ $prescription->doctor->name ?? 'N/A' }}</p>
+                <p><strong>Date:</strong> {{ $prescription->prescription_date?->format('d M Y') }}</p>
+                <p><strong>Diagnosis:</strong> {{ $prescription->diagnosis ?? '—' }}</p>
+                <p class="mb-0"><strong>Follow-up:</strong> {{ $prescription->follow_up_date?->format('d M Y') ?? '—' }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h6 class="mb-0">Clinical Notes</h6></div>
+            <div class="card-body">
+                <p><strong>Complaints:</strong> {{ $prescription->chief_complaints ?? '—' }}</p>
+                <p><strong>Findings:</strong> {{ $prescription->examination_findings ?? '—' }}</p>
+                <p class="mb-0"><strong>Advice:</strong> {{ $prescription->advice ?? '—' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header"><h6 class="mb-0">Medicines ({{ $prescription->items->count() }})</h6></div>
+    <div class="card-body">
+        @if($prescription->items->count() > 0)
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle">
+                    <thead>
+                        <tr><th>Medicine</th><th>Dosage</th><th>Frequency</th><th>Days</th><th>Qty</th><th>Status</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach($prescription->items as $item)
+                        <tr>
+                            <td>{{ $item->medicine_name }}</td>
+                            <td>{{ $item->dosage }}</td>
+                            <td>{{ $item->frequency }}</td>
+                            <td>{{ $item->duration_days ?? '—' }}</td>
+                            <td>{{ $item->quantity }}</td>
+                            <td>
+                                <span class="badge bg-{{ $item->status === 'dispensed' ? 'success' : ($item->status === 'cancelled' ? 'danger' : 'secondary') }}">
+                                    {{ ucfirst($item->status) }}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                @if(!$prescription->is_finalized && $item->status === 'pending')
+                                    <form action="{{ route('medical.prescriptions.items.destroy', [$prescription, $item]) }}"
+                                          method="POST" class="d-inline"
+                                          onsubmit="return confirm('Remove this medicine?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Remove">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </form>
+                                @endif
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <p class="text-muted mb-0">No medicines on this prescription.</p>
+        @endif
+
+        @if(!$prescription->is_finalized)
+            <hr>
+            <h6>Add Medicine</h6>
+            <form action="{{ route('medical.prescriptions.items.store', $prescription) }}" method="POST">
+                @csrf
+                <div class="row g-2">
+                    <div class="col-md-4">
+                        <input type="text" name="medicine_name" class="form-control form-control-sm" required
+                               maxlength="200" placeholder="Medicine name">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" name="dosage" class="form-control form-control-sm" required
+                               maxlength="50" placeholder="Dosage">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" name="frequency" class="form-control form-control-sm" required
+                               maxlength="50" placeholder="Frequency">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" name="quantity" class="form-control form-control-sm" min="1" value="1" required>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-sm btn-primary w-100">
+                            <i class="bi bi-plus-lg me-1"></i>Add
+                        </button>
+                    </div>
+                </div>
+            </form>
+        @endif
+    </div>
+</div>
+@endsection

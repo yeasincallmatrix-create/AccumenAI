@@ -6,6 +6,8 @@ use App\Http\Middleware\EnsureAiEnabled;
 use App\Http\Middleware\EnsureDomain;
 use App\Http\Middleware\EnsureInstituteContext;
 use App\Http\Middleware\ForceJsonResponse;
+use App\Http\Middleware\MedicalDomain;
+use App\Http\Middleware\MedicalModuleAccess;
 use App\Http\Middleware\PlatformMaintenance;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetFortifyGuard;
@@ -26,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
             __DIR__.'/../routes/web.php',
             __DIR__.'/../routes/auth.php',
             __DIR__.'/../routes/guardian.php',
+            __DIR__.'/../routes/medical.php',
         ],
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
@@ -44,6 +47,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'force.json' => ForceJsonResponse::class,
             'platform.maintenance' => PlatformMaintenance::class,
             'domain' => EnsureDomain::class,
+            // Phase 0 — HMS Foundation (no app/Http/Kernel.php on Laravel 12;
+            // aliases registered here instead).
+            'medical' => MedicalDomain::class,
+            'medical.module' => MedicalModuleAccess::class,
+            'medical_module' => MedicalModuleAccess::class,
         ]);
 
         $middleware->web(append: [

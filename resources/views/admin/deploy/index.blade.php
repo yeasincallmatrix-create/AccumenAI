@@ -8,6 +8,7 @@
         <p class="text-muted mb-0 small">Dual deployment via Git or ZIP upload. All deployments are backed up and audited. Maximum 5 backups retained.</p>
     </div>
     <div class="d-flex gap-2 align-items-center">
+        <a href="{{ route('admin.git.index') }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-git me-1"></i> Git Management</a>
         <a href="{{ route('admin.artisan-commands.index') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-terminal me-1"></i> Artisan Commands</a>
         <span class="badge bg-success"><i class="bi bi-shield-check me-1"></i> Max 5 backups</span>
     </div>

@@ -9,7 +9,8 @@ use App\Models\Institute;
  *
  * Academic: Education + {school, college, polytechnic, university}
  * Professional: Training Center + {training_institute, professional_training_center, dance_academy, it_training_center, vocational_training_center}
- * Other: everything else (retail, manufacturing, service, transportation, restaurant, healthcare...)
+ * Medical (Phase 0 — HMS Foundation): Healthcare + {hospital, clinic, pharmacy, diagnostic_center}
+ * Other: everything else (retail, manufacturing, service, transportation, restaurant...)
  *
  * Never trust client-supplied subject_type / domain / category_id.
  */
@@ -17,6 +18,7 @@ final class InstituteDomain
 {
     public const ACADEMIC = 'academic';
     public const PROFESSIONAL = 'professional';
+    public const MEDICAL = 'medical';
     public const OTHER = 'other';
 
     /** Academic sub_industries under Education — all 8 from config/industry_rules.php:global.education */
@@ -52,11 +54,28 @@ final class InstituteDomain
     ];
 
     /**
-     * Canonical industry keys for other domains (no academic/professional structure exposed).
+     * Medical sub_industries under Healthcare — canonical keys from
+     * config/industry_rules.php:global.healthcare.
+     *
+     * Phase 0 — HMS Foundation. Legacy alias `diagnostic` is normalized
+     * to `diagnostic_center` in normalizeSubIndustry().
+     */
+    public const MEDICAL_TYPES = [
+        'hospital',
+        'clinic',
+        'diagnostic_center',
+        'pharmacy',
+    ];
+
+    /** Medical industry key (canonical taxonomy). */
+    public const MEDICAL_INDUSTRY = 'healthcare';
+
+    /**
+     * Canonical industry keys for other domains (no academic/professional/medical structure exposed).
      */
     public const OTHER_INDUSTRIES = [
         'retail', 'manufacturing', 'service', 'transportation', 'restaurant',
-        // also treat healthcare, finance, etc. as OTHER - they pass through but get no academic/professional gateway
+        // finance etc. pass through as OTHER — they get no domain gateway
     ];
 
     /**
@@ -85,7 +104,62 @@ final class InstituteDomain
         if ($industry === 'training_center' && in_array($sub, self::PROFESSIONAL_TYPES, true)) {
             return self::PROFESSIONAL;
         }
+        // Phase 0 — HMS Foundation: healthcare industry resolves to medical
+        if ($industry === self::MEDICAL_INDUSTRY && in_array($sub, self::MEDICAL_TYPES, true)) {
+            return self::MEDICAL;
+        }
+
         return self::OTHER;
+    }
+
+    /**
+     * Domain map grouped by domain (Phase 0 compat helper for the HMS module).
+     *
+     * Note: authoritative resolution stays in fromKeys()/fromInstitute();
+     * this is a descriptive map only.
+     */
+    public static function domains(): array
+    {
+        return [
+            'academic' => array_merge(['education'], self::ACADEMIC_TYPES),
+            'professional' => array_merge(['training_center'], self::PROFESSIONAL_TYPES),
+            'medical' => array_merge([self::MEDICAL_INDUSTRY], self::MEDICAL_TYPES),
+            'other' => self::OTHER_INDUSTRIES,
+        ];
+    }
+
+    /**
+     * Phase 0 compat: resolve a domain from a single industry string.
+     *
+     * Accepts either a canonical industry key ('healthcare' → medical,
+     * 'education' → academic, 'training_center' → professional) or a bare
+     * sub_industry slug ('hospital' → medical, 'school' → academic, ...).
+     * An optional $subIndustry narrows ambiguous cases via fromKeys().
+     */
+    public static function getDomain(string $industry, ?string $subIndustry = null): string
+    {
+        $industry = strtolower(trim($industry));
+
+        if ($subIndustry !== null && $subIndustry !== '') {
+            return self::fromKeys($industry, $subIndustry);
+        }
+
+        if ($industry === self::MEDICAL_INDUSTRY || in_array($industry, self::MEDICAL_TYPES, true)) {
+            return self::MEDICAL;
+        }
+        if ($industry === 'education' || in_array($industry, self::ACADEMIC_TYPES, true)) {
+            return self::ACADEMIC;
+        }
+        if ($industry === 'training_center' || in_array($industry, self::PROFESSIONAL_TYPES, true)) {
+            return self::PROFESSIONAL;
+        }
+
+        return self::OTHER;
+    }
+
+    public static function isMedical(?Institute $institute): bool
+    {
+        return self::fromInstitute($institute) === self::MEDICAL;
     }
 
     public static function isAcademic(?Institute $institute): bool
@@ -151,6 +225,12 @@ final class InstituteDomain
             'vocational_institute' => 'vocational_training_center',
             'skill_development_center' => 'vocational_training_center',
             'technical_training_center' => 'vocational_training_center',
+            // Phase 0 — HMS Foundation: healthcare spelling aliases only.
+            // Distinct facility types (medical_college, nursing_home, dental,
+            // eye/cardiac hospitals) are NOT remapped — they stay OTHER until
+            // the taxonomy gains them as canonical healthcare sub-industries.
+            'diagnostic' => 'diagnostic_center',
+            'diagnostic_centre' => 'diagnostic_center',
         ];
         // Only apply institution-type renames when domain matches; but globally safe for now
         return $map[$sub] ?? $sub;
@@ -174,6 +254,18 @@ final class InstituteDomain
               ->whereColumn('aa.id', 'academic_student_marks.academic_assessment_id')
               ->where('aa.institute_id', $instituteId);
         })->exists()) return true;
+        // Phase 0 — HMS Foundation: medical data also blocks a domain switch.
+        foreach (['patients', 'wards', 'appointments', 'admissions', 'medicines', 'prescriptions', 'lab_orders', 'invoices'] as $medicalTable) {
+            try {
+                if (\Illuminate\Support\Facades\Schema::hasTable($medicalTable)
+                    && \Illuminate\Support\Facades\DB::table($medicalTable)->where('institute_id', $instituteId)->exists()) {
+                    return true;
+                }
+            } catch (\Throwable $_) {
+                // Table missing (migration not yet run) — treat as no data.
+            }
+        }
+
         return false;
     }
 }

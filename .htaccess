@@ -1,4 +1,3 @@
-AddHandler application/x-httpd-ea-php84___lsphp .php
 <IfModule mod_rewrite.c>
 RewriteEngine On
 RewriteBase /

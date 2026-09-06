@@ -31,7 +31,7 @@
 @if(!empty($fk['missing']))
 <div class="card mb-4"><div class="card-body">
     <div class="small fw-bold text-muted mb-1">Missing Foreign Keys (non-blocking):</div>
-    @foreach(array_slice($fk['missing'],0,15) as $f)<div class="small">• {{ $f }}</div>@endforeach
+    @foreach(array_slice($fk['missing'],0,15) as $f)<div class="small">• {{ is_array($f) ? $f['table'].'.'.$f['column'].' → '.$f['references'] : $f }}</div>@endforeach
     @if(count($fk['missing'])>15)<div class="small text-muted">... and {{ count($fk['missing'])-15 }} more</div>@endif
 </div></div>
 @endif
