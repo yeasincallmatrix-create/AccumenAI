@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AdministrativeUnit;
 use App\Models\Certificate;
+use App\Models\Country;
 use App\Models\HrEmployee;
 use App\Models\Institute;
 use App\Models\InstituteSetting;
@@ -47,6 +48,7 @@ class InstituteAdminController extends Controller
                     ->orWhere('slug', 'like', "%{$term}%")
                     ->orWhere('institute_code', 'like', "%{$term}%")
                     ->orWhere('email', 'like', "%{$term}%")))
+            ->when($request->query('country'), fn ($query, $country) => $query->where('country', $country))
             ->when($request->query('industry'), fn ($query, $industry) => $query->where('industry', $industry))
             ->when($request->query('sub_industry'), fn ($query, $subIndustry) => $query->where('sub_industry', $subIndustry))
             ->when($request->query('status'), fn ($query, $status) => $query->where('status', $status));
@@ -58,20 +60,26 @@ class InstituteAdminController extends Controller
         $visibleColumns = $request->user()->preference('institutes_columns', self::INSTITUTES_COLUMNS);
         $visibleColumns = array_values(array_intersect(self::INSTITUTES_COLUMNS, (array) $visibleColumns));
 
+        $selectedCountry = $request->query('country');
+        $selectedIndustry = $request->query('industry');
+
         return view('admin.institutes.index', [
             'items' => $items,
             'allItems' => $allItems,
             'visibleColumns' => $visibleColumns,
             'perPage' => $perPage,
             'perPageOptions' => self::PER_PAGE_OPTIONS,
-            'selectedIndustry' => $request->query('industry'),
-            'industries' => IndustryRules::industries(null),
-            'subIndustries' => is_string($request->query('industry'))
-                ? IndustryRules::subIndustries('', $request->query('industry'))
+            'countries' => Country::orderBy('name')->get(),
+            'selectedCountry' => $selectedCountry,
+            'selectedIndustry' => $selectedIndustry,
+            'industries' => IndustryRules::industries($selectedCountry),
+            'subIndustries' => is_string($selectedIndustry)
+                ? IndustryRules::subIndustries($selectedCountry ?? '', $selectedIndustry)
                 : [],
             'filters' => [
                 'q' => $request->query('q'),
-                'industry' => $request->query('industry'),
+                'country' => $selectedCountry,
+                'industry' => $selectedIndustry,
                 'sub_industry' => $request->query('sub_industry'),
                 'status' => $request->query('status'),
                 'per_page' => $perPage,
@@ -496,6 +504,7 @@ class InstituteAdminController extends Controller
                 ->orWhere('slug', 'like', "%{$term}%")
                 ->orWhere('institute_code', 'like', "%{$term}%")
                 ->orWhere('email', 'like', "%{$term}%")))
+            ->when($request->query('country'), fn ($q, $country) => $q->where('country', $country))
             ->when($request->query('industry'), fn ($q, $industry) => $q->where('industry', $industry))
             ->when($request->query('sub_industry'), fn ($q, $sub) => $q->where('sub_industry', $sub))
             ->when($request->query('status'), fn ($q, $status) => $q->where('status', $status));
@@ -554,10 +563,12 @@ class InstituteAdminController extends Controller
             'visibleColumns' => $visibleColumns,
             'perPage' => $perPage,
             'perPageOptions' => self::PER_PAGE_OPTIONS,
-            'industries' => IndustryRules::industries(null),
-            'subIndustries' => is_string($request->query('industry')) ? IndustryRules::subIndustries('', $request->query('industry')) : [],
+            'countries' => Country::orderBy('name')->get(),
+            'industries' => IndustryRules::industries($request->query('country')),
+            'subIndustries' => is_string($request->query('industry')) ? IndustryRules::subIndustries($request->query('country') ?? '', $request->query('industry')) : [],
             'filters' => [
                 'q' => $request->query('q'),
+                'country' => $request->query('country'),
                 'industry' => $request->query('industry'),
                 'sub_industry' => $request->query('sub_industry'),
                 'status' => $request->query('status'),

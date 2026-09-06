@@ -53,6 +53,15 @@
                 <i class="bi bi-search"></i>
                 <input type="text" class="form-control form-control-sm" name="q" placeholder="Search by name, code or email..." value="{{ $filters['q'] ?? '' }}">
             </div>
+            <div class="filter-span flex-shrink-0" style="min-width:160px">
+                <label class="form-label mb-1">Country</label>
+                <select name="country" class="form-select form-select-sm">
+                    <option value="">All Countries</option>
+                    @foreach($countries as $country)
+                        <option value="{{ $country->name }}" @selected(($filters['country'] ?? '') === $country->name)>{{ $country->name }}</option>
+                    @endforeach
+                </select>
+            </div>
             <div class="filter-span flex-shrink-0" style="min-width:180px">
                 <label class="form-label mb-1">Industry</label>
                 <select class="form-select form-select-sm" name="industry" id="industrySelectBin">
