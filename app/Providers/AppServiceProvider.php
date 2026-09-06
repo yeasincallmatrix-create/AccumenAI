@@ -186,6 +186,7 @@ class AppServiceProvider extends ServiceProvider
                     ->with('workspaceAllowedPurchase', false)
                     ->with('workspaceAllowedEducation', false)
                     ->with('workspaceAllowedAccountingManage', false)
+                    ->with('workspaceAllowedMedical', false)
                     ->with('recycleCount', 0)
                     ->with('layoutNotifications', collect())
                     ->with('layoutUnreadCount', 0)
@@ -330,6 +331,13 @@ class AppServiceProvider extends ServiceProvider
                 : ($membership?->hasPermission('settings.accounting.manage') ?? false);
             $workspaceAllowedAccountingManage = $institute !== null && $moduleService->isEnabled($institute, 'finance') && $hasAccountingPerm;
 
+            $hasMedical = function (string $perm) use ($user, $membership): bool {
+                if ($user instanceof InstituteUser) return $user->hasPermission($perm);
+                return $membership?->hasPermission($perm) ?? false;
+            };
+            $hasMedicalPerm = $hasMedical('medical_patients.view') || $hasMedical('medical_appointments.view') || $hasMedical('medical_admissions.view') || $hasMedical('medical_pharmacy.view') || $hasMedical('medical_lab.view') || $hasMedical('medical_billing.view');
+            $workspaceAllowedMedical = $institute !== null && $moduleService->isEnabled($institute, 'medical') && $hasMedicalPerm;
+
             $recycleCount = match (true) {
                 $user instanceof PlatformAdmin => Institute::query()->whereNotNull('deleted_at')->count()
                     + Certificate::query()->whereNotNull('deleted_at')->count(),
@@ -397,6 +405,7 @@ class AppServiceProvider extends ServiceProvider
                 ->with('workspaceAllowedPurchase', $workspaceAllowedPurchase)
                 ->with('workspaceAllowedEducation', $workspaceAllowedEducation)
                 ->with('workspaceAllowedAccountingManage', $workspaceAllowedAccountingManage)
+                ->with('workspaceAllowedMedical', $workspaceAllowedMedical)
                 ->with('recycleCount', $recycleCount)
                 ->with('layoutNotifications', $layoutNotifications)
                 ->with('layoutUnreadCount', $layoutUnreadCount)

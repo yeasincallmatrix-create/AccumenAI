@@ -536,6 +536,85 @@
                         <i class="bi bi-robot"></i><span class="sidebar-label">{{ mawa_e('sidebar.ai_assistant') }}</span>
                     </a>
                 @endif
+                @if ($workspaceAllowedMedical ?? false)
+                    @php $medicalOpen = request()->routeIs('medical.*') ? true : false; @endphp
+                    <div class="nav-group">
+                        <button class="nav-link w-100 d-flex align-items-center justify-content-between {{ $medicalOpen ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#medicalNavGroup" aria-expanded="{{ $medicalOpen ? 'true' : 'false' }}" aria-controls="medicalNavGroup">
+                            <span class="d-flex align-items-center gap-2"><i class="bi bi-hospital"></i><span class="sidebar-label fw-semibold">Medical</span></span>
+                            <i class="bi bi-chevron-down small sidebar-label nav-caret"></i>
+                        </button>
+                        <div class="collapse {{ $medicalOpen ? 'show' : '' }}" id="medicalNavGroup">
+                            <a class="nav-link sub {{ request()->routeIs('medical.dashboard') ? 'active' : '' }}" href="{{ route('medical.dashboard') }}">
+                                <i class="bi bi-speedometer2"></i><span class="sidebar-label">Dashboard</span>
+                            </a>
+                            @can('view_medical_patients')
+                                <a class="nav-link sub {{ request()->routeIs('medical.patients.*') ? 'active' : '' }}" href="{{ route('medical.patients.index') }}">
+                                    <i class="bi bi-person"></i><span class="sidebar-label">Patients</span>
+                                </a>
+                            @endcan
+                            @can('view_medical_appointments')
+                                <a class="nav-link sub {{ request()->routeIs('medical.appointments.*') && !request()->routeIs('medical.appointments.queue') ? 'active' : '' }}" href="{{ route('medical.appointments.index') }}">
+                                    <i class="bi bi-calendar-event"></i><span class="sidebar-label">Appointments</span>
+                                </a>
+                                <a class="nav-link sub {{ request()->routeIs('medical.appointments.queue') ? 'active' : '' }}" href="{{ route('medical.appointments.queue') }}">
+                                    <i class="bi bi-people"></i><span class="sidebar-label">Queue</span>
+                                </a>
+                            @endcan
+                            @can('view_medical_admissions')
+                                <a class="nav-link sub {{ request()->routeIs('medical.admissions.*') ? 'active' : '' }}" href="{{ route('medical.admissions.index') }}">
+                                    <i class="bi bi-hospital"></i><span class="sidebar-label">IPD (Admissions)</span>
+                                </a>
+                                <a class="nav-link sub {{ request()->routeIs('medical.beds.*') ? 'active' : '' }}" href="{{ route('medical.beds.index') }}">
+                                    <i class="bi bi-grid"></i><span class="sidebar-label">Beds</span>
+                                </a>
+                            @endcan
+                            @can('view_medical_wards')
+                                <a class="nav-link sub {{ request()->routeIs('medical.wards.*') ? 'active' : '' }}" href="{{ route('medical.wards.index') }}">
+                                    <i class="bi bi-building"></i><span class="sidebar-label">Wards</span>
+                                </a>
+                            @endcan
+                            @can('view_medical_prescriptions')
+                                <a class="nav-link sub {{ request()->routeIs('medical.prescriptions.*') ? 'active' : '' }}" href="{{ route('medical.prescriptions.index') }}">
+                                    <i class="bi bi-file-medical"></i><span class="sidebar-label">Prescriptions</span>
+                                </a>
+                            @endcan
+                            @canany(['view_medical_medicines', 'view_medical_pharmacy'])
+                                <a class="nav-link sub {{ request()->routeIs('medical.pharmacy.dispense.*') ? 'active' : '' }}" href="{{ route('medical.pharmacy.dispense.index') }}">
+                                    <i class="bi bi-capsule"></i><span class="sidebar-label">Pharmacy</span>
+                                </a>
+                                <a class="nav-link sub {{ request()->routeIs('medical.pharmacy.stock.*') && !request()->routeIs('medical.pharmacy.stock.expiry') ? 'active' : '' }}" href="{{ route('medical.pharmacy.stock.index') }}">
+                                    <i class="bi bi-boxes"></i><span class="sidebar-label">Stock</span>
+                                </a>
+                                <a class="nav-link sub {{ request()->routeIs('medical.pharmacy.stock.expiry') ? 'active' : '' }}" href="{{ route('medical.pharmacy.stock.expiry') }}">
+                                    <i class="bi bi-clock-history"></i><span class="sidebar-label">Expiry Alerts</span>
+                                </a>
+                            @endcan
+                            @can('view_medical_lab')
+                                <a class="nav-link sub {{ request()->routeIs('medical.lab.orders.*') ? 'active' : '' }}" href="{{ route('medical.lab.orders.index') }}">
+                                    <i class="bi bi-flask"></i><span class="sidebar-label">Lab Orders</span>
+                                </a>
+                                <a class="nav-link sub {{ request()->routeIs('medical.lab.tests.*') ? 'active' : '' }}" href="{{ route('medical.lab.tests.index') }}">
+                                    <i class="bi bi-list-ol"></i><span class="sidebar-label">Test Catalog</span>
+                                </a>
+                            @endcan
+                            @can('view_medical_billing')
+                                <a class="nav-link sub {{ request()->routeIs('medical.billing.*') ? 'active' : '' }}" href="{{ route('medical.billing.invoices.index') }}">
+                                    <i class="bi bi-receipt"></i><span class="sidebar-label">Invoices</span>
+                                </a>
+                            @endcan
+                            @can('view_medical_tpa')
+                                <a class="nav-link sub {{ request()->routeIs('medical.tpa.*') ? 'active' : '' }}" href="{{ route('medical.tpa.claims.index') }}">
+                                    <i class="bi bi-shield-check"></i><span class="sidebar-label">TPA Claims</span>
+                                </a>
+                            @endcan
+                            @can('view_medical_reports')
+                                <a class="nav-link sub {{ request()->routeIs('medical.reports.*') ? 'active' : '' }}" href="{{ route('medical.reports.dashboard') }}">
+                                    <i class="bi bi-graph-up"></i><span class="sidebar-label">Medical Reports</span>
+                                </a>
+                            @endcan
+                        </div>
+                    </div>
+                @endif
                 <a class="nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}" href="{{ route('settings.index') }}">
                     <i class="bi bi-gear-fill"></i><span class="sidebar-label">{{ mawa_e('sidebar.settings') }}</span>
                 </a>
