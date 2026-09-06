@@ -260,7 +260,7 @@ class InstituteAdminController extends Controller
     {
         $countryId = $institute->country_id;
         $geoLevels = $countryId
-            ? AdministrativeUnit::where('country_id', $countryId)->where('status', true)
+            ? AdministrativeUnit::where('administrative_units.country_id', $countryId)->where('administrative_units.status', true)
                 ->join('administrative_levels', 'administrative_levels.id', '=', 'administrative_units.administrative_level_id')
                 ->select('administrative_units.*', 'administrative_levels.level_number')
                 ->get()->groupBy('level_number')
