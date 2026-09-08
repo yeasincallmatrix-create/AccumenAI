@@ -171,11 +171,11 @@
                         <td @if(!in_array('status', $visibleColumns, true)) style="display:none" @endif>
                             <span class="badge {{ $statusBadge[$item->status] ?? 'text-bg-secondary' }}">{{ $item->status }}</span>
                         </td>
-                        <td class="text-muted" @if(!in_array('requested_at', $visibleColumns, true)) style="display:none" @endif>{{ $item->created_at->format('d M Y') }}</td>
+                        <td class="text-muted" @if(!in_array('requested_at', $visibleColumns, true)) style="display:none" @endif><x-tdate :value="$item->created_at" fallback="d M Y" /></td>
                         <td class="text-muted" @if(!in_array('review_note', $visibleColumns, true)) style="display:none" @endif>{{ $item->review_note ?? '—' }}</td>
                         <td @if(!in_array('reviewed_by', $visibleColumns, true)) style="display:none" @endif>{{ $item->reviewedBy->name ?? '—' }}</td>
-                        <td class="text-muted" @if(!in_array('reviewed_at', $visibleColumns, true)) style="display:none" @endif>{{ $item->reviewed_at?->format('d M Y') ?? '—' }}</td>
-                        <td class="text-muted" @if(!in_array('updated_at', $visibleColumns, true)) style="display:none" @endif>{{ $item->updated_at->format('d M Y') }}</td>
+                        <td class="text-muted" @if(!in_array('reviewed_at', $visibleColumns, true)) style="display:none" @endif><x-tdate :value="$item->reviewed_at" fallback="d M Y" empty="—" /></td>
+                        <td class="text-muted" @if(!in_array('updated_at', $visibleColumns, true)) style="display:none" @endif><x-tdate :value="$item->updated_at" fallback="d M Y" /></td>
                         <td class="text-end text-nowrap col-action" @if(!in_array('action', $visibleColumns, true)) style="display:none" @endif>
                             @if ($item->status === 'pending')
                                 <form class="d-inline" method="POST" action="{{ route('admin.courses.requests.action', $item) }}"
@@ -230,11 +230,11 @@
                     <td data-col="course" @if(!in_array('course', $visibleColumns, true)) style="display:none" @endif>{{ $item->course->name ?? '—' }} ({{ $item->course->course_code ?? '' }})</td>
                     <td data-col="requested_by" @if(!in_array('requested_by', $visibleColumns, true)) style="display:none" @endif>{{ $item->requestedBy->name ?? '—' }}</td>
                     <td data-col="status" @if(!in_array('status', $visibleColumns, true)) style="display:none" @endif>{{ ucfirst($item->status) }}</td>
-                    <td data-col="requested_at" @if(!in_array('requested_at', $visibleColumns, true)) style="display:none" @endif>{{ $item->created_at->format('d M Y') }}</td>
+                    <td data-col="requested_at" @if(!in_array('requested_at', $visibleColumns, true)) style="display:none" @endif><x-tdate :value="$item->created_at" fallback="d M Y" /></td>
                     <td data-col="review_note" @if(!in_array('review_note', $visibleColumns, true)) style="display:none" @endif>{{ $item->review_note ?? '—' }}</td>
                     <td data-col="reviewed_by" @if(!in_array('reviewed_by', $visibleColumns, true)) style="display:none" @endif>{{ $item->reviewedBy->name ?? '—' }}</td>
-                    <td data-col="reviewed_at" @if(!in_array('reviewed_at', $visibleColumns, true)) style="display:none" @endif>{{ $item->reviewed_at?->format('d M Y') ?? '—' }}</td>
-                    <td data-col="updated_at" @if(!in_array('updated_at', $visibleColumns, true)) style="display:none" @endif>{{ $item->updated_at->format('d M Y') }}</td>
+                    <td data-col="reviewed_at" @if(!in_array('reviewed_at', $visibleColumns, true)) style="display:none" @endif><x-tdate :value="$item->reviewed_at" fallback="d M Y" empty="—" /></td>
+                    <td data-col="updated_at" @if(!in_array('updated_at', $visibleColumns, true)) style="display:none" @endif><x-tdate :value="$item->updated_at" fallback="d M Y" /></td>
                 </tr>
             @endforeach
         </tbody>

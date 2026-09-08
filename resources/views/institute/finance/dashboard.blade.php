@@ -122,7 +122,7 @@
                     <span class="text-truncate">
                         <a href="{{ route('finance.invoices.show', $payment->invoice) }}" class="text-decoration-none">#{{ $payment->invoice?->invoice_number ?? $payment->invoice_id }}</a>
                         <span class="badge text-bg-light border ms-1">{{ $payment->payment_method }}</span>
-                        <span class="small text-muted ms-1">{{ $payment->paid_at?->format('Y-m-d') }}</span>
+                        <span class="small text-muted ms-1"><x-tdate :value="$payment->paid_at" fallback="Y-m-d" /></span>
                     </span>
                     <span class="fw-semibold">{{ number_format($payment->amount, 2) }} {{ $baseCurrency }}</span>
                 </div>

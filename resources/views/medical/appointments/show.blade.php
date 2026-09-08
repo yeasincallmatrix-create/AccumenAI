@@ -31,7 +31,7 @@
                     @endif
                 </p>
                 <p><strong>Doctor:</strong> {{ $appointment->doctor->name ?? 'N/A' }}</p>
-                <p><strong>Date:</strong> {{ $appointment->appointment_date?->format('d M Y') }}</p>
+                <p><strong>Date:</strong> <x-tdate :value="$appointment->appointment_date" fallback="d M Y" /></p>
                 <p><strong>Time:</strong> {{ $appointment->appointment_time ? \Carbon\Carbon::parse($appointment->appointment_time)->format('h:i A') : 'N/A' }}</p>
                 <p><strong>Serial:</strong> #{{ $appointment->serial_number }}</p>
                 <p class="mb-0"><strong>Status:</strong>

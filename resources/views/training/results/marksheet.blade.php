@@ -135,8 +135,8 @@
         <table>
             <tr><td class="label">Batch Code:</td><td>{{ $batch->batch_code ?? 'N/A' }}</td></tr>
             <tr><td class="label">Course:</td><td>{{ $batchCourseName }}</td></tr>
-            <tr><td class="label">Start Date:</td><td>{{ isset($batch->start_date) ? \Carbon\Carbon::parse($batch->start_date)->format('d M Y') : 'N/A' }}</td></tr>
-            <tr><td class="label">End Date:</td><td>{{ isset($batch->end_date) ? \Carbon\Carbon::parse($batch->end_date)->format('d M Y') : 'N/A' }}</td></tr>
+            <tr><td class="label">Start Date:</td><td><x-tdate :value="$batch->start_date ?? null" fallback="d M Y" empty="N/A" /></td></tr>
+            <tr><td class="label">End Date:</td><td><x-tdate :value="$batch->end_date ?? null" fallback="d M Y" empty="N/A" /></td></tr>
             <tr><td class="label">Total Marks:</td><td>{{ $result->total_marks ?? 0 }}</td></tr>
             <tr><td class="label">Obtained Marks:</td><td>{{ $result->obtained_marks ?? 0 }}</td></tr>
             <tr><td class="label">Percentage:</td><td>{{ $result->percentage ?? 0 }}%</td></tr>
@@ -146,7 +146,7 @@
                 </td>
             </tr>
             @if(isset($result->published_at) && $result->published_at)
-            <tr><td class="label">Published:</td><td>{{ \Carbon\Carbon::parse($result->published_at)->format('d M Y') }}</td></tr>
+            <tr><td class="label">Published:</td><td><x-tdate :value="\Carbon\Carbon::parse($result->published_at)" fallback="d M Y" /></td></tr>
             @endif
             @if(isset($displayName) && $displayName !== $studentName)
             <tr><td class="label">Trainee:</td><td>{{ $displayName }} (ID: {{ $traineeId ?? $studentCode }})</td></tr>
@@ -172,7 +172,7 @@
             @php
                 $exam = $examResult->exam ?? null;
                 $examName = $exam->title ?? $exam->name ?? 'N/A';
-                $examDate = $exam && $exam->exam_date ? \Carbon\Carbon::parse($exam->exam_date)->format('d M Y') : 'N/A';
+                $examDate = $exam && $exam->exam_date ? mawa_format_date($exam->exam_date, null, 'd M Y') : 'N/A';
                 $totalMarks = $exam->full_marks ?? 0;
                 $obtained = $examResult->marks_obtained ?? $examResult->obtained_marks ?? 0;
                 $status = $examResult->result_status ?? ($obtained >= ($totalMarks*0.4) ? 'pass' : 'fail');

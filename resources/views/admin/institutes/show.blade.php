@@ -88,7 +88,7 @@
         <dt class="col-sm-4">Slug</dt><dd class="col-sm-8">/{{ $institute->slug }}</dd>
         <dt class="col-sm-4">Package</dt><dd class="col-sm-8">{{ $institute->package->name ?? '—' }}</dd>
         <dt class="col-sm-4">Subscription expiry</dt><dd class="col-sm-8">
-            {{ $institute->subscription_expiry ? \Illuminate\Support\Carbon::parse($institute->subscription_expiry)->format('d M Y') : '—' }}
+            <x-tdate :value="\Illuminate\Support\Carbon::parse($institute->subscription_expiry)" fallback="d M Y" empty="—" />
         </dd>
         <dt class="col-sm-4">Verified</dt><dd class="col-sm-8">{{ $institute->verified ? 'Yes' : 'No' }}</dd>
         <dt class="col-sm-4">Phone</dt><dd class="col-sm-8">{{ $institute->phone ?? '—' }}</dd>
@@ -99,7 +99,7 @@
             {{ collect([$institute->adminLevel1?->name, $institute->adminLevel2?->name, $institute->adminLevel3?->name])->filter()->implode(', ') ?: '—' }}
         </dd>
         <dt class="col-sm-4">Founded</dt><dd class="col-sm-8">{{ $institute->founded_year ?? '—' }}</dd>
-        <dt class="col-sm-4">Registered</dt><dd class="col-sm-8">{{ $institute->created_at->format('d M Y') }}</dd>
+        <dt class="col-sm-4">Registered</dt><dd class="col-sm-8"><x-tdate :value="$institute->created_at" fallback="d M Y" /></dd>
         <dt class="col-sm-4">Institute UID</dt>
         <dd class="col-sm-8">
             <x-uid-with-copy :uid="$institute->uid" label="Institute UID" />

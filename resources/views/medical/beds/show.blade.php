@@ -53,7 +53,7 @@
                         </a>
                         <span class="text-muted">({{ $activeAdmission->patient->mr_number }})</span>
                     </p>
-                    <p><strong>Admitted:</strong> {{ $activeAdmission->admission_date?->format('d M Y') }}</p>
+                    <p><strong>Admitted:</strong> <x-tdate :value="$activeAdmission->admission_date" fallback="d M Y" /></p>
                     <p class="mb-0">
                         <a href="{{ route('medical.admissions.show', $activeAdmission) }}" class="btn btn-sm btn-info">
                             <i class="bi bi-eye me-1"></i>View Admission

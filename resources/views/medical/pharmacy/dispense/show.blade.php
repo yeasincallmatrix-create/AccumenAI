@@ -54,7 +54,7 @@
                                            @checked($i === 0) required>
                                     <label class="form-check-label" for="batch-{{ $batch['stock_id'] }}">
                                         {{ $batch['batch_number'] }} — {{ $batch['quantity'] }} unit(s),
-                                        exp {{ $batch['expiry_date']?->format('d M Y') }}
+                                        exp <x-tdate :value="$batch['expiry_date']" fallback="d M Y" />
                                     </label>
                                 </div>
                             @endforeach

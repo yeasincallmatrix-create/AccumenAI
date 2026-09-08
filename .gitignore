@@ -1,17 +1,56 @@
 ﻿.env
-/vendor
-/node_modules
-/storage/*.key
-/public/storage
-.DS_Store
-homestead.json
-homestead.yaml
-*.log
-
-# unnecessary - keep repo lean
-/New folder/
-/storage/backups/
-/storage/framework/cache/data/
+!.env.example
 .env.bak*
 .env.broken*
+.env.backup*
+/vendor
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/storage/*.sqlite
+/storage/*.sqlite-journal
+/storage/app/public/*
+!/storage/app/public/.gitignore
+/storage/framework/cache/data/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+!/storage/logs/.gitignore
+/storage/backups/
+/bootstrap/cache/*
+!/bootstrap/cache/.gitignore
+*.log
+.DS_Store
+Thumbs.db
+homestead.json
+homestead.yaml
+.phpunit.result.cache
+.phpunit.cache/
+
+# opencode local config (contains API keys - never commit)
+/.opencode/
+opencode.json
+!opencode.json.example
+
+# local debug / dump scripts - never commit
+debug_*.php
+tmp_*.php
+audit_tmp*.php
+headers*.txt
+logout_headers.txt
+cookies.txt
+routes_list.txt
+routes_list*.txt
+
+# local backups and dumps - never commit
+/backup/
+/demo/
+*.sql
+*.bak
+*.zip
+*.pdf
+/New folder/
+
 

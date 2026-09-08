@@ -17,7 +17,7 @@
 
 <div class="standalone-heading">
     <h4>Customer Statement — {{ $party->name }}</h4>
-    <p>Account statement for <strong>{{ $party->name }}</strong> as of {{ now()->format('d M Y') }}.</p>
+    <p>Account statement for <strong>{{ $party->name }}</strong> as of <x-tdate :value="now()" fallback="d M Y" />.</p>
     <a href="{{ route('accounting.receivables.index') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Back to Receivables</a>
 </div>
 

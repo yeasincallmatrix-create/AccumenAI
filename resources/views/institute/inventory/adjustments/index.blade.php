@@ -121,7 +121,7 @@
                         <td>{{ $adj->warehouse?->name ?? '—' }}</td>
                         <td><span class="badge text-bg-light border">{{ ucfirst($adj->adjustment_type) }}</span></td>
                         <td>{{ Str::limit($adj->reason, 40) }}</td>
-                        <td>{{ $adj->created_at?->format('Y-m-d H:i') }}</td>
+                        <td><x-tdate :value="$adj->created_at" fallback="Y-m-d H:i" :datetime="true" /></td>
                         <td><span class="badge text-bg-{{ $adj->status === 'posted' ? 'success' : 'secondary' }}">{{ ucfirst($adj->status) }}</span></td>
                         <td class="text-end">
                             <a href="{{ route('inventory.adjustments.show', $adj) }}" class="btn btn-sm btn-outline-primary rounded-pill">View</a>

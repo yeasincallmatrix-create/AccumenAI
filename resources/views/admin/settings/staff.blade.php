@@ -36,7 +36,7 @@
                         <td>{{ $staff->institute->name ?? '—' }}</td>
                         <td>{{ $staff->email }}</td>
                         <td>{{ $staff->phone }}</td>
-                        <td>{{ $staff->created_at->format('d M Y H:i') }}</td>
+                        <td><x-tdate :value="$staff->created_at" fallback="d M Y H:i" :datetime="true" /></td>
                         <td class="text-end">
                             <form class="d-inline" method="POST" action="{{ route('admin.settings.staff-action', $staff) }}">
                                 @csrf

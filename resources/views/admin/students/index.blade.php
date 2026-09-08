@@ -172,7 +172,7 @@
                         <td data-col="gender" @if(!in_array('gender', $visibleColumns, true)) style="display:none" @endif>{{ $student->gender ? ucfirst($student->gender) : '—' }}</td>
                         <td data-col="phone" @if(!in_array('phone', $visibleColumns, true)) style="display:none" @endif>{{ $student->phone ?? '—' }}</td>
                         <td data-col="email" @if(!in_array('email', $visibleColumns, true)) style="display:none" @endif>{{ $student->email ?? '—' }}</td>
-                        <td data-col="admission" @if(!in_array('admission', $visibleColumns, true)) style="display:none" @endif>{{ $student->admission_date?->format('d M Y') ?? '—' }}</td>
+                        <td data-col="admission" @if(!in_array('admission', $visibleColumns, true)) style="display:none" @endif><x-tdate :value="$student->admission_date" fallback="d M Y" empty="—" /></td>
                         <td data-col="status" @if(!in_array('status', $visibleColumns, true)) style="display:none" @endif>
                             <span class="badge {{ $statusBadge[$student->status] ?? 'text-bg-secondary' }}">{{ $student->status }}</span>
                         </td>
@@ -224,7 +224,7 @@
                     <td data-col="gender" @if(!in_array('gender', $visibleColumns, true)) style="display:none" @endif>{{ $student->gender ? ucfirst($student->gender) : '—' }}</td>
                     <td data-col="phone" @if(!in_array('phone', $visibleColumns, true)) style="display:none" @endif>{{ $student->phone ?? '—' }}</td>
                     <td data-col="email" @if(!in_array('email', $visibleColumns, true)) style="display:none" @endif>{{ $student->email ?? '—' }}</td>
-                    <td data-col="admission" @if(!in_array('admission', $visibleColumns, true)) style="display:none" @endif>{{ $student->admission_date?->format('d M Y') ?? '—' }}</td>
+                    <td data-col="admission" @if(!in_array('admission', $visibleColumns, true)) style="display:none" @endif><x-tdate :value="$student->admission_date" fallback="d M Y" empty="—" /></td>
                     <td data-col="status" @if(!in_array('status', $visibleColumns, true)) style="display:none" @endif>{{ ucwords($student->status) }}</td>
                 </tr>
             @endforeach

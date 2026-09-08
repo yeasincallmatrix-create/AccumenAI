@@ -37,11 +37,11 @@
         </div>
         <div class="col-md-2">
             <label class="form-label small text-muted mb-1">Start</label>
-            <input type="date" name="start_date" class="form-control form-control-sm">
+            <x-tdate-input name="start_date" class="form-control form-control-sm" />
         </div>
         <div class="col-md-2">
             <label class="form-label small text-muted mb-1">End</label>
-            <input type="date" name="end_date" class="form-control form-control-sm">
+            <x-tdate-input name="end_date" class="form-control form-control-sm" />
         </div>
         <div class="col-md-2">
             <div class="form-check form-switch mb-0 pb-1">
@@ -84,7 +84,7 @@
                                     <div class="col d-flex align-items-center gap-2 flex-wrap">
                                         <span class="fw-semibold">{{ $year->name }}</span>
                                         <span class="badge text-bg-light border">{{ $year->code }}</span>
-                                        <small class="text-muted">{{ $year->start_date?->format('d M Y') ?? '—' }} → {{ $year->end_date?->format('d M Y') ?? '—' }}</small>
+                                        <small class="text-muted"><x-tdate :value="$year->start_date" fallback="d M Y" empty="—" /> → <x-tdate :value="$year->end_date" fallback="d M Y" empty="—" /></small>
                                     </div>
                                     <div class="col-auto">
                                         <label class="form-check form-switch m-0">

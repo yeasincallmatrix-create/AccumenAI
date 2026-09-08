@@ -21,7 +21,7 @@
                                 <div class="fw-semibold">{{ $notification->title }}</div>
                                 <div class="small mb-1">{{ $notification->message }}</div>
                                 <div class="small text-body-secondary">
-                                    <i class="bi bi-clock me-1"></i>{{ \Illuminate\Support\Carbon::parse($notification->created_at)->format('d M Y, h:i A') }}
+                                    <i class="bi bi-clock me-1"></i><x-tdate :value="$notification->created_at" fallback="d M Y, h:i A" :datetime="true" />
                                 </div>
                             </div>
                         </div>

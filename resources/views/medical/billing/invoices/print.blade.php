@@ -30,15 +30,15 @@
     <table class="meta">
         <tr>
             <td><strong>Patient:</strong> {{ $patient->full_name ?? 'N/A' }} ({{ $patient->mr_number ?? '' }})</td>
-            <td><strong>Invoice Date:</strong> {{ $invoice->invoice_date?->format('d M Y') }}</td>
+            <td><strong>Invoice Date:</strong> <x-tdate :value="$invoice->invoice_date" fallback="d M Y" /></td>
         </tr>
         <tr>
             <td><strong>Phone:</strong> {{ $patient->phone ?? 'N/A' }}</td>
-            <td><strong>Due Date:</strong> {{ $invoice->due_date?->format('d M Y') ?? '—' }}</td>
+            <td><strong>Due Date:</strong> <x-tdate :value="$invoice->due_date" fallback="d M Y" /></td>
         </tr>
         @if($admission)
         <tr>
-            <td><strong>Admission:</strong> {{ $admission->admission_date?->format('d M Y') }}</td>
+            <td><strong>Admission:</strong> <x-tdate :value="$admission->admission_date" fallback="d M Y" /></td>
             <td><strong>Status:</strong> {{ ucfirst($invoice->status) }}</td>
         </tr>
         @endif

@@ -16,7 +16,7 @@
                 <select name="purchase_order_id" class="form-select" onchange="this.form.submit()">
                     <option value="">— Select Approved PO —</option>
                     @foreach($pos as $po)
-                        <option value="{{ $po->id }}" @selected(($purchaseOrder?->id)==$po->id)>{{ $po->order_number }} — {{ $po->supplier?->name ?? 'Supplier #'.$po->supplier_id }} ({{ $po->status }}) — {{ $po->order_date?->format('Y-m-d') }}</option>
+                        <option value="{{ $po->id }}" @selected(($purchaseOrder?->id)==$po->id)>{{ $po->order_number }} — {{ $po->supplier?->name ?? 'Supplier #'.$po->supplier_id }} ({{ $po->status }}) — <x-tdate :value="$po->order_date" fallback="Y-m-d" /></option>
                     @endforeach
                 </select>
                 <small class="text-muted">Only Approved / Partially Received POs are listed.</small>
@@ -34,7 +34,7 @@
     @csrf
     <input type="hidden" name="purchase_order_id" value="{{ $purchaseOrder->id }}">
     <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between"><span>PO: {{ $purchaseOrder->order_number }} — {{ ucfirst($purchaseOrder->status) }}</span><span class="small text-muted">{{ $purchaseOrder->order_date?->format('Y-m-d') }} • {{ $purchaseOrder->currency?->code }}</span></div>
+        <div class="card-header d-flex justify-content-between"><span>PO: {{ $purchaseOrder->order_number }} — {{ ucfirst($purchaseOrder->status) }}</span><span class="small text-muted"><x-tdate :value="$purchaseOrder->order_date" fallback="Y-m-d" /> • {{ $purchaseOrder->currency?->code }}</span></div>
         <div class="card-body">
             <div class="row">
                 <div class="col-md-6"><h6>Supplier</h6><p class="mb-1 fw-semibold">{{ $purchaseOrder->supplier?->name }}</p><p class="mb-1 small text-muted">{{ $purchaseOrder->supplier?->phone }}</p></div>
@@ -57,7 +57,7 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label">Receipt Date</label>
-                <input type="date" name="receipt_date" value="{{ old('receipt_date', now()->toDateString()) }}" class="form-control">
+                <x-tdate-input name="receipt_date" :value="old('receipt_date', now()->toDateString())" class="form-control" />
             </div>
             <div class="col-md-5">
                 <label class="form-label">Notes</label>
@@ -99,8 +99,8 @@
                                 <div class="row g-2 small">
                                     <div class="col-md-2"><input type="text" name="lines[{{ $idx }}][batch_number]" value="{{ old("lines.$idx.batch_number") }}" placeholder="Batch / Lot No" class="form-control form-control-sm" {{ $remaining<=0.0001 ? 'disabled' : '' }}></div>
                                     <div class="col-md-2"><input type="text" name="lines[{{ $idx }}][lot_number]" value="{{ old("lines.$idx.lot_number") }}" placeholder="Lot No" class="form-control form-control-sm" {{ $remaining<=0.0001 ? 'disabled' : '' }}></div>
-                                    <div class="col-md-2"><input type="date" name="lines[{{ $idx }}][manufacture_date]" value="{{ old("lines.$idx.manufacture_date") }}" class="form-control form-control-sm" {{ $remaining<=0.0001 ? 'disabled' : '' }} title="Mfg Date"></div>
-                                    <div class="col-md-2"><input type="date" name="lines[{{ $idx }}][expiry_date]" value="{{ old("lines.$idx.expiry_date") }}" class="form-control form-control-sm" {{ $remaining<=0.0001 ? 'disabled' : '' }} title="Expiry Date"></div>
+                                    <div class="col-md-2"><x-tdate-input :name="'lines['.$idx.'][manufacture_date]'" :value='old("lines.$idx.manufacture_date")' class="form-control form-control-sm" :disabled="$remaining<=0.0001" title="Mfg Date" /></div>
+                                    <div class="col-md-2"><x-tdate-input :name="'lines['.$idx.'][expiry_date]'" :value='old("lines.$idx.expiry_date")' class="form-control form-control-sm" :disabled="$remaining<=0.0001" title="Expiry Date" /></div>
                                     <div class="col-md-2"><input type="text" name="lines[{{ $idx }}][serial_numbers]" value="{{ old("lines.$idx.serial_numbers") }}" placeholder="Serials comma-sep" class="form-control form-control-sm" {{ $remaining<=0.0001 ? 'disabled' : '' }}></div>
                                     <div class="col-md-2">
                                         <select name="lines[{{ $idx }}][received_condition]" class="form-select form-select-sm" {{ $remaining<=0.0001 ? 'disabled' : '' }}>

@@ -22,7 +22,7 @@
         <form method="GET" class="mb-3">
             <div class="row g-2">
                 <div class="col-md-3">
-                    <select name="status" class="form-select" onchange="this.form.submit()">
+                    <select name="status" class="form-select" onchange="guardTdateSubmit(this)">
                         <option value="active" @selected(request('status', 'active') === 'active')>Active</option>
                         <option value="discharged" @selected(request('status') === 'discharged')>Discharged</option>
                         <option value="transferred" @selected(request('status') === 'transferred')>Transferred</option>
@@ -30,7 +30,7 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <select name="patient_id" class="form-select" onchange="this.form.submit()">
+                    <select name="patient_id" class="form-select" onchange="guardTdateSubmit(this)">
                         <option value="">All Patients</option>
                         @foreach($patients as $patient)
                             <option value="{{ $patient->id }}" @selected((string) request('patient_id') === (string) $patient->id)>
@@ -40,10 +40,10 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <input type="date" name="from_date" class="form-control" value="{{ request('from_date') }}" onchange="this.form.submit()">
+                    <x-tdate-input name="from_date" :value="request('from_date')" class="form-control" onchange="guardTdateSubmit(this)" />
                 </div>
                 <div class="col-md-2">
-                    <input type="date" name="to_date" class="form-control" value="{{ request('to_date') }}" onchange="this.form.submit()">
+                    <x-tdate-input name="to_date" :value="request('to_date')" class="form-control" onchange="guardTdateSubmit(this)" />
                 </div>
                 <div class="col-md-2 text-end">
                     <a href="{{ route('medical.admissions.index') }}" class="btn btn-secondary">Reset</a>
@@ -80,7 +80,7 @@
                                 <span class="text-muted">No bed</span>
                             @endif
                         </td>
-                        <td>{{ $admission->admission_date?->format('d M Y') }}</td>
+                        <td><x-tdate :value="$admission->admission_date" fallback="d M Y" /></td>
                         <td>{{ $admission->admittingDoctor->name ?? 'N/A' }}</td>
                         <td>
                             <span class="badge bg-{{ $admission->status === 'active' ? 'danger' : 'success' }}">

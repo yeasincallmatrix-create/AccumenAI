@@ -28,8 +28,8 @@
             {{ $quotation->customer?->email }}
         </div>
         <div class="col-6 text-end">
-            <p><strong>Date:</strong> {{ $quotation->quotation_date->format('Y-m-d') }}<br>
-            <strong>Valid Until:</strong> {{ $quotation->validity_date->format('Y-m-d') }}<br>
+            <p><strong>Date:</strong> <x-tdate :value="$quotation->quotation_date" fallback="Y-m-d" /><br>
+            <strong>Valid Until:</strong> <x-tdate :value="$quotation->validity_date" fallback="Y-m-d" /><br>
             <strong>Currency:</strong> {{ $quotation->currency?->code }}<br>
             <strong>Status:</strong> {{ ucfirst($quotation->status) }}</p>
         </div>

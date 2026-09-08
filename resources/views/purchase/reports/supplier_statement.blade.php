@@ -10,8 +10,8 @@
 @foreach($suppliers as $s)<option value="{{ $s->id }}" {{ isset($data['supplier']) && (string)$data['supplier']->id===(string)$s->id ? 'selected':'' }}>{{ $s->name }}</option>@endforeach
 </select>
 </div>
-<div class="col-md-2"><label class="form-label">From</label><input type="date" name="from" value="{{ request('from') }}" class="form-control form-control-sm"></div>
-<div class="col-md-2"><label class="form-label">To</label><input type="date" name="to" value="{{ request('to') }}" class="form-control form-control-sm"></div>
+<div class="col-md-2"><label class="form-label">From</label><x-tdate-input name="from" :value="request('from')" class="form-control form-control-sm" /></div>
+<div class="col-md-2"><label class="form-label">To</label><x-tdate-input name="to" :value="request('to')" class="form-control form-control-sm" /></div>
 <div class="col-md-2"><button class="btn btn-sm btn-primary" type="submit">View</button> <a href="{{ route('purchase.reports.export',['type'=>'supplierStatement','supplier_id'=>request('supplier_id'),'from'=>request('from'),'to'=>request('to')]) }}" class="btn btn-sm btn-outline-success">CSV</a></div>
 </form>
 </div></div>

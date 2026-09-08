@@ -37,7 +37,7 @@
                         </div>
                         @if ($certificate->issue_date)
                             <div class="small text-body-secondary mb-1">
-                                <i class="bi bi-calendar3 me-1"></i>{{ \Illuminate\Support\Carbon::parse($certificate->issue_date)->format('d M Y') }}
+                                <i class="bi bi-calendar3 me-1"></i><x-tdate :value="$certificate->issue_date" fallback="d M Y" />
                             </div>
                         @endif
                         @if ($certificate->status === 'active')

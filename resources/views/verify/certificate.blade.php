@@ -27,7 +27,7 @@
             <span class="badge {{ $badgeClass }} verify-badge">{{ $badgeText }}</span>
             <p class="text-muted verify-sub">
                 This certificate is {{ $verified ? 'authentic and issued by' : 'linked to' }}
-                <strong>{{ $certificate->institute->name ?? 'AccumenAI' }}</strong> on {{ $certificate->created_at->format('d M Y') }}.
+                <strong>{{ $certificate->institute->name ?? 'AccumenAI' }}</strong> on <x-tdate :value="$certificate->created_at" fallback="d M Y" />.
             </p>
         </div>
 
@@ -75,7 +75,7 @@
                 </div>
                 <div class="verify-row">
                     <span class="verify-label">Date of Issue</span>
-                    <span class="verify-value">{{ $certificate->issue_date?->format('d M Y') ?? $certificate->created_at?->format('d M Y') ?? '—' }}</span>
+                    <span class="verify-value">{{ mawa_format_date($certificate->issue_date ?? $certificate->created_at, null, 'd M Y') ?: '—' }}</span>
                 </div>
             </div>
 

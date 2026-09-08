@@ -9,7 +9,7 @@
         <div class="col-md-3"><select name="employee_id" class="form-select form-select-sm" required><option value="">— Employee —</option>@foreach($employees as $e)<option value="{{ $e->id }}">{{ $e->display_name }}</option>@endforeach</select></div>
         <div class="col-md-2"><input type="text" name="skill_name" class="form-control form-control-sm" placeholder="Skill *" required></div>
         <div class="col-md-2"><select name="proficiency_level" class="form-select form-select-sm" required><option value="beginner">beginner</option><option value="intermediate">intermediate</option><option value="advanced">advanced</option><option value="expert">expert</option></select></div>
-        <div class="col-md-2"><input type="date" name="acquired_date" class="form-control form-control-sm"></div>
+        <div class="col-md-2"><x-tdate-input name="acquired_date" class="form-control form-control-sm" /></div>
         <div class="col-md-1"><button type="submit" class="btn btn-sm btn-primary">Add</button></div>
     </form>
 </div>
@@ -23,7 +23,7 @@
                         <td>{{ $s->employee->display_name }}</td>
                         <td>{{ $s->skill_name }}</td>
                         <td>{{ $s->proficiency_level }}</td>
-                        <td>{{ $s->acquired_date?->format('Y-m-d') ?? '—' }}</td>
+                        <td><x-tdate :value="$s->acquired_date" fallback="Y-m-d" empty="—" /></td>
                         <td><span class="badge {{ $s->verification_status==='verified'?'text-bg-success':($s->verification_status==='rejected'?'text-bg-danger':'text-bg-warning') }}">{{ $s->verification_status }}</span></td>
                         <td>
                             @if($s->verification_status==='pending')

@@ -33,8 +33,8 @@
                 </p>
                 <p><strong>Batch:</strong> {{ $stock->batch_number }}</p>
                 <p><strong>Mfg / Expiry:</strong>
-                    {{ $stock->manufacturing_date?->format('d M Y') ?? '—' }} /
-                    {{ $stock->expiry_date?->format('d M Y') }}
+                    <x-tdate :value="$stock->manufacturing_date" fallback="d M Y" /> /
+                    <x-tdate :value="$stock->expiry_date" fallback="d M Y" />
                     @if($stock->is_expired)
                         <span class="badge bg-danger">Expired</span>
                     @elseif($stock->days_to_expiry <= 30)

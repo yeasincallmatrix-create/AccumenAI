@@ -21,11 +21,11 @@
             </div>
             <div class="filter-span">
                 <label class="form-label mb-1">From</label>
-                <input type="date" class="form-control form-control-sm" wire:model.live="filters.from">
+                <x-live-date model="filters.from" :value="$filters['from'] ?? ''" class="form-control form-control-sm" />
             </div>
             <div class="filter-span">
                 <label class="form-label mb-1">To</label>
-                <input type="date" class="form-control form-control-sm" wire:model.live="filters.to">
+                <x-live-date model="filters.to" :value="$filters['to'] ?? ''" class="form-control form-control-sm" />
             </div>
             <div class="filter-span">
                 <label class="form-label mb-1">Per page</label>
@@ -60,7 +60,7 @@
                 @forelse ($entries as $entry)
                     <tr>
                         <td class="text-muted">{{ $entries->firstItem() + $loop->index }}</td>
-                        <td>{{ $entry->created_at?->format('Y-m-d H:i') }}</td>
+                        <td><x-tdate :value="$entry->created_at" fallback="Y-m-d H:i" :datetime="true" /></td>
                         <td>
                             <span class="badge text-bg-light border">{{ $entry->actor_type }}</span>
                             @if ($entry->actor_id)

@@ -47,7 +47,7 @@
             </div>
             <div class="filter-span flex-shrink-0" style="min-width:170px">
                 <label class="form-label mb-1">Date</label>
-                <input type="date" name="attendance_date" value="{{ $date?->format('Y-m-d') }}" class="form-control form-control-sm" onchange="this.form.submit()">
+                <x-tdate-input name="attendance_date" value="{{ $date?->format('Y-m-d') }}" class="form-control form-control-sm" onchange="guardTdateSubmit(this)" />
             </div>
             <div class="filter-span flex-shrink-0">
                 <button class="btn btn-outline-primary btn-sm" type="submit"><i class="bi bi-search"></i> Load roster</button>
@@ -68,7 +68,7 @@
             <div class="table-toolbar">
                 <div class="toolbar-info">
                     <i class="bi bi-calendar-check"></i>
-                    <span class="fw-semibold">{{ $context['year']->name }} — {{ $date->format('d M Y') }}</span>
+                    <span class="fw-semibold">{{ $context['year']->name }} — <x-tdate :value="$date" fallback="d M Y" /></span>
                     <span class="badge text-bg-secondary badge-soft ms-2">{{ $context['roster']->count() }} students</span>
                 </div>
             </div>

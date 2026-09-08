@@ -56,8 +56,8 @@
                         </td>
                         <td>{{ $student->student_id }}</td>
                         <td>{{ $student->roll_number ?? '—' }}</td>
-                        <td>{{ $student->admission_date ? $student->admission_date->format('d M Y') : '—' }}</td>
-                        <td class="text-muted">{{ \Illuminate\Support\Carbon::parse($student->deleted_at)->format('d M Y H:i') }}</td>
+                        <td><x-tdate :value="$student->admission_date" fallback="d M Y" empty="—" /></td>
+                        <td class="text-muted"><x-tdate :value="\Illuminate\Support\Carbon::parse($student->deleted_at)" fallback="d M Y H:i" :datetime="true" /></td>
                         <td class="text-end text-nowrap">
                             @if ($user->hasPermission('students.manage'))
                                 <form class="d-inline" method="POST" action="{{ route('recycle.students.restore', $student) }}"
@@ -112,7 +112,7 @@
                         <td class="fw-semibold">{{ $batch->name }}</td>
                         <td><span class="badge bg-dark bg-opacity-75">{{ $batch->batch_code }}</span></td>
                         <td>{{ $batch->course?->name ?? '—' }}</td>
-                        <td class="text-muted">{{ \Illuminate\Support\Carbon::parse($batch->deleted_at)->format('d M Y H:i') }}</td>
+                        <td class="text-muted"><x-tdate :value="\Illuminate\Support\Carbon::parse($batch->deleted_at)" fallback="d M Y H:i" :datetime="true" /></td>
                         <td class="text-end text-nowrap">
                             @if ($user->hasPermission('batches.manage'))
                                 <form class="d-inline" method="POST" action="{{ route('recycle.batches.restore', $batch) }}"

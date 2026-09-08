@@ -221,7 +221,7 @@
                         @csrf
                         @method('PUT')
                         <div class="row g-3 mb-3">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label" for="timezone">{{ mawa_e('settings_page.timezone') }}</label>
                                 <select id="timezone" name="timezone" class="form-select form-select-sm">
                                     @php
@@ -240,7 +240,18 @@
                                 </select>
                                 @error('timezone')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
+                                <label class="form-label" for="date_format">{{ mawa_e('settings_page.date_format') }}</label>
+                                @php $dfKey = $setting->date_format ?? 'dmy'; @endphp
+                                <select id="date_format" name="date_format" class="form-select form-select-sm">
+                                    <option value="dmy" @selected($dfKey === 'dmy')>{{ mawa_e('settings_page.date_format_dmy') }}</option>
+                                    <option value="mdy" @selected($dfKey === 'mdy')>{{ mawa_e('settings_page.date_format_mdy') }}</option>
+                                    <option value="ymd" @selected($dfKey === 'ymd')>{{ mawa_e('settings_page.date_format_ymd') }}</option>
+                                </select>
+                                <div class="form-text" id="date_format_preview"></div>
+                                @error('date_format')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-md-4">
                                 <label class="form-label" for="language">{{ mawa_e('settings_page.language') }}</label>
                                 <select id="language" name="language" class="form-select form-select-sm">
                                     <option value="bn" @selected($setting->language === 'bn')>{{ mawa_e('settings_page.language_bn') }}</option>
@@ -250,6 +261,25 @@
                             </div>
                         </div>
                         <button class="btn btn-primary" type="submit"><i class="bi bi-check-lg"></i> {{ mawa_e('settings_page.save') }}</button>
+                        <script>
+                        (function () {
+                            var sel = document.getElementById('date_format');
+                            var prev = document.getElementById('date_format_preview');
+                            function paint() {
+                                if (!sel || !prev) return;
+                                var d = new Date(2026, 11, 25, 14, 30);
+                                var p = function (n) { return String(n).padStart(2, '0'); };
+                                var map = {
+                                    dmy: p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear(),
+                                    mdy: p(d.getMonth() + 1) + '/' + p(d.getDate()) + '/' + d.getFullYear(),
+                                    ymd: d.getFullYear() + '/' + p(d.getMonth() + 1) + '/' + p(d.getDate())
+                                };
+                                prev.textContent = 'e.g. ' + (map[sel.value] || map.dmy);
+                            }
+                            if (sel) sel.addEventListener('change', paint);
+                            paint();
+                        })();
+                        </script>
                     </form>
                 </div>
             @endif

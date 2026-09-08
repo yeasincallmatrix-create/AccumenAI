@@ -15,7 +15,7 @@
     <div class="col-md-6">
         <div class="admin-card p-3">
             <h6>Pending Leaves</h6>
-            @forelse($pendingLeaves as $l)<div class="small border-bottom py-1">{{ $l->employee->display_name }} — {{ $l->leaveType?->name }} {{ $l->start_date->format('Y-m-d') }} <span class="badge text-bg-warning">pending</span></div>@empty<div class="text-muted small">No pending leaves</div>@endforelse
+            @forelse($pendingLeaves as $l)<div class="small border-bottom py-1">{{ $l->employee->display_name }} — {{ $l->leaveType?->name }} <x-tdate :value="$l->start_date" fallback="Y-m-d" /> <span class="badge text-bg-warning">pending</span></div>@empty<div class="text-muted small">No pending leaves</div>@endforelse
         </div>
         <div class="admin-card p-3 mt-3">
             <h6>Attendance Today</h6>
@@ -25,7 +25,7 @@
     <div class="col-md-6">
         <div class="admin-card p-3">
             <h6>Pending Corrections</h6>
-            @forelse($pendingCorrections as $c)<div class="small border-bottom py-1">{{ $c->employee->display_name }} — {{ $c->correction_date->format('Y-m-d') }} <span class="badge text-bg-warning">{{ $c->status }}</span></div>@empty<div class="text-muted small">None</div>@endforelse
+            @forelse($pendingCorrections as $c)<div class="small border-bottom py-1">{{ $c->employee->display_name }} — <x-tdate :value="$c->correction_date" fallback="Y-m-d" /> <span class="badge text-bg-warning">{{ $c->status }}</span></div>@empty<div class="text-muted small">None</div>@endforelse
         </div>
         <div class="admin-card p-3 mt-3">
             <h6>Training Enrollments</h6>

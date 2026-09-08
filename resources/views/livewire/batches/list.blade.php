@@ -20,7 +20,6 @@
         'weekend' => mawa_lang('options.shift_weekend'),
         'online'  => mawa_lang('options.shift_online'),
     ];
-    $fmtDate = fn ($date) => $date ? \Illuminate\Support\Carbon::parse($date)->format('d M Y') : '—';
 @endphp
 
 <div class="admin-card" data-ajax-table>
@@ -160,7 +159,7 @@
                         </td>@endif
                         @if (in_array('course', $visibleColumns, true))<td>{{ $batch->course?->name ?? '—' }}</td>@endif
                         @if (in_array('shift', $visibleColumns, true))<td>{{ $shiftNames[$batch->shift] ?? $batch->shift }}</td>@endif
-                        @if (in_array('start', $visibleColumns, true))<td>{{ $fmtDate($batch->start_date) }}</td>@endif
+                        @if (in_array('start', $visibleColumns, true))<td><x-tdate :value="$batch->start_date" fallback="d M Y" empty="—" /></td>@endif
                         @if (in_array('seats', $visibleColumns, true))<td>
                             {{ $batch->seat_filled }} / {{ $batch->seat_capacity }}
                             <small class="text-muted d-block">{{ mawa_e('batches.filled') }}</small>

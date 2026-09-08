@@ -57,7 +57,7 @@
                     @endif
                 </p>
                 <p><strong>Admitted:</strong>
-                    {{ $admission->admission_date?->format('d M Y') }}
+                    <x-tdate :value="$admission->admission_date" fallback="d M Y" />
                     {{ $admission->admission_time ? \Carbon\Carbon::parse($admission->admission_time)->format('h:i A') : '' }}
                 </p>
                 <p><strong>Admitting Doctor:</strong> {{ $admission->admittingDoctor->name ?? 'N/A' }}</p>
@@ -65,7 +65,7 @@
                 @if($admission->status !== 'active')
                     <hr>
                     <p><strong>Discharged:</strong>
-                        {{ $admission->discharge_date?->format('d M Y') }}
+                        <x-tdate :value="$admission->discharge_date" fallback="d M Y" />
                         {{ $admission->discharge_time ? \Carbon\Carbon::parse($admission->discharge_time)->format('h:i A') : '' }}
                     </p>
                     <p class="mb-0"><strong>Discharged By:</strong> {{ $admission->dischargedBy->name ?? '—' }}</p>
@@ -103,7 +103,7 @@
                             <tbody>
                                 @foreach($vitals as $vital)
                                 <tr>
-                                    <td>{{ $vital->recorded_at?->format('d M H:i') }}</td>
+                                    <td><x-tdate :value="$vital->recorded_at" fallback="d M H:i" :datetime="true" /></td>
                                     <td>{{ $vital->temperature ?? '—' }}</td>
                                     <td>{{ $vital->blood_pressure ?? '—' }}</td>
                                     <td>{{ $vital->pulse ?? '—' }}</td>
@@ -128,7 +128,7 @@
                         <div class="border-bottom py-2">
                             <p class="mb-1">{{ $note->note }}</p>
                             <small class="text-muted">
-                                {{ $note->recordedBy->name ?? 'Staff' }} · {{ $note->recorded_at?->format('d M Y h:i A') }}
+                                {{ $note->recordedBy->name ?? 'Staff' }} · <x-tdate :value="$note->recorded_at" fallback="d M Y h:i A" :datetime="true" />
                             </small>
                         </div>
                     @endforeach

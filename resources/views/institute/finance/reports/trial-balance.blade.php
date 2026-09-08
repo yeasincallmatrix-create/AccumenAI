@@ -22,7 +22,7 @@
         <form class="filter-layout d-flex align-items-end gap-2 flex-wrap" method="GET" action="{{ route('accounting.reports.trial-balance') }}">
             <div>
                 <label class="form-label mb-1">As of</label>
-                <input type="date" class="form-control form-control-sm" name="as_of_date" value="{{ $asOf }}">
+                <x-tdate-input class="form-control form-control-sm" name="as_of_date" value="{{ $asOf }}" />
             </div>
             <div>
                 <label class="form-label mb-1">Fiscal year</label>

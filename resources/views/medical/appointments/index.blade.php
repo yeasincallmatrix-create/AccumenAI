@@ -11,9 +11,9 @@
         <a class="btn btn-success me-1" href="{{ route('medical.appointments.queue') }}">
             <i class="bi bi-people me-1"></i>Live Queue
         </a>
-        <a class="btn btn-primary" href="{{ route('medical.appointments.create') }}">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#bookAppointmentModal">
             <i class="bi bi-plus-lg me-1"></i>Book Appointment
-        </a>
+        </button>
     </div>
 </div>
 
@@ -22,11 +22,10 @@
         <form method="GET" class="mb-3">
             <div class="row g-2">
                 <div class="col-md-3">
-                    <input type="date" name="date" class="form-control"
-                           value="{{ request('date', date('Y-m-d')) }}" onchange="this.form.submit()">
+                    <x-tdate-input name="date" :value="request('date', date('Y-m-d'))" class="form-control" onchange="guardTdateSubmit(this)" />
                 </div>
                 <div class="col-md-3">
-                    <select name="doctor_id" class="form-select" onchange="this.form.submit()">
+                    <select name="doctor_id" class="form-select" onchange="guardTdateSubmit(this)">
                         <option value="">All Doctors</option>
                         @foreach($doctors as $doctor)
                             <option value="{{ $doctor->id }}" @selected((string) request('doctor_id') === (string) $doctor->id)>
@@ -36,7 +35,7 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <select name="status" class="form-select" onchange="this.form.submit()">
+                    <select name="status" class="form-select" onchange="guardTdateSubmit(this)">
                         <option value="">All Status</option>
                         @foreach(['scheduled' => 'Scheduled', 'checked_in' => 'Checked In', 'in_progress' => 'In Progress', 'completed' => 'Completed', 'cancelled' => 'Cancelled', 'no_show' => 'No Show'] as $value => $label)
                             <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
@@ -69,7 +68,7 @@
                         <td>{{ $loop->iteration }}</td>
                         <td>{{ $appointment->patient->full_name ?? 'N/A' }}</td>
                         <td>{{ $appointment->doctor->name ?? 'N/A' }}</td>
-                        <td>{{ $appointment->appointment_date?->format('d M Y') }}</td>
+                        <td><x-tdate :value="$appointment->appointment_date" fallback="d M Y" /></td>
                         <td>{{ $appointment->appointment_time ? \Carbon\Carbon::parse($appointment->appointment_time)->format('h:i A') : 'N/A' }}</td>
                         <td>#{{ $appointment->serial_number }}</td>
                         <td>
@@ -114,6 +113,9 @@
     @method('DELETE')
 </form>
 @endforeach
+
+@include('medical.patients._quick_create_modal')
+@include('medical.appointments._book_modal')
 @endsection
 
 @push('scripts')

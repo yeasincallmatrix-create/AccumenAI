@@ -19,6 +19,7 @@ use App\Services\Ai\OpenAiProvider;
 use App\Services\ModuleAccessService;
 use App\Support\AiConfig;
 use App\Support\NotificationCenter;
+use App\Support\TenantContext;
 use App\Support\Workspace;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\ParallelTesting;
@@ -163,10 +164,27 @@ class AppServiceProvider extends ServiceProvider
         View::composer('*', function ($view) {
             try {
                 $user = Auth::user();
+                // Fallback: check all guards if default returns null
+                if ($user === null) {
+                    foreach (['platform_admin', 'institute_user', 'web'] as $guard) {
+                        $user = Auth::guard($guard)->user();
+                        if ($user !== null) {
+                            break;
+                        }
+                    }
+                }
             } catch (\Throwable $e) {
                 // During error rendering the auth guard may not be resolvable
-                // (e.g. SessionGuard not yet bound). Fail silently to avoid
+                // (e.g. SessionGuard not yet bound). Share safe defaults so the
+                // layout never sees undefined variables, then bail out without
                 // masking the original exception with a second fatal error.
+                \Illuminate\Support\Facades\Log::warning('View composer auth fallback', ['error' => $e->getMessage()]);
+                self::shareComposerDefaults($view, null);
+                return;
+            }
+
+            if ($user === null) {
+                self::shareComposerDefaults($view, null);
                 return;
             }
 
@@ -187,6 +205,7 @@ class AppServiceProvider extends ServiceProvider
                     ->with('workspaceAllowedEducation', false)
                     ->with('workspaceAllowedAccountingManage', false)
                     ->with('workspaceAllowedMedical', false)
+                    ->with('workspaceAllowedProfessional', false)
                     ->with('recycleCount', 0)
                     ->with('layoutNotifications', collect())
                     ->with('layoutUnreadCount', 0)
@@ -204,16 +223,42 @@ class AppServiceProvider extends ServiceProvider
                     ->with('aiEnabled', false);
 
                 if (! $view->offsetExists('institute')) {
-                    $view->with('institute', Institute::find($user->institute_id));
+                    try {
+                        $view->with('institute', Institute::find($user->institute_id));
+                    } catch (\Throwable $e) {
+                        $view->with('institute', null);
+                    }
                 }
 
                 return;
             }
 
-            $membership = $user instanceof User ? Workspace::membership() : null;
+            // Resolve institute: prefer validated TenantContext (set by middleware),
+            // then Workspace membership for the resolved user, then direct lookup,
+            // then last-resort single-membership auto-resolve (mirrors SetTenantContext).
+            $tenantId = TenantContext::id();
+            $membership = ($user instanceof User) ? Workspace::membershipFor($user) : null;
+
+            // Validate TenantContext ID before trusting it.
+            $tenantValid = false;
+            if ($tenantId !== null) {
+                $tenantValid = Institute::withoutGlobalScopes()->whereKey($tenantId)->exists();
+                if (! $tenantValid) {
+                    \Illuminate\Support\Facades\Log::warning('Stale TenantContext id', ['tenant_id' => $tenantId]);
+                    $tenantId = null;
+                }
+            }
+
+            // Last-resort fallback when neither context nor session membership resolved.
+            $fallbackWorkspaceId = ($user instanceof User && $tenantId === null && $membership === null)
+                ? Workspace::resolveAfterLogin($user)
+                : null;
+
             $institute = match (true) {
                 $user instanceof InstituteUser => Institute::find($user->institute_id),
+                $tenantValid => Institute::find($tenantId),
                 $user instanceof User && $membership !== null => Institute::find($membership->institution_id),
+                $fallbackWorkspaceId !== null => Institute::find($fallbackWorkspaceId),
                 default => null,
             };
 
@@ -274,6 +319,8 @@ class AppServiceProvider extends ServiceProvider
 
             $workspaceAllowedEducation = $institute !== null && $moduleService->isEnabled($institute, 'education');
 
+            $workspaceAllowedProfessional = $institute !== null && $moduleService->isEnabled($institute, 'training_center');
+
             $activeColorTheme = null;
             $themePrimary = null;
             $themeSecondary = null;
@@ -331,12 +378,7 @@ class AppServiceProvider extends ServiceProvider
                 : ($membership?->hasPermission('settings.accounting.manage') ?? false);
             $workspaceAllowedAccountingManage = $institute !== null && $moduleService->isEnabled($institute, 'finance') && $hasAccountingPerm;
 
-            $hasMedical = function (string $perm) use ($user, $membership): bool {
-                if ($user instanceof InstituteUser) return $user->hasPermission($perm);
-                return $membership?->hasPermission($perm) ?? false;
-            };
-            $hasMedicalPerm = $hasMedical('medical_patients.view') || $hasMedical('medical_appointments.view') || $hasMedical('medical_admissions.view') || $hasMedical('medical_pharmacy.view') || $hasMedical('medical_lab.view') || $hasMedical('medical_billing.view');
-            $workspaceAllowedMedical = $institute !== null && $moduleService->isEnabled($institute, 'medical') && $hasMedicalPerm;
+            $workspaceAllowedMedical = $institute !== null && $moduleService->isEnabled($institute, 'medical');
 
             $recycleCount = match (true) {
                 $user instanceof PlatformAdmin => Institute::query()->whereNotNull('deleted_at')->count()
@@ -406,6 +448,7 @@ class AppServiceProvider extends ServiceProvider
                 ->with('workspaceAllowedEducation', $workspaceAllowedEducation)
                 ->with('workspaceAllowedAccountingManage', $workspaceAllowedAccountingManage)
                 ->with('workspaceAllowedMedical', $workspaceAllowedMedical)
+                ->with('workspaceAllowedProfessional', $workspaceAllowedProfessional)
                 ->with('recycleCount', $recycleCount)
                 ->with('layoutNotifications', $layoutNotifications)
                 ->with('layoutUnreadCount', $layoutUnreadCount)
@@ -433,6 +476,55 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
+     * Safe defaults shared when the view composer cannot resolve auth context
+     * (unbound SessionGuard) or when the request is a guest. Guarantees the
+     * layout never sees undefined variables.
+     */
+    protected static function shareComposerDefaults($view, $user): void
+    {
+        $view->with([
+            'user' => null,
+            'institute' => null,
+            'roleLabel' => '',
+            'accountTypeLabel' => null,
+            'workspaceMemberships' => collect(),
+            'workspaceActiveId' => null,
+            'isInstituteStaff' => false,
+            'usesClassTerm' => false,
+            'workspaceAllowedFinance' => false,
+            'workspaceAllowedCrm' => false,
+            'workspaceAllowedStaffManage' => false,
+            'workspaceAllowedTeachers' => false,
+            'workspaceAllowedHr' => false,
+            'workspaceAllowedSales' => false,
+            'workspaceAllowedPurchase' => false,
+            'workspaceAllowedEducation' => false,
+            'workspaceAllowedAccountingManage' => false,
+            'workspaceAllowedMedical' => false,
+            'workspaceAllowedProfessional' => false,
+            'recycleCount' => 0,
+            'layoutNotifications' => collect(),
+            'layoutUnreadCount' => 0,
+            'layoutReadIds' => [],
+            'notificationIndexUrl' => null,
+            'notificationReadAllUrl' => null,
+            'notifications' => [],
+            'countsPendingSync' => 0,
+            'userPreferences' => [],
+            'userTheme' => 'default',
+            'activeColorTheme' => null,
+            'themePrimary' => null,
+            'themeSecondary' => null,
+            'sidebarColor' => null,
+            'tallNavigation' => false,
+            'aiEnabled' => false,
+            'platformBrandName' => config('app.name'),
+            'platformBrandLogo' => null,
+            'platformBrandFavicon' => null,
+        ]);
+    }
+
+    /**
      * Auto-assign / swap the industry module based on institute's industry.
      * Each institute gets exactly one industry module as its primary scope:
      *   education      → education
@@ -453,6 +545,18 @@ class AppServiceProvider extends ServiceProvider
 
         $desiredModule = $industryModuleMap[$institute->industry ?? ''] ?? null;
 
+        // Non-canonical industry (null/legacy/other): do NOT write
+        // enabled=false overrides — those would shadow package/entitlement
+        // truth for every legacy tenant. Instead remove any stale
+        // industry-module overrides so package/entitlements decide.
+        if ($desiredModule === null) {
+            \App\Models\InstituteModuleOverride::where('institute_id', $institute->id)
+                ->whereIn('module_key', array_values($industryModuleMap))
+                ->delete();
+            app(\App\Services\ModuleAccessService::class)->flushCache($institute->id);
+            return;
+        }
+
         // Deactivate all industry modules first
         foreach (array_values($industryModuleMap) as $moduleKey) {
             \App\Models\InstituteModuleOverride::updateOrCreate(
@@ -462,11 +566,23 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // Activate the matching one
-        if ($desiredModule && \App\Models\ModuleRegistry::where('key', $desiredModule)->where('status', 'active')->exists()) {
+        if (\App\Models\ModuleRegistry::where('key', $desiredModule)->where('status', 'active')->exists()) {
             \App\Models\InstituteModuleOverride::updateOrCreate(
                 ['institute_id' => $institute->id, 'module_key' => $desiredModule],
                 ['enabled' => true]
             );
+        }
+
+        // Healthcare: also seed permissions and assign to admin role
+        if (($institute->industry ?? '') === 'healthcare') {
+            try {
+                app(\App\Services\MedicalModuleActivator::class)->activateForHealthcare($institute);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('MedicalModuleActivator failed', [
+                    'institute_id' => $institute->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         app(\App\Services\ModuleAccessService::class)->flushCache($institute->id);

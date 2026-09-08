@@ -22,7 +22,6 @@
         'weekend' => mawa_lang('options.shift_weekend'),
         'online'  => mawa_lang('options.shift_online'),
     ];
-    $fmtDate = fn ($date) => $date ? \Illuminate\Support\Carbon::parse($date)->format('d M Y') : '—';
 @endphp
 
 @section('content')
@@ -60,7 +59,7 @@
 
     <div class="print-header d-none">
         <h4 class="mb-1">{{ $institute->name ?? '' }} — {{ mawa_e('classes.tab_batches') }}</h4>
-        <p class="mb-0 text-muted">{{ $batchesCount }} batches · {{ now()->format('d M Y') }}</p>
+        <p class="mb-0 text-muted">{{ $batchesCount }} batches · <x-tdate :value="now()" fallback="d M Y" /></p>
     </div>
 
     <form class="d-flex flex-wrap gap-2 mb-3 align-items-end monetix-print-hidden" method="GET" action="{{ route('classes.batches') }}" data-ajax-filter>
@@ -155,7 +154,7 @@
                         </td>
                         <td data-col="class" @if(!in_array('class', $visibleColumns, true)) style="display:none" @endif>{{ $batch->course?->name ?? '—' }}</td>
                         <td data-col="shift" @if(!in_array('shift', $visibleColumns, true)) style="display:none" @endif>{{ $shiftNames[$batch->shift] ?? $batch->shift }}</td>
-                        <td data-col="start" @if(!in_array('start', $visibleColumns, true)) style="display:none" @endif>{{ $fmtDate($batch->start_date) }}</td>
+                        <td data-col="start" @if(!in_array('start', $visibleColumns, true)) style="display:none" @endif><x-tdate :value="$batch->start_date" fallback="d M Y" empty="—" /></td>
                         <td data-col="seats" @if(!in_array('seats', $visibleColumns, true)) style="display:none" @endif>
                             {{ $batch->seat_filled }} / {{ $batch->seat_capacity }}
                             <small class="text-muted d-block">{{ mawa_e('batches.filled') }}</small>

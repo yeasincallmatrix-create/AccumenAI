@@ -23,7 +23,7 @@
                     <div>
                         <strong>{{ $prescription->prescription_number }}</strong>
                         <span class="text-muted">· {{ $prescription->patient->full_name ?? 'N/A' }}</span>
-                        <span class="text-muted">· {{ $prescription->prescription_date?->format('d M Y') }}</span>
+                        <span class="text-muted">· <x-tdate :value="$prescription->prescription_date" fallback="d M Y" /></span>
                     </div>
                     <form action="{{ route('medical.pharmacy.dispense.batch', $prescription) }}" method="POST" class="d-inline">
                         @csrf

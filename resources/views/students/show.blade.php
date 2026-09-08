@@ -186,11 +186,11 @@
                 <dt class="col-5">Gender</dt>
                 <dd class="col-7">{{ $student->gender ? : 'Not provided' }}</dd>
                 <dt class="col-5">Date of Birth</dt>
-                <dd class="col-7">{{ $student->dob?->format('d M Y') ?? 'Not provided' }}</dd>
+                <dd class="col-7"><x-tdate :value="$student->dob" fallback="d M Y" empty="Not provided" /></dd>
                 <dt class="col-5">Blood Group</dt>
                 <dd class="col-7">{{ $student->blood_group ?? 'Not provided' }}</dd>
                 <dt class="col-5">Admission Date</dt>
-                <dd class="col-7">{{ $student->admission_date->format('d M Y') }}</dd>
+                <dd class="col-7"><x-tdate :value="$student->admission_date" fallback="d M Y" /></dd>
             </dl>
         </div>
     </div>
@@ -344,7 +344,7 @@
                                         <small class="text-muted d-block">{{ $certificate->batch->batch_code }}</small>
                                     @endif
                                 </td>
-                                <td>{{ $certificate->issue_date?->format('d M Y') ?? 'Not provided' }}</td>
+                                <td><x-tdate :value="$certificate->issue_date" fallback="d M Y" empty="Not provided" /></td>
                                 <td>
                                     <span class="badge {{ $certStatusBadge[$certificate->status] ?? 'bg-secondary' }}">{{ ucfirst($certificate->status) }}</span>
                                 </td>
@@ -412,7 +412,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" for="ab_enrollment_date">Enrollment Date *</label>
-                            <input id="ab_enrollment_date" type="date" name="enrollment_date" class="form-control" required>
+                            <x-tdate-input id="ab_enrollment_date" name="enrollment_date" class="form-control" required />
                             @error('enrollment_date') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                         </div>
                         <div class="col-md-6">
@@ -447,6 +447,7 @@
 document.getElementById('assignBatchModal')?.addEventListener('show.bs.modal', function () {
     var d = document.getElementById('ab_enrollment_date');
     if (d && !d.value) { d.value = new Date().toISOString().slice(0, 10); }
+    if (window.tdateSync) { window.tdateSync('ab_enrollment_date'); }
 });
 
 (function () {

@@ -14,11 +14,11 @@
         @if ($withFromTo)
             <div class="col-auto">
                 <label class="form-label small mb-1">From</label>
-                <input type="date" name="from" value="{{ $filters['from'] ?? '' }}" class="form-control form-control-sm">
+                <x-tdate-input name="from" value="{{ $filters['from'] ?? '' }}" class="form-control form-control-sm" />
             </div>
             <div class="col-auto">
                 <label class="form-label small mb-1">To</label>
-                <input type="date" name="to" value="{{ $filters['to'] ?? '' }}" class="form-control form-control-sm">
+                <x-tdate-input name="to" value="{{ $filters['to'] ?? '' }}" class="form-control form-control-sm" />
             </div>
         @endif
         <div class="col-auto">

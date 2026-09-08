@@ -78,11 +78,11 @@
     <div class="row g-3">
         <div class="col-md-3">
             <div class="small text-muted">Created by</div>
-            <div>{{ $journal->creator?->name ?? '—' }} · {{ $journal->created_at?->format('Y-m-d H:i') }}</div>
+            <div>{{ $journal->creator?->name ?? '—' }} · <x-tdate :value="$journal->created_at" fallback="Y-m-d H:i" :datetime="true" /></div>
         </div>
         <div class="col-md-3">
             <div class="small text-muted">Posted by</div>
-            <div>{{ $journal->postedBy?->name ?? '—' }} · {{ $journal->posted_at?->format('Y-m-d H:i') }}</div>
+            <div>{{ $journal->postedBy?->name ?? '—' }} · <x-tdate :value="$journal->posted_at" fallback="Y-m-d H:i" :datetime="true" /></div>
         </div>
         <div class="col-md-3">
             <div class="small text-muted">Period</div>
@@ -95,7 +95,7 @@
         @if ($journal->reversed_at)
             <div class="col-md-3">
                 <div class="small text-muted">Reversed by</div>
-                <div>{{ $journal->reversedBy?->name ?? '—' }} · {{ $journal->reversed_at?->format('Y-m-d H:i') }}</div>
+                <div>{{ $journal->reversedBy?->name ?? '—' }} · <x-tdate :value="$journal->reversed_at" fallback="Y-m-d H:i" :datetime="true" /></div>
             </div>
         @endif
     </div>

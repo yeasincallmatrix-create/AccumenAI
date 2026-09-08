@@ -74,7 +74,7 @@
                         <li class="border-bottom py-2">
                             <a href="{{ route('medical.lab.orders.show', $order) }}"><strong>{{ $order->order_number }}</strong></a>
                             <span class="text-muted">· {{ $order->patient->full_name ?? 'N/A' }}</span>
-                            <span class="text-muted small float-end">{{ $order->completed_at?->format('d M H:i') }}</span>
+                            <span class="text-muted small float-end"><x-tdate :value="$order->completed_at" fallback="d M H:i" :datetime="true" /></span>
                         </li>
                         @endforeach
                     </ul>

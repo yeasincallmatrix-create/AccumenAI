@@ -78,7 +78,7 @@
                 </div>
                 <div class="col-md-2">
                     <label class="form-label mb-1">Due date</label>
-                    <input type="date" class="form-control form-control-sm" name="due_date" value="{{ \Illuminate\Support\Carbon::today()->toDateString() }}">
+                    <x-tdate-input class="form-control form-control-sm" name="due_date" value="{{ \Illuminate\Support\Carbon::today()->toDateString() }}" />
                 </div>
                 <div class="col-md-2 d-flex align-items-end gap-2">
                     <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-receipt me-1"></i>Generate</button>

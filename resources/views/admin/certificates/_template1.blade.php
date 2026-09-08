@@ -352,7 +352,7 @@
 
     <div class="cert-meta-line">
         @if ($certificate->issue_date)
-            Issue Date: <strong>{{ $certificate->issue_date->format('d F Y') }}</strong>
+            Issue Date: <strong><x-tdate :value="$certificate->issue_date" fallback="d F Y" /></strong>
         @endif
     </div>
 </div>

@@ -45,7 +45,7 @@
                     <tbody>
                         @foreach($byDay as $row)
                         <tr>
-                            <td>{{ \Carbon\Carbon::parse($row->day)->format('d M Y') }}</td>
+                            <td><x-tdate :value="$row->day" fallback="d M Y" /></td>
                             <td>{{ $row->count }}</td>
                             <td>৳{{ number_format($row->revenue, 2) }}</td>
                             <td>৳{{ number_format($row->collected, 2) }}</td>

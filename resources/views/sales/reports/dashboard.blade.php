@@ -13,8 +13,8 @@
     </div>
 </div>
 <form method="GET" class="card mb-3"><div class="card-body d-flex flex-wrap gap-2 align-items-end">
-    <div><label class="form-label small mb-1">From</label><input type="date" name="from" value="{{ $filters['from'] }}" class="form-control form-control-sm"></div>
-    <div><label class="form-label small mb-1">To</label><input type="date" name="to" value="{{ $filters['to'] }}" class="form-control form-control-sm"></div>
+    <div><label class="form-label small mb-1">From</label><x-tdate-input name="from" :value="$filters['from']" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-1">To</label><x-tdate-input name="to" :value="$filters['to']" class="form-control form-control-sm" /></div>
     <button class="btn btn-sm btn-primary rounded-pill">Filter</button>
     <a href="{{ route('sales.reports.dashboard') }}" class="btn btn-sm btn-outline-secondary rounded-pill">Reset</a>
 </div></form>

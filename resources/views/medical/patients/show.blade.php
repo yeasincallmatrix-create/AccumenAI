@@ -17,7 +17,7 @@
     </div>
 </div>
 
-<div class="row">
+<div class="row align-items-stretch">
     <div class="col-md-4">
         <div class="card">
             <div class="card-body text-center">
@@ -28,10 +28,10 @@
                 <p class="text-muted">MR: <strong>{{ $patient->mr_number }}</strong></p>
                 <hr>
                 <div class="text-start">
-                    <p><strong>Date of Birth:</strong> {{ $patient->date_of_birth?->format('d M Y') ?? 'N/A' }}</p>
-                    <p><strong>Age:</strong> {{ $patient->age !== null ? $patient->age.' years' : 'N/A' }}</p>
+                    <p><strong>Date of Birth:</strong> <x-tdate :value="$patient->date_of_birth" fallback="d M Y" empty="N/A" /></p>
+                    <p><strong>Age:</strong> {{ $patient->age !== null ? $patient->age.' years' : 'N/A' }}@if($patient->age_category) <span class="badge bg-secondary">{{ $patient->age_category }}</span>@endif</p>
                     <p><strong>Gender:</strong> {{ ucfirst($patient->gender) }}</p>
-                    <p><strong>Blood Group:</strong> {{ $patient->blood_group ?? 'N/A' }}</p>
+                    <p><strong>Blood Group:</strong> @if($patient->blood_group === 'UKN') UKN (Unknown) @else {{ $patient->blood_group ?? 'N/A' }} @endif</p>
                     <p><strong>Phone:</strong> {{ $patient->phone }}</p>
                     <p><strong>Email:</strong> {{ $patient->email ?? 'N/A' }}</p>
                     <p class="mb-0"><strong>Status:</strong>
@@ -60,14 +60,61 @@
         </div>
     </div>
 
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">Recent Appointments</h6>
-                <a href="{{ route('medical.appointments.create', ['patient_id' => $patient->id]) }}"
-                   class="btn btn-sm btn-primary">+ Add</a>
+    <div class="col-md-8 d-flex">
+        <div class="card flex-fill w-100 d-flex flex-column">
+            <div class="card-header p-0 border-bottom-0">
+                <ul class="nav nav-tabs card-header-tabs flex-nowrap overflow-auto px-2 pt-2" id="patientHistoryTabs" role="tablist" style="white-space:nowrap;">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="tab-appointments" data-bs-toggle="tab"
+                            data-bs-target="#pane-appointments" type="button" role="tab"
+                            aria-controls="pane-appointments" aria-selected="true">
+                            <i class="bi bi-calendar-event me-1"></i>Appointments
+                            <span class="badge bg-primary ms-1">{{ $patient->appointments->count() }}</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-admissions" data-bs-toggle="tab"
+                            data-bs-target="#pane-admissions" type="button" role="tab"
+                            aria-controls="pane-admissions" aria-selected="false">
+                            <i class="bi bi-hospital me-1"></i>Admissions
+                            <span class="badge bg-primary ms-1">{{ $patient->admissions->count() }}</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-prescriptions" data-bs-toggle="tab"
+                            data-bs-target="#pane-prescriptions" type="button" role="tab"
+                            aria-controls="pane-prescriptions" aria-selected="false">
+                            <i class="bi bi-file-medical me-1"></i>Prescriptions
+                            <span class="badge bg-primary ms-1">{{ $patient->prescriptions->count() }}</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-laborders" data-bs-toggle="tab"
+                            data-bs-target="#pane-laborders" type="button" role="tab"
+                            aria-controls="pane-laborders" aria-selected="false">
+                            <i class="bi bi-flask me-1"></i>Lab Orders
+                            <span class="badge bg-primary ms-1">{{ $patient->labOrders->count() }}</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab-invoices" data-bs-toggle="tab"
+                            data-bs-target="#pane-invoices" type="button" role="tab"
+                            aria-controls="pane-invoices" aria-selected="false">
+                            <i class="bi bi-receipt me-1"></i>Invoices
+                            <span class="badge bg-primary ms-1">{{ $patient->invoices->count() }}</span>
+                        </button>
+                    </li>
+                </ul>
             </div>
-            <div class="card-body">
+            <div class="card-body flex-fill d-flex flex-column">
+                <div class="tab-content flex-fill" id="patientHistoryTabsContent">
+                    {{-- Appointments pane --}}
+                    <div class="tab-pane fade show active" id="pane-appointments" role="tabpanel" aria-labelledby="tab-appointments" tabindex="0">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">Recent Appointments</h6>
+                            <a href="{{ route('medical.appointments.create', ['patient_id' => $patient->id]) }}"
+                               class="btn btn-sm btn-primary">+ Add</a>
+                        </div>
                 @if($patient->appointments->count() > 0)
                     <div class="table-responsive">
                         <table class="table table-sm align-middle">
@@ -75,7 +122,7 @@
                             <tbody>
                                 @foreach($patient->appointments->take(5) as $appointment)
                                 <tr>
-                                    <td>{{ $appointment->appointment_date?->format('d M Y') }}</td>
+                                    <td><x-tdate :value="$appointment->appointment_date" fallback="d M Y" /></td>
                                     <td>{{ $appointment->doctor->name ?? 'N/A' }}</td>
                                     <td>#{{ $appointment->serial_number }}</td>
                                     <td>
@@ -91,12 +138,11 @@
                 @else
                     <p class="text-muted mb-0">No appointments found.</p>
                 @endif
-            </div>
-        </div>
+                    </div>
 
-        <div class="card mt-3">
-            <div class="card-header"><h6 class="mb-0">Admission History</h6></div>
-            <div class="card-body">
+                    {{-- Admissions pane --}}
+                    <div class="tab-pane fade" id="pane-admissions" role="tabpanel" aria-labelledby="tab-admissions" tabindex="0">
+                        <h6 class="mb-3">Admission History</h6>
                 @if($patient->admissions->count() > 0)
                     <div class="table-responsive">
                         <table class="table table-sm align-middle">
@@ -104,7 +150,7 @@
                             <tbody>
                                 @foreach($patient->admissions->take(5) as $admission)
                                 <tr>
-                                    <td>{{ $admission->admission_date?->format('d M Y') }}</td>
+                                    <td><x-tdate :value="$admission->admission_date" fallback="d M Y" /></td>
                                     <td>{{ $admission->admittingDoctor->name ?? 'N/A' }}</td>
                                     <td>
                                         <span class="badge bg-{{ $admission->status === 'active' ? 'danger' : 'success' }}">
@@ -120,12 +166,11 @@
                 @else
                     <p class="text-muted mb-0">No admissions found.</p>
                 @endif
-            </div>
-        </div>
+                    </div>
 
-        <div class="card mt-3">
-            <div class="card-header"><h6 class="mb-0">Recent Prescriptions</h6></div>
-            <div class="card-body">
+                    {{-- Prescriptions pane --}}
+                    <div class="tab-pane fade" id="pane-prescriptions" role="tabpanel" aria-labelledby="tab-prescriptions" tabindex="0">
+                        <h6 class="mb-3">Recent Prescriptions</h6>
                 @if($patient->prescriptions->count() > 0)
                     <div class="table-responsive">
                         <table class="table table-sm align-middle">
@@ -133,7 +178,7 @@
                             <tbody>
                                 @foreach($patient->prescriptions->take(5) as $prescription)
                                 <tr>
-                                    <td>{{ $prescription->prescription_date?->format('d M Y') }}</td>
+                                    <td><x-tdate :value="$prescription->prescription_date" fallback="d M Y" /></td>
                                     <td>{{ $prescription->doctor->name ?? 'N/A' }}</td>
                                     <td>{{ \Illuminate\Support\Str::limit($prescription->diagnosis, 30) }}</td>
                                     <td>
@@ -149,12 +194,11 @@
                 @else
                     <p class="text-muted mb-0">No prescriptions found.</p>
                 @endif
-            </div>
-        </div>
+                    </div>
 
-        <div class="card mt-3">
-            <div class="card-header"><h6 class="mb-0">Recent Lab Orders</h6></div>
-            <div class="card-body">
+                    {{-- Lab Orders pane --}}
+                    <div class="tab-pane fade" id="pane-laborders" role="tabpanel" aria-labelledby="tab-laborders" tabindex="0">
+                        <h6 class="mb-3">Recent Lab Orders</h6>
                 @if($patient->labOrders->count() > 0)
                     <div class="table-responsive">
                         <table class="table table-sm align-middle">
@@ -163,7 +207,7 @@
                                 @foreach($patient->labOrders->take(5) as $order)
                                 <tr>
                                     <td>{{ $order->order_number }}</td>
-                                    <td>{{ $order->order_date?->format('d M Y') }}</td>
+                                    <td><x-tdate :value="$order->order_date" fallback="d M Y" /></td>
                                     <td><span class="badge bg-secondary">{{ ucfirst($order->status) }}</span></td>
                                 </tr>
                                 @endforeach
@@ -173,12 +217,11 @@
                 @else
                     <p class="text-muted mb-0">No lab orders found.</p>
                 @endif
-            </div>
-        </div>
+                    </div>
 
-        <div class="card mt-3">
-            <div class="card-header"><h6 class="mb-0">Recent Invoices</h6></div>
-            <div class="card-body">
+                    {{-- Invoices pane --}}
+                    <div class="tab-pane fade" id="pane-invoices" role="tabpanel" aria-labelledby="tab-invoices" tabindex="0">
+                        <h6 class="mb-3">Recent Invoices</h6>
                 @if($patient->invoices->count() > 0)
                     <div class="table-responsive">
                         <table class="table table-sm align-middle">
@@ -187,7 +230,7 @@
                                 @foreach($patient->invoices->take(5) as $invoice)
                                 <tr>
                                     <td>{{ $invoice->invoice_number }}</td>
-                                    <td>{{ $invoice->invoice_date?->format('d M Y') }}</td>
+                                    <td><x-tdate :value="$invoice->invoice_date" fallback="d M Y" /></td>
                                     <td>{{ $invoice->total }}</td>
                                     <td><span class="badge bg-secondary">{{ ucfirst($invoice->status) }}</span></td>
                                 </tr>
@@ -198,6 +241,8 @@
                 @else
                     <p class="text-muted mb-0">No invoices found.</p>
                 @endif
+                    </div>
+                </div>
             </div>
         </div>
     </div>

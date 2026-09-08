@@ -62,7 +62,7 @@
                 <dt class="col-5">{{ mawa_e('exams.course') }}</dt>
                 <dd class="col-7">{{ $exam->course?->name ?? '—' }}</dd>
                 <dt class="col-5">{{ mawa_e('exams.exam_date') }}</dt>
-                <dd class="col-7">{{ $exam->exam_date ? \Illuminate\Support\Carbon::parse($exam->exam_date)->format('d M Y, h:i A') : '—' }}</dd>
+                <dd class="col-7"><x-tdate :value="$exam->exam_date" fallback="d M Y, h:i A" :datetime="true" empty="—" /></dd>
                 <dt class="col-5">{{ mawa_e('exams.full_marks') }}</dt>
                 <dd class="col-7">{{ $full }}</dd>
                 <dt class="col-5">{{ mawa_e('exams.pass_marks') }}</dt>

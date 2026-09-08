@@ -73,7 +73,7 @@
                 @forelse ($logs as $log)
                     <tr>
                         <td>
-                            <small>{{ $log->created_at?->format('M d, Y H:i') ?? '—' }}</small>
+                            <small><x-tdate :value="$log->created_at" fallback="M d, Y H:i" :datetime="true" empty="—" /></small>
                         </td>
                         <td>
                             @if ($log->institute)

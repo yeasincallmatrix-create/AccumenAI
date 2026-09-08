@@ -58,11 +58,11 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label">From</label>
-                <input type="date" name="from" value="{{ request('from') }}" class="form-control form-control-sm">
+                <x-tdate-input name="from" :value="request('from')" class="form-control form-control-sm" />
             </div>
             <div class="col-md-2">
                 <label class="form-label">To</label>
-                <input type="date" name="to" value="{{ request('to') }}" class="form-control form-control-sm">
+                <x-tdate-input name="to" :value="request('to')" class="form-control form-control-sm" />
             </div>
             @php
                 $actingUser = request()->user();
@@ -117,8 +117,8 @@
                         <td>{{ $o->reference_number ?? '—' }}</td>
                         <td>{{ $o->supplier?->name ?? '—' }}</td>
                         <td>{{ $o->warehouse?->name ?? '—' }}</td>
-                        <td>{{ $o->order_date?->format('Y-m-d') }}</td>
-                        <td>{{ $o->expected_delivery_date?->format('Y-m-d') ?? '—' }}</td>
+                        <td><x-tdate :value="$o->order_date" fallback="Y-m-d" /></td>
+                        <td><x-tdate :value="$o->expected_delivery_date" fallback="Y-m-d" empty="—" /></td>
                         <td>
                             @php $colors = ['draft'=>'secondary','submitted'=>'warning','approved'=>'info','partially_received'=>'primary','fully_received'=>'success','cancelled'=>'dark','closed'=>'dark']; @endphp
                             <span class="badge bg-{{ $colors[$o->status] ?? 'secondary' }}">{{ ucfirst(str_replace('_',' ',$o->status)) }}</span>

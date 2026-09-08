@@ -47,11 +47,11 @@
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">Quotation Date *</label>
-                    <input type="date" name="quotation_date" value="{{ old('quotation_date', $quotation?->quotation_date?->format('Y-m-d') ?? date('Y-m-d')) }}" class="form-control" required>
+                    <x-tdate-input name="quotation_date" :value="old('quotation_date', $quotation?->quotation_date?->format('Y-m-d') ?? date('Y-m-d'))" class="form-control" required />
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">Valid Until *</label>
-                    <input type="date" name="validity_date" value="{{ old('validity_date', $quotation?->validity_date?->format('Y-m-d') ?? date('Y-m-d', strtotime('+30 days'))) }}" class="form-control" required>
+                    <x-tdate-input name="validity_date" :value="old('validity_date', $quotation?->validity_date?->format('Y-m-d') ?? date('Y-m-d', strtotime('+30 days')))" class="form-control" required />
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Currency</label>

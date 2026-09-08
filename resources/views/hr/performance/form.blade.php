@@ -7,8 +7,8 @@
         @csrf
         <div class="row g-2">
             <div class="col-md-4"><label class="form-label small">Employee *</label><select name="employee_id" class="form-select form-select-sm" required><option value="">— Select —</option>@foreach($employees as $e)<option value="{{ $e->id }}">{{ $e->display_name }} ({{ $e->employee_code }})</option>@endforeach</select></div>
-            <div class="col-md-4"><label class="form-label small">Period *</label><select name="period_id" class="form-select form-select-sm" required><option value="">— Select —</option>@foreach($periods as $p)<option value="{{ $p->id }}">{{ $p->name }} ({{ $p->start_date->format('Y-m-d') }}→{{ $p->end_date->format('Y-m-d') }})</option>@endforeach</select></div>
-            <div class="col-md-2"><label class="form-label small">Review Date *</label><input type="date" name="review_date" value="{{ now()->toDateString() }}" class="form-control form-control-sm" required></div>
+            <div class="col-md-4"><label class="form-label small">Period *</label><select name="period_id" class="form-select form-select-sm" required><option value="">— Select —</option>@foreach($periods as $p)<option value="{{ $p->id }}">{{ $p->name }} (<x-tdate :value="$p->start_date" fallback="Y-m-d" />→<x-tdate :value="$p->end_date" fallback="Y-m-d" />)</option>@endforeach</select></div>
+            <div class="col-md-2"><label class="form-label small">Review Date *</label><x-tdate-input name="review_date" :value="now()->toDateString()" class="form-control form-control-sm" required /></div>
             <div class="col-md-12"><label class="form-label small">Comments</label><textarea name="comments" class="form-control form-control-sm" rows="2"></textarea></div>
             <div class="col-12"><h6>KPIs (optional)</h6><div id="kpi-rows">
                 @foreach($kpis as $kpi)

@@ -117,8 +117,16 @@ class MedicalPhase1Test extends TestCase
 
     public function test_patient_store_validation(): void
     {
+        // Only name + age are mandatory now.
         $response = $this->post(route('medical.patients.store'), ['last_name' => 'X']);
-        $response->assertSessionHasErrors(['first_name', 'date_of_birth', 'gender', 'phone']);
+        $response->assertSessionHasErrors(['first_name', 'age', 'date_of_birth']);
+
+        // Age alone (with first name) should pass and auto-derive DOB.
+        $response = $this->post(route('medical.patients.store'), [
+            'first_name' => 'AgeOnly',
+            'age' => 30,
+        ]);
+        $response->assertSessionHasNoErrors();
     }
 
     public function test_patient_index_search_and_show(): void

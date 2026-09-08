@@ -10,7 +10,7 @@
 
 <div class="filter-card mb-3">
     <form method="GET" action="{{ route('hr.attendance.daily') }}" class="d-flex flex-wrap gap-2 align-items-end">
-        <div><label class="form-label small">Date</label><input type="date" name="date" value="{{ $date }}" class="form-control form-control-sm"></div>
+        <div><label class="form-label small">Date</label><x-tdate-input name="date" :value="$date" class="form-control form-control-sm" /></div>
         <div><label class="form-label small">Branch</label><select name="branch_id" class="form-select form-select-sm"><option value="">All</option>@foreach($branches as $b)<option value="{{ $b->id }}" @selected((string)($filters['branch_id']??'') === (string)$b->id)>{{ $b->name }}</option>@endforeach</select></div>
         <div><label class="form-label small">Department</label><select name="department_id" class="form-select form-select-sm"><option value="">All</option>@foreach($departments as $d)<option value="{{ $d->id }}" @selected((string)($filters['department_id']??'') === (string)$d->id)>{{ $d->name }}</option>@endforeach</select></div>
         <div><label class="form-label small">Status</label><select name="status" class="form-select form-select-sm"><option value="">All</option>@foreach($statuses as $s)<option value="{{ $s }}" @selected(($filters['status']??'') === $s)>{{ ucfirst(str_replace('_',' ',$s)) }}</option>@endforeach</select></div>
@@ -24,7 +24,7 @@
     <form method="POST" action="{{ route('hr.attendance.mark') }}" class="row g-2">
         @csrf
         <div class="col-md-3"><label class="form-label small">Employee *</label><select name="employee_id" class="form-select form-select-sm" required><option value="">— Select —</option>@foreach($employees as $e)<option value="{{ $e->id }}">{{ $e->display_name }} ({{ $e->employee_code }})</option>@endforeach</select></div>
-        <div class="col-md-2"><label class="form-label small">Date *</label><input type="date" name="attendance_date" value="{{ $date }}" class="form-control form-control-sm" required></div>
+        <div class="col-md-2"><label class="form-label small">Date *</label><x-tdate-input name="attendance_date" :value="$date" class="form-control form-control-sm" required /></div>
         <div class="col-md-2"><label class="form-label small">Status *</label><select name="status" class="form-select form-select-sm" required><option value="present">Present</option><option value="absent">Absent</option><option value="late">Late</option><option value="early_departure">Early Departure</option><option value="half_day">Half Day</option><option value="leave">Leave</option><option value="holiday">Holiday</option><option value="weekend">Weekend</option></select></div>
         <div class="col-md-1"><label class="form-label small">In</label><input type="time" name="check_in" class="form-control form-control-sm"></div>
         <div class="col-md-1"><label class="form-label small">Out</label><input type="time" name="check_out" class="form-control form-control-sm"></div>
@@ -62,7 +62,7 @@
     <form method="POST" action="{{ route('hr.attendance.corrections.request') }}" class="row g-2">
         @csrf
         <div class="col-md-3"><select name="employee_id" class="form-select form-select-sm" required><option value="">Employee</option>@foreach($employees as $e)<option value="{{ $e->id }}">{{ $e->display_name }}</option>@endforeach</select></div>
-        <div class="col-md-2"><input type="date" name="correction_date" class="form-control form-control-sm" required></div>
+        <div class="col-md-2"><x-tdate-input name="correction_date" class="form-control form-control-sm" required /></div>
         <div class="col-md-2"><select name="requested_status" class="form-select form-select-sm" required>@foreach($statuses as $s)<option value="{{ $s }}">{{ $s }}</option>@endforeach</select></div>
         <div class="col-md-2"><input type="text" name="reason" class="form-control form-control-sm" placeholder="Reason *" required></div>
         <div class="col-md-3"><button type="submit" class="btn btn-sm btn-outline-primary">Request (preserves original)</button></div>

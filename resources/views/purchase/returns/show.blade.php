@@ -9,7 +9,7 @@
 @if($errors->any())<div class="alert alert-danger"><ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>@endif
 <div class="card mb-4"><div class="card-body"><div class="row">
 <div class="col-md-6"><h6>Supplier</h6><p class="mb-1 fw-semibold">{{ $return->supplier?->name }}</p><p class="mb-1 text-muted small">{{ $return->supplier?->phone }}</p><p class="mb-1"><strong>PO:</strong> @if($return->purchaseOrder)<a href="{{ route('purchase.orders.show',$return->purchaseOrder) }}">{{ $return->purchaseOrder->order_number }}</a>@else — @endif</p><p class="mb-1"><strong>GRN:</strong> @if($return->goodsReceipt) {{ $return->goodsReceipt->receipt_number }} @else — @endif</p></div>
-<div class="col-md-6 text-md-end"><p class="mb-1"><strong>Return Date:</strong> {{ $return->return_date->format('Y-m-d') }}</p><p class="mb-1"><strong>Warehouse:</strong> {{ $return->warehouse?->name ?? '—' }}</p><p class="mb-1"><strong>Branch:</strong> {{ $return->branch?->name ?? 'Institute-wide' }}</p><p class="mb-1"><strong>Reason:</strong> {{ $return->reason ?? '—' }}</p></div>
+<div class="col-md-6 text-md-end"><p class="mb-1"><strong>Return Date:</strong> <x-tdate :value="$return->return_date" fallback="Y-m-d" /></p><p class="mb-1"><strong>Warehouse:</strong> {{ $return->warehouse?->name ?? '—' }}</p><p class="mb-1"><strong>Branch:</strong> {{ $return->branch?->name ?? 'Institute-wide' }}</p><p class="mb-1"><strong>Reason:</strong> {{ $return->reason ?? '—' }}</p></div>
 </div></div></div>
 <div class="card mb-4"><div class="table-responsive"><table class="table mb-0">
 <thead><tr><th>#</th><th>Description</th><th class="text-end">Qty</th><th>Unit</th><th class="text-end">Unit Price</th><th class="text-end">Discount</th><th class="text-end">Tax</th><th class="text-end">Total</th></tr></thead>
@@ -36,7 +36,7 @@
 </form>
 <h6>Refunds</h6>
 <div class="table-responsive"><table class="table mb-0"><thead><tr><th>Date</th><th class="text-end">Amount</th><th>Method</th><th>Journal</th></tr></thead><tbody>
-@forelse($refunds as $r)<tr><td>{{ $r->created_at->format('Y-m-d') }}</td><td class="text-end">{{ number_format($r->amount,2) }}</td><td>{{ ucfirst($r->refund_method) }}</td><td>{{ $r->journal?->journal_no ?? '—' }}</td></tr>@empty<tr><td colspan="4" class="text-center text-muted">No refunds yet.</td></tr>@endforelse
+@forelse($refunds as $r)<tr><td><x-tdate :value="$r->created_at" fallback="Y-m-d" /></td><td class="text-end">{{ number_format($r->amount,2) }}</td><td>{{ ucfirst($r->refund_method) }}</td><td>{{ $r->journal?->journal_no ?? '—' }}</td></tr>@empty<tr><td colspan="4" class="text-center text-muted">No refunds yet.</td></tr>@endforelse
 </tbody></table></div>
 <form method="POST" action="{{ route('purchase.credit.adjust') }}" class="row g-3 align-items-end mt-3">
 @csrf

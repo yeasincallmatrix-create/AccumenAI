@@ -30,7 +30,7 @@
                 @forelse ($logs as $log)
                     <tr>
                         <td class="text-muted">{{ $log->id }}</td>
-                        <td class="text-muted">{{ $log->created_at?->format('Y-m-d H:i:s') }}</td>
+                        <td class="text-muted"><x-tdate :value="$log->created_at" fallback="Y-m-d H:i:s" :datetime="true" /></td>
                         <td>
                             @if (str_starts_with((string) $log->action, 'failed_login'))
                                 <span class="badge bg-danger">{{ $log->action }}</span>

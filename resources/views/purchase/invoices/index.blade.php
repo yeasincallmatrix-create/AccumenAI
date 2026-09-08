@@ -10,8 +10,8 @@
 <form method="GET" class="row g-3 align-items-end">
     <div class="col-md-3"><label class="form-label">Search</label><input type="text" name="q" value="{{ request('q') }}" class="form-control form-control-sm" placeholder="Number or supplier"></div>
     <div class="col-md-2"><label class="form-label">Status</label><select name="status" class="form-select form-select-sm"><option value="">All</option>@foreach(['draft','posted','cancelled','reversed'] as $s)<option value="{{ $s }}" {{ request('status')===$s?'selected':'' }}>{{ ucfirst($s) }}</option>@endforeach</select></div>
-    <div class="col-md-2"><label class="form-label">From</label><input type="date" name="from" value="{{ request('from') }}" class="form-control form-control-sm"></div>
-    <div class="col-md-2"><label class="form-label">To</label><input type="date" name="to" value="{{ request('to') }}" class="form-control form-control-sm"></div>
+    <div class="col-md-2"><label class="form-label">From</label><x-tdate-input name="from" :value="request('from')" class="form-control form-control-sm" /></div>
+    <div class="col-md-2"><label class="form-label">To</label><x-tdate-input name="to" :value="request('to')" class="form-control form-control-sm" /></div>
     <div class="col-md-3"><button class="btn btn-sm btn-primary rounded-pill" type="submit">Filter</button> <a href="{{ route('purchase.invoices.index') }}" class="btn btn-sm btn-outline-secondary rounded-pill">Reset</a></div>
 </form>
 </div></div>
@@ -23,7 +23,7 @@
 <td class="fw-semibold">{{ $inv->invoice_number }}</td>
 <td>{{ $inv->supplier?->name ?? '—' }}</td>
 <td><small class="text-muted">{{ $inv->purchaseOrder?->order_number ?? '—' }} @if($inv->goodsReceipt) / {{ $inv->goodsReceipt->receipt_number }} @endif</small></td>
-<td>{{ $inv->invoice_date->format('Y-m-d') }}</td>
+<td><x-tdate :value="$inv->invoice_date" fallback="Y-m-d" /></td>
 <td class="text-end">{{ number_format($inv->grand_total,2) }}</td>
 <td class="text-end"><span class="text-success">{{ number_format($inv->paid_amount,2) }}</span> / <span class="text-danger">{{ number_format($inv->due_amount,2) }}</span></td>
 <td>@php $colors=['draft'=>'secondary','posted'=>'success','cancelled'=>'dark','reversed'=>'warning']; @endphp <span class="badge bg-{{ $colors[$inv->status]??'secondary' }}">{{ ucfirst($inv->status) }}</span></td>

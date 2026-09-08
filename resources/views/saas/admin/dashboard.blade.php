@@ -55,8 +55,8 @@
                         <td>{{ $sub->institute->name ?? '—' }}</td>
                         <td><span class="badge bg-info">{{ $sub->package->name ?? '—' }}</span></td>
                         <td>{{ ucfirst($sub->billing_cycle ?? '—') }}</td>
-                        <td>{{ $sub->start_date ? \Carbon\Carbon::parse($sub->start_date)->format('d M Y') : '—' }}</td>
-                        <td>{{ $sub->end_date ? \Carbon\Carbon::parse($sub->end_date)->format('d M Y') : '—' }}</td>
+                        <td><x-tdate :value="\Carbon\Carbon::parse($sub->start_date)" fallback="d M Y" empty="—" /></td>
+                        <td><x-tdate :value="\Carbon\Carbon::parse($sub->end_date)" fallback="d M Y" empty="—" /></td>
                         <td>
                             @if($sub->end_date && \Carbon\Carbon::parse($sub->end_date)->isFuture())
                                 <span class="badge bg-success">Active</span>

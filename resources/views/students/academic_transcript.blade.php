@@ -196,10 +196,10 @@
                     <tr><td>Mother's Name</td><td>{{ $student->mother_name }}</td></tr>
                 @endif
                 @if ($student->dob)
-                    <tr><td>Date of Birth</td><td>{{ $student->dob->format('F j, Y') }}</td></tr>
+                    <tr><td>Date of Birth</td><td><x-tdate :value="$student->dob" fallback="F j, Y" /></td></tr>
                 @endif
                 @if ($student->admission_date)
-                    <tr><td>Admission Date</td><td>{{ $student->admission_date->format('F j, Y') }}</td></tr>
+                    <tr><td>Admission Date</td><td><x-tdate :value="$student->admission_date" fallback="F j, Y" /></td></tr>
                 @endif
             </table>
         </div>
@@ -397,7 +397,7 @@
     </div>
 
     <div class="text-center text-muted small mt-4">
-        Generated {{ now()->format('F j, Y') }} · AccumenAI
+        Generated <x-tdate :value="now()" fallback="F j, Y" /> · AccumenAI
     </div>
 </div>
 

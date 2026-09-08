@@ -96,7 +96,7 @@
                             @endif
                         </td>
                         <td><code>{{ $payment->gateway_reference ?? '—' }}</code></td>
-                        <td>{{ $payment->created_at->format('d M Y H:i') }}</td>
+                        <td><x-tdate :value="$payment->created_at" fallback="d M Y H:i" :datetime="true" /></td>
                     </tr>
                 @empty
                     <tr><td colspan="7" class="text-center text-muted">No payment attempts found.</td></tr>

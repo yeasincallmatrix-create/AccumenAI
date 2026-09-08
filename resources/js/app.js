@@ -1,4 +1,5 @@
 import './bootstrap';
+import './auto-caps';
 
 /**
  * Global UID copy helper — used by <x-uid-with-copy /> component.

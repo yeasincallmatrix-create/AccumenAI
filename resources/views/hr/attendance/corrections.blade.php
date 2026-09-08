@@ -12,7 +12,7 @@
             <tbody>
                 @forelse($corrections as $c)
                     <tr>
-                        <td>{{ $c->correction_date->format('Y-m-d') }}</td>
+                        <td><x-tdate :value="$c->correction_date" fallback="Y-m-d" /></td>
                         <td>{{ $c->employee->display_name }} <small class="text-muted">{{ $c->employee->employee_code }}</small></td>
                         <td>{{ $c->requested_status }} @if($c->requested_check_in) {{ $c->requested_check_in }} @endif</td>
                         <td>{{ $c->reason }}</td>
@@ -22,7 +22,7 @@
                                 <form method="POST" action="{{ route('hr.attendance.corrections.decide', $c) }}" class="d-inline">@csrf<button name="decision" value="approved" class="btn btn-sm btn-success">Approve</button></form>
                                 <form method="POST" action="{{ route('hr.attendance.corrections.decide', $c) }}" class="d-inline">@csrf<button name="decision" value="rejected" class="btn btn-sm btn-outline-danger">Reject</button></form>
                             @else
-                                <span class="text-muted small">{{ $c->reviewed_at?->format('Y-m-d H:i') }}</span>
+                                <span class="text-muted small"><x-tdate :value="$c->reviewed_at" fallback="Y-m-d H:i" :datetime="true" /></span>
                             @endif
                         </td>
                     </tr>

@@ -22,7 +22,7 @@
         <form method="GET" action="{{ route('medical.appointments.queue') }}" class="row g-2 align-items-end">
             <div class="col-md-4">
                 <label class="form-label" for="queue_doctor">Doctor</label>
-                <select id="queue_doctor" name="doctor_id" class="form-select" onchange="this.form.submit()">
+                <select id="queue_doctor" name="doctor_id" class="form-select" onchange="guardTdateSubmit(this)">
                     @forelse($doctors as $doctor)
                         <option value="{{ $doctor->id }}" @selected((string) $doctorId === (string) $doctor->id)>
                             {{ $doctor->name }}
@@ -34,8 +34,7 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label" for="queue_date">Date</label>
-                <input type="date" id="queue_date" name="date" class="form-control"
-                       value="{{ $date }}" onchange="this.form.submit()">
+                <x-tdate-input name="date" :value="$date" id="queue_date" class="form-control" onchange="guardTdateSubmit(this)" />
             </div>
             <div class="col-md-5 text-end">
                 <span class="badge bg-primary fs-6 me-2">Total: {{ $queueStatus['total'] }}</span>

@@ -36,8 +36,8 @@
                     <tr><th>Student</th><td>{{ $attempt->student?->first_name }} {{ $attempt->student?->last_name }}</td></tr>
                     <tr><th>Amount</th><td>{{ number_format((float) $attempt->amount, 2) }} {{ $attempt->currency_code ?? '' }}</td></tr>
                     <tr><th>Reference</th><td><code>{{ $attempt->gateway_reference ?? 'N/A' }}</code></td></tr>
-                    <tr><th>Initiated</th><td>{{ $attempt->initiated_at?->format('d M Y H:i') ?? '-' }}</td></tr>
-                    <tr><th>Completed</th><td>{{ $attempt->completed_at?->format('d M Y H:i') ?? '-' }}</td></tr>
+                    <tr><th>Initiated</th><td><x-tdate :value="$attempt->initiated_at" fallback="d M Y H:i" :datetime="true" empty="-" /></td></tr>
+                    <tr><th>Completed</th><td><x-tdate :value="$attempt->completed_at" fallback="d M Y H:i" :datetime="true" empty="-" /></td></tr>
                     @if ($attempt->payment_id)
                         <tr><th>Payment</th><td><a href="{{ route('finance.payments.index') }}">#{{ $attempt->payment_id }}</a></td></tr>
                     @endif

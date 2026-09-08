@@ -35,11 +35,11 @@
             </div>
             <div class="filter-span flex-shrink-0" style="min-width:170px">
                 <label class="form-label mb-1">Start date</label>
-                <input type="date" name="start_date" value="{{ $start?->format('Y-m-d') }}" class="form-control form-control-sm">
+                <x-tdate-input name="start_date" value="{{ $start?->format('Y-m-d') }}" class="form-control form-control-sm" />
             </div>
             <div class="filter-span flex-shrink-0" style="min-width:170px">
                 <label class="form-label mb-1">End date</label>
-                <input type="date" name="end_date" value="{{ $end?->format('Y-m-d') }}" class="form-control form-control-sm">
+                <x-tdate-input name="end_date" value="{{ $end?->format('Y-m-d') }}" class="form-control form-control-sm" />
             </div>
             <div class="filter-span flex-shrink-0">
                 <button class="btn btn-outline-primary btn-sm" type="submit"><i class="bi bi-search"></i> Apply</button>
@@ -71,8 +71,8 @@
                 {{ $selYear?->name ?: $selYear?->code ?: 'Year #'.$selectedYearId }}
             </span>
         @endif
-        <span><span class="label">From:</span> {{ $start?->format('M j, Y') }}</span>
-        <span><span class="label">To:</span> {{ $end?->format('M j, Y') }}</span>
+        <span><span class="label">From:</span> <x-tdate :value="$start" fallback="M j, Y" /></span>
+        <span><span class="label">To:</span> <x-tdate :value="$end" fallback="M j, Y" /></span>
     </div>
 
     @if ($report['valid'])
@@ -133,7 +133,7 @@
                             <td class="student">{{ $placement->classGrade?->name ?? ('Class #'.$placement->class_grade_id) }}</td>
                             <td>{{ $placement->academicGroup?->name ?? '—' }}</td>
                             <td>{{ ucfirst($placement->status) }}</td>
-                            <td>{{ $context['window']['start']->format('M j, Y') }} — {{ $context['window']['end']->format('M j, Y') }}</td>
+                            <td><x-tdate :value="$context['window']['start']" fallback="M j, Y" /> — <x-tdate :value="$context['window']['end']" fallback="M j, Y" /></td>
                             <td>{{ $summary['total'] }}</td>
                             <td>{{ $summary['present'] }}</td>
                             <td>{{ $summary['absent'] }}</td>
@@ -177,7 +177,7 @@
                     @endphp
                     <tr>
                         <td class="text-nowrap">
-                            {{ $record->class_date?->format('M j, Y') ?? $record->class_date }}
+                            <x-tdate :value="$record->class_date" fallback="M j, Y" />
                             <span class="text-muted small d-block">{{ $record->class_date?->format('l') }}</span>
                         </td>
                         <td class="student">
@@ -235,7 +235,7 @@
         </div>
 
         <div class="text-center text-muted small mt-4">
-            Generated {{ now()->format('F j, Y') }} · AccumenAI
+            Generated <x-tdate :value="now()" fallback="F j, Y" /> · AccumenAI
         </div>
     @else
         <p class="text-muted mb-0 py-3 text-center">

@@ -50,7 +50,7 @@
                 @foreach ($quotations as $q)
                     <tr>
                         <td>{{ $q->quotation_number }}</td>
-                        <td>{{ $q->quotation_date->format('Y-m-d') }}</td>
+                        <td><x-tdate :value="$q->quotation_date" fallback="Y-m-d" /></td>
                         <td class="text-end">{{ number_format($q->grand_total, 2) }}</td>
                         <td><span class="badge bg-secondary">{{ ucfirst($q->status) }}</span></td>
                         <td class="text-end"><a class="btn btn-sm btn-outline-primary rounded-pill" href="{{ route('sales.quotations.show', $q) }}"><i class="bi bi-eye"></i></a></td>
@@ -72,7 +72,7 @@
                 @foreach ($orders as $o)
                     <tr>
                         <td>{{ $o->order_number }}</td>
-                        <td>{{ $o->order_date->format('Y-m-d') }}</td>
+                        <td><x-tdate :value="$o->order_date" fallback="Y-m-d" /></td>
                         <td class="text-end">{{ number_format($o->grand_total, 2) }}</td>
                         <td><span class="badge bg-secondary">{{ ucfirst($o->status) }}</span></td>
                         <td class="text-end"><a class="btn btn-sm btn-outline-primary rounded-pill" href="{{ route('sales.orders.show', $o) }}"><i class="bi bi-eye"></i></a></td>
@@ -94,7 +94,7 @@
                 @foreach ($invoices as $inv)
                     <tr>
                         <td>{{ $inv->invoice_number ?? $inv->id }}</td>
-                        <td>{{ $inv->created_at->format('Y-m-d') }}</td>
+                        <td><x-tdate :value="$inv->created_at" fallback="Y-m-d" /></td>
                         <td class="text-end">{{ number_format($inv->grand_total ?? 0, 2) }}</td>
                         <td><span class="badge bg-secondary">{{ ucfirst($inv->status ?? 'open') }}</span></td>
                     </tr>

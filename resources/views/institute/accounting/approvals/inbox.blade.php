@@ -31,7 +31,7 @@
                         <td>{{ $req->workflow->name ?? '—' }}</td>
                         <td>{{ $req->ref_type }} #{{ $req->ref_id }}</td>
                         <td class="text-end fw-semibold">{{ number_format((float) $req->amount, 2) }}</td>
-                        <td>{{ $req->requested_at?->format('d M Y H:i') ?? '—' }}</td>
+                        <td><x-tdate :value="$req->requested_at" fallback="d M Y H:i" :datetime="true" empty="—" /></td>
                         <td>Step {{ $req->current_step }}</td>
                         <td class="text-end d-flex gap-1 justify-content-end">
                             <form method="POST" action="{{ route('accounting.approvals.approve', $req->id) }}" class="d-inline">

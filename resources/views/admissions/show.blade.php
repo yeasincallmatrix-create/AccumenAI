@@ -14,7 +14,6 @@
         'withdrawn'    => 'bg-secondary',
     ];
     $needsReason = in_array('rejected', $nextStatuses, true) || in_array('cancelled', $nextStatuses, true);
-    $fmtDate = fn ($date) => $date ? \Illuminate\Support\Carbon::parse($date)->format('d M Y') : '—';
 @endphp
 
 @section('content')
@@ -55,7 +54,7 @@
                     </tr>
                     <tr>
                         <th>Gender / DOB</th>
-                        <td>{{ $student->gender ? ucfirst($student->gender) : '—' }} / {{ $fmtDate($student->dob) }}</td>
+                        <td>{{ $student->gender ? ucfirst($student->gender) : '—' }} / <x-tdate :value="$student->dob" fallback="d M Y" empty="—" /></td>
                     </tr>
                     <tr>
                         <th>Phone</th>
@@ -83,7 +82,7 @@
                     </tr>
                     <tr>
                         <th>Applied on</th>
-                        <td>{{ $fmtDate($student->application_date) }}</td>
+                        <td><x-tdate :value="$student->application_date" fallback="d M Y" empty="—" /></td>
                     </tr>
                     <tr>
                         <th>Source</th>

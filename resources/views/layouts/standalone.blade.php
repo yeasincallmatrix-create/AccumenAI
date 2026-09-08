@@ -71,6 +71,7 @@
 <script src="{{ asset('js/password-toggle.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/password-toggle.js')) }}"></script>
 <script src="{{ asset('js/popup-fix.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/popup-fix.js')) }}"></script>
 <script src="{{ asset('js/password-policy.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/password-policy.js')) }}"></script>
+<script src="{{ asset('js/auto-caps.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/auto-caps.js')) }}"></script>
 <script>
 (function () {
     var root = document.documentElement;
@@ -118,6 +119,7 @@
     }
 })();
 </script>
+@include('layouts.partials.tenant_dates')
 @yield('scripts')
 @stack('scripts')
 <script>

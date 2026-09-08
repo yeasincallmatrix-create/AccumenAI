@@ -26,7 +26,7 @@
                     <tr>
                         <td>{{ $a->employee->display_name }}<div class="text-muted small">{{ $a->employee->employee_code }}</div></td>
                         <td>{{ $a->leaveType->name }}</td>
-                        <td>{{ $a->start_date->format('Y-m-d') }} → {{ $a->end_date->format('Y-m-d') }}<div class="text-muted small">{{ $a->reason ?? '' }}</div></td>
+                        <td><x-tdate :value="$a->start_date" fallback="Y-m-d" /> → <x-tdate :value="$a->end_date" fallback="Y-m-d" /><div class="text-muted small">{{ $a->reason ?? '' }}</div></td>
                         <td>{{ $a->days_count }}</td>
                         <td><span class="badge {{ $a->status==='approved'?'text-bg-success':($a->status==='pending'?'text-bg-warning':'text-bg-secondary') }}">{{ $a->status }}</span></td>
                         <td>

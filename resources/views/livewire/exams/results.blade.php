@@ -1,7 +1,3 @@
-@php
-    $fmtDate = fn ($date) => $date ? \Illuminate\Support\Carbon::parse($date)->format('d M Y, h:i A') : '—';
-@endphp
-
 <div class="admin-card" data-ajax-table>
 
     <div class="filter-card">
@@ -112,7 +108,7 @@
                         @if (in_array('status', $visibleColumns, true))<td>
                             <span class="badge {{ $resultStatusBadge[$result->result_status] ?? 'bg-secondary' }}">{{ $resultStatusNames[$result->result_status] ?? $result->result_status }}</span>
                         </td>@endif
-                        @if (in_array('published_at', $visibleColumns, true))<td>{{ $fmtDate($result->published_at) }}</td>@endif
+                        @if (in_array('published_at', $visibleColumns, true))<td><x-tdate :value="$result->published_at" fallback="d M Y, h:i A" :datetime="true" empty="—" /></td>@endif
                     </tr>
                 @empty
                     <tr>

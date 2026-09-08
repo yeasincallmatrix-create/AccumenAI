@@ -28,8 +28,8 @@
                 <p class="mb-1 text-muted small">{{ $quotation->customer?->address }}</p>
             </div>
             <div class="col-md-6 text-md-end">
-                <p class="mb-1"><strong>Quotation Date:</strong> {{ $quotation->quotation_date->format('Y-m-d') }}</p>
-                <p class="mb-1"><strong>Valid Until:</strong> {{ $quotation->validity_date->format('Y-m-d') }} @if($quotation->isExpiredByDate()) <span class="badge bg-warning">Expired</span> @endif</p>
+                <p class="mb-1"><strong>Quotation Date:</strong> <x-tdate :value="$quotation->quotation_date" fallback="Y-m-d" /></p>
+                <p class="mb-1"><strong>Valid Until:</strong> <x-tdate :value="$quotation->validity_date" fallback="Y-m-d" /> @if($quotation->isExpiredByDate()) <span class="badge bg-warning">Expired</span> @endif</p>
                 <p class="mb-1"><strong>Currency:</strong> {{ $quotation->currency?->code }}</p>
                 <p class="mb-1"><strong>Payment Terms:</strong> {{ $quotation->payment_terms ?? '—' }}</p>
                 <p class="mb-1"><strong>Branch:</strong> {{ $quotation->branch?->name ?? 'Institute-wide' }}</p>

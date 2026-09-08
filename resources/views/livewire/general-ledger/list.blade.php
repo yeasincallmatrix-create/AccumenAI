@@ -25,11 +25,11 @@
             </div>
             <div class="filter-span">
                 <label class="form-label mb-1">From</label>
-                <input type="date" class="form-control form-control-sm" wire:model.live="filters.from">
+                <x-live-date model="filters.from" :value="$filters['from'] ?? ''" class="form-control form-control-sm" />
             </div>
             <div class="filter-span">
                 <label class="form-label mb-1">To</label>
-                <input type="date" class="form-control form-control-sm" wire:model.live="filters.to">
+                <x-live-date model="filters.to" :value="$filters['to'] ?? ''" class="form-control form-control-sm" />
             </div>
             <div class="filter-span">
                 <button class="btn btn-outline-secondary btn-sm mt-1" wire:click="resetFilters"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>

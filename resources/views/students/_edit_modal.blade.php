@@ -58,12 +58,12 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label" for="e_dob">Date of Birth</label>
-                        <input id="e_dob" type="date" class="form-control" name="dob" value="{{ old('dob', $student->dob?->format('Y-m-d')) }}">
+                        <x-tdate-input id="e_dob" class="form-control" name="dob" value="{{ old('dob', $student->dob?->format('Y-m-d')) }}" />
                         @error('dob') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-3">
                         <label class="form-label" for="e_admission_date">Admission Date *</label>
-                        <input id="e_admission_date" type="date" class="form-control" name="admission_date" value="{{ old('admission_date', $student->admission_date?->format('Y-m-d')) }}" required>
+                        <x-tdate-input id="e_admission_date" class="form-control" name="admission_date" value="{{ old('admission_date', $student->admission_date?->format('Y-m-d')) }}" required />
                         @error('admission_date') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                     </div>
                     <div class="col-md-4">

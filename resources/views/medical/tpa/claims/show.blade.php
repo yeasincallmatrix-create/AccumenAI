@@ -53,7 +53,7 @@
                 </p>
                 <p><strong>Company:</strong> {{ $claim->tpa_company_name }}</p>
                 <p><strong>Policy:</strong> {{ $claim->policy_number }}</p>
-                <p><strong>Claim Date:</strong> {{ $claim->claim_date?->format('d M Y') }}</p>
+                <p><strong>Claim Date:</strong> <x-tdate :value="$claim->claim_date" fallback="d M Y" /></p>
                 <p class="mb-0"><strong>Documents:</strong> {{ $claim->documents ?? '—' }}</p>
             </div>
         </div>
@@ -64,8 +64,8 @@
             <div class="card-body">
                 <p><strong>Claimed:</strong> ৳{{ number_format($claim->claim_amount, 2) }}</p>
                 <p><strong>Approved:</strong> {{ $claim->approved_amount !== null ? '৳'.number_format($claim->approved_amount, 2) : '—' }}</p>
-                <p><strong>Approval Date:</strong> {{ $claim->approval_date?->format('d M Y') ?? '—' }}</p>
-                <p><strong>Settlement Date:</strong> {{ $claim->settlement_date?->format('d M Y') ?? '—' }}</p>
+                <p><strong>Approval Date:</strong> <x-tdate :value="$claim->approval_date" fallback="d M Y" empty="—" /></p>
+                <p><strong>Settlement Date:</strong> <x-tdate :value="$claim->settlement_date" fallback="d M Y" empty="—" /></p>
                 <p class="mb-0"><strong>Remarks:</strong> {{ $claim->remarks ?? '—' }}</p>
             </div>
         </div>

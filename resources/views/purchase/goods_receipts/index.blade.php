@@ -40,11 +40,11 @@
             <tbody>
                 @forelse($receipts as $r)
                     <tr>
-                        <td><a href="{{ route('purchase.receipts.show',$r) }}" class="fw-semibold">{{ $r->receipt_number }}</a><br><small class="text-muted">{{ $r->created_at?->format('Y-m-d H:i') }}</small></td>
+                        <td><a href="{{ route('purchase.receipts.show',$r) }}" class="fw-semibold">{{ $r->receipt_number }}</a><br><small class="text-muted"><x-tdate :value="$r->created_at" fallback="Y-m-d H:i" :datetime="true" /></small></td>
                         <td><a href="{{ route('purchase.orders.show',$r->purchaseOrder) }}">{{ $r->purchaseOrder?->order_number ?? '—' }}</a><br><small class="text-muted">{{ $r->purchaseOrder?->status }}</small></td>
                         <td>{{ $r->supplier?->name ?? '—' }}<br><small class="text-muted">{{ $r->supplier?->phone }}</small></td>
                         <td>{{ $r->warehouse?->name ?? '—' }}</td>
-                        <td>{{ $r->receipt_date?->format('Y-m-d') }}</td>
+                        <td><x-tdate :value="$r->receipt_date" fallback="Y-m-d" /></td>
                         <td><span class="badge bg-{{ ['draft'=>'secondary','confirmed'=>'success','cancelled'=>'dark','reversed'=>'warning'][$r->status] ?? 'secondary' }}">{{ ucfirst($r->status) }}</span></td>
                         <td class="text-end">
                             <a href="{{ route('purchase.receipts.show',$r) }}" class="btn btn-sm btn-outline-primary rounded-pill">View</a>

@@ -14,11 +14,11 @@
         <form method="GET" class="row g-2 align-items-end">
             <div class="col-md-4">
                 <label class="form-label" for="from_date">From</label>
-                <input type="date" id="from_date" name="from_date" class="form-control" value="{{ $fromDate }}" onchange="this.form.submit()">
+                <x-tdate-input name="from_date" :value="$fromDate" id="from_date" class="form-control" onchange="if(window.tdateReady&&window.tdateReady('from_date'))this.form.submit()" />
             </div>
             <div class="col-md-4">
                 <label class="form-label" for="to_date">To</label>
-                <input type="date" id="to_date" name="to_date" class="form-control" value="{{ $toDate }}" onchange="this.form.submit()">
+                <x-tdate-input name="to_date" :value="$toDate" id="to_date" class="form-control" onchange="if(window.tdateReady&&window.tdateReady('to_date'))this.form.submit()" />
             </div>
         </form>
     </div>

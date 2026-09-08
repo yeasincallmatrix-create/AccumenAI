@@ -7,7 +7,7 @@
 <div class="card mb-4"><div class="card-body row g-3">
     <div class="col-md-4"><label class="form-label">Invoice *</label><select name="invoice_id" id="invoice_id" class="form-select" required><option value="">Select posted invoice</option>@foreach($invoices as $inv)<option value="{{ $inv->id }}">{{ $inv->invoice_number }} — {{ $inv->party?->name }} — {{ number_format($inv->payable_amount,2) }}</option>@endforeach</select></div>
     <div class="col-md-3"><label class="form-label">Warehouse (return location)</label><select name="warehouse_id" class="form-select"><option value="">Auto</option>@foreach($warehouses as $w)<option value="{{ $w->id }}">{{ $w->name }} ({{ $w->code }})</option>@endforeach</select></div>
-    <div class="col-md-2"><label class="form-label">Return Date *</label><input type="date" name="return_date" value="{{ old('return_date', now()->toDateString()) }}" class="form-control" required></div>
+    <div class="col-md-2"><label class="form-label">Return Date *</label><x-tdate-input name="return_date" :value="old('return_date', now()->toDateString())" class="form-control" required /></div>
     <div class="col-md-3"><label class="form-label">Reason *</label><input type="text" name="reason" value="{{ old('reason') }}" class="form-control" placeholder="Damaged / Wrong item..." required></div>
     <div class="col-12"><label class="form-label">Notes</label><textarea name="notes" class="form-control" rows="2">{{ old('notes') }}</textarea></div>
 </div></div>

@@ -35,8 +35,8 @@
                 <p class="mb-1"><strong>Shipping Address:</strong><br><span class="text-muted">{{ $order->shipping_address ?? '—' }}</span></p>
             </div>
             <div class="col-md-6 text-md-end">
-                <p class="mb-1"><strong>Order Date:</strong> {{ $order->order_date->format('Y-m-d') }}</p>
-                <p class="mb-1"><strong>Expected Delivery:</strong> {{ $order->expected_delivery_date?->format('Y-m-d') ?? '—' }}</p>
+                <p class="mb-1"><strong>Order Date:</strong> <x-tdate :value="$order->order_date" fallback="Y-m-d" /></p>
+                <p class="mb-1"><strong>Expected Delivery:</strong> <x-tdate :value="$order->expected_delivery_date" fallback="Y-m-d" empty="—" /></p>
                 <p class="mb-1"><strong>Currency:</strong> {{ $order->currency?->code }}</p>
                 <p class="mb-1"><strong>Payment Terms:</strong> {{ $order->payment_terms ?? '—' }}</p>
                 <p class="mb-1"><strong>Branch:</strong> {{ $order->branch?->name ?? 'Institute-wide' }}</p>
@@ -48,10 +48,10 @@
                     @endif
                 </p>
                 @if ($order->submitted_at)
-                    <p class="mb-1 small text-muted">Submitted: {{ $order->submitted_at->format('Y-m-d H:i') }}</p>
+                    <p class="mb-1 small text-muted">Submitted: <x-tdate :value="$order->submitted_at" fallback="Y-m-d H:i" :datetime="true" /></p>
                 @endif
                 @if ($order->approved_at)
-                    <p class="mb-1 small text-muted">Approved: {{ $order->approved_at->format('Y-m-d H:i') }}</p>
+                    <p class="mb-1 small text-muted">Approved: <x-tdate :value="$order->approved_at" fallback="Y-m-d H:i" :datetime="true" /></p>
                 @endif
             </div>
         </div>
@@ -155,7 +155,7 @@
                         @foreach($deliveries as $d)
                             <tr>
                                 <td><a href="{{ route('sales.deliveries.show', $d) }}">{{ $d->delivery_number }}</a></td>
-                                <td>{{ $d->delivery_date->format('Y-m-d') }}</td>
+                                <td><x-tdate :value="$d->delivery_date" fallback="Y-m-d" /></td>
                                 <td><span class="badge bg-{{ ['draft'=>'secondary','confirmed'=>'success','delivered'=>'primary','cancelled'=>'dark'][$d->status] ?? 'secondary' }}">{{ ucfirst($d->status) }}</span></td>
                                 <td>{{ $d->warehouse?->name ?? '—' }}</td>
                                 <td class="text-end"><a href="{{ route('sales.deliveries.show', $d) }}" class="btn btn-sm btn-outline-primary rounded-pill">View</a></td>
@@ -215,7 +215,7 @@
                     <tbody>
                     @foreach($invoices as $inv)
                         <tr>
-                            <td><span class="fw-semibold">{{ $inv->invoice_number }}</span><br><small class="text-muted">{{ $inv->created_at->format('Y-m-d') }}</small></td>
+                            <td><span class="fw-semibold">{{ $inv->invoice_number }}</span><br><small class="text-muted"><x-tdate :value="$inv->created_at" fallback="Y-m-d" /></small></td>
                             <td><span class="badge bg-{{ ['unpaid'=>'warning','partial'=>'info','paid'=>'success','cancelled'=>'dark'][$inv->status] ?? 'secondary' }}">{{ ucfirst($inv->status) }}</span></td>
                             <td>{{ number_format($inv->payable_amount,2) }}</td>
                             <td>{{ number_format($inv->paid_amount,2) }}</td>

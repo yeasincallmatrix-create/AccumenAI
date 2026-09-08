@@ -91,7 +91,7 @@
 
     <div class="print-header d-none">
         <h4 class="mb-1">{{ $institute->name ?? '' }} — Offline Review</h4>
-        <p class="mb-0 text-muted">{{ $counts['pending_review'] }} record(s) awaiting approval · {{ now()->format('d M Y') }}</p>
+        <p class="mb-0 text-muted">{{ $counts['pending_review'] }} record(s) awaiting approval · <x-tdate :value="now()" fallback="d M Y" /></p>
     </div>
 
     <ul class="nav nav-pills mb-3 gap-1 monetix-print-hidden">
@@ -136,7 +136,7 @@
                     <tr>
                         <td class="text-muted">{{ $records->firstItem() + $loop->index }}</td>
                         <td>
-                            <span class="d-block">{{ $record->created_offline_at->format('d M Y h:i A') }}</span>
+                            <span class="d-block"><x-tdate :value="$record->created_offline_at" fallback="d M Y h:i A" :datetime="true" /></span>
                             <small class="text-muted">{{ strtoupper($record->client_uuid) }}</small>
                         </td>
                         <td><span class="badge bg-secondary">{{ $record->entity_type }}</span></td>
@@ -174,7 +174,7 @@
                                     @if ($record->status === 'rejected' && $record->reject_reason)
                                         <i class="bi bi-x-circle text-danger"></i> {{ $record->reject_reason }}
                                     @else
-                                        reviewed {{ $record->reviewed_at->format('d M Y h:i A') }}
+                                        reviewed <x-tdate :value="$record->reviewed_at" fallback="d M Y h:i A" :datetime="true" />
                                     @endif
                                 </small>
                             @endif

@@ -57,7 +57,7 @@
             <div class="p-3">
                 <div class="text-muted small text-uppercase mb-2">
                     {{ $year->name ?: $year->code }}
-                    <span class="text-muted mx-1">·</span>{{ $year->start_date->format('M j, Y') }} — {{ $year->end_date->format('M j, Y') }}
+                    <span class="text-muted mx-1">·</span><x-tdate :value="$year->start_date" fallback="M j, Y" /> — <x-tdate :value="$year->end_date" fallback="M j, Y" />
                 </div>
                 <div class="d-flex flex-wrap gap-3">
                     @if ($summary !== null)
@@ -118,7 +118,7 @@
                         @forelse ($records as $record)
                             <tr>
                                 <td class="text-nowrap">
-                                    {{ $record->class_date?->format('M j, Y') ?? $record->class_date }}
+                                    <x-tdate :value="$record->class_date" fallback="M j, Y" />
                                     <span class="text-muted small d-block">{{ $record->class_date?->format('l') }}</span>
                                 </td>
                                 <td>{{ $record->batch?->name ?? '—' }}</td>

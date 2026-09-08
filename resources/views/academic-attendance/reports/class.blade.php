@@ -53,11 +53,11 @@
             </div>
             <div class="filter-span flex-shrink-0" style="min-width:170px">
                 <label class="form-label mb-1">Start date</label>
-                <input type="date" name="start_date" value="{{ $start?->format('Y-m-d') }}" class="form-control form-control-sm">
+                <x-tdate-input name="start_date" value="{{ $start?->format('Y-m-d') }}" class="form-control form-control-sm" />
             </div>
             <div class="filter-span flex-shrink-0" style="min-width:170px">
                 <label class="form-label mb-1">End date</label>
-                <input type="date" name="end_date" value="{{ $end?->format('Y-m-d') }}" class="form-control form-control-sm">
+                <x-tdate-input name="end_date" value="{{ $end?->format('Y-m-d') }}" class="form-control form-control-sm" />
             </div>
             <div class="filter-span flex-shrink-0">
                 <button class="btn btn-outline-primary btn-sm" type="submit"><i class="bi bi-search"></i> Apply</button>
@@ -91,8 +91,8 @@
             <span><span class="label">Academic Year:</span> {{ $report['year']->name ?: ($report['year']->code ?: 'Year #'.$report['year']->id) }}</span>
             <span><span class="label">Class / Grade:</span> {{ $classes->firstWhere('id', $classId)?->name ?? ('Class #'.$classId) }}</span>
             <span><span class="label">Group / Stream:</span> {{ $groupId ? ($groups->firstWhere('id', $groupId)?->name ?? '—') : 'All groups' }}</span>
-            <span><span class="label">From:</span> {{ $report['window']['start']->format('M j, Y') }}</span>
-            <span><span class="label">To:</span> {{ $report['window']['end']->format('M j, Y') }}</span>
+            <span><span class="label">From:</span> <x-tdate :value="$report['window']['start']" fallback="M j, Y" /></span>
+            <span><span class="label">To:</span> <x-tdate :value="$report['window']['end']" fallback="M j, Y" /></span>
             <span><span class="label">Students:</span> {{ $report['roster']->total() }}</span>
         </div>
 
@@ -181,7 +181,7 @@
         </div>
 
         <div class="text-center text-muted small mt-4">
-            Generated {{ now()->format('F j, Y') }} · AccumenAI
+            Generated <x-tdate :value="now()" fallback="F j, Y" /> · AccumenAI
         </div>
     @endif
 </div>

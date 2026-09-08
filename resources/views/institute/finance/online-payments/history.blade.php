@@ -36,7 +36,7 @@
                                 @php $colors = ['pending'=>'secondary','processing'=>'info','paid'=>'success','failed'=>'danger','cancelled'=>'warning','expired'=>'secondary']; @endphp
                                 <span class="badge bg-{{ $colors[$attempt->status] ?? 'secondary' }}">{{ ucfirst($attempt->status) }}</span>
                             </td>
-                            <td>{{ $attempt->created_at?->format('d M Y H:i') }}</td>
+                            <td><x-tdate :value="$attempt->created_at" fallback="d M Y H:i" :datetime="true" /></td>
                         </tr>
                     @empty
                         <tr><td colspan="8" class="text-center text-muted py-4">No online payment attempts yet.</td></tr>

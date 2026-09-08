@@ -34,7 +34,7 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label">Due date</label>
-                <input type="date" class="form-control form-control-sm" name="due_date" value="{{ old('due_date') }}">
+                <x-tdate-input class="form-control form-control-sm" name="due_date" value="{{ old('due_date') }}" />
             </div>
             <div class="col-md-2">
                 <label class="form-label">Currency</label>

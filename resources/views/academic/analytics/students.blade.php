@@ -81,11 +81,11 @@
         </div>
         <div class="col-6 col-md-2">
             <label class="form-label small mb-1">Admitted From</label>
-            <input type="date" name="admission_from" value="{{ $filters['admission_from'] ?? '' }}" class="form-control form-control-sm">
+            <x-tdate-input name="admission_from" value="{{ $filters['admission_from'] ?? '' }}" class="form-control form-control-sm" />
         </div>
         <div class="col-6 col-md-2">
             <label class="form-label small mb-1">Admitted To</label>
-            <input type="date" name="admission_to" value="{{ $filters['admission_to'] ?? '' }}" class="form-control form-control-sm">
+            <x-tdate-input name="admission_to" value="{{ $filters['admission_to'] ?? '' }}" class="form-control form-control-sm" />
         </div>
         <div class="col-auto">
             <button class="btn btn-sm btn-primary"><i class="bi bi-funnel me-1"></i>Apply</button>

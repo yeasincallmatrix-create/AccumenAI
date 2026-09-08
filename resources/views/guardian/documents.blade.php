@@ -41,7 +41,7 @@
                             <p class="small text-body-secondary mb-2">{{ $document->description }}</p>
                         @endif
                         <div class="small text-body-secondary mb-3">
-                            <i class="bi bi-clock me-1"></i>{{ $document->created_at?->format('d M Y') }}
+                            <i class="bi bi-clock me-1"></i><x-tdate :value="$document->created_at" fallback="d M Y" />
                         </div>
                         <a class="btn btn-sm btn-outline-primary rounded-pill w-100" href="{{ route('guardian.students.documents.download', [$student->id, $document->id]) }}">
                             <i class="bi bi-download me-1"></i>{{ mawa_e('guardian.download') }}

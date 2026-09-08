@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class CrmContact extends Model
 {
     use Concerns\BranchScopedOrShared;
+    use Concerns\NormalizesPersonNames;
     use Concerns\TenantScoped;
     use SoftDeletes;
 

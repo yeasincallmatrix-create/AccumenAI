@@ -89,10 +89,10 @@
 @if ($finalized)
     <div class="alert alert-info rounded-0 border-0 small mb-3">
         <i class="bi bi-lock-fill me-1"></i>
-        This result was locked at <strong>{{ $result->locked_at?->format('M j, Y g:ia') }}</strong> by
+        This result was locked at <strong><x-tdate :value="$result->locked_at" fallback="M j, Y g:ia" :datetime="true" /></strong> by
         <strong>{{ $result->locker?->name ?? 'a staff member' }}</strong>. The numbers below are the frozen snapshot
         @if ($result->published_at)
-            and were published at <strong>{{ $result->published_at->format('M j, Y g:ia') }}</strong>.
+            and were published at <strong><x-tdate :value="$result->published_at" fallback="M j, Y g:ia" :datetime="true" /></strong>.
         @else
             and no longer change with edits to the source marks.
         @endif

@@ -33,7 +33,7 @@
             <thead><tr><th>Employee</th><th>Type</th><th>Dates</th><th>Status</th></tr></thead>
             <tbody>
                 @foreach($recent as $a)
-                    <tr><td>{{ $a->employee->display_name }}</td><td>{{ $a->leaveType->name }}</td><td>{{ $a->start_date->format('Y-m-d') }} → {{ $a->end_date->format('Y-m-d') }} ({{ $a->days_count }}d)</td><td><span class="badge {{ $a->status==='approved'?'text-bg-success':($a->status==='pending'?'text-bg-warning':'text-bg-secondary') }}">{{ $a->status }}</span></td></tr>
+                    <tr><td>{{ $a->employee->display_name }}</td><td>{{ $a->leaveType->name }}</td><td><x-tdate :value="$a->start_date" fallback="Y-m-d" /> → <x-tdate :value="$a->end_date" fallback="Y-m-d" /> ({{ $a->days_count }}d)</td><td><span class="badge {{ $a->status==='approved'?'text-bg-success':($a->status==='pending'?'text-bg-warning':'text-bg-secondary') }}">{{ $a->status }}</span></td></tr>
                 @endforeach
             </tbody>
         </table>

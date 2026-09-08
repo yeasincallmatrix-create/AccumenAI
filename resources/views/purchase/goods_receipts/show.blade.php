@@ -29,11 +29,11 @@
                 <p class="mb-1"><strong>Branch:</strong> {{ $receipt->branch?->name ?? 'Institute-wide' }}</p>
             </div>
             <div class="col-md-6 text-md-end">
-                <p class="mb-1"><strong>Receipt Date:</strong> {{ $receipt->receipt_date?->format('Y-m-d') }}</p>
-                <p class="mb-1"><strong>Created:</strong> {{ $receipt->created_at?->format('Y-m-d H:i') }}</p>
-                @if($receipt->confirmed_at)<p class="mb-1 text-success"><strong>Confirmed:</strong> {{ $receipt->confirmed_at->format('Y-m-d H:i') }} by #{{ $receipt->confirmed_by }}</p>@endif
-                @if($receipt->cancelled_at)<p class="mb-1 text-danger"><strong>Cancelled:</strong> {{ $receipt->cancelled_at->format('Y-m-d H:i') }}<br><small>{{ $receipt->cancellation_reason }}</small></p>@endif
-                @if($receipt->reversed_at)<p class="mb-1 text-warning"><strong>Reversed:</strong> {{ $receipt->reversed_at->format('Y-m-d H:i') }} by #{{ $receipt->reversed_by }}<br><small>{{ $receipt->reversal_reason }}</small></p>@endif
+                <p class="mb-1"><strong>Receipt Date:</strong> <x-tdate :value="$receipt->receipt_date" fallback="Y-m-d" /></p>
+                <p class="mb-1"><strong>Created:</strong> <x-tdate :value="$receipt->created_at" fallback="Y-m-d H:i" :datetime="true" /></p>
+                @if($receipt->confirmed_at)<p class="mb-1 text-success"><strong>Confirmed:</strong> <x-tdate :value="$receipt->confirmed_at" fallback="Y-m-d H:i" :datetime="true" /> by #{{ $receipt->confirmed_by }}</p>@endif
+                @if($receipt->cancelled_at)<p class="mb-1 text-danger"><strong>Cancelled:</strong> <x-tdate :value="$receipt->cancelled_at" fallback="Y-m-d H:i" :datetime="true" /><br><small>{{ $receipt->cancellation_reason }}</small></p>@endif
+                @if($receipt->reversed_at)<p class="mb-1 text-warning"><strong>Reversed:</strong> <x-tdate :value="$receipt->reversed_at" fallback="Y-m-d H:i" :datetime="true" /> by #{{ $receipt->reversed_by }}<br><small>{{ $receipt->reversal_reason }}</small></p>@endif
             </div>
         </div>
         @if($receipt->notes)<div class="mt-3"><strong>Notes:</strong><p class="text-muted">{{ $receipt->notes }}</p></div>@endif
@@ -57,8 +57,8 @@
                         <td>
                             @if($it->batch_number)<span class="badge bg-light text-dark border">Batch: {{ $it->batch_number }}</span><br>@endif
                             @if($it->lot_number)<small class="text-muted">Lot: {{ $it->lot_number }}</small><br>@endif
-                            @if($it->expiry_date)<small class="text-muted">Exp: {{ \Carbon\Carbon::parse($it->expiry_date)->format('Y-m-d') }}</small><br>@endif
-                            @if($it->manufacture_date)<small class="text-muted">Mfg: {{ \Carbon\Carbon::parse($it->manufacture_date)->format('Y-m-d') }}</small><br>@endif
+                            @if($it->expiry_date)<small class="text-muted">Exp: <x-tdate :value="\Carbon\Carbon::parse($it->expiry_date)" fallback="Y-m-d" /></small><br>@endif
+                            @if($it->manufacture_date)<small class="text-muted">Mfg: <x-tdate :value="\Carbon\Carbon::parse($it->manufacture_date)" fallback="Y-m-d" /></small><br>@endif
                             @if($it->serial_numbers)<small class="text-muted">SN: {{ is_string($it->serial_numbers)? $it->serial_numbers : json_encode($it->serial_numbers) }}</small>@endif
                             @if(!$it->batch_number && !$it->expiry_date && !$it->serial_numbers)<span class="text-muted">—</span>@endif
                         </td>

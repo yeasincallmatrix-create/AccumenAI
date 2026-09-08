@@ -8,8 +8,8 @@
         @csrf
         <div class="col-md-3"><input type="text" name="title" class="form-control form-control-sm" placeholder="Title *" required></div>
         <div class="col-md-2"><input type="text" name="provider" class="form-control form-control-sm" placeholder="Provider"></div>
-        <div class="col-md-2"><input type="date" name="start_date" class="form-control form-control-sm" required></div>
-        <div class="col-md-2"><input type="date" name="end_date" class="form-control form-control-sm" required></div>
+        <div class="col-md-2"><x-tdate-input name="start_date" class="form-control form-control-sm" required /></div>
+        <div class="col-md-2"><x-tdate-input name="end_date" class="form-control form-control-sm" required /></div>
         <div class="col-md-1"><input type="number" name="capacity" class="form-control form-control-sm" placeholder="Cap"></div>
         <div class="col-md-2"><button type="submit" class="btn btn-sm btn-primary">Create</button></div>
     </form>
@@ -22,7 +22,7 @@
                 @forelse($trainings as $t)
                     <tr>
                         <td><a href="{{ route('hr.training.programs.show', $t) }}">{{ $t->title }}</a><div class="text-muted small">{{ $t->location ?? ($t->is_online ? 'Online' : '') }}</div></td>
-                        <td>{{ $t->start_date->format('Y-m-d') }} → {{ $t->end_date->format('Y-m-d') }}</td>
+                        <td><x-tdate :value="$t->start_date" fallback="Y-m-d" /> → <x-tdate :value="$t->end_date" fallback="Y-m-d" /></td>
                         <td>{{ $t->provider ?? '—' }}</td>
                         <td>{{ $t->enrolled_count }}/{{ $t->capacity ?? '∞' }}</td>
                         <td>{{ number_format($t->cost,0) }}</td>

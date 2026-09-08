@@ -11,11 +11,11 @@
         @if ($preset === 'custom')
             <div>
                 <label class="form-label mb-1">From</label>
-                <input type="date" class="form-control form-control-sm" wire:model.live="from">
+                <x-live-date model="from" :value="$from ?? ''" class="form-control form-control-sm" />
             </div>
             <div>
                 <label class="form-label mb-1">To</label>
-                <input type="date" class="form-control form-control-sm" wire:model.live="to">
+                <x-live-date model="to" :value="$to ?? ''" class="form-control form-control-sm" />
             </div>
         @endif
         @if (count($branches) > 0)

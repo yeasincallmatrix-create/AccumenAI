@@ -88,7 +88,7 @@
         @if(($viewMode ?? 'month') == 'week')
             <div class="col-md-3">
                 <label class="form-label small">Week</label>
-                <input type="date" name="week_date" class="form-control form-control-sm" value="{{ $weekDate ?? now()->toDateString() }}" onchange="this.form.submit()">
+                <x-tdate-input name="week_date" class="form-control form-control-sm" value="{{ $weekDate ?? now()->toDateString() }}" onchange="guardTdateSubmit(this)" />
             </div>
             <input type="hidden" name="month" value="{{ $month ?? now()->format('Y-m') }}">
         @else
@@ -112,7 +112,7 @@
         <div class="d-flex justify-content-between align-items-center mb-2">
             <h6 class="mb-0 small text-muted">
                 Batch: <strong>{{ $selectedBatch->name ?? '' }}</strong>
-                • {{ ($viewMode ?? 'month') == 'week' ? ($days[0]->toDateString() ?? '') . ' to ' . ($days[count($days)-1]->toDateString() ?? '') : ($month ?? '') }}
+                • {{ ($viewMode ?? 'month') == 'week' ? mawa_format_date($days[0] ?? null) . ' to ' . mawa_format_date($days[count($days)-1] ?? null) : ($month ?? '') }}
                 • {{ count($days ?? []) }} days • {{ $trainees->count() }} trainees
             </h6>
         </div>

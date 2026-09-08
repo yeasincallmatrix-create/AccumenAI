@@ -67,7 +67,7 @@
             @forelse ($openTasks as $task)
                 <div class="d-flex justify-content-between align-items-center mb-1">
                     <span class="text-truncate">{{ $task->title }}</span>
-                    <span class="small text-muted ms-2">{{ $task->due_at?->format('Y-m-d') ?? 'No due date' }}</span>
+                    <span class="small text-muted ms-2"><x-tdate :value="$task->due_at" fallback="Y-m-d" empty="No due date" /></span>
                 </div>
             @empty
                 <p class="text-muted mb-0">No open tasks.</p>
@@ -83,7 +83,7 @@
                         <span class="badge text-bg-light border me-1">{{ $activity->type }}</span>
                         {{ $activity->summary }}
                     </span>
-                    <span class="small text-muted ms-2">{{ $activity->activity_at?->format('Y-m-d H:i') }}</span>
+                    <span class="small text-muted ms-2"><x-tdate :value="$activity->activity_at" fallback="Y-m-d H:i" :datetime="true" /></span>
                 </div>
             @empty
                 <p class="text-muted mb-0">No activity yet.</p>

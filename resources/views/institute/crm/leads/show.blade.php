@@ -47,7 +47,7 @@
                 <dt class="col-4 text-muted">Estimated value</dt>
                 <dd class="col-8">{{ $lead->value_amount !== null ? '$ '.number_format((float) $lead->value_amount, 2) : '—' }}</dd>
                 <dt class="col-4 text-muted">Converted</dt>
-                <dd class="col-8">{{ $lead->converted_at ? $lead->converted_at->format('Y-m-d H:i') : 'No' }}</dd>
+                <dd class="col-8"><x-tdate :value="$lead->converted_at" fallback="Y-m-d H:i" :datetime="true" empty="No" /></dd>
             </dl>
         </div>
 

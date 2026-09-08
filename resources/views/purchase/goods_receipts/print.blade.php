@@ -9,7 +9,7 @@
     <div class="card-body">
         <div class="row mb-3">
             <div class="col-6"><strong>Institute:</strong> {{ $receipt->institute?->name }}<br><strong>Branch:</strong> {{ $receipt->branch?->name ?? 'Institute-wide' }}<br><strong>PO:</strong> {{ $receipt->purchaseOrder?->order_number }} ({{ $receipt->purchaseOrder?->status }})<br><strong>Warehouse:</strong> {{ $receipt->warehouse?->name }}</div>
-            <div class="col-6 text-end"><strong>Receipt Date:</strong> {{ $receipt->receipt_date?->format('Y-m-d') }}<br><strong>Status:</strong> {{ ucfirst($receipt->status) }}<br><strong>Supplier:</strong> {{ $receipt->supplier?->name }}<br><strong>GRN Date:</strong> {{ $receipt->created_at?->format('Y-m-d H:i') }}</div>
+            <div class="col-6 text-end"><strong>Receipt Date:</strong> <x-tdate :value="$receipt->receipt_date" fallback="Y-m-d" /><br><strong>Status:</strong> {{ ucfirst($receipt->status) }}<br><strong>Supplier:</strong> {{ $receipt->supplier?->name }}<br><strong>GRN Date:</strong> <x-tdate :value="$receipt->created_at" fallback="Y-m-d H:i" :datetime="true" /></div>
         </div>
         <div class="table-responsive">
             <table class="table table-bordered mb-0">
@@ -31,7 +31,7 @@
         </div>
         <div class="mt-4 d-flex justify-content-between small text-muted">
             <span>Created by #{{ $receipt->created_by }} • Confirmed by #{{ $receipt->confirmed_by ?? '—' }} • {{ $receipt->notes }}</span>
-            <span>{{ now()->format('Y-m-d H:i') }} • AccumenAI</span>
+            <span><x-tdate :value="now()" fallback="Y-m-d H:i" :datetime="true" /> • AccumenAI</span>
         </div>
         <div class="mt-4 d-flex justify-content-between d-print-flex">
             <div class="text-center"><div style="border-top:1px solid #000; width:180px; margin-top:40px; padding-top:6px;">Receiver Signature</div></div>

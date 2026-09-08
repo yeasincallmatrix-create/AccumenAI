@@ -22,7 +22,7 @@
 <div class="filter-card mb-3">
     <form method="GET" action="{{ route('hr.attendance.dashboard') }}" class="filter-layout">
         <div class="filter-search-row flex-wrap">
-            <div class="filter-span"><label class="form-label mb-1">Date</label><input type="date" name="date" value="{{ $date }}" class="form-control form-control-sm" onchange="this.form.submit()"></div>
+            <div class="filter-span"><label class="form-label mb-1">Date</label><x-tdate-input name="date" :value="$date" class="form-control form-control-sm" onchange="guardTdateSubmit(this)" /></div>
             <div class="filter-span"><label class="form-label mb-1">Branch</label><select name="branch_id" class="form-select form-select-sm" onchange="this.form.submit()"><option value="">All</option>@foreach($branches as $b)<option value="{{ $b->id }}" @selected((string)($filters['branch_id']??'') === (string)$b->id)>{{ $b->name }}</option>@endforeach</select></div>
         </div>
     </form>

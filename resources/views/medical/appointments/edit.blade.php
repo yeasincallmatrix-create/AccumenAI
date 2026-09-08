@@ -54,9 +54,7 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label class="form-label" for="appointment_date">Appointment Date <span class="text-danger">*</span></label>
-                        <input type="date" id="appointment_date" name="appointment_date"
-                               class="form-control @error('appointment_date') is-invalid @enderror"
-                               value="{{ old('appointment_date', $appointment->appointment_date?->format('Y-m-d')) }}" required>
+                        <x-tdate-input name="appointment_date" :value="old('appointment_date', $appointment->appointment_date?->format('Y-m-d'))" id="appointment_date" :class="'form-control'.($errors->has('appointment_date') ? ' is-invalid' : '')" required />
                         @error('appointment_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>

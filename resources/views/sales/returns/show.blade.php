@@ -12,7 +12,7 @@
 @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
 @if($errors->any())<div class="alert alert-danger">@foreach($errors->all() as $e)<div>{{ $e }}</div>@endforeach</div>@endif
 <div class="card mb-4"><div class="card-body row g-3">
-    <div class="col-md-3"><strong>Invoice:</strong> {{ $ret->invoice?->invoice_number }}<br><strong>Customer:</strong> {{ $ret->customer?->name }}<br><strong>Date:</strong> {{ $ret->return_date->format('Y-m-d') }}</div>
+    <div class="col-md-3"><strong>Invoice:</strong> {{ $ret->invoice?->invoice_number }}<br><strong>Customer:</strong> {{ $ret->customer?->name }}<br><strong>Date:</strong> <x-tdate :value="$ret->return_date" fallback="Y-m-d" /></div>
     <div class="col-md-3"><strong>Status:</strong> <span class="badge bg-{{ ['draft'=>'secondary','approved'=>'info','posted'=>'success','cancelled'=>'dark','reversed'=>'warning'][$ret->status]??'secondary' }}">{{ ucfirst($ret->status) }}</span><br><strong>Refund:</strong> {{ ucfirst($ret->refund_status) }} ({{ number_format($ret->refunded_amount,2) }}/{{ number_format($ret->refundable_amount,2) }})<br><strong>Reason:</strong> {{ $ret->reason }}</div>
     <div class="col-md-3"><strong>Warehouse:</strong> {{ $ret->warehouse?->name ?? '—' }}<br><strong>Journal:</strong> {{ $ret->journal?->journal_no ?? '—' }}<br><strong>Inv. Journal:</strong> {{ $ret->inventoryJournal?->journal_no ?? '—' }}</div>
     <div class="col-md-3 text-end">
@@ -28,10 +28,10 @@
         <div class="col-md-2"><label class="form-label">Method</label><select name="method" class="form-select" required><option value="credit">Credit balance</option><option value="cash">Cash</option><option value="bank">Bank</option><option value="other">Other</option></select></div>
         <div class="col-md-2"><label class="form-label">Amount</label><input type="number" step="0.01" name="amount" max="{{ $ret->refundable_amount - $ret->refunded_amount }}" class="form-control" required></div>
         <div class="col-md-3"><label class="form-label">Reference</label><input type="text" name="reference" class="form-control"></div>
-        <div class="col-md-2"><label class="form-label">Date</label><input type="date" name="refund_date" value="{{ now()->toDateString() }}" class="form-control" required></div>
+        <div class="col-md-2"><label class="form-label">Date</label><x-tdate-input name="refund_date" :value="now()->toDateString()" class="form-control" required /></div>
         <div class="col-md-3 d-flex align-items-end"><button class="btn btn-sm btn-primary rounded-pill">Record Refund</button></div>
     </form>
-    @if($ret->refunds->count())<hr><table class="table table-sm"><thead><tr><th>Date</th><th>Method</th><th>Amount</th><th>Ref</th></tr></thead><tbody>@foreach($ret->refunds as $rf)<tr><td>{{ $rf->refund_date->format('Y-m-d') }}</td><td>{{ ucfirst($rf->method) }}</td><td>{{ number_format($rf->amount,2) }}</td><td>{{ $rf->reference ?? '—' }}</td></tr>@endforeach</tbody></table>@endif
+    @if($ret->refunds->count())<hr><table class="table table-sm"><thead><tr><th>Date</th><th>Method</th><th>Amount</th><th>Ref</th></tr></thead><tbody>@foreach($ret->refunds as $rf)<tr><td><x-tdate :value="$rf->refund_date" fallback="Y-m-d" /></td><td>{{ ucfirst($rf->method) }}</td><td>{{ number_format($rf->amount,2) }}</td><td>{{ $rf->reference ?? '—' }}</td></tr>@endforeach</tbody></table>@endif
 </div></div>
 @endif
 @endsection

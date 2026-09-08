@@ -76,7 +76,7 @@
                         @foreach ($ledger['invoices'] as $invoice)
                             <tr>
                                 <td class="fw-semibold">{{ $invoice['invoice_number'] }}</td>
-                                <td>{{ $invoice['created_at'] ? \Illuminate\Support\Carbon::parse($invoice['created_at'])->format('d M Y') : mawa_e('guardian.na') }}</td>
+                                <td><x-tdate :value="$invoice['created_at']" fallback="d M Y" :empty="mawa_e('guardian.na')" /></td>
                                 <td class="text-end">{{ number_format((float) $invoice['payable_amount'], 2) }}</td>
                                 <td class="text-end">{{ number_format((float) $invoice['paid_amount'], 2) }}</td>
                                 <td class="text-end">{{ number_format((float) $invoice['due_amount'], 2) }}</td>

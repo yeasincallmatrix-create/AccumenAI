@@ -14,19 +14,19 @@
         <div class="filter-search-row align-items-end flex-wrap">
             <div class="filter-span">
                 <label class="form-label mb-1">Current From</label>
-                <input type="date" class="form-control form-control-sm" name="current_from" value="{{ $current_from }}">
+                <x-tdate-input class="form-control form-control-sm" name="current_from" value="{{ $current_from }}" />
             </div>
             <div class="filter-span">
                 <label class="form-label mb-1">Current To</label>
-                <input type="date" class="form-control form-control-sm" name="current_to" value="{{ $current_to }}">
+                <x-tdate-input class="form-control form-control-sm" name="current_to" value="{{ $current_to }}" />
             </div>
             <div class="filter-span">
                 <label class="form-label mb-1">Prior From</label>
-                <input type="date" class="form-control form-control-sm" name="prior_from" value="{{ $prior_from }}">
+                <x-tdate-input class="form-control form-control-sm" name="prior_from" value="{{ $prior_from }}" />
             </div>
             <div class="filter-span">
                 <label class="form-label mb-1">Prior To</label>
-                <input type="date" class="form-control form-control-sm" name="prior_to" value="{{ $prior_to }}">
+                <x-tdate-input class="form-control form-control-sm" name="prior_to" value="{{ $prior_to }}" />
             </div>
             <div class="filter-span">
                 <button class="btn btn-outline-primary btn-sm mt-1" type="submit"><i class="bi bi-search"></i> Filter</button>

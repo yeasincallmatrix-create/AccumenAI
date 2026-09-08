@@ -55,7 +55,7 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label">Effective Date</label>
-                <input type="date" class="form-control form-control-sm" name="effective_date" value="{{ now()->toDateString() }}" required>
+                <x-tdate-input class="form-control form-control-sm" name="effective_date" value="{{ now()->toDateString() }}" required />
             </div>
             <div class="col-md-2">
                 <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-plus-circle"></i> Add Rate</button>
@@ -83,7 +83,7 @@
                         <td>{{ $rate->to_currency->code ?? 'N/A' }}</td>
                         <td>{{ number_format((float) $rate->buy_rate, 8) }}</td>
                         <td>{{ number_format((float) $rate->sell_rate, 8) }}</td>
-                        <td>{{ $rate->effective_date?->format('Y-m-d') }}</td>
+                        <td><x-tdate :value="$rate->effective_date" fallback="Y-m-d" /></td>
                         <td><span class="badge text-bg-light border">{{ $rate->source ?? 'manual' }}</span></td>
                         <td>
                             <form method="POST" action="{{ route('finance.exchange-rates.destroy', $rate->id) }}" class="d-inline" onsubmit="return confirm('Delete this rate?')">

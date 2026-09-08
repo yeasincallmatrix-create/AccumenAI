@@ -8,7 +8,9 @@ use App\Models\Country;
 use App\Models\Institute;
 use App\Models\Medical\Patient;
 use App\Services\Medical\MrNumberGenerator;
+use App\Support\CountryCodes;
 use App\Support\GeoHierarchy;
+use App\Support\PhoneNormalizer;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -18,8 +20,8 @@ class PatientController extends MedicalController implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:medical_patients.view', only: ['index', 'show', 'history']),
-            new Middleware('permission:medical_patients.create', only: ['create', 'store']),
+            new Middleware('permission:medical_patients.view', only: ['index', 'show', 'history', 'lookup']),
+            new Middleware('permission:medical_patients.create', only: ['create', 'store', 'quickStore']),
             new Middleware('permission:medical_patients.edit', only: ['edit', 'update']),
             new Middleware('permission:medical_patients.delete', only: ['destroy']),
         ];
@@ -27,21 +29,45 @@ class PatientController extends MedicalController implements HasMiddleware
 
     protected MrNumberGenerator $mrGenerator;
 
+    public const PATIENTS_COLUMNS = [
+        'serial', 'mr', 'name', 'age', 'age_group',
+        'gender', 'phone', 'blood', 'status', 'action',
+    ];
+
+    public const PER_PAGE_OPTIONS = [25, 50, 75, 100, 200, 500];
+
     public function __construct(MrNumberGenerator $mrGenerator)
     {
         $this->mrGenerator = $mrGenerator;
     }
 
     /**
-     * List all patients with search.
+     * List all patients with search — mirrors the admin institutes index
+     * effects: filter-card, column visibility, per-page list, print table.
      */
     public function index(Request $request)
     {
+        $perPage = (int) $request->query('per_page', 25);
+        if (! in_array($perPage, self::PER_PAGE_OPTIONS, true)) {
+            $perPage = 25;
+        }
+
+        // Back-compat: institutes page uses `q`, patients page used `search`.
+        $search = $request->query('search', $request->query('q'));
+        $gender = $request->query('gender');
+        $bloodGroup = $request->query('blood_group');
+        $status = $request->query('status');
+        $category = $request->query('category');
+        $categoryBounds = mawa_age_category_bounds();
+        if (! is_string($category) || ! array_key_exists($category, $categoryBounds)) {
+            $category = null;
+        }
+
         $query = Patient::where('institute_id', $this->instituteId());
 
         // Search by MR number, name, or phone.
-        if ($request->filled('search')) {
-            $search = $request->string('search')->toString();
+        if (is_string($search) && trim($search) !== '') {
+            $search = trim($search);
             $query->where(function ($q) use ($search) {
                 $q->where('mr_number', 'LIKE', "%{$search}%")
                     ->orWhere('first_name', 'LIKE', "%{$search}%")
@@ -50,18 +76,152 @@ class PatientController extends MedicalController implements HasMiddleware
             });
         }
 
+        // Filter by gender.
+        if (is_string($gender) && in_array($gender, ['male', 'female', 'other'], true)) {
+            $query->where('gender', $gender);
+        } else {
+            $gender = null;
+        }
+
+        // Filter by blood group.
+        $bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'UKN'];
+        if (! (is_string($bloodGroup) && in_array($bloodGroup, $bloodGroups, true))) {
+            $bloodGroup = null;
+        }
+        if ($bloodGroup) {
+            $query->where('blood_group', $bloodGroup);
+        }
+
         // Filter by active status.
-        if ($request->filled('status')) {
-            if ($request->status === 'active') {
-                $query->where('is_active', true);
-            } elseif ($request->status === 'inactive') {
-                $query->where('is_active', false);
+        if ($status === 'active') {
+            $query->where('is_active', true);
+        } elseif ($status === 'inactive') {
+            $query->where('is_active', false);
+        } else {
+            $status = null;
+        }
+
+        // Filter by age category (computed from date_of_birth, not stored).
+        if ($category !== null) {
+            [$minYears, $maxYears] = $categoryBounds[$category];
+            $today = \Carbon\Carbon::today();
+            if ($minYears > 0) {
+                $query->whereDate('date_of_birth', '<=', $today->copy()->subYears($minYears)->toDateString());
+            }
+            if ($maxYears !== null) {
+                $query->whereDate('date_of_birth', '>', $today->copy()->subYears($maxYears)->toDateString());
             }
         }
 
-        $patients = $query->orderBy('created_at', 'desc')->paginate(20)->withQueryString();
+        $patients = (clone $query)->orderBy('created_at', 'desc')->paginate($perPage)->withQueryString();
 
-        return view('medical.patients.index', compact('patients'));
+        // Full filtered set for the print-only table (same as institutes index).
+        $allPatients = (clone $query)->orderBy('created_at', 'desc')->get();
+
+        $visibleColumns = $request->user()?->preference('columns_patients', self::PATIENTS_COLUMNS)
+            ?? self::PATIENTS_COLUMNS;
+        $visibleColumns = array_values(array_intersect(self::PATIENTS_COLUMNS, (array) $visibleColumns));
+        if (empty($visibleColumns)) {
+            $visibleColumns = self::PATIENTS_COLUMNS;
+        }
+
+        // Country list + institute default for the Add Patient popup's
+        // country-parameter phone validation.
+        $countries = Country::where('status', true)->orderBy('name')->get(['id', 'name', 'phone_code']);
+        $defaultCountryId = Institute::whereKey($this->instituteId())->value('country_id');
+
+        // Auto Patient ID preview for the Add Patient popup (final ID is
+        // assigned on save via MrNumberGenerator).
+        $previewMr = $this->mrGenerator->generate($this->instituteId());
+
+        return view('medical.patients.index', [
+            'patients' => $patients,
+            'allPatients' => $allPatients,
+            'visibleColumns' => $visibleColumns,
+            'perPage' => $perPage,
+            'perPageOptions' => self::PER_PAGE_OPTIONS,
+            'bloodGroups' => $bloodGroups,
+            'filters' => [
+                'search' => is_string($search) ? $search : null,
+                'gender' => $gender,
+                'blood_group' => $bloodGroup,
+                'status' => $status,
+                'category' => $category,
+                'per_page' => $perPage,
+            ],
+            'categories' => array_keys($categoryBounds),
+            'countries' => $countries,
+            'defaultCountryId' => $defaultCountryId,
+            'previewMr' => $previewMr,
+        ]);
+    }
+
+    /**
+     * Look up a patient by phone number (used by the Add Patient popup to
+     * auto-fill the rest of the fields when the phone already exists).
+     */
+    public function lookup(Request $request)
+    {
+        $request->validate(['phone' => 'required|string|max:20']);
+
+        $instituteId = $this->instituteId();
+        $raw = trim((string) $request->input('phone'));
+
+        $countryId = Institute::whereKey($instituteId)->value('country_id');
+        $country = $countryId ? Country::whereKey($countryId)->value('name') : 'Bangladesh';
+
+        $normalized = PhoneNormalizer::toE164($raw, $country);
+        $digits = preg_replace('/\D/', '', $raw) ?? '';
+
+        $candidates = array_values(array_unique(array_filter([
+            $raw,
+            $normalized,
+            $digits,
+            $digits !== '' ? '+'.$digits : null,
+        ])));
+
+        // Also match legacy nationally-stored numbers against E.164 input.
+        if ($normalized !== null && str_starts_with($normalized, '+')) {
+            $int = ltrim($normalized, '+');
+            $code = CountryCodes::matchPrefix($int);
+            if ($code !== null) {
+                $subscriber = substr($int, strlen($code));
+                $candidates[] = $subscriber;
+                $candidates[] = '0'.$subscriber;
+            }
+        }
+        $candidates = array_values(array_unique(array_filter($candidates)));
+
+        $patient = Patient::where('institute_id', $instituteId)
+            ->whereIn('phone', $candidates)
+            ->first();
+
+        if (! $patient) {
+            return response()->json(['found' => false]);
+        }
+
+        return response()->json([
+            'found' => true,
+            'patient' => [
+                'id' => $patient->id,
+                'mr_number' => $patient->mr_number,
+                'first_name' => $patient->first_name,
+                'last_name' => $patient->last_name,
+                'date_of_birth' => $patient->date_of_birth?->format('Y-m-d'),
+                'gender' => $patient->gender,
+                'blood_group' => $patient->blood_group,
+                'phone' => $patient->phone,
+                'email' => $patient->email,
+                'present_country_id' => $patient->present_country_id,
+                'present_address' => $patient->present_address,
+                'emergency_contact_name' => $patient->emergency_contact_name,
+                'emergency_contact_phone' => $patient->emergency_contact_phone,
+                'allergies' => $patient->allergies,
+                'chronic_conditions' => $patient->chronic_conditions,
+                'notes' => $patient->notes,
+                'url' => route('medical.patients.show', $patient),
+            ],
+        ]);
     }
 
     /**
@@ -73,17 +233,85 @@ class PatientController extends MedicalController implements HasMiddleware
         $this->defaultAddressCountry($patient);
         $presentAddress = $this->addressData($patient);
 
-        return view('medical.patients.create', compact('patient', 'presentAddress'));
+        // Country-parameter phone meta for realtime length check (server: PhoneRule).
+        $phoneCountry = $presentAddress['country']->name ?? 'Bangladesh';
+        $phoneCode = CountryCodes::codeFor($phoneCountry);
+        [$phoneMin, $phoneMax] = CountryCodes::nationalLengthFor($phoneCountry);
+        $phoneExample = CountryCodes::phoneExampleFor($phoneCountry);
+        $phoneCountries = Country::where('status', true)->orderBy('name')->get(['id', 'name', 'phone_code'])
+            ->mapWithKeys(function ($c) {
+                [$mn, $mx] = CountryCodes::nationalLengthFor($c->name);
+                return [$c->id => [
+                    'name' => $c->name,
+                    'code' => $c->phone_code ?: CountryCodes::codeFor($c->name),
+                    'min' => $mn,
+                    'max' => $mx,
+                    'example' => CountryCodes::phoneExampleFor($c->name),
+                ]];
+            })->all();
+
+        return view('medical.patients.create', compact('patient', 'presentAddress', 'phoneCountry', 'phoneCode', 'phoneMin', 'phoneMax', 'phoneExample', 'phoneCountries'));
     }
 
     /**
-     * Store a new patient.
+     * AJAX quick-create used by nested modals (e.g. Book Appointment popup).
+     * Same validation/normalization as store(), but returns JSON so the
+     * caller can attach the new patient without leaving the page.
      */
+    public function quickStore(PatientRequest $request)
+    {
+        $instituteId = $this->instituteId();
+
+        $data = $request->validated();
+        unset($data['age'], $data['age_unit']);
+        $data['last_name'] = $data['last_name'] ?? '';
+        $data['gender'] = $data['gender'] ?? 'other';
+        if (empty($data['phone'])) {
+            $data['phone'] = 'NA-'.uniqid();
+        } else {
+            $normalized = PhoneNormalizer::toE164($data['phone'], $request->phoneCountry());
+            if ($normalized !== null) {
+                $data['phone'] = $normalized;
+            }
+        }
+        $data['institute_id'] = $instituteId;
+        $data['mr_number'] = $this->mrGenerator->generate($instituteId);
+
+        $patient = Patient::create($data);
+
+        return response()->json([
+            'created' => true,
+            'patient' => [
+                'id' => $patient->id,
+                'name' => $patient->full_name,
+                'mr_number' => $patient->mr_number,
+                'phone' => $patient->phone,
+            ],
+        ], 201);
+    }
+
+    /**
+      * Store a new patient.
+      */
     public function store(PatientRequest $request)
     {
         $instituteId = $this->instituteId();
 
         $data = $request->validated();
+        unset($data['age'], $data['age_unit']);
+        // DB columns are still NOT NULL — supply safe defaults so that only
+        // name + age are mandatory from the UI.
+        $data['last_name'] = $data['last_name'] ?? '';
+        $data['gender'] = $data['gender'] ?? 'other';
+        if (empty($data['phone'])) {
+            $data['phone'] = 'NA-'.uniqid();
+        } else {
+            // Store normalized E.164 using the same country parameter as validation.
+            $normalized = PhoneNormalizer::toE164($data['phone'], $request->phoneCountry());
+            if ($normalized !== null) {
+                $data['phone'] = $normalized;
+            }
+        }
         $data['institute_id'] = $instituteId;
         $data['mr_number'] = $this->mrGenerator->generate($instituteId);
 
@@ -140,7 +368,18 @@ class PatientController extends MedicalController implements HasMiddleware
     public function update(PatientRequest $request, Patient $patient)
     {
         $this->ensureSameInstitute($patient, 'patient');
-        $patient->update($request->validated());
+        $data = $request->validated();
+        unset($data['age'], $data['age_unit']);
+        if (array_key_exists('last_name', $data) && $data['last_name'] === null) {
+            $data['last_name'] = '';
+        }
+        if (!empty($data['phone'])) {
+            $normalized = PhoneNormalizer::toE164($data['phone'], $request->phoneCountry());
+            if ($normalized !== null) {
+                $data['phone'] = $normalized;
+            }
+        }
+        $patient->update($data);
 
         return redirect()->route('medical.patients.show', $patient)
             ->with('status', 'Patient updated successfully!');

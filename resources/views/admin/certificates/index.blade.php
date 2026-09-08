@@ -186,7 +186,7 @@
                         <td data-col="course" @if(!in_array('course', $visibleColumns, true)) style="display:none" @endif>{{ $item->course->name ?? '—' }}</td>
                         <td data-col="batch" @if(!in_array('batch', $visibleColumns, true)) style="display:none" @endif>{{ $item->batch->name ?? '—' }}</td>
                         <td data-col="institute" @if(!in_array('institute', $visibleColumns, true)) style="display:none" @endif>{{ $item->institute->name ?? '—' }}</td>
-                        <td data-col="issue_date" @if(!in_array('issue_date', $visibleColumns, true)) style="display:none" @endif>{{ $item->issue_date?->format('d M Y') ?? '—' }}</td>
+                        <td data-col="issue_date" @if(!in_array('issue_date', $visibleColumns, true)) style="display:none" @endif><x-tdate :value="$item->issue_date" fallback="d M Y" empty="—" /></td>
                         <td data-col="status" @if(!in_array('status', $visibleColumns, true)) style="display:none" @endif>
                             <span class="badge {{ $statusBadge[$item->status] ?? 'text-bg-secondary' }}">{{ $item->status }}</span>
                         </td>
@@ -289,7 +289,7 @@
                     <td data-col="course" @if(!in_array('course', $visibleColumns, true)) style="display:none" @endif>{{ $item->course->name ?? '—' }}</td>
                     <td data-col="batch" @if(!in_array('batch', $visibleColumns, true)) style="display:none" @endif>{{ $item->batch->name ?? '—' }}</td>
                     <td data-col="institute" @if(!in_array('institute', $visibleColumns, true)) style="display:none" @endif>{{ $item->institute->name ?? '—' }}</td>
-                    <td data-col="issue_date" @if(!in_array('issue_date', $visibleColumns, true)) style="display:none" @endif>{{ $item->issue_date?->format('d M Y') ?? '—' }}</td>
+                    <td data-col="issue_date" @if(!in_array('issue_date', $visibleColumns, true)) style="display:none" @endif><x-tdate :value="$item->issue_date" fallback="d M Y" empty="—" /></td>
                     <td data-col="status" @if(!in_array('status', $visibleColumns, true)) style="display:none" @endif>{{ ucwords($item->status) }}</td>
                     <td data-col="design" @if(!in_array('design', $visibleColumns, true)) style="display:none" @endif>Design {{ $item->template_id ?? 1 }}</td>
                     <td data-col="remarks" @if(!in_array('remarks', $visibleColumns, true)) style="display:none" @endif>{{ $item->revoked_reason ?? $item->review_note ?? '—' }}</td>

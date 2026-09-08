@@ -3,7 +3,10 @@
 namespace Database\Seeders;
 
 use App\Models\Permission;
+use App\Models\Role;
+use App\Models\Institute;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Phase 1 — HMS Patient & OPD permissions.
@@ -165,7 +168,7 @@ class MedicalPermissionSeeder extends Seeder
             }
         }
 
-        // Doctor management (additive). Department ΓåÆ Specialty ΓåÆ Doctor with
+        // Doctor management (additive). Department → Specialty → Doctor with
         // weekly availability; slugs stay `module.action` like the rest.
         $doctorExtras = [
             'medical_doctors' => [

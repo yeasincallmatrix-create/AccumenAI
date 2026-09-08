@@ -13,7 +13,6 @@
         'enrolled'     => 'bg-primary',
         'withdrawn'    => 'bg-secondary',
     ];
-    $fmtDate = fn ($date) => $date ? \Illuminate\Support\Carbon::parse($date)->format('d M Y') : '—';
     $isPending = \App\Services\AdmissionWorkflowService::isPendingApproval($student);
 @endphp
 
@@ -49,7 +48,7 @@
                     </tr>
                     <tr>
                         <th>Gender / DOB</th>
-                        <td>{{ $student->gender ? ucfirst($student->gender) : '—' }} / {{ $fmtDate($student->dob) }}</td>
+                        <td>{{ $student->gender ? ucfirst($student->gender) : '—' }} / <x-tdate :value="$student->dob" fallback="d M Y" empty="—" /></td>
                     </tr>
                     <tr>
                         <th>Phone</th>
@@ -97,7 +96,7 @@
                     </tr>
                     <tr>
                         <th>Application Date</th>
-                        <td>{{ $fmtDate($student->application_date) }}</td>
+                        <td><x-tdate :value="$student->application_date" fallback="d M Y" empty="—" /></td>
                     </tr>
                     <tr>
                         <th>Source</th>

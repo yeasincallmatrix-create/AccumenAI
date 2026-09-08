@@ -20,7 +20,7 @@
         <form method="GET" class="mb-3">
             <div class="row g-2">
                 <div class="col-md-4">
-                    <select name="method" class="form-select" onchange="this.form.submit()">
+                    <select name="method" class="form-select" onchange="guardTdateSubmit(this)">
                         <option value="">All Methods</option>
                         @foreach(['cash' => 'Cash', 'card' => 'Card', 'bank_transfer' => 'Bank Transfer', 'mobile_banking' => 'Mobile Banking', 'tpa' => 'TPA / Insurance', 'other' => 'Other'] as $value => $label)
                             <option value="{{ $value }}" @selected(request('method') === $value)>{{ $label }}</option>
@@ -28,10 +28,10 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <input type="date" name="from_date" class="form-control" value="{{ request('from_date') }}" onchange="this.form.submit()">
+                    <x-tdate-input name="from_date" :value="request('from_date')" class="form-control" onchange="guardTdateSubmit(this)" />
                 </div>
                 <div class="col-md-3">
-                    <input type="date" name="to_date" class="form-control" value="{{ request('to_date') }}" onchange="this.form.submit()">
+                    <x-tdate-input name="to_date" :value="request('to_date')" class="form-control" onchange="guardTdateSubmit(this)" />
                 </div>
                 <div class="col-md-2 text-end">
                     <a href="{{ route('medical.billing.payments.index') }}" class="btn btn-secondary">Reset</a>

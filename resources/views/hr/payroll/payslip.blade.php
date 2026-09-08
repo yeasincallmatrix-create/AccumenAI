@@ -3,7 +3,7 @@
 @section('content')
 <div class="standalone-heading">
     <h4>Payslip <code>{{ $payroll->payslip_no }}</code></h4>
-    <p class="text-muted small">{{ $institute->name }} — {{ $period->name }} ({{ $period->start_date->format('Y-m-d') }} → {{ $period->end_date->format('Y-m-d') }}) — {{ ucfirst($payroll->status) }}</p>
+    <p class="text-muted small">{{ $institute->name }} — {{ $period->name }} (<x-tdate :value="$period->start_date" fallback="Y-m-d" /> → <x-tdate :value="$period->end_date" fallback="Y-m-d" />) — {{ ucfirst($payroll->status) }}</p>
     <a href="{{ route('hr.payroll.periods.show',$period) }}" class="btn btn-outline-secondary btn-sm">Back</a>
     <button onclick="window.print()" class="btn btn-primary btn-sm">Print</button>
 </div>
@@ -49,6 +49,6 @@
     <div class="small text-muted mt-2">
         Working days: {{ $payroll->working_days }}, Present: {{ $payroll->present_days }}, Unpaid leave: {{ $payroll->unpaid_leave_days }}, Overtime: {{ $payroll->overtime_minutes }} mins ({{ number_format($payroll->overtime_amount,2) }})
     </div>
-    <div class="small text-muted">Payslip {{ $payroll->payslip_no }} — Generated {{ $payroll->created_at->format('Y-m-d H:i') }} — Status: {{ ucfirst($payroll->status) }}</div>
+    <div class="small text-muted">Payslip {{ $payroll->payslip_no }} — Generated <x-tdate :value="$payroll->created_at" fallback="Y-m-d H:i" :datetime="true" /> — Status: {{ ucfirst($payroll->status) }}</div>
 </div>
 @endsection

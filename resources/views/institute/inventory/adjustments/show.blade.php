@@ -22,8 +22,8 @@
                 @if($adjustment->journal)<p class="mb-1"><strong>Journal:</strong> {{ $adjustment->journal->journal_number ?? $adjustment->journal_id }}</p>@endif
             </div>
             <div class="col-md-6 text-md-end">
-                <p class="mb-1"><strong>Created:</strong> {{ $adjustment->created_at?->format('Y-m-d H:i') }}</p>
-                @if($adjustment->posted_at)<p class="mb-1 text-success"><strong>Posted:</strong> {{ $adjustment->posted_at->format('Y-m-d H:i') }}</p>@endif
+                <p class="mb-1"><strong>Created:</strong> <x-tdate :value="$adjustment->created_at" fallback="Y-m-d H:i" :datetime="true" /></p>
+                @if($adjustment->posted_at)<p class="mb-1 text-success"><strong>Posted:</strong> <x-tdate :value="$adjustment->posted_at" fallback="Y-m-d H:i" :datetime="true" /></p>@endif
             </div>
         </div>
     </div>

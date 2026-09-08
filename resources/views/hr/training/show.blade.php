@@ -2,7 +2,7 @@
 @section('title','Training — HR')
 @section('content')
 <div class="standalone-heading">
-    <h4>{{ $training->title }}</h4><p>{{ $training->provider ?? '—' }} · {{ $training->trainer ?? '' }} · {{ $training->start_date->format('Y-m-d') }} → {{ $training->end_date->format('Y-m-d') }}</p>
+    <h4>{{ $training->title }}</h4><p>{{ $training->provider ?? '—' }} · {{ $training->trainer ?? '' }} · <x-tdate :value="$training->start_date" fallback="Y-m-d" /> → <x-tdate :value="$training->end_date" fallback="Y-m-d" /></p>
 </div>
 <div class="row g-3">
     <div class="col-md-4"><div class="admin-card p-3"><h6>Details</h6><div class="small">Provider: {{ $training->provider ?? '—' }}<br>Trainer: {{ $training->trainer ?? '—' }}<br>Location: {{ $training->location ?? '—' }} {{ $training->is_online ? '(Online)' : '' }}<br>Capacity: {{ $training->enrolled_count }}/{{ $training->capacity ?? '∞' }}<br>Cost: {{ number_format($training->cost,0) }}<br>Status: {{ $training->status }}</div>

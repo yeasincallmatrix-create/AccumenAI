@@ -77,9 +77,7 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label class="form-label" for="order_date">Order Date</label>
-                        <input type="date" id="order_date" name="order_date"
-                               class="form-control @error('order_date') is-invalid @enderror"
-                               value="{{ old('order_date', date('Y-m-d')) }}">
+                        <x-tdate-input name="order_date" :value="old('order_date', date('Y-m-d'))" id="order_date" :class="'form-control'.($errors->has('order_date') ? ' is-invalid' : '')" />
                         @error('order_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>

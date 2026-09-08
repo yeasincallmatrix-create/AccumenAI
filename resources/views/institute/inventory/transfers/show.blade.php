@@ -21,9 +21,9 @@
                 @if($transfer->notes)<p class="mb-1"><strong>Notes:</strong> {{ $transfer->notes }}</p>@endif
             </div>
             <div class="col-md-6 text-md-end">
-                <p class="mb-1"><strong>Created:</strong> {{ $transfer->created_at?->format('Y-m-d H:i') }}</p>
-                @if($transfer->posted_at)<p class="mb-1 text-success"><strong>Posted:</strong> {{ $transfer->posted_at->format('Y-m-d H:i') }}</p>@endif
-                @if($transfer->approved_at)<p class="mb-1"><strong>Approved:</strong> {{ $transfer->approved_at->format('Y-m-d H:i') }}</p>@endif
+                <p class="mb-1"><strong>Created:</strong> <x-tdate :value="$transfer->created_at" fallback="Y-m-d H:i" :datetime="true" /></p>
+                @if($transfer->posted_at)<p class="mb-1 text-success"><strong>Posted:</strong> <x-tdate :value="$transfer->posted_at" fallback="Y-m-d H:i" :datetime="true" /></p>@endif
+                @if($transfer->approved_at)<p class="mb-1"><strong>Approved:</strong> <x-tdate :value="$transfer->approved_at" fallback="Y-m-d H:i" :datetime="true" /></p>@endif
             </div>
         </div>
     </div>

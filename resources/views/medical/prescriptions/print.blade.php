@@ -21,7 +21,7 @@
     <div class="card-body">
         <div class="text-center border-bottom pb-3 mb-3">
             <h4 class="mb-1">℞ Prescription</h4>
-            <p class="text-muted mb-0">{{ $prescription->prescription_number }} · {{ $prescription->prescription_date?->format('d M Y') }}</p>
+            <p class="text-muted mb-0">{{ $prescription->prescription_number }} · <x-tdate :value="$prescription->prescription_date" fallback="d M Y" /></p>
         </div>
 
         <div class="row mb-3">
@@ -33,7 +33,7 @@
             <div class="col-md-6">
                 <p class="mb-1"><strong>Doctor:</strong> {{ $doctor->name ?? 'N/A' }}</p>
                 <p class="mb-1"><strong>Diagnosis:</strong> {{ $prescription->diagnosis ?? '—' }}</p>
-                <p class="mb-0"><strong>Follow-up:</strong> {{ $prescription->follow_up_date?->format('d M Y') ?? '—' }}</p>
+                <p class="mb-0"><strong>Follow-up:</strong> <x-tdate :value="$prescription->follow_up_date" fallback="d M Y" /></p>
             </div>
         </div>
 

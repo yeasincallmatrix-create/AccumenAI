@@ -159,7 +159,7 @@
         </tr>
         <tr>
             <td>Published</td>
-            <td>{{ $result->published_at?->format('F j, Y') ?? '—' }}</td>
+            <td><x-tdate :value="$result->published_at" fallback="F j, Y" empty="—" /></td>
         </tr>
     </table>
 

@@ -14,7 +14,7 @@
         <div class="filter-search-row align-items-end flex-wrap">
             <div class="filter-span">
                 <label class="form-label mb-1">As Of Date</label>
-                <input type="date" class="form-control form-control-sm" name="as_of_date" value="{{ $as_of_date }}">
+                <x-tdate-input class="form-control form-control-sm" name="as_of_date" value="{{ $as_of_date }}" />
             </div>
             <div class="filter-span">
                 <button class="btn btn-outline-primary btn-sm mt-1" type="submit"><i class="bi bi-search"></i> Filter</button>

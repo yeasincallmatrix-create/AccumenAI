@@ -116,7 +116,7 @@
                             @endif
                         </td>
                         <td>{{ $entry->completionAcademicYear?->name ?? '—' }}</td>
-                        <td>{{ $entry->graduation_date?->format('d M Y') ?? '—' }}</td>
+                        <td><x-tdate :value="$entry->graduation_date" fallback="d M Y" empty="—" /></td>
                         <td>{{ $entry->current_occupation ?: '—' }}</td>
                         <td>
                             <span class="badge {{ $statusBadge[$entry->status] ?? 'text-bg-secondary' }}">{{ ucfirst($entry->status) }}</span>

@@ -59,7 +59,7 @@
                             @foreach($admissions as $admission)
                                 <option value="{{ $admission->id }}"
                                     @selected((string) old('admission_id', $invoice->admission_id) === (string) $admission->id)>
-                                    {{ $admission->patient->full_name ?? '' }} — {{ $admission->admission_date?->format('d M Y') }}
+                                    {{ $admission->patient->full_name ?? '' }} — <x-tdate :value="$admission->admission_date" fallback="d M Y" />
                                 </option>
                             @endforeach
                         </select>

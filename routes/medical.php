@@ -41,7 +41,10 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
         return view('medical.dashboard');
     })->name('dashboard');
 
-    // Patients
+    // Patients — explicit lookup before the resource so it is not
+    // swallowed by the {patient} wildcard.
+    Route::get('patients/lookup', [PatientController::class, 'lookup'])->name('patients.lookup');
+    Route::post('patients/quick-store', [PatientController::class, 'quickStore'])->name('patients.quick-store');
     Route::resource('patients', PatientController::class);
     Route::get('patients/{patient}/history', [PatientController::class, 'history'])->name('patients.history');
 
@@ -203,7 +206,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
 
     /*
     |--------------------------------------------------------------------------
-    | Doctor Management ΓÇö Department ΓåÆ Specialty ΓåÆ Doctor + weekly availability
+    | Doctor Management — Department → Specialty → Doctor + weekly availability
     |--------------------------------------------------------------------------
     */
     Route::get('departments/{department}/specialties', [DepartmentController::class, 'getSpecialties'])->name('departments.specialties');

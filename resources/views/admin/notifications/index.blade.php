@@ -62,7 +62,7 @@
                         @if ($notification->institute)
                             <span class="ms-2">{{ $notification->institute->name }}</span>
                         @endif
-                        <span class="ms-2">{{ $notification->created_at->format('d M Y H:i') }}</span>
+                        <span class="ms-2"><x-tdate :value="$notification->created_at" fallback="d M Y H:i" :datetime="true" /></span>
                     </div>
                 </div>
                 @if (! in_array($notification->id, $readIds, true))

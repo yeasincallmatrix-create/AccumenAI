@@ -39,9 +39,9 @@
                 <p class="mb-1"><strong>Source:</strong> {{ $lead->source?->name ?? '—' }}</p>
                 <p class="mb-1"><strong>Value:</strong> {{ $lead->value_amount ? number_format($lead->value_amount, 2) : '—' }}</p>
                 <p class="mb-1"><strong>Assigned To:</strong> {{ $lead->assignedUser ? $lead->assignedUser->first_name . ' ' . $lead->assignedUser->last_name : '—' }}</p>
-                <p class="mb-1"><strong>Created:</strong> {{ $lead->created_at->format('Y-m-d H:i') }}</p>
+                <p class="mb-1"><strong>Created:</strong> <x-tdate :value="$lead->created_at" fallback="Y-m-d H:i" :datetime="true" /></p>
                 @if ($lead->converted_at)
-                    <p class="mb-1"><strong>Converted:</strong> {{ $lead->converted_at->format('Y-m-d H:i') }}</p>
+                    <p class="mb-1"><strong>Converted:</strong> <x-tdate :value="$lead->converted_at" fallback="Y-m-d H:i" :datetime="true" /></p>
                 @endif
             </div>
         </div>

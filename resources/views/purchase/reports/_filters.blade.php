@@ -3,11 +3,11 @@
         <form method="GET" class="row g-2 align-items-end">
             <div class="col-md-2">
                 <label class="form-label">From</label>
-                <input type="date" name="from" value="{{ request('from') }}" class="form-control form-control-sm">
+                <x-tdate-input name="from" :value="request('from')" class="form-control form-control-sm" />
             </div>
             <div class="col-md-2">
                 <label class="form-label">To</label>
-                <input type="date" name="to" value="{{ request('to') }}" class="form-control form-control-sm">
+                <x-tdate-input name="to" :value="request('to')" class="form-control form-control-sm" />
             </div>
             <div class="col-md-2">
                 <label class="form-label">Supplier</label>

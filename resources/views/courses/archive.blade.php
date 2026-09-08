@@ -24,7 +24,6 @@
         'weekend' => mawa_lang('options.shift_weekend'),
         'online'  => mawa_lang('options.shift_online'),
     ];
-    $fmtDate = fn ($date) => $date ? \Illuminate\Support\Carbon::parse($date)->format('d M Y') : '—';
 @endphp
 
 @section('content')
@@ -174,7 +173,7 @@
                         </td>
                         <td data-col="course" @if(!in_array('course', $visibleColumns, true)) style="display:none" @endif>{{ $batch->course?->name ?? '—' }}</td>
                         <td data-col="shift" @if(!in_array('shift', $visibleColumns, true)) style="display:none" @endif>{{ $shiftNames[$batch->shift] ?? $batch->shift }}</td>
-                        <td data-col="start" @if(!in_array('start', $visibleColumns, true)) style="display:none" @endif>{{ $fmtDate($batch->start_date) }}</td>
+                        <td data-col="start" @if(!in_array('start', $visibleColumns, true)) style="display:none" @endif><x-tdate :value="$batch->start_date" fallback="d M Y" empty="—" /></td>
                         <td data-col="seats" @if(!in_array('seats', $visibleColumns, true)) style="display:none" @endif>
                             {{ $batch->seat_filled }} / {{ $batch->seat_capacity }}
                             <small class="text-muted d-block">{{ mawa_e('batches.filled') }}</small>
@@ -232,7 +231,7 @@
                     <td data-col="name" @if(!in_array('name', $visibleColumns, true)) style="display:none" @endif>{{ $batch->name }}</td>
                     <td data-col="course" @if(!in_array('course', $visibleColumns, true)) style="display:none" @endif>{{ $batch->course?->name ?? '—' }}</td>
                     <td data-col="shift" @if(!in_array('shift', $visibleColumns, true)) style="display:none" @endif>{{ $shiftNames[$batch->shift] ?? $batch->shift }}</td>
-                    <td data-col="start" @if(!in_array('start', $visibleColumns, true)) style="display:none" @endif>{{ $fmtDate($batch->start_date) }}</td>
+                    <td data-col="start" @if(!in_array('start', $visibleColumns, true)) style="display:none" @endif><x-tdate :value="$batch->start_date" fallback="d M Y" empty="—" /></td>
                     <td data-col="seats" @if(!in_array('seats', $visibleColumns, true)) style="display:none" @endif>{{ $batch->seat_filled }} / {{ $batch->seat_capacity }}</td>
                     <td data-col="status" @if(!in_array('status', $visibleColumns, true)) style="display:none" @endif>{{ $statusNames[$batch->status] ?? $batch->status }}</td>
                 </tr>

@@ -26,8 +26,6 @@
         'fail'    => mawa_lang('status.fail'),
         'pending' => mawa_lang('results.unpublished'),
     ];
-    $fmtDateTime = fn ($date) => $date ? \Illuminate\Support\Carbon::parse($date)->format('d M Y, h:i A') : '—';
-    $fmtDate = fn ($date) => $date ? \Illuminate\Support\Carbon::parse($date)->format('d M Y') : '—';
 @endphp
 
 @push('styles')
@@ -120,7 +118,7 @@
                         <td>{{ rtrim(rtrim(number_format($result->percentage, 2), '0'), '.') }}%</td>
                         <td>{{ $result->grade ?? '—' }}</td>
                         <td>{{ $resultStatusNames[$result->result_status] ?? $result->result_status }}</td>
-                        <td>{{ $fmtDate($result->published_at) }}</td>
+                        <td><x-tdate :value="$result->published_at" fallback="d M Y" empty="—" /></td>
                     </tr>
                 @endforeach
             </tbody>
@@ -156,7 +154,7 @@
                         <td>{{ $exam->course?->name ?? '—' }}</td>
                         <td>{{ $exam->batch?->name ?? '—' }}</td>
                         <td>{{ $exam->subjects->isNotEmpty() ? $exam->subjects->map(fn ($s) => $s->subject?->name ?? '—')->implode(', ') : '—' }}</td>
-                        <td>{{ $fmtDateTime($exam->exam_date) }}</td>
+                        <td><x-tdate :value="$exam->exam_date" fallback="d M Y, h:i A" :datetime="true" empty="—" /></td>
                         <td>{{ rtrim(rtrim(number_format($exam->full_marks, 2), '0'), '.') }} / {{ rtrim(rtrim(number_format($exam->pass_marks, 2), '0'), '.') }}</td>
                         <td>{{ $exam->results_count }}</td>
                         <td>{{ $statusNames[$exam->status] ?? $exam->status }}</td>

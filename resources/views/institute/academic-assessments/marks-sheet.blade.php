@@ -212,7 +212,7 @@
         @endif
         <span><span class="label">Assessment:</span> {{ $assessment->name }}</span>
         @if ($assessment->exam_date)
-            <span><span class="label">Exam Date:</span> {{ $assessment->exam_date->format('M j, Y') }}</span>
+            <span><span class="label">Exam Date:</span> <x-tdate :value="$assessment->exam_date" fallback="M j, Y" /></span>
         @endif
         <span><span class="label">Students:</span> {{ count($sheet['rows']) }}</span>
     </div>
@@ -322,7 +322,7 @@
     </div>
 
     <div class="text-center text-muted small mt-4">
-        Generated {{ now()->format('F j, Y') }} · AccumenAI
+        Generated <x-tdate :value="now()" fallback="F j, Y" /> · AccumenAI
     </div>
 </div>
 

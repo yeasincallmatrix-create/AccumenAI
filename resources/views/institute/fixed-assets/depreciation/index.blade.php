@@ -19,11 +19,11 @@
             <div class="row g-3 align-items-end">
                 <div class="col-md-4">
                     <label class="form-label">Period Start <span class="text-danger">*</span></label>
-                    <input type="date" class="form-control form-control-sm" name="period_start" value="{{ old('period_start', now()->startOfMonth()->toDateString()) }}" required>
+                    <x-tdate-input class="form-control form-control-sm" name="period_start" value="{{ old('period_start', now()->startOfMonth()->toDateString()) }}" required />
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Period End <span class="text-danger">*</span></label>
-                    <input type="date" class="form-control form-control-sm" name="period_end" value="{{ old('period_end', now()->endOfMonth()->toDateString()) }}" required>
+                    <x-tdate-input class="form-control form-control-sm" name="period_end" value="{{ old('period_end', now()->endOfMonth()->toDateString()) }}" required />
                 </div>
                 <div class="col-md-4">
                     <button class="btn btn-success btn-sm" type="submit" data-ajax-submit="1" data-confirm="Run depreciation for this period?"><i class="bi bi-calculator me-1"></i>Run Depreciation</button>
@@ -50,12 +50,12 @@
                 @forelse ($runs as $run)
                     <tr>
                         <td class="text-muted">{{ $runs->firstItem() + $loop->index }}</td>
-                        <td>{{ $run->period_start->format('Y-m-d') }} to {{ $run->period_end->format('Y-m-d') }}</td>
+                        <td><x-tdate :value="$run->period_start" fallback="Y-m-d" /> to <x-tdate :value="$run->period_end" fallback="Y-m-d" /></td>
                         <td>
                             <span class="badge text-bg-{{ $run->status === 'posted' ? 'success' : 'secondary' }}">{{ ucfirst($run->status) }}</span>
                         </td>
                         <td>{{ $run->journal?->journal_no ?? '—' }}</td>
-                        <td>{{ $run->created_at?->format('Y-m-d H:i') }}</td>
+                        <td><x-tdate :value="$run->created_at" fallback="Y-m-d H:i" :datetime="true" /></td>
                         <td class="text-end">
                             <a href="{{ route('fixed_assets.depreciation.show', $run) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
                         </td>

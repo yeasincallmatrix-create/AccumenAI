@@ -22,11 +22,11 @@
         <form class="filter-layout d-flex align-items-end gap-2 flex-wrap" method="GET" action="{{ route('accounting.reports.cash-flow') }}">
             <div>
                 <label class="form-label mb-1">From</label>
-                <input type="date" class="form-control form-control-sm" name="from" value="{{ $from }}">
+                <x-tdate-input class="form-control form-control-sm" name="from" value="{{ $from }}" />
             </div>
             <div>
                 <label class="form-label mb-1">To</label>
-                <input type="date" class="form-control form-control-sm" name="to" value="{{ $to }}">
+                <x-tdate-input class="form-control form-control-sm" name="to" value="{{ $to }}" />
             </div>
             <div>
                 <label class="form-label mb-1">Fiscal year</label>

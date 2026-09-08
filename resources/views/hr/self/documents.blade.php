@@ -17,7 +17,7 @@
     <table class="table table-sm mb-0">
         <thead><tr><th>Type</th><th>File</th><th>Status</th><th>Expiry</th><th></th></tr></thead>
         <tbody>
-            @foreach($documents as $doc)<tr><td>{{ $doc->category?->name }}</td><td>{{ $doc->original_filename }} @if($doc->title) — {{ $doc->title }} @endif</td><td><span class="badge text-bg-{{ $doc->verification_status==='verified'?'success':($doc->verification_status==='rejected'?'danger':'secondary') }}">{{ $doc->verification_status }}</span> @if($doc->isExpired()) <span class="badge text-bg-danger">Expired</span> @elseif($doc->isExpiringSoon()) <span class="badge text-bg-warning">Expiring</span> @endif</td><td>{{ $doc->expiry_date?->format('Y-m-d') ?? '—' }}</td><td><a href="{{ route('hr.documents.download',$doc) }}" class="btn btn-sm btn-outline-primary">Download</a></td></tr>@endforeach
+            @foreach($documents as $doc)<tr><td>{{ $doc->category?->name }}</td><td>{{ $doc->original_filename }} @if($doc->title) — {{ $doc->title }} @endif</td><td><span class="badge text-bg-{{ $doc->verification_status==='verified'?'success':($doc->verification_status==='rejected'?'danger':'secondary') }}">{{ $doc->verification_status }}</span> @if($doc->isExpired()) <span class="badge text-bg-danger">Expired</span> @elseif($doc->isExpiringSoon()) <span class="badge text-bg-warning">Expiring</span> @endif</td><td><x-tdate :value="$doc->expiry_date" fallback="Y-m-d" empty="—" /></td><td><a href="{{ route('hr.documents.download',$doc) }}" class="btn btn-sm btn-outline-primary">Download</a></td></tr>@endforeach
         </tbody>
     </table>
 </div>

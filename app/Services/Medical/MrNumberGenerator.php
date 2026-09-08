@@ -3,54 +3,39 @@
 namespace App\Services\Medical;
 
 use App\Models\Medical\Patient;
-use Illuminate\Support\Facades\DB;
+use App\Support\MedicalScope;
 
 /**
- * Generate unique MR (Medical Record) numbers.
- * Format: MR-YYYY-III-XXXXX
- * YYYY = Year, III = Institute ID (3 digits), XXXXX = Sequential number (5 digits)
+ * Generate a unique patient ID in format: YY + 3-digit random.
+ * Example: 26047 (year 2026, random 047).
+ * Total: 5 digits, purely numeric, unique per tenant (institute).
  *
- * Phase 1 adaptation: the institute id is an explicit argument (the spec read
- * it from `auth()->user()->institute_id`, which does not exist for web-guard
- * users). Generation is retried until the value is unique, so concurrent
- * registrations cannot collide on the unique `mr_number` column.
+ * The institute id stays an optional argument (PatientController passes it
+ * explicitly; web-guard callers without one fall back to MedicalScope).
  */
 class MrNumberGenerator
 {
-    public function generate(int $instituteId): string
+    public function generate(?int $instituteId = null): string
     {
-        $year = date('Y');
-        $prefix = 'MR-'.$year.'-'.str_pad((string) $instituteId, 3, '0', STR_PAD_LEFT).'-';
+        $instituteId ??= MedicalScope::getInstituteId();
 
-        return DB::transaction(function () use ($instituteId, $year, $prefix) {
-            // Lock this institute's yearly sequence so concurrent requests
-            // cannot read the same "last" row.
-            $lastPatient = Patient::where('institute_id', $instituteId)
-                ->whereYear('created_at', $year)
-                ->orderBy('id', 'desc')
-                ->lockForUpdate()
-                ->first();
+        $yy = date('y'); // Last 2 digits of year (e.g. 26)
 
-            $nextNumber = 1;
-            if ($lastPatient && preg_match('/(\d{5})$/', (string) $lastPatient->mr_number, $m)) {
-                $nextNumber = ((int) $m[1]) + 1;
-            } elseif ($lastPatient) {
-                // Last MR does not match the pattern (legacy/seeded data) —
-                // fall back to count-based sequencing.
-                $nextNumber = Patient::where('institute_id', $instituteId)
-                    ->whereYear('created_at', $year)
-                    ->count() + 1;
-            }
+        do {
+            $random = str_pad((string) random_int(0, 999), 3, '0', STR_PAD_LEFT);
+            $number = $yy.$random;
+        } while ($this->exists($number, $instituteId));
 
-            $candidate = $prefix.str_pad((string) $nextNumber, 5, '0', STR_PAD_LEFT);
+        return $number;
+    }
 
-            // Belt-and-braces: bump past any out-of-band number.
-            while (Patient::where('mr_number', $candidate)->exists()) {
-                $nextNumber++;
-                $candidate = $prefix.str_pad((string) $nextNumber, 5, '0', STR_PAD_LEFT);
-            }
-
-            return $candidate;
-        });
+    /**
+     * Check if the generated number already exists for this tenant.
+     */
+    private function exists(string $number, int $instituteId): bool
+    {
+        return Patient::where('institute_id', $instituteId)
+            ->where('mr_number', $number)
+            ->exists();
     }
 }

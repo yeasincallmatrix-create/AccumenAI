@@ -30,7 +30,7 @@
     <table class="meta">
         <tr>
             <td><strong>Order No:</strong> {{ $order->order_number }}</td>
-            <td><strong>Order Date:</strong> {{ $order->order_date?->format('d M Y') }}</td>
+            <td><strong>Order Date:</strong> <x-tdate :value="$order->order_date" fallback="d M Y" /></td>
         </tr>
         <tr>
             <td><strong>Patient:</strong> {{ $patient->full_name ?? 'N/A' }} ({{ $patient->mr_number ?? '' }})</td>
@@ -41,8 +41,8 @@
             <td><strong>Priority:</strong> {{ ucfirst($order->priority ?? 'routine') }}</td>
         </tr>
         <tr>
-            <td><strong>Collected:</strong> {{ $order->collected_at?->format('d M Y h:i A') ?? '—' }}</td>
-            <td><strong>Completed:</strong> {{ $order->completed_at?->format('d M Y h:i A') ?? '—' }}</td>
+            <td><strong>Collected:</strong> <x-tdate :value="$order->collected_at" fallback="d M Y h:i A" :datetime="true" /></td>
+            <td><strong>Completed:</strong> <x-tdate :value="$order->completed_at" fallback="d M Y h:i A" :datetime="true" /></td>
         </tr>
     </table>
 

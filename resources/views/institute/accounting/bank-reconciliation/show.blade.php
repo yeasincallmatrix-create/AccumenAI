@@ -60,7 +60,7 @@
         <div class="row g-2 align-items-end">
             <div class="col-md-2">
                 <label class="form-label mb-1">Date</label>
-                <input type="date" class="form-control form-control-sm" name="transaction_date" value="{{ $statement->statement_date }}" required>
+                <x-tdate-input class="form-control form-control-sm" name="transaction_date" value="{{ $statement->statement_date }}" required />
             </div>
             <div class="col-md-3">
                 <label class="form-label mb-1">Description</label>

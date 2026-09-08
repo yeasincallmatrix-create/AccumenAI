@@ -53,9 +53,7 @@
                 <div class="col-md-4">
                     <div class="mb-3">
                         <label class="form-label" for="prescription_date">Date <span class="text-danger">*</span></label>
-                        <input type="date" id="prescription_date" name="prescription_date"
-                               class="form-control @error('prescription_date') is-invalid @enderror"
-                               value="{{ old('prescription_date', $prescription->prescription_date?->format('Y-m-d')) }}" required>
+                        <x-tdate-input name="prescription_date" :value="old('prescription_date', $prescription->prescription_date?->format('Y-m-d'))" id="prescription_date" :class="'form-control'.($errors->has('prescription_date') ? ' is-invalid' : '')" required />
                         @error('prescription_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
@@ -134,9 +132,7 @@
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label class="form-label" for="follow_up_date">Follow-up Date</label>
-                        <input type="date" id="follow_up_date" name="follow_up_date"
-                               class="form-control @error('follow_up_date') is-invalid @enderror"
-                               value="{{ old('follow_up_date', $prescription->follow_up_date?->format('Y-m-d')) }}">
+                        <x-tdate-input name="follow_up_date" :value="old('follow_up_date', $prescription->follow_up_date?->format('Y-m-d'))" id="follow_up_date" :class="'form-control'.($errors->has('follow_up_date') ? ' is-invalid' : '')" />
                         @error('follow_up_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>

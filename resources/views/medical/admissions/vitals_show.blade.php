@@ -15,7 +15,7 @@
 </div>
 
 <div class="card">
-    <div class="card-header"><h6 class="mb-0">Recorded {{ $vital->recorded_at?->format('d M Y h:i A') }} by {{ $vital->recordedBy->name ?? 'Staff' }}</h6></div>
+    <div class="card-header"><h6 class="mb-0">Recorded <x-tdate :value="$vital->recorded_at" fallback="d M Y h:i A" :datetime="true" /> by {{ $vital->recordedBy->name ?? 'Staff' }}</h6></div>
     <div class="card-body">
         <div class="row">
             @foreach([

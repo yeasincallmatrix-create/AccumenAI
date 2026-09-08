@@ -14,11 +14,11 @@
         <div class="filter-search-row align-items-end flex-wrap">
             <div class="filter-span">
                 <label class="form-label mb-1">From</label>
-                <input type="date" class="form-control form-control-sm" name="from" value="{{ $from }}">
+                <x-tdate-input class="form-control form-control-sm" name="from" value="{{ $from }}" />
             </div>
             <div class="filter-span">
                 <label class="form-label mb-1">To</label>
-                <input type="date" class="form-control form-control-sm" name="to" value="{{ $to }}">
+                <x-tdate-input class="form-control form-control-sm" name="to" value="{{ $to }}" />
             </div>
             <div class="filter-span">
                 <button class="btn btn-outline-primary btn-sm mt-1" type="submit"><i class="bi bi-search"></i> Filter</button>
@@ -71,7 +71,7 @@
             <tbody>
                 @forelse ($movements as $m)
                     <tr>
-                        <td>{{ $m->occurred_at?->format('Y-m-d') }}</td>
+                        <td><x-tdate :value="$m->occurred_at" fallback="Y-m-d" /></td>
                         <td>{{ $m->item?->name ?? '-' }}</td>
                         <td>{{ $m->warehouse?->name ?? '-' }}</td>
                         <td><span class="badge bg-{{ $m->quantity > 0 ? 'success' : 'danger' }}">{{ $m->movement_type }}</span></td>

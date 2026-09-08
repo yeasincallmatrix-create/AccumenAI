@@ -78,7 +78,7 @@
                                     <div class="text-muted small mt-1"><i class="bi bi-chat-left-text me-1"></i>{{ $step->comment }}</div>
                                 @endif
                                 @if ($step->acted_at)
-                                    <div class="text-muted small">{{ mawa_e('workflows.actor') }} {{ $step->actor?->name ?? mawa_e('workflows.system') }} · {{ $step->acted_at->format('d M Y H:i') }}</div>
+                                    <div class="text-muted small">{{ mawa_e('workflows.actor') }} {{ $step->actor?->name ?? mawa_e('workflows.system') }} · <x-tdate :value="$step->acted_at" fallback="d M Y H:i" :datetime="true" /></div>
                                 @endif
                             </div>
                             <span class="badge {{ $stepBadge }}">{{ ucfirst(str_replace('_', ' ', $step->status)) }}</span>
@@ -127,7 +127,7 @@
                                     <td>{{ $history->to_status ? ucfirst(str_replace('_', ' ', $history->to_status)) : '—' }}</td>
                                     <td>{{ $history->actor?->name ?? 'System' }}</td>
                                     <td class="text-muted">{{ $history->comment ?? '—' }}</td>
-                                    <td class="text-muted small">{{ $history->created_at?->format('d M Y H:i') }}</td>
+                                    <td class="text-muted small"><x-tdate :value="$history->created_at" fallback="d M Y H:i" :datetime="true" /></td>
                                 </tr>
                             @empty
                                 <tr><td colspan="6" class="text-center text-muted py-3">{{ mawa_e('workflows.no_history') }}</td></tr>
@@ -155,9 +155,9 @@
                     <dt class="col-5 text-muted">{{ mawa_e('workflows.assigned_to') }}</dt>
                     <dd class="col-7">{{ $workflow->assignee?->name ?? '—' }}</dd>
                     <dt class="col-5 text-muted">{{ mawa_e('workflows.started') }}</dt>
-                    <dd class="col-7">{{ $workflow->started_at?->format('d M Y H:i') ?? '—' }}</dd>
+                    <dd class="col-7"><x-tdate :value="$workflow->started_at" fallback="d M Y H:i" :datetime="true" empty="—" /></dd>
                     <dt class="col-5 text-muted">{{ mawa_e('workflows.completed') }}</dt>
-                    <dd class="col-7">{{ $workflow->completed_at?->format('d M Y H:i') ?? '—' }}</dd>
+                    <dd class="col-7"><x-tdate :value="$workflow->completed_at" fallback="d M Y H:i" :datetime="true" empty="—" /></dd>
                 </dl>
                 @if ($workflow->notes)
                     <hr>

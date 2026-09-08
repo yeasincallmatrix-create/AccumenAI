@@ -70,7 +70,7 @@
                     <tr>
                         <td>
                             <a href="{{ route('finance.education.students.show', $invoice->student_id) }}" class="text-decoration-none">{{ $invoice->invoice_number }}</a>
-                            <div class="text-muted small">{{ $invoice->created_at?->format('Y-m-d') }}</div>
+                            <div class="text-muted small"><x-tdate :value="$invoice->created_at" fallback="Y-m-d" /></div>
                         </td>
                         <td>{{ $invoice->student?->full_name ?? '—' }}</td>
                         <td>{{ str_replace('_', ' ', $invoice->invoice_type) }}</td>

@@ -199,7 +199,7 @@
                                 </a>
                             </div>
                         </td>
-                        <td data-col="created_at" class="text-muted" @if(!in_array('created_at', $visibleColumns, true)) style="display:none" @endif>{{ $subject->created_at?->format('Y-m-d') }}</td>
+                        <td data-col="created_at" class="text-muted" @if(!in_array('created_at', $visibleColumns, true)) style="display:none" @endif><x-tdate :value="$subject->created_at" fallback="Y-m-d" /></td>
                         @if ($user->hasPermission('courses.manage'))
                             <td class="text-end col-actions">
                                 <a href="{{ route('courses.manage.subjects.edit', $subject) }}" class="btn btn-sm btn-outline-primary">
@@ -264,7 +264,7 @@
                     <td data-col="category" @if(!in_array('category', $visibleColumns, true)) style="display:none" @endif>{{ $subject->category->name ?? '—' }}</td>
                     <td data-col="status" @if(!in_array('status', $visibleColumns, true)) style="display:none" @endif>{{ ucwords($subject->status) }}</td>
                     <td data-col="usage" @if(!in_array('usage', $visibleColumns, true)) style="display:none" @endif>{{ $subject->courses_count ?? 0 }} courses, {{ $subject->academic_assignments_count ?? 0 }} academic</td>
-                    <td data-col="created_at" @if(!in_array('created_at', $visibleColumns, true)) style="display:none" @endif>{{ $subject->created_at?->format('Y-m-d') }}</td>
+                    <td data-col="created_at" @if(!in_array('created_at', $visibleColumns, true)) style="display:none" @endif><x-tdate :value="$subject->created_at" fallback="Y-m-d" /></td>
                 </tr>
             @endforeach
         </tbody>

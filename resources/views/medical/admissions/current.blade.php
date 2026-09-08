@@ -70,7 +70,7 @@
                                     <span class="text-muted">No bed</span>
                                 @endif
                             </td>
-                            <td>{{ $admission->admission_date?->format('d M Y') }}</td>
+                            <td><x-tdate :value="$admission->admission_date" fallback="d M Y" /></td>
                             <td>{{ $admission->length_of_stay }} day(s)</td>
                             <td>{{ $admission->admittingDoctor->name ?? 'N/A' }}</td>
                             <td class="text-end">

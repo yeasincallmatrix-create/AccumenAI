@@ -51,9 +51,9 @@
                     @endif
                 </p>
                 <p><strong>Doctor:</strong> {{ $prescription->doctor->name ?? 'N/A' }}</p>
-                <p><strong>Date:</strong> {{ $prescription->prescription_date?->format('d M Y') }}</p>
+                <p><strong>Date:</strong> <x-tdate :value="$prescription->prescription_date" fallback="d M Y" /></p>
                 <p><strong>Diagnosis:</strong> {{ $prescription->diagnosis ?? '—' }}</p>
-                <p class="mb-0"><strong>Follow-up:</strong> {{ $prescription->follow_up_date?->format('d M Y') ?? '—' }}</p>
+                <p class="mb-0"><strong>Follow-up:</strong> <x-tdate :value="$prescription->follow_up_date" fallback="d M Y" /></p>
             </div>
         </div>
     </div>

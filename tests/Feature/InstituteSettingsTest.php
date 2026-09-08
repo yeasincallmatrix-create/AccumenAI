@@ -150,6 +150,7 @@ class InstituteSettingsTest extends TestCase
             ->put(route('settings.general.update'), [
                 'timezone' => 'Asia/Kolkata',
                 'language' => 'en',
+                'date_format' => 'mdy',
             ])
             ->assertRedirect(route('settings.index', '#pane-general'));
 
@@ -160,6 +161,20 @@ class InstituteSettingsTest extends TestCase
         $this->assertNotNull($stored);
         $this->assertSame('Asia/Kolkata', $stored->timezone);
         $this->assertSame('en', $stored->language);
+        $this->assertSame('mdy', $stored->date_format);
+    }
+
+    public function test_update_general_rejects_invalid_date_format(): void
+    {
+        $owner = $this->makeStaff('institute-owner', 'settings-general3@example.test');
+
+        $this->actingAs($owner, 'institute_user')
+            ->put(route('settings.general.update'), [
+                'timezone' => 'Asia/Dhaka',
+                'language' => 'en',
+                'date_format' => 'not-a-format',
+            ])
+            ->assertSessionHasErrors('date_format');
     }
 
     public function test_update_general_rejects_invalid_timezone(): void
@@ -170,6 +185,7 @@ class InstituteSettingsTest extends TestCase
             ->put(route('settings.general.update'), [
                 'timezone' => 'Not/AZone',
                 'language' => 'en',
+                'date_format' => 'dmy',
             ])
             ->assertSessionHasErrors('timezone');
     }

@@ -44,7 +44,7 @@
 <div class="admin-card">
     <div class="print-header d-none">
         <h4 class="mb-1">{{ $institute->name ?? '' }} — {{ mawa_e('notifications.title') }}</h4>
-        <p class="mb-0 text-muted">{{ $notifications->count() }} notifications · {{ $unreadCount }} {{ mawa_e('notifications.unread') }} · {{ now()->format('d M Y') }}</p>
+        <p class="mb-0 text-muted">{{ $notifications->count() }} notifications · {{ $unreadCount }} {{ mawa_e('notifications.unread') }} · <x-tdate :value="now()" fallback="d M Y" /></p>
     </div>
     <div class="table-toolbar">
         <div class="toolbar-info"><i class="bi bi-bell-fill"></i> {{ $notifications->count() }} notifications · {{ $unreadCount }} {{ mawa_e('notifications.unread') }}</div>
@@ -75,7 +75,7 @@
                             <span class="ms-0">{{ $notification->institute->name }}</span>
                             <span class="ms-2">•</span>
                         @endif
-                        <span class="ms-2">{{ $notification->created_at->format('d M Y H:i') }}</span>
+                        <span class="ms-2"><x-tdate :value="$notification->created_at" fallback="d M Y H:i" :datetime="true" /></span>
                     </div>
                 </div>
                 @if (! in_array($notification->id, $readIds, true))

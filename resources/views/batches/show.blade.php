@@ -47,7 +47,6 @@
         'completed' => mawa_lang('exams.completed'),
         'cancelled' => mawa_lang('exams.cancelled'),
     ];
-    $fmtDate = fn ($date) => $date ? \Illuminate\Support\Carbon::parse($date)->format('d M Y') : '—';
     $capacityPct = $batch->seat_capacity > 0 ? min(100, (int) round($batch->seat_filled / $batch->seat_capacity * 100)) : 0;
     $capacityBarClass = $capacityPct >= 100 ? 'bg-danger' : ($capacityPct >= 80 ? 'bg-warning' : 'bg-success');
 @endphp
@@ -174,9 +173,9 @@
                 <dt class="col-5">{{ mawa_e('batches.shift') }}</dt>
                 <dd class="col-7">{{ $shiftNames[$batch->shift] ?? $batch->shift }}</dd>
                 <dt class="col-5">{{ mawa_e('batches.start_date') }}</dt>
-                <dd class="col-7">{{ $batch->start_date ? \Illuminate\Support\Carbon::parse($batch->start_date)->format('d M Y') : 'Not provided' }}</dd>
+                <dd class="col-7"><x-tdate :value="$batch->start_date" fallback="d M Y" empty="Not provided" /></dd>
                 <dt class="col-5">{{ mawa_e('batches.end_date') }}</dt>
-                <dd class="col-7">{{ $batch->end_date ? \Illuminate\Support\Carbon::parse($batch->end_date)->format('d M Y') : 'Not provided' }}</dd>
+                <dd class="col-7"><x-tdate :value="$batch->end_date" fallback="d M Y" empty="Not provided" /></dd>
                 <dt class="col-5">{{ mawa_e('batches.table_seats') }}</dt>
                 <dd class="col-7"><span class="fw-semibold text-primary">{{ $batch->seat_filled }}</span> / {{ $batch->seat_capacity }}</dd>
                 <dd class="col-12">
@@ -287,7 +286,7 @@
                             <td>{{ $enrollment->student->student_id ?? '—' }}</td>
                             <td>{{ $enrollment->student->branch?->name ?? '—' }}</td>
                             <td>{{ $enrollment->student->phone ?? '—' }}</td>
-                            <td>{{ $enrollment->enrollment_date ? \Illuminate\Support\Carbon::parse($enrollment->enrollment_date)->format('d M Y') : '—' }}</td>
+                            <td><x-tdate :value="$enrollment->enrollment_date" fallback="d M Y" empty="—" /></td>
                             <td>
                                 <span class="badge {{ $enrollStatusBadge[$enrollment->status] ?? 'bg-secondary' }}">{{ ucfirst($enrollment->status) }}</span>
                             </td>
@@ -357,7 +356,7 @@
                                 <td class="fw-semibold">
                                     <a class="fw-semibold text-decoration-none" href="{{ route('exams.show', $exam) }}">{{ $exam->title }}</a>
                                 </td>
-                                <td>{{ $exam->exam_date ? \Illuminate\Support\Carbon::parse($exam->exam_date)->format('d M Y, h:i A') : '—' }}</td>
+                                <td><x-tdate :value="$exam->exam_date" fallback="d M Y, h:i A" :datetime="true" empty="—" /></td>
                                 <td>{{ rtrim(rtrim(number_format($exam->full_marks, 2), '0'), '.') }} / {{ rtrim(rtrim(number_format($exam->pass_marks, 2), '0'), '.') }}</td>
                                 <td><span class="badge bg-secondary">{{ $exam->results_count }}</span></td>
                                 <td>
@@ -514,12 +513,12 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label" for="e_start_date">{{ mawa_e('batches.start_date') }} *</label>
-                            <input type="date" id="e_start_date" name="start_date" class="form-control" required>
+                            <x-tdate-input id="e_start_date" name="start_date" class="form-control" required />
                             @error('start_date') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                         </div>
                         <div class="col-md-4">
                             <label class="form-label" for="e_end_date">{{ mawa_e('batches.end_date') }}</label>
-                            <input type="date" id="e_end_date" name="end_date" class="form-control">
+                            <x-tdate-input id="e_end_date" name="end_date" class="form-control" />
                             @error('end_date') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                         </div>
                         <div class="col-md-4">

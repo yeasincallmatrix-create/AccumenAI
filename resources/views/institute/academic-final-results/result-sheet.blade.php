@@ -197,7 +197,7 @@
         @endif
         <span><span class="label">Result:</span> {{ $result->name }}</span>
         @if ($result->published_at)
-            <span><span class="label">Published:</span> {{ $result->published_at->format('M j, Y') }}</span>
+            <span><span class="label">Published:</span> <x-tdate :value="$result->published_at" fallback="M j, Y" /></span>
         @endif
         <span><span class="label">Students:</span> {{ $rows->count() }}</span>
     </div>
@@ -347,7 +347,7 @@
     </div>
 
     <div class="text-center text-muted small mt-4">
-        Generated {{ now()->format('F j, Y') }} · AccumenAI
+        Generated <x-tdate :value="now()" fallback="F j, Y" /> · AccumenAI
     </div>
 </div>
 

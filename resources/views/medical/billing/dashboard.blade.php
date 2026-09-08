@@ -79,7 +79,7 @@
                         @foreach($dueInvoices as $invoice)
                         <li class="border-bottom py-2">
                             <a href="{{ route('medical.billing.invoices.show', $invoice) }}"><strong>{{ $invoice->invoice_number }}</strong></a>
-                            <span class="text-muted">· due {{ $invoice->due_date?->format('d M Y') ?? '—' }}</span>
+                            <span class="text-muted">· due <x-tdate :value="$invoice->due_date" fallback="d M Y" /></span>
                             <span class="float-end">৳{{ number_format($invoice->due_amount, 2) }}
                                 @if($invoice->isOverdue())
                                     <span class="badge bg-danger">Overdue</span>

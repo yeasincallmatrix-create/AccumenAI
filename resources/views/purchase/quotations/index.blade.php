@@ -56,11 +56,11 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label">From</label>
-                <input type="date" name="from" value="{{ request('from') }}" class="form-control form-control-sm">
+                <x-tdate-input name="from" :value="request('from')" class="form-control form-control-sm" />
             </div>
             <div class="col-md-2">
                 <label class="form-label">To</label>
-                <input type="date" name="to" value="{{ request('to') }}" class="form-control form-control-sm">
+                <x-tdate-input name="to" :value="request('to')" class="form-control form-control-sm" />
             </div>
             @php
                 $actingUser = request()->user();
@@ -111,8 +111,8 @@
                     <tr>
                         <td class="fw-semibold">{{ $q->quotation_number }}</td>
                         <td>{{ $q->supplier?->name ?? '—' }}</td>
-                        <td>{{ $q->quotation_date?->format('Y-m-d') }}</td>
-                        <td>{{ $q->validity_date?->format('Y-m-d') ?? '—' }}</td>
+                        <td><x-tdate :value="$q->quotation_date" fallback="Y-m-d" /></td>
+                        <td><x-tdate :value="$q->validity_date" fallback="Y-m-d" empty="—" /></td>
                         <td class="text-end">{{ number_format($q->grand_total, 2) }} {{ $q->currency?->code }}</td>
                         <td>
                             @php $colors = ['draft'=>'secondary','sent'=>'info','accepted'=>'success','rejected'=>'danger','expired'=>'warning','cancelled'=>'dark']; @endphp

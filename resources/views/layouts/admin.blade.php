@@ -545,6 +545,7 @@
 <script src="{{ asset('js/column-filters.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/column-filters.js')) }}"></script>
 <script src="{{ asset('js/geo-select.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/geo-select.js')) }}"></script>
 <script src="{{ asset('js/popup-fix.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/popup-fix.js')) }}"></script>
+<script src="{{ asset('js/auto-caps.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/auto-caps.js')) }}"></script>
 {{-- Alpine.js (global) — used by <x-connectivity-signal />. If you move Alpine into
      the @vite build instead, import 'alpinejs' and Alpine.start() in resources/js.
      Passing the page defer-safely: if this ever fails to load the component simply
@@ -871,6 +872,7 @@
     });
 })();
 </script>
+@include('layouts.partials.tenant_dates')
 @yield('scripts')
 <div id="page-scripts">
     @stack('scripts')

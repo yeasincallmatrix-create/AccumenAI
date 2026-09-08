@@ -171,7 +171,7 @@
                 <td>Status</td>
                 <td>{{ ucfirst((string) $decision->status) }}</td>
                 <td>Approved</td>
-                <td>{{ $decision->approved_at?->format('F j, Y') ?? '&mdash;' }}</td>
+                <td><x-tdate :value="$decision->approved_at" fallback="F j, Y" empty="&mdash;" /></td>
             </tr>
         </tbody>
     </table>
@@ -291,7 +291,7 @@
     </div>
 
     <div class="text-center text-muted small mt-4">
-        Generated {{ now()->format('F j, Y') }} - AccumenAI
+        Generated <x-tdate :value="now()" fallback="F j, Y" /> - AccumenAI
     </div>
 </div>
 

@@ -58,7 +58,7 @@
                         @foreach($deploymentLogs as $dlog)
                         <tr>
                             <td class="small">#{{ $dlog->id }}</td>
-                            <td class="small text-muted">{{ $dlog->created_at?->format('Y-m-d H:i') }}</td>
+                            <td class="small text-muted"><x-tdate :value="$dlog->created_at" fallback="Y-m-d H:i" :datetime="true" /></td>
                             <td><span class="badge {{ $dlog->type === 'git' ? 'bg-dark' : 'bg-info' }}">{{ strtoupper($dlog->type) }}</span></td>
                             <td class="small font-monospace">{{ \Illuminate\Support\Str::limit($dlog->version ?? '—', 18) }}</td>
                             <td>
@@ -183,7 +183,7 @@
             <tbody>
                 @foreach($recentLogs as $log)
                 <tr>
-                    <td class="small text-muted text-nowrap">{{ $log->created_at?->format('Y-m-d H:i:s') }}</td>
+                    <td class="small text-muted text-nowrap"><x-tdate :value="$log->created_at" fallback="Y-m-d H:i:s" :datetime="true" /></td>
                     <td class="small">{{ $log->admin?->email ?? '—' }}</td>
                     <td><code class="small">{{ $log->command }}</code></td>
                     <td><span class="badge bg-{{ $log->risk === 'high' ? 'danger' : ($log->risk === 'medium' ? 'warning text-dark' : 'success') }}">{{ ucfirst($log->risk) }}</span></td>

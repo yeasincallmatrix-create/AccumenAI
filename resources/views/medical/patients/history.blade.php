@@ -24,7 +24,7 @@
                     <tbody>
                         @foreach($patient->appointments as $appointment)
                         <tr>
-                            <td>{{ $appointment->appointment_date?->format('d M Y') }}</td>
+                            <td><x-tdate :value="$appointment->appointment_date" fallback="d M Y" /></td>
                             <td>{{ $appointment->appointment_time ? \Carbon\Carbon::parse($appointment->appointment_time)->format('h:i A') : 'N/A' }}</td>
                             <td>{{ $appointment->doctor->name ?? 'N/A' }}</td>
                             <td>#{{ $appointment->serial_number }}</td>
@@ -51,8 +51,8 @@
                     <tbody>
                         @foreach($patient->admissions as $admission)
                         <tr>
-                            <td>{{ $admission->admission_date?->format('d M Y') }}</td>
-                            <td>{{ $admission->discharge_date?->format('d M Y') ?? '—' }}</td>
+                            <td><x-tdate :value="$admission->admission_date" fallback="d M Y" /></td>
+                            <td><x-tdate :value="$admission->discharge_date" fallback="d M Y" empty="—" /></td>
                             <td>{{ $admission->admittingDoctor->name ?? 'N/A' }}</td>
                             <td><span class="badge bg-secondary">{{ ucfirst($admission->status) }}</span></td>
                             <td>{{ \Illuminate\Support\Str::limit($admission->primary_diagnosis, 40) ?? '—' }}</td>
@@ -78,7 +78,7 @@
                         @foreach($patient->prescriptions as $prescription)
                         <tr>
                             <td>{{ $prescription->prescription_number }}</td>
-                            <td>{{ $prescription->prescription_date?->format('d M Y') }}</td>
+                            <td><x-tdate :value="$prescription->prescription_date" fallback="d M Y" /></td>
                             <td>{{ $prescription->doctor->name ?? 'N/A' }}</td>
                             <td>{{ \Illuminate\Support\Str::limit($prescription->diagnosis, 40) ?? '—' }}</td>
                             <td>
@@ -108,7 +108,7 @@
                         @foreach($patient->labOrders as $order)
                         <tr>
                             <td>{{ $order->order_number }}</td>
-                            <td>{{ $order->order_date?->format('d M Y') }}</td>
+                            <td><x-tdate :value="$order->order_date" fallback="d M Y" /></td>
                             <td>{{ ucfirst($order->priority) }}</td>
                             <td><span class="badge bg-secondary">{{ ucfirst($order->status) }}</span></td>
                         </tr>

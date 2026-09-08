@@ -14,7 +14,6 @@
         'enrolled'     => 'bg-primary',
         'withdrawn'    => 'bg-secondary',
     ];
-    $fmtDate = fn ($date) => $date ? \Illuminate\Support\Carbon::parse($date)->format('d M Y') : '—';
 @endphp
 
 @section('content')
@@ -142,7 +141,7 @@
                         <td>{{ $student->appliedCourse?->name ?? '—' }}</td>
                         <td>{{ $student->appliedAcademicYear?->name ?? '—' }}</td>
                         <td>{{ $student->branch?->name ?? '—' }}</td>
-                        <td>{{ $fmtDate($student->application_date) }}</td>
+                        <td><x-tdate :value="$student->application_date" fallback="d M Y" empty="—" /></td>
                         <td>
                             <span class="badge {{ $statusBadge[$student->admission_status] ?? 'bg-secondary' }}">{{ $student->admission_status }}</span>
                         </td>

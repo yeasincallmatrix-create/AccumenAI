@@ -222,7 +222,7 @@
                         <td data-col="package" @if(!in_array('package', $visibleColumns, true)) style="display:none" @endif>{{ $institute->package->name ?? '—' }}</td>
                         <td data-col="students" class="text-center" @if(!in_array('students', $visibleColumns, true)) style="display:none" @endif>{{ $institute->students_count }}</td>
                         <td data-col="status" @if(!in_array('status', $visibleColumns, true)) style="display:none" @endif><span class="badge {{ $statusBadge[$institute->status] ?? 'text-bg-secondary' }}">{{ $institute->status }}</span></td>
-                        <td data-col="deleted_at" @if(!in_array('deleted_at', $visibleColumns, true)) style="display:none" @endif class="text-muted">{{ \Illuminate\Support\Carbon::parse($institute->deleted_at)->format('d M Y H:i') }}</td>
+                        <td data-col="deleted_at" @if(!in_array('deleted_at', $visibleColumns, true)) style="display:none" @endif class="text-muted"><x-tdate :value="\Illuminate\Support\Carbon::parse($institute->deleted_at)" fallback="d M Y H:i" :datetime="true" /></td>
                         <td class="text-end text-nowrap col-action" data-col="action" @if(!in_array('action', $visibleColumns, true)) style="display:none" @endif>
                             <button type="button" class="btn btn-sm btn-success single-restore-btn" title="Restore" data-id="{{ $institute->id }}" data-name="{{ $institute->name }}" data-action="{{ route('admin.institutes.restore', $institute) }}">
                                 <i class="bi bi-arrow-counterclockwise"></i>
@@ -281,7 +281,7 @@
                     <td data-col="package" @if(!in_array('package', $visibleColumns, true)) style="display:none" @endif>{{ $institute->package->name ?? '—' }}</td>
                     <td data-col="students" @if(!in_array('students', $visibleColumns, true)) style="display:none" @endif>{{ $institute->students_count }}</td>
                     <td data-col="status" @if(!in_array('status', $visibleColumns, true)) style="display:none" @endif>{{ ucwords($institute->status) }}</td>
-                    <td data-col="deleted_at" @if(!in_array('deleted_at', $visibleColumns, true)) style="display:none" @endif>{{ \Illuminate\Support\Carbon::parse($institute->deleted_at)->format('d M Y') }}</td>
+                    <td data-col="deleted_at" @if(!in_array('deleted_at', $visibleColumns, true)) style="display:none" @endif><x-tdate :value="\Illuminate\Support\Carbon::parse($institute->deleted_at)" fallback="d M Y" /></td>
                 </tr>
             @endforeach
         </tbody>
@@ -316,7 +316,7 @@
                         <td>{{ $certificate->certificate_number ?? '—' }}</td>
                         <td>{{ $certificate->course->name ?? '—' }}</td>
                         <td>{{ $certificate->institute->name ?? '—' }}</td>
-                        <td class="text-muted">{{ \Illuminate\Support\Carbon::parse($certificate->deleted_at)->format('d M Y H:i') }}</td>
+                        <td class="text-muted"><x-tdate :value="\Illuminate\Support\Carbon::parse($certificate->deleted_at)" fallback="d M Y H:i" :datetime="true" /></td>
                         <td class="text-end text-nowrap">
                             <button type="button" class="btn btn-sm btn-success single-cert-restore-btn" title="Restore" data-action="{{ route('admin.certificates.restore', $certificate) }}">
                                 <i class="bi bi-arrow-counterclockwise"></i>

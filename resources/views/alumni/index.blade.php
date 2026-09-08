@@ -86,7 +86,7 @@
                         </td>
                         <td>{{ $alumni->completedCourse?->name ?? '—' }}</td>
                         <td>{{ $alumni->completedBatch?->name ?? '—' }}</td>
-                        <td>{{ $alumni->graduation_date?->format('d M Y') ?? '—' }}</td>
+                        <td><x-tdate :value="$alumni->graduation_date" fallback="d M Y" empty="—" /></td>
                         <td>{{ $alumni->current_occupation ?: ($alumni->employer ? mawa_e('alumni.badge_employed') : '—') }}</td>
                         <td>
                             @if ($alumni->status === 'active')

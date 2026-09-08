@@ -35,7 +35,7 @@
                 <tr>
                     <td class="text-muted">{{ mawa_e('calendar.date') }}</td>
                     <td>
-                        {{ $event->start_date->format('l, j M Y') }}
+                        <x-tdate :value="$event->start_date" fallback="l, j M Y" />
                         @if(!$event->is_all_day && $event->start_time)
                             — {{ \Carbon\Carbon::parse($event->start_time)->format('g:i A') }}
                             @if($event->end_time)
@@ -72,12 +72,12 @@
                     <tr><td class="text-muted">{{ mawa_e('calendar.academic_year') }}</td><td>{{ $event->academicYear->name }}</td></tr>
                 @endif
                 @if ($event->parentEvent)
-                    <tr><td class="text-muted">{{ mawa_e('calendar.recurring_from') }}</td><td><a href="{{ route('calendar.events.show', $event->parentEvent) }}">{{ $event->parentEvent->title }}</a> ({{ $event->parentEvent->start_date->format('j M Y') }})</td></tr>
+                    <tr><td class="text-muted">{{ mawa_e('calendar.recurring_from') }}</td><td><a href="{{ route('calendar.events.show', $event->parentEvent) }}">{{ $event->parentEvent->title }}</a> (<x-tdate :value="$event->parentEvent->start_date" fallback="j M Y" />)</td></tr>
                 @endif
                 @if ($event->childEvents->count() > 0)
                     <tr><td class="text-muted">{{ mawa_e('calendar.recurring_occurrences') }}</td><td>{{ $event->childEvents->count() }} scheduled</td></tr>
                 @endif
-                <tr><td class="text-muted">{{ mawa_e('calendar.created') }}</td><td>{{ $event->created_at->format('j M Y g:i A') }}</td></tr>
+                <tr><td class="text-muted">{{ mawa_e('calendar.created') }}</td><td><x-tdate :value="$event->created_at" fallback="j M Y g:i A" :datetime="true" /></td></tr>
             </table>
         </div>
 
@@ -91,7 +91,7 @@
                     <tr><td class="text-muted">{{ mawa_e('calendar.days_label') }}</td><td>{{ implode(', ', array_map(fn($d) => ucfirst($d), $event->recurrence_rule['days_of_week'])) }}</td></tr>
                 @endif
                 @if (!empty($event->recurrence_rule['end_date']))
-                    <tr><td class="text-muted">{{ mawa_e('calendar.until') }}</td><td>{{ \Carbon\Carbon::parse($event->recurrence_rule['end_date'])->format('j M Y') }}</td></tr>
+                    <tr><td class="text-muted">{{ mawa_e('calendar.until') }}</td><td><x-tdate :value="\Carbon\Carbon::parse($event->recurrence_rule['end_date'])" fallback="j M Y" /></td></tr>
                 @endif
                 @if (!empty($event->recurrence_rule['max_occurrences']))
                     <tr><td class="text-muted">{{ mawa_e('calendar.max_occurrences') }}</td><td>{{ $event->recurrence_rule['max_occurrences'] }}</td></tr>

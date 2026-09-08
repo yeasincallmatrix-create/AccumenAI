@@ -94,7 +94,7 @@
                     </div>
                     <div class="small text-muted">
                         @if ($lifecycle['approvedDate'])
-                            Approved {{ $lifecycle['approvedDate']->format('M j, Y') }}
+                            Approved <x-tdate :value="$lifecycle['approvedDate']" fallback="M j, Y" />
                         @endif
                         @if ($lifecycle['item']?->placement?->academicYear?->name)
                             · from {{ $lifecycle['item']->placement->academicYear->name }}
@@ -123,7 +123,7 @@
                 @else
                     <div class="fw-semibold">{{ $lifecycle['outcome'] === 'active' ? 'Academic journey in progress' : 'Latest approved promotion outcome' }}</div>
                     @if ($lifecycle['approvedDate'])
-                        <div class="small text-muted">Approved {{ $lifecycle['approvedDate']->format('M j, Y') }}</div>
+                        <div class="small text-muted">Approved <x-tdate :value="$lifecycle['approvedDate']" fallback="M j, Y" /></div>
                     @else
                         <div class="small text-muted">No official outcome recorded yet.</div>
                     @endif
@@ -226,7 +226,7 @@
                                     <div class="text-muted small text-uppercase">Result</div>
                                     <div class="fw-semibold">{{ $result?->name ?? 'Published result' }}</div>
                                     <div class="small text-muted">
-                                        Published {{ $result?->published_at?->format('M j, Y') ?? '' }}
+                                        Published <x-tdate :value="$result?->published_at" fallback="M j, Y" empty="" />
                                         @if ($result?->scheme?->academicYear?->name)
                                             · {{ $result->scheme->academicYear->name }}
                                         @endif
@@ -409,7 +409,7 @@
                                 <small class="text-muted d-block">{{ $certificate->batch->batch_code }}</small>
                             @endif
                         </td>
-                        <td>{{ $certificate->issue_date?->format('d M Y') ?? '—' }}</td>
+                        <td><x-tdate :value="$certificate->issue_date" fallback="d M Y" empty="—" /></td>
                         <td>
                             <span class="badge {{ $certStatusBadge[$certificate->status] ?? 'text-bg-secondary' }}">{{ ucfirst($certificate->status) }}</span>
                         </td>

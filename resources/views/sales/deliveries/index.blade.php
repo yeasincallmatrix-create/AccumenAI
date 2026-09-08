@@ -30,11 +30,11 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label">From</label>
-                <input type="date" name="from" value="{{ request('from') }}" class="form-control form-control-sm">
+                <x-tdate-input name="from" :value="request('from')" class="form-control form-control-sm" />
             </div>
             <div class="col-md-2">
                 <label class="form-label">To</label>
-                <input type="date" name="to" value="{{ request('to') }}" class="form-control form-control-sm">
+                <x-tdate-input name="to" :value="request('to')" class="form-control form-control-sm" />
             </div>
             <div class="col-md-3">
                 <button class="btn btn-sm btn-primary rounded-pill" type="submit"><i class="bi bi-search me-1"></i>Filter</button>
@@ -63,7 +63,7 @@
                         <td class="fw-semibold">{{ $d->delivery_number }}</td>
                         <td>{{ $d->order?->order_number ?? '—' }}</td>
                         <td>{{ $d->customer?->name ?? '—' }}</td>
-                        <td>{{ $d->delivery_date->format('Y-m-d') }}</td>
+                        <td><x-tdate :value="$d->delivery_date" fallback="Y-m-d" /></td>
                         <td>
                             @php $colors = ['draft'=>'secondary','confirmed'=>'success','delivered'=>'primary','cancelled'=>'dark']; @endphp
                             <span class="badge bg-{{ $colors[$d->status] ?? 'secondary' }}">{{ ucfirst($d->status) }}</span>

@@ -3,10 +3,14 @@
 namespace App\Http\Controllers\Medical;
 
 use App\Http\Requests\Medical\AppointmentRequest;
+use App\Models\Country;
+use App\Models\Institute;
 use App\Models\Medical\Appointment;
 use App\Models\Medical\Patient;
 use App\Models\User;
+use App\Services\Medical\MrNumberGenerator;
 use App\Services\Medical\QueueManager;
+use App\Support\Workspace;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -24,10 +28,12 @@ class AppointmentController extends MedicalController implements HasMiddleware
     }
 
     protected QueueManager $queueManager;
+    protected MrNumberGenerator $mrGenerator;
 
-    public function __construct(QueueManager $queueManager)
+    public function __construct(QueueManager $queueManager, MrNumberGenerator $mrGenerator)
     {
         $this->queueManager = $queueManager;
+        $this->mrGenerator = $mrGenerator;
     }
 
     /**
@@ -60,7 +66,24 @@ class AppointmentController extends MedicalController implements HasMiddleware
         $appointments = $query->orderBy('appointment_time')->get();
         $doctors = $this->doctors($instituteId);
 
-        return view('medical.appointments.index', compact('appointments', 'doctors'));
+        // Data for the Book Appointment popup + its nested Add Patient popup.
+        $patients = Patient::where('institute_id', $instituteId)
+            ->active()
+            ->orderBy('first_name')
+            ->get();
+        $countries = Country::where('status', true)->orderBy('name')->get(['id', 'name', 'phone_code']);
+        $defaultCountryId = Institute::whereKey($instituteId)->value('country_id');
+        $previewMr = $this->mrGenerator->generate($instituteId);
+
+        $user = $request->user();
+        $canCreatePatient = $user instanceof \App\Models\InstituteUser
+            ? $user->hasPermission('medical_patients.create')
+            : (Workspace::membershipFor($user)?->hasPermission('medical_patients.create') ?? false);
+
+        return view('medical.appointments.index', compact(
+            'appointments', 'doctors', 'patients', 'countries',
+            'defaultCountryId', 'previewMr', 'canCreatePatient'
+        ));
     }
 
     /**

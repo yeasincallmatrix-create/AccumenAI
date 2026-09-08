@@ -36,8 +36,8 @@
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">{{ mawa_e('alumni.graduation_date') }}</label>
-                    <input type="date" name="graduation_date" class="form-control"
-                           value="{{ old('graduation_date', $alumni->graduation_date?->toDateString()) }}">
+                    <x-tdate-input name="graduation_date" class="form-control"
+                           value="{{ old('graduation_date', $alumni->graduation_date?->toDateString()) }}" />
                     @error('graduation_date')
                         <div class="invalid-feedback d-block">{{ $message }}</div>
                     @enderror

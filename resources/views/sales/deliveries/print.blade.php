@@ -22,7 +22,7 @@
         </div>
         <div class="col-6 text-end">
             <p><strong>Order:</strong> {{ $delivery->order?->order_number }}<br>
-            <strong>Date:</strong> {{ $delivery->delivery_date->format('Y-m-d') }}<br>
+            <strong>Date:</strong> <x-tdate :value="$delivery->delivery_date" fallback="Y-m-d" /><br>
             <strong>Status:</strong> {{ ucfirst($delivery->status) }}<br>
             <strong>Warehouse:</strong> {{ $delivery->warehouse?->name ?? '—' }}</p>
         </div>

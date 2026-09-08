@@ -25,7 +25,7 @@
             Batch: <strong>{{ $certificate->batch->name ?? '—' }} ({{ $certificate->batch->batch_code ?? '' }})</strong>
         </div>
         <div class="details">
-            Issue Date: <strong>{{ $certificate->issue_date ? \Carbon\Carbon::parse($certificate->issue_date)->format('d M Y') : now()->format('d M Y') }}</strong>
+            Issue Date: <strong><x-tdate :value="$certificate->issue_date ?: now()" fallback="d M Y" /></strong>
         </div>
         <div class="number">
             Certificate No: <strong>{{ $certificate->certificate_number ?? '—' }}</strong><br>

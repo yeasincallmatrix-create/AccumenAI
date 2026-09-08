@@ -148,8 +148,8 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label" for="subscription_expiry">Subscription expiry</label>
-                <input type="date" id="subscription_expiry" name="subscription_expiry" class="form-control"
-                       value="{{ old('subscription_expiry', $institute->subscription_expiry ? \Illuminate\Support\Carbon::parse($institute->subscription_expiry)->format('Y-m-d') : '') }}">
+                <x-tdate-input id="subscription_expiry" name="subscription_expiry" class="form-control"
+                     :value="old('subscription_expiry', $institute->subscription_expiry ? \Illuminate\Support\Carbon::parse($institute->subscription_expiry)->format('Y-m-d') : '')" />
             </div>
             <div class="col-md-4">
                 <label class="form-label" for="status">Status</label>

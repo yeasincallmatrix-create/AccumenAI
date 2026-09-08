@@ -49,8 +49,8 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label" for="aa_exam_date">Exam Date</label>
-                <input type="date" id="aa_exam_date" name="exam_date" class="form-control"
-                       value="{{ old('exam_date', $assessment?->exam_date?->format('Y-m-d')) }}">
+                <x-tdate-input id="aa_exam_date" name="exam_date" class="form-control"
+                               :value="old('exam_date', $assessment?->exam_date?->format('Y-m-d'))" />
                 @error('exam_date')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-3">

@@ -146,7 +146,7 @@
                                             <td>{{ $enrollment->institute->name ?? '—' }}</td>
                                             <td>{{ $enrollment->batch->name ?? '—' }}</td>
                                             <td>{{ $enrollment->roll_number ?? '—' }}</td>
-                                            <td>{{ $enrollment->enrollment_date ? \Illuminate\Support\Carbon::parse($enrollment->enrollment_date)->format('d M Y') : '—' }}</td>
+                                            <td><x-tdate :value="\Illuminate\Support\Carbon::parse($enrollment->enrollment_date)" fallback="d M Y" empty="—" /></td>
                                             <td><span class="badge text-bg-secondary">{{ $enrollment->status }}</span></td>
                                         </tr>
                                     @endforeach

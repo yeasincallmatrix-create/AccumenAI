@@ -135,7 +135,7 @@
             </div>
             @if(($aReport['valid'] ?? false) && $aReport['buckets']->isNotEmpty())
                 <canvas id="analyticsAttendanceChart" height="140" data-json='@json($aReport['buckets']->map(fn($b)=>['label'=>$b['label'],'percent'=>$b['present_percent'],'total'=>$b['total']])->values())'></canvas>
-                <div class="text-muted small mt-2">Window: {{ optional($aReport['start'])->format('d M Y') }} → {{ optional($aReport['end'])->format('d M Y') }} · by {{ $aReport['period'] }}</div>
+                <div class="text-muted small mt-2">Window: <x-tdate :value="$aReport['start']" fallback="d M Y" /> → <x-tdate :value="$aReport['end']" fallback="d M Y" /> · by {{ $aReport['period'] }}</div>
             @else
                 <div class="alert alert-light border mb-0 small"><i class="bi bi-info-circle me-1"></i> {{ $aReport['message'] ?? $attendance['message'] ?? 'No attendance window.' }} Set dates or academic year.</div>
             @endif

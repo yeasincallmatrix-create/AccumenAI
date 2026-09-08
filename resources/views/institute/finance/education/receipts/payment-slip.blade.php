@@ -52,7 +52,7 @@
             <div class="col-6">
                 <div class="small text-muted mb-1">Receipt Information</div>
                 <div><strong>Receipt No:</strong> {{ $payment->receipt_number ?? '—' }}</div>
-                <div><strong>Payment Date:</strong> {{ $payment->paid_at?->format('d M Y H:i') ?? '—' }}</div>
+                <div><strong>Payment Date:</strong> <x-tdate :value="$payment->paid_at" fallback="d M Y H:i" :datetime="true" empty="—" /></div>
                 <div><strong>Payment Method:</strong> {{ ucfirst($payment->payment_method) }}</div>
                 @if ($payment->transaction_id ?? null)
                     <div><strong>Transaction ID:</strong> {{ $payment->transaction_id }}</div>

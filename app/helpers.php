@@ -612,6 +612,372 @@ if (! function_exists('generateInstituteStudentId')) {
     }
 }
 
+if (! function_exists('mawa_tenant_country')) {
+    /**
+     * Current tenant (institute) country name, or null when unresolvable.
+     * Chain: TenantContext → Workspace → authenticated user institute.
+     */
+    function mawa_tenant_country(): ?string
+    {
+        try {
+            $instituteId = \App\Support\TenantContext::id();
+        } catch (\Throwable) {
+            $instituteId = null;
+        }
+        if (! $instituteId) {
+            try {
+                $instituteId = \App\Support\Workspace::id();
+            } catch (\Throwable) {
+                $instituteId = null;
+            }
+        }
+        if (! $instituteId) {
+            try {
+                $user = request()->user();
+                $instituteId = $user->institute_id ?? null;
+            } catch (\Throwable) {
+                $instituteId = null;
+            }
+        }
+        if (! $instituteId) {
+            return null;
+        }
+        try {
+            return \App\Models\Institute::whereKey($instituteId)
+                ->with('country')
+                ->first()?->country?->name;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+}
+
+if (! function_exists('mawa_date_format_key')) {
+    /**
+     * Per-institute date order from Settings → General → Date Format.
+     * Returns 'dmy' (DD/MM/YYYY), 'mdy' (MM/DD/YYYY) or 'ymd' (YYYY/MM/DD).
+     * Defaults to 'dmy' (legacy Bangladesh behaviour) when unresolvable.
+     */
+    function mawa_date_format_key(): string
+    {
+        try {
+            $instituteId = \App\Support\TenantContext::id();
+        } catch (\Throwable) {
+            $instituteId = null;
+        }
+        if (! $instituteId) {
+            try {
+                $instituteId = \App\Support\Workspace::id();
+            } catch (\Throwable) {
+                $instituteId = null;
+            }
+        }
+        if (! $instituteId) {
+            try {
+                $instituteId = request()->user()->institute_id ?? null;
+            } catch (\Throwable) {
+                $instituteId = null;
+            }
+        }
+
+        static $cache = [];
+        $cacheKey = $instituteId ?? 0;
+        if (array_key_exists($cacheKey, $cache)) {
+            return $cache[$cacheKey];
+        }
+
+        $key = 'dmy';
+        if ($instituteId) {
+            try {
+                if (\Illuminate\Support\Facades\Schema::hasColumn('institute_settings', 'date_format')) {
+                    $stored = \App\Models\InstituteSetting::query()
+                        ->where('institute_id', $instituteId)
+                        ->value('date_format');
+                    if (in_array($stored, ['dmy', 'mdy', 'ymd'], true)) {
+                        $key = $stored;
+                    }
+                }
+            } catch (\Throwable) {
+                $key = 'dmy';
+            }
+        }
+
+        $cache[$cacheKey] = $key;
+
+        return $key;
+    }
+}
+
+if (! function_exists('mawa_date_placeholder')) {
+    /**
+     * Human placeholder matching the institute date order.
+     */
+    function mawa_date_placeholder(): string
+    {
+        return match (mawa_date_format_key()) {
+            'mdy' => 'MM/DD/YYYY',
+            'ymd' => 'YYYY/MM/DD',
+            default => 'DD/MM/YYYY',
+        };
+    }
+}
+
+if (! function_exists('mawa_is_bangladesh')) {
+    /**
+     * Whether the current tenant is Bangladeshi (date/number localization switch).
+     */
+    function mawa_is_bangladesh(?string $country = null): bool
+    {
+        return ($country ?? mawa_tenant_country()) === 'Bangladesh';
+    }
+}
+
+if (! function_exists('mawa_date_format')) {
+    /**
+     * Tenant-aware PHP date format driven by Settings → General → Date Format.
+     * dmy → d/m/Y (DD/MM/YYYY), mdy → m/d/Y (MM/DD/YYYY), ymd → Y/m/d (YYYY/MM/DD).
+     * $fallback is used only when the setting column is unavailable (legacy path:
+     * Bangladesh → d/m/Y, others → $fallback).
+     */
+    function mawa_date_format(?string $country = null, string $fallback = 'Y-m-d'): string
+    {
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasColumn('institute_settings', 'date_format')) {
+                return match (mawa_date_format_key()) {
+                    'mdy' => 'm/d/Y',
+                    'ymd' => 'Y/m/d',
+                    default => 'd/m/Y',
+                };
+            }
+        } catch (\Throwable) {
+            // fall through to legacy country logic
+        }
+
+        return mawa_is_bangladesh($country) ? 'd/m/Y' : $fallback;
+    }
+}
+
+if (! function_exists('mawa_datetime_format')) {
+    /**
+     * Tenant-aware PHP datetime format (date part follows Date Format setting).
+     */
+    function mawa_datetime_format(?string $country = null, string $fallback = 'Y-m-d H:i'): string
+    {
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasColumn('institute_settings', 'date_format')) {
+                return match (mawa_date_format_key()) {
+                    'mdy' => 'm/d/Y h:i A',
+                    'ymd' => 'Y/m/d H:i',
+                    default => 'd/m/Y h:i A',
+                };
+            }
+        } catch (\Throwable) {
+            // fall through to legacy country logic
+        }
+
+        return mawa_is_bangladesh($country) ? 'd/m/Y h:i A' : $fallback;
+    }
+}
+
+if (! function_exists('mawa_format_date')) {
+    /**
+     * Format any date-like value (Carbon / string / null) tenant-aware.
+     * Returns '' for empty/unparseable values instead of throwing.
+     */
+    function mawa_format_date(mixed $value, ?string $country = null, string $fallback = 'Y-m-d'): string
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+        try {
+            $date = $value instanceof \DateTimeInterface
+                ? $value
+                : \Carbon\Carbon::parse((string) $value);
+        } catch (\Throwable) {
+            return '';
+        }
+
+        return $date->format(mawa_date_format($country, $fallback));
+    }
+}
+
+if (! function_exists('mawa_format_datetime')) {
+    /**
+     * Datetime variant of mawa_format_date().
+     */
+    function mawa_format_datetime(mixed $value, ?string $country = null, string $fallback = 'Y-m-d H:i'): string
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+        try {
+            $date = $value instanceof \DateTimeInterface
+                ? $value
+                : \Carbon\Carbon::parse((string) $value);
+        } catch (\Throwable) {
+            return '';
+        }
+
+        return $date->format(mawa_datetime_format($country, $fallback));
+    }
+}
+
+if (! function_exists('mawa_parse_date')) {
+    /**
+     * Normalize user-entered dates to Y-m-d.
+     * Accepts (with / - . separators, per Settings → General → Date Format):
+     * - DD/MM/YYYY when order is dmy, MM/DD/YYYY when mdy, YYYY/MM/DD when ymd
+     * - ISO YYYY-MM-DD always
+     * - anything Carbon parses (e.g. "25 Dec 2026")
+     * Ambiguous values (01/02/2026) follow the institute order; when the
+     * configured order fails validation the other orders are tried before
+     * giving up (strict — reject overflow like 31/02).
+     * Returns null when the value cannot be understood.
+     */
+    function mawa_parse_date(mixed $value, ?string $order = null): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        $value = trim((string) $value);
+        if ($value === '') {
+            return null;
+        }
+
+        $build = function (int $y, int $m, int $d): ?string {
+            if ($y < 1000 || $y > 9999 || ! checkdate($m, $d, $y)) {
+                return null;
+            }
+
+            return sprintf('%04d-%02d-%02d', $y, $m, $d);
+        };
+
+        // Year-first: YYYY/MM/DD, YYYY-MM-DD, YYYY.MM.DD (always accepted).
+        if (preg_match('#^(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})$#', $value, $m)) {
+            return $build((int) $m[1], (int) $m[2], (int) $m[3]);
+        }
+
+        // Day/month-first with 4-digit year last.
+        if (preg_match('#^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$#', $value, $m)) {
+            $a = (int) $m[1];
+            $b = (int) $m[2];
+            $y = (int) $m[3];
+
+            try {
+                $key = $order ?? mawa_date_format_key();
+            } catch (\Throwable) {
+                $key = 'dmy';
+            }
+
+            $orders = [$key];
+            foreach (['dmy', 'mdy', 'ymd'] as $candidate) {
+                if (! in_array($candidate, $orders, true)) {
+                    $orders[] = $candidate;
+                }
+            }
+
+            foreach ($orders as $try) {
+                [$d, $mon] = $try === 'mdy' ? [$b, $a] : [$a, $b];
+                // ymd never applies here (no leading year); keep dmy mapping.
+                $parsed = $build($y, $mon, $d);
+                if ($parsed !== null) {
+                    return $parsed;
+                }
+            }
+
+            return null;
+        }
+        try {
+            return \Carbon\Carbon::parse($value)->format('Y-m-d');
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+}
+
+if (! function_exists('mawa_age_category')) {
+    /**
+     * Age-group label for a patient.
+     *
+     * Bands (lower-inclusive, overlapping ranges resolve to the more
+     * specific band, e.g. 10–12 → Pre-Teen, not Child/Kid):
+     * Infant 0–<1, Toddler 1–<3, Preschool / Early Childhood 3–<6,
+     * Child / Kid 6–<10, Pre-Teen 10–<13, Teen / Adolescent 13–<18,
+     * Young Adult 18–<25, Adult 25–<60, Older Adult / Senior 60–<75,
+     * Elderly / Senior 75+.
+     *
+     * Accepts a date of birth (Carbon / DateTime / Y-m-d string), a numeric
+     * age with $unit (days|months|years), or null (returns null).
+     */
+    function mawa_age_category(mixed $dobOrAge, ?string $unit = null): ?string
+    {
+        $years = null;
+
+        if ($dobOrAge instanceof \DateTimeInterface) {
+            $years = $dobOrAge->diff(new \DateTimeImmutable('today'))->days / 365.25;
+        } elseif (is_string($dobOrAge) && trim($dobOrAge) !== '') {
+            try {
+                $dob = \Carbon\Carbon::parse($dobOrAge)->startOfDay();
+                $years = $dob->diffInDays(\Carbon\Carbon::today()) / 365.25;
+            } catch (\Throwable) {
+                return null;
+            }
+        } elseif (is_numeric($dobOrAge)) {
+            $age = (float) $dobOrAge;
+            if ($age < 0) {
+                return null;
+            }
+            $years = match ($unit) {
+                'days' => $age / 365.25,
+                'months' => $age / 12,
+                default => $age,
+            };
+        }
+
+        if ($years === null) {
+            return null;
+        }
+
+        return match (true) {
+            $years < 1 => 'Infant',
+            $years < 3 => 'Toddler',
+            $years < 6 => 'Preschool / Early Childhood',
+            $years < 10 => 'Child / Kid',
+            $years < 13 => 'Pre-Teen',
+            $years < 18 => 'Teen / Adolescent',
+            $years < 25 => 'Young Adult',
+            $years < 60 => 'Adult',
+            $years < 75 => 'Older Adult / Senior',
+            default => 'Elderly / Senior',
+        };
+    }
+}
+
+if (! function_exists('mawa_age_category_bounds')) {
+    /**
+     * Age-group bands used by mawa_age_category(), as [minYears, maxYears).
+     * maxYears null means open-ended (75+). Consumed by list-page filters
+     * to convert a category into a date_of_birth range.
+     *
+     * @return array<string, array{int, int|null}>
+     */
+    function mawa_age_category_bounds(): array
+    {
+        return [
+            'Infant' => [0, 1],
+            'Toddler' => [1, 3],
+            'Preschool / Early Childhood' => [3, 6],
+            'Child / Kid' => [6, 10],
+            'Pre-Teen' => [10, 13],
+            'Teen / Adolescent' => [13, 18],
+            'Young Adult' => [18, 25],
+            'Adult' => [25, 60],
+            'Older Adult / Senior' => [60, 75],
+            'Elderly / Senior' => [75, null],
+        ];
+    }
+}
+
 if (! function_exists('generateStudentRegNo')) {
     /**
      * Generate a 10-digit student registration number.

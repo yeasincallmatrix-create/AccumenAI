@@ -157,15 +157,15 @@
             </div>
             <div class="mb-2">
                 <div class="small text-muted">Depreciation Start</div>
-                <div>{{ $asset->depreciation_start_date?->format('Y-m-d') ?? '—' }}</div>
+                <div><x-tdate :value="$asset->depreciation_start_date" fallback="Y-m-d" empty="—" /></div>
             </div>
             <div class="mb-2">
                 <div class="small text-muted">Capitalization Date</div>
-                <div>{{ $asset->capitalization_date?->format('Y-m-d') ?? '—' }}</div>
+                <div><x-tdate :value="$asset->capitalization_date" fallback="Y-m-d" empty="—" /></div>
             </div>
             <div class="mb-2">
                 <div class="small text-muted">Purchase Date</div>
-                <div>{{ $asset->purchase_date?->format('Y-m-d') ?? '—' }}</div>
+                <div><x-tdate :value="$asset->purchase_date" fallback="Y-m-d" empty="—" /></div>
             </div>
         </div>
 
@@ -177,7 +177,7 @@
             </div>
             <div class="mb-2">
                 <div class="small text-muted">Period</div>
-                <div>{{ $asset->warranty_start?->format('Y-m-d') ?? '—' }} to {{ $asset->warranty_end?->format('Y-m-d') ?? '—' }}</div>
+                <div><x-tdate :value="$asset->warranty_start" fallback="Y-m-d" empty="—" /> to <x-tdate :value="$asset->warranty_end" fallback="Y-m-d" empty="—" /></div>
             </div>
             <div class="mb-2">
                 <div class="small text-muted">Reference</div>

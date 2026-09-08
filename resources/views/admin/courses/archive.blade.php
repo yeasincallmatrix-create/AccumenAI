@@ -135,9 +135,9 @@
                         <td data-col="course" @if(!in_array('course', $visibleColumns, true)) style="display:none" @endif>{{ $batch->course->name ?? '—' }}</td>
                         <td data-col="shift" @if(!in_array('shift', $visibleColumns, true)) style="display:none" @endif>{{ ucwords($batch->shift) }}</td>
                         <td data-col="schedule" @if(!in_array('schedule', $visibleColumns, true)) style="display:none" @endif>
-                            {{ $batch->start_date ? \Illuminate\Support\Carbon::parse($batch->start_date)->format('d M Y') : '—' }}
+                            <x-tdate :value="\Illuminate\Support\Carbon::parse($batch->start_date)" fallback="d M Y" empty="—" />
                             @if ($batch->end_date)
-                                – {{ \Illuminate\Support\Carbon::parse($batch->end_date)->format('d M Y') }}
+                                – <x-tdate :value="\Illuminate\Support\Carbon::parse($batch->end_date)" fallback="d M Y" />
                             @endif
                         </td>
                         <td data-col="capacity" @if(!in_array('capacity', $visibleColumns, true)) style="display:none" @endif>{{ $batch->seat_filled }} / {{ $batch->seat_capacity }}</td>
@@ -183,9 +183,9 @@
                     <td data-col="course">{{ $batch->course->name ?? '—' }}</td>
                     <td data-col="shift">{{ ucwords($batch->shift) }}</td>
                     <td data-col="schedule">
-                        {{ $batch->start_date ? \Illuminate\Support\Carbon::parse($batch->start_date)->format('d M Y') : '—' }}
+                        <x-tdate :value="\Illuminate\Support\Carbon::parse($batch->start_date)" fallback="d M Y" empty="—" />
                         @if ($batch->end_date)
-                            – {{ \Illuminate\Support\Carbon::parse($batch->end_date)->format('d M Y') }}
+                            – <x-tdate :value="\Illuminate\Support\Carbon::parse($batch->end_date)" fallback="d M Y" />
                         @endif
                     </td>
                     <td data-col="capacity">{{ $batch->seat_filled }} / {{ $batch->seat_capacity }}</td>

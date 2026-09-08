@@ -116,7 +116,7 @@
                             <td class="text-muted">{{ $student->student_id }}</td>
                             <td>{{ $student->phone ?? '—' }}</td>
                             <td>{{ $student->branch?->name ?? '—' }}</td>
-                            <td>{{ $student->admission_date?->format('d M Y') ?? '—' }}</td>
+                            <td><x-tdate :value="$student->admission_date" fallback="d M Y" empty="—" /></td>
                             <td><span class="badge {{ ['active'=>'text-bg-success','completed'=>'text-bg-primary','dropped'=>'text-bg-secondary','suspended'=>'text-bg-danger'][$student->status] ?? 'text-bg-secondary' }}">{{ ucfirst($student->status) }}</span></td>
                         </tr>
                     @empty
@@ -229,7 +229,7 @@
                         <tr>
                             <td class="fw-semibold">{{ $student->full_name }}</td>
                             <td class="text-muted">{{ $student->student_id }}</td>
-                            <td>{{ $student->admission_date->format('d M Y') }}</td>
+                            <td><x-tdate :value="$student->admission_date" fallback="d M Y" /></td>
                             <td>
                                 @php
                                     $badge = [
@@ -435,7 +435,7 @@
                             <td class="fw-semibold">{{ $courseRequest->institute->name ?? '—' }}</td>
                             <td>{{ $courseRequest->course->name ?? '—' }}</td>
                             <td class="text-muted">{{ $courseRequest->requestedBy->name ?? '—' }}</td>
-                            <td class="text-muted">{{ $courseRequest->created_at->format('d M Y') }}</td>
+                            <td class="text-muted"><x-tdate :value="$courseRequest->created_at" fallback="d M Y" /></td>
                             <td class="text-end">
                                 <a class="btn btn-sm btn-outline-primary" href="{{ route('admin.courses.requests', ['status' => 'pending']) }}">{{ mawa_e('dashboard.view_all') }}</a>
                             </td>

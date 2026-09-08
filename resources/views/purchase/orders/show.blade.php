@@ -49,16 +49,16 @@
                 <p class="mb-1"><strong>Branch:</strong> <span class="text-muted">{{ $order->branch?->name ?? 'Institute-wide' }}</span></p>
             </div>
             <div class="col-md-6 text-md-end">
-                <p class="mb-1"><strong>Order Date:</strong> {{ $order->order_date?->format('Y-m-d') }}</p>
-                <p class="mb-1"><strong>Expected Delivery:</strong> {{ $order->expected_delivery_date?->format('Y-m-d') ?? '—' }}</p>
+                <p class="mb-1"><strong>Order Date:</strong> <x-tdate :value="$order->order_date" fallback="Y-m-d" /></p>
+                <p class="mb-1"><strong>Expected Delivery:</strong> <x-tdate :value="$order->expected_delivery_date" fallback="Y-m-d" empty="—" /></p>
                 <p class="mb-1"><strong>Currency:</strong> {{ $order->currency?->code ?? '—' }}</p>
                 <p class="mb-1"><strong>Reference:</strong> {{ $order->reference_number ?? '—' }}</p>
                 <p class="mb-1"><strong>Warehouse:</strong> {{ $order->warehouse?->name ?? '—' }}</p>
                 @if ($order->submitted_at)
-                    <p class="mb-1 small text-muted">Submitted: {{ $order->submitted_at->format('Y-m-d H:i') }}</p>
+                    <p class="mb-1 small text-muted">Submitted: <x-tdate :value="$order->submitted_at" fallback="Y-m-d H:i" :datetime="true" /></p>
                 @endif
                 @if ($order->approved_at)
-                    <p class="mb-1 small text-muted">Approved: {{ $order->approved_at->format('Y-m-d H:i') }}</p>
+                    <p class="mb-1 small text-muted">Approved: <x-tdate :value="$order->approved_at" fallback="Y-m-d H:i" :datetime="true" /></p>
                 @endif
             </div>
         </div>
@@ -183,8 +183,8 @@
                     <tbody>
                         @foreach($receipts as $gr)
                             <tr>
-                                <td><a href="{{ route('purchase.receipts.show',$gr) }}" class="fw-semibold">{{ $gr->receipt_number }}</a><br><small class="text-muted">{{ $gr->created_at?->format('Y-m-d H:i') }}</small></td>
-                                <td>{{ $gr->receipt_date?->format('Y-m-d') }}</td>
+                                <td><a href="{{ route('purchase.receipts.show',$gr) }}" class="fw-semibold">{{ $gr->receipt_number }}</a><br><small class="text-muted"><x-tdate :value="$gr->created_at" fallback="Y-m-d H:i" :datetime="true" /></small></td>
+                                <td><x-tdate :value="$gr->receipt_date" fallback="Y-m-d" /></td>
                                 <td>{{ $gr->warehouse?->name ?? '—' }}</td>
                                 <td><span class="badge bg-{{ ['draft'=>'secondary','confirmed'=>'success','cancelled'=>'dark'][$gr->status] ?? 'secondary' }}">{{ ucfirst($gr->status) }}</span></td>
                                 <td class="text-end">

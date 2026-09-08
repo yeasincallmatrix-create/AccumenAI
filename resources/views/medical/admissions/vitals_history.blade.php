@@ -39,7 +39,7 @@
                     <tbody>
                         @foreach($vitals as $vital)
                         <tr>
-                            <td>{{ $vital->recorded_at?->format('d M Y h:i A') }}</td>
+                            <td><x-tdate :value="$vital->recorded_at" fallback="d M Y h:i A" :datetime="true" /></td>
                             <td>{{ $vital->temperature ?? '—' }}</td>
                             <td>{{ $vital->blood_pressure ?? '—' }}</td>
                             <td>{{ $vital->pulse ?? '—' }}</td>

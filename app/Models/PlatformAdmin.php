@@ -11,6 +11,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 
 class PlatformAdmin extends Authenticatable implements MustVerifyEmailContract
 {
+    use Concerns\NormalizesPersonNames;
     use HasUserPreferences;
     use MustVerifyEmail;
     use Notifiable;

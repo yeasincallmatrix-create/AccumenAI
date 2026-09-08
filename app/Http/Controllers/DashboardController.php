@@ -42,6 +42,14 @@ class DashboardController extends Controller
     {
         $user = Auth::guard('institute_user')->user();
         $institute = $user instanceof InstituteUser ? Institute::find($user->institute_id) : null;
+
+        if ($institute && $institute->industry === 'healthcare') {
+            if (($institute->sub_industry ?? '') === 'diagnostic_center') {
+                return redirect()->route('medical.lab.orders.index');
+            }
+            return redirect()->route('medical.dashboard');
+        }
+
         $isEducation = \App\Support\InstituteDomain::isAcademic($institute);
 
         if (! $isEducation) {
@@ -174,6 +182,14 @@ class DashboardController extends Controller
         abort_if($membership === null, 403, 'No active organization selected.');
 
         $institute = $membership->institution;
+
+        if ($institute && $institute->industry === 'healthcare') {
+            if (($institute->sub_industry ?? '') === 'diagnostic_center') {
+                return redirect()->route('medical.lab.orders.index');
+            }
+            return redirect()->route('medical.dashboard');
+        }
+
         $isEducation = \App\Support\InstituteDomain::isAcademic($institute);
         if (! $isEducation) {
             return $this->cleanStudentDashboard($institute, true);

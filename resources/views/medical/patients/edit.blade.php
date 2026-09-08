@@ -33,26 +33,45 @@
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label class="form-label" for="last_name">Last Name <span class="text-danger">*</span></label>
+                        <label class="form-label" for="last_name">Last Name</label>
                         <input type="text" id="last_name" name="last_name"
                                class="form-control @error('last_name') is-invalid @enderror"
-                               value="{{ old('last_name', $patient->last_name) }}" required maxlength="50">
+                               value="{{ old('last_name', $patient->last_name) }}" maxlength="50">
                         @error('last_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="mb-3">
-                        <label class="form-label" for="date_of_birth">Date of Birth <span class="text-danger">*</span></label>
-                        <input type="date" id="date_of_birth" name="date_of_birth"
-                               class="form-control @error('date_of_birth') is-invalid @enderror"
-                               value="{{ old('date_of_birth', $patient->date_of_birth?->format('Y-m-d')) }}" required>
+                        <label class="form-label" for="date_of_birth">Date of Birth</label>
+                        <x-tdate-input name="date_of_birth" :value="old('date_of_birth', $patient->date_of_birth?->format('Y-m-d'))" id="date_of_birth" :class="'form-control'.($errors->has('date_of_birth') ? ' is-invalid' : '')" />
                         @error('date_of_birth')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label" for="age">Age <span class="text-danger">*</span></label>
+                        <div class="row g-1">
+                            <div class="col-6">
+                                <input type="number" id="age" name="age" min="0" max="150"
+                                       class="form-control @error('age') is-invalid @enderror"
+                                       value="{{ old('age', $patient->age) }}" required>
+                            </div>
+                            <div class="col-6">
+                                <select id="age_unit" name="age_unit" class="form-select @error('age_unit') is-invalid @enderror">
+                                    <option value="days" @selected(old('age_unit') === 'days')>Days</option>
+                                    <option value="months" @selected(old('age_unit') === 'months')>Months</option>
+                                    <option value="years" @selected(old('age_unit', 'years') === 'years')>Years</option>
+                                </select>
+                            </div>
+                        </div>
+                        @error('age')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                        @error('age_unit')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="mb-3">
-                        <label class="form-label" for="gender">Gender <span class="text-danger">*</span></label>
-                        <select id="gender" name="gender" class="form-select @error('gender') is-invalid @enderror" required>
+                        <label class="form-label" for="gender">Gender</label>
+                        <select id="gender" name="gender" class="form-select @error('gender') is-invalid @enderror">
                             <option value="">Select Gender</option>
                             <option value="male" @selected(old('gender', $patient->gender) === 'male')>Male</option>
                             <option value="female" @selected(old('gender', $patient->gender) === 'female')>Female</option>
@@ -66,8 +85,8 @@
                         <label class="form-label" for="blood_group">Blood Group</label>
                         <select id="blood_group" name="blood_group" class="form-select @error('blood_group') is-invalid @enderror">
                             <option value="">Select Blood Group</option>
-                            @foreach(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as $bg)
-                                <option value="{{ $bg }}" @selected(old('blood_group', $patient->blood_group) === $bg)>{{ $bg }}</option>
+                            @foreach(['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'UKN'] as $bg)
+                                <option value="{{ $bg }}" @selected(old('blood_group', $patient->blood_group) === $bg)>{{ $bg === 'UKN' ? 'UKN (Unknown)' : $bg }}</option>
                             @endforeach
                         </select>
                         @error('blood_group')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -75,10 +94,10 @@
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label class="form-label" for="phone">Phone Number <span class="text-danger">*</span></label>
+                        <label class="form-label" for="phone">Phone Number</label>
                         <input type="text" id="phone" name="phone"
                                class="form-control @error('phone') is-invalid @enderror"
-                               value="{{ old('phone', $patient->phone) }}" required maxlength="20">
+                               value="{{ old('phone', $patient->phone) }}" maxlength="20">
                         @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
@@ -175,3 +194,54 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    var dob = document.getElementById('date_of_birth');
+    var age = document.getElementById('age');
+    var ageUnit = document.getElementById('age_unit');
+    var UNIT_MAX = { days: 36500, months: 1800, years: 150 };
+    function unit() { return ageUnit ? ageUnit.value : 'years'; }
+    function ageFromDob() {
+        if (!dob.value) return;
+        var b = new Date(dob.value + 'T00:00:00');
+        var now = new Date();
+        if (isNaN(b) || b > now) return;
+        var u = unit(), v;
+        if (u === 'days') v = Math.floor((now - b) / 86400000);
+        else if (u === 'months') {
+            v = (now.getFullYear() - b.getFullYear()) * 12 + (now.getMonth() - b.getMonth());
+            if (now.getDate() < b.getDate()) v--;
+        } else {
+            v = now.getFullYear() - b.getFullYear();
+            var m = now.getMonth() - b.getMonth();
+            if (m < 0 || (m === 0 && now.getDate() < b.getDate())) v--;
+        }
+        if (v >= 0 && v <= UNIT_MAX[u]) age.value = v;
+    }
+    if (!dob || !age) return;
+    dob.addEventListener('change', ageFromDob);
+    dob.addEventListener('input', function () {
+        if (!dob.value) age.value = '';
+        else ageFromDob();
+    });
+    // Use change (not input) so typing "30" doesn't lock DOB to the intermediate "3".
+    age.addEventListener('change', function () {
+        var a = parseInt(age.value, 10);
+        if (isNaN(a) || a < 0) return;
+        var u = unit();
+        if (a > UNIT_MAX[u]) return;
+        var d = new Date();
+        if (u === 'days') d.setDate(d.getDate() - a);
+        else if (u === 'months') d.setMonth(d.getMonth() - a);
+        else d.setFullYear(d.getFullYear() - a);
+        if (!dob.value) { dob.value = d.toISOString().slice(0, 10); if (window.tdateSync) window.tdateSync('date_of_birth'); }
+    });
+    if (ageUnit) ageUnit.addEventListener('change', function () {
+        age.max = UNIT_MAX[unit()];
+        ageFromDob();
+    });
+})();
+</script>
+@endpush

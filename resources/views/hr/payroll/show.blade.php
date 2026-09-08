@@ -2,7 +2,7 @@
 @section('title','Payroll Period — HR')
 @section('content')
 <div class="standalone-heading">
-    <h4>{{ $period->name }} <small class="text-muted">{{ $period->start_date->format('Y-m-d') }} → {{ $period->end_date->format('Y-m-d') }}</small></h4>
+    <h4>{{ $period->name }} <small class="text-muted"><x-tdate :value="$period->start_date" fallback="Y-m-d" /> → <x-tdate :value="$period->end_date" fallback="Y-m-d" /></small></h4>
     <span class="badge text-bg-{{ $period->status==='paid'?'success':($period->status==='approved'?'primary':'secondary') }}">{{ ucfirst($period->status) }}</span>
     <a href="{{ route('hr.payroll.periods.index') }}" class="btn btn-outline-secondary btn-sm">Back</a>
 </div>

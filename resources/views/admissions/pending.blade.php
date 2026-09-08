@@ -44,7 +44,7 @@
                         <td>
                             <small class="text-muted">{{ $student->creator?->name ?? '—' }}</small>
                         </td>
-                        <td><small class="text-muted">{{ $student->application_date?->format('d M Y') ?? '—' }}</small></td>
+                        <td><small class="text-muted"><x-tdate :value="$student->application_date" fallback="d M Y" empty="—" /></small></td>
                         <td class="text-end">
                             <a href="{{ route('admissions.review', $student) }}" class="btn btn-sm btn-primary">
                                 <i class="bi bi-eye me-1"></i>Review

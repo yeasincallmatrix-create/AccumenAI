@@ -121,7 +121,7 @@
                         <td>
                             <span class="badge {{ $task->status === 'completed' ? 'text-bg-success' : ($task->status === 'cancelled' ? 'text-bg-danger' : 'text-bg-primary') }}">{{ str_replace('_', ' ', ucfirst($task->status)) }}</span>
                         </td>
-                        <td class="{{ $task->due_at && $task->due_at->isPast() && $task->status !== 'completed' ? 'text-danger' : '' }}">{{ $task->due_at?->format('Y-m-d H:i') ?? '—' }}</td>
+                        <td class="{{ $task->due_at && $task->due_at->isPast() && $task->status !== 'completed' ? 'text-danger' : '' }}"><x-tdate :value="$task->due_at" fallback="Y-m-d H:i" :datetime="true" empty="—" /></td>
                         <td>{{ $task->assignedUser?->name ?? '—' }}</td>
                         <td class="text-end">
                             <form method="POST" action="{{ route('crm.tasks.toggle', $task) }}" class="d-inline">

@@ -17,6 +17,7 @@ use Laravel\Sanctum\HasApiTokens;
 class InstituteUser extends Authenticatable implements MustVerifyEmailContract
 {
     use Concerns\BranchScoped;
+    use Concerns\NormalizesPersonNames;
     use Concerns\TenantScoped;
     use HasApiTokens;
     use HasUserPreferences;

@@ -30,6 +30,7 @@ class HrEmployee extends Model
 {
     use BranchScoped;
     use Concerns\DeletesFiles;
+    use Concerns\NormalizesPersonNames;
     use SoftDeletes;
     use TenantScoped;
 

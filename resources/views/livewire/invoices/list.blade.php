@@ -32,11 +32,11 @@
             </div>
             <div class="filter-span">
                 <label class="form-label mb-1">From</label>
-                <input type="date" class="form-control form-control-sm" wire:model.live="filters.from">
+                <x-live-date model="filters.from" :value="$filters['from'] ?? ''" class="form-control form-control-sm" />
             </div>
             <div class="filter-span">
                 <label class="form-label mb-1">To</label>
-                <input type="date" class="form-control form-control-sm" wire:model.live="filters.to">
+                <x-live-date model="filters.to" :value="$filters['to'] ?? ''" class="form-control form-control-sm" />
             </div>
             <div class="filter-span">
                 <button class="btn btn-outline-secondary btn-sm mt-1" wire:click="resetFilters">Reset</button>
@@ -66,7 +66,7 @@
                         @if (in_array('serial', $visibleColumns, true))<td class="text-muted">{{ $invoices->firstItem() + $loop->index }}</td>@endif
                         @if (in_array('invoice', $visibleColumns, true))<td>
                             <a href="{{ route('finance.invoices.show', $invoice) }}" class="text-decoration-none">{{ $invoice->invoice_number }}</a>
-                            <div class="text-muted small">{{ $invoice->created_at?->format('Y-m-d') }}</div>
+                            <div class="text-muted small"><x-tdate :value="$invoice->created_at" fallback="Y-m-d" /></div>
                         </td>@endif
                         @if (in_array('customer', $visibleColumns, true))<td>{{ $invoice->party?->name ?? $invoice->student?->name ?? '—' }}</td>@endif
                         @if (in_array('payable', $visibleColumns, true))<td class="text-end">{{ number_format((float) $invoice->payable_amount, 2) }}</td>@endif

@@ -106,5 +106,6 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ asset('js/flash.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/flash.js')) }}"></script>
 <script src="{{ asset('js/password-toggle.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/password-toggle.js')) }}"></script>
+<script src="{{ asset('js/auto-caps.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/auto-caps.js')) }}"></script>
 </body>
 </html>

@@ -50,9 +50,9 @@
                 <dt class="col-5 text-muted">Gender</dt>
                 <dd class="col-7">{{ $teacher->gender ? ucfirst($teacher->gender) : '—' }}</dd>
                 <dt class="col-5 text-muted">Date of birth</dt>
-                <dd class="col-7">{{ $profile?->date_of_birth?->format('d M Y') ?? '—' }}</dd>
+                <dd class="col-7"><x-tdate :value="$profile?->date_of_birth" fallback="d M Y" empty="—" /></dd>
                 <dt class="col-5 text-muted">Joining date</dt>
-                <dd class="col-7">{{ $teacher->joining_date ? \Illuminate\Support\Carbon::parse($teacher->joining_date)->format('d M Y') : '—' }}</dd>
+                <dd class="col-7"><x-tdate :value="\Illuminate\Support\Carbon::parse($teacher->joining_date)" fallback="d M Y" empty="—" /></dd>
                 <dt class="col-5 text-muted">Department</dt>
                 <dd class="col-7">{{ $teacher->department ?? '—' }}</dd>
                 <dt class="col-5 text-muted">Qualification</dt>
@@ -211,7 +211,7 @@
                         </div>
                         <div class="col-md-3">
                             <label class="form-label mb-1">Assigned on</label>
-                            <input type="date" class="form-control form-control-sm" name="assigned_at" value="{{ old('assigned_at', now()->toDateString()) }}">
+                            <x-tdate-input class="form-control form-control-sm" name="assigned_at" value="{{ old('assigned_at', now()->toDateString()) }}" />
                         </div>
                         <div class="col-md-9">
                             <label class="form-label mb-1">Notes</label>
@@ -276,10 +276,10 @@
                                 <td>
                                     @if ($assignment->status === 'active')
                                         <span class="badge text-bg-success">Active</span>
-                                        <div class="text-muted small">since {{ $assignment->assigned_at?->format('d M Y') }}</div>
+                                        <div class="text-muted small">since <x-tdate :value="$assignment->assigned_at" fallback="d M Y" /></div>
                                     @else
                                         <span class="badge text-bg-secondary">Completed</span>
-                                        <div class="text-muted small">{{ $assignment->completed_at?->format('d M Y') }}</div>
+                                        <div class="text-muted small"><x-tdate :value="$assignment->completed_at" fallback="d M Y" /></div>
                                     @endif
                                 </td>
                                 <td class="text-end">

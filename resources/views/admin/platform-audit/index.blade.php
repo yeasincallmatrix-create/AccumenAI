@@ -51,11 +51,11 @@
             </div>
             <div class="filter-span" style="min-width:140px">
                 <label class="form-label mb-1">From</label>
-                <input type="date" name="from" class="form-control form-control-sm" value="{{ request('from') }}">
+                <x-tdate-input name="from" :value="request('from')" class="form-control form-control-sm" />
             </div>
             <div class="filter-span" style="min-width:140px">
                 <label class="form-label mb-1">To</label>
-                <input type="date" name="to" class="form-control form-control-sm" value="{{ request('to') }}">
+                <x-tdate-input name="to" :value="request('to')" class="form-control form-control-sm" />
             </div>
             <div class="filter-actions">
                 <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-search"></i> Filter</button>
@@ -86,7 +86,7 @@
             <tbody>
                 @forelse($logs as $log)
                 <tr>
-                    <td class="small text-muted text-nowrap">{{ $log->created_at?->format('Y-m-d H:i:s') }}</td>
+                    <td class="small text-muted text-nowrap"><x-tdate :value="$log->created_at" fallback="Y-m-d H:i:s" :datetime="true" /></td>
                     <td class="small">{{ $log->admin?->email ?? '—' }}</td>
                     <td><span class="badge bg-secondary">{{ $log->section }}</span></td>
                     <td class="small font-monospace">{{ $log->setting_key }}</td>

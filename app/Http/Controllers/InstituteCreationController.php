@@ -172,7 +172,7 @@ class InstituteCreationController extends Controller
             report($e);
         }
 
-        // Industry-aware staff role templates ΓÇö idempotent, never blocks creation
+        // Industry-aware staff role templates — idempotent, never blocks creation
         if (class_exists(\App\Services\RoleTemplateService::class)) {
             try {
                 app(\App\Services\RoleTemplateService::class)->seedForInstitute($institute);
@@ -194,6 +194,19 @@ class InstituteCreationController extends Controller
                 'error' => $e->getMessage(),
             ]);
             report($e);
+        }
+
+        // Auto-enable medical module for healthcare tenants
+        if ($institute->industry === 'healthcare') {
+            try {
+                app(\App\Services\MedicalModuleActivator::class)->activateForHealthcare($institute);
+            } catch (\Throwable $e) {
+                Log::warning('InstituteCreation: medical module activation failed', [
+                    'institute_id' => $institute->id,
+                    'error' => $e->getMessage(),
+                ]);
+                report($e);
+            }
         }
 
         return redirect()

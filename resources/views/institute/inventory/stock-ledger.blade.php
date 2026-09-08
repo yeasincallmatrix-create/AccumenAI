@@ -32,11 +32,11 @@
             </div>
             <div class="filter-span">
                 <label class="form-label mb-1">From</label>
-                <input type="date" class="form-control form-control-sm" name="from" value="{{ request('from') }}">
+                <x-tdate-input class="form-control form-control-sm" name="from" value="{{ request('from') }}" />
             </div>
             <div class="filter-span">
                 <label class="form-label mb-1">To</label>
-                <input type="date" class="form-control form-control-sm" name="to" value="{{ request('to') }}">
+                <x-tdate-input class="form-control form-control-sm" name="to" value="{{ request('to') }}" />
             </div>
             <div class="filter-span">
                 <button class="btn btn-outline-primary btn-sm mt-1" type="submit"><i class="bi bi-search"></i> Filter</button>
@@ -68,7 +68,7 @@
                     <tr>
                         <td class="text-muted">{{ $movements->firstItem() + $loop->index }}</td>
                         <td><span class="fw-semibold">{{ $m->movement_no }}</span></td>
-                        <td>{{ $m->occurred_at?->format('Y-m-d') }}</td>
+                        <td><x-tdate :value="$m->occurred_at" fallback="Y-m-d" /></td>
                         <td>{{ $m->item?->name ?? '—' }}</td>
                         <td>{{ $m->warehouse?->name ?? '—' }}</td>
                         <td><span class="badge text-bg-light border">{{ ucfirst(str_replace('_', ' ', $m->movement_type)) }}</span></td>

@@ -166,10 +166,10 @@
                         <td @if(!in_array('status', $visibleColumns, true)) style="display:none" @endif>
                             <span class="badge {{ $statusBadge[$item->status] ?? 'text-bg-secondary' }}">{{ $item->status }}</span>
                         </td>
-                        <td class="text-muted" @if(!in_array('requested_at', $visibleColumns, true)) style="display:none" @endif>{{ $item->created_at->format('d M Y') }}</td>
+                        <td class="text-muted" @if(!in_array('requested_at', $visibleColumns, true)) style="display:none" @endif><x-tdate :value="$item->created_at" fallback="d M Y" /></td>
                         <td class="text-muted" @if(!in_array('review_note', $visibleColumns, true)) style="display:none" @endif>{{ $item->review_note ?? '—' }}</td>
                         <td @if(!in_array('reviewed_by', $visibleColumns, true)) style="display:none" @endif>{{ $item->reviewedBy->name ?? '—' }}</td>
-                        <td class="text-muted" @if(!in_array('reviewed_at', $visibleColumns, true)) style="display:none" @endif>{{ $item->reviewed_at?->format('d M Y') ?? '—' }}</td>
+                        <td class="text-muted" @if(!in_array('reviewed_at', $visibleColumns, true)) style="display:none" @endif><x-tdate :value="$item->reviewed_at" fallback="d M Y" empty="—" /></td>
                         <td class="text-end text-nowrap col-action" @if(!in_array('action', $visibleColumns, true)) style="display:none" @endif>
                             @if ($item->status === 'pending')
                                 <form class="d-inline" method="POST" action="{{ route('admin.courses.subjects-requests.action', $item) }}"
@@ -228,7 +228,7 @@
                     <td>{{ $item->category->name ?? '—' }}</td>
                     <td>{{ $item->requestedBy->name ?? '—' }}</td>
                     <td>{{ ucfirst($item->status) }}</td>
-                    <td>{{ $item->created_at->format('d M Y') }}</td>
+                    <td><x-tdate :value="$item->created_at" fallback="d M Y" /></td>
                 </tr>
             @endforeach
         </tbody>

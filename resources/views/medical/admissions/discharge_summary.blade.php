@@ -35,8 +35,8 @@
             <td><strong>Phone:</strong> {{ $patient->phone ?? 'N/A' }}</td>
         </tr>
         <tr>
-            <td><strong>Admitted:</strong> {{ $admission->admission_date?->format('d M Y') }}</td>
-            <td><strong>Discharged:</strong> {{ $admission->discharge_date?->format('d M Y') }}</td>
+            <td><strong>Admitted:</strong> <x-tdate :value="$admission->admission_date" fallback="d M Y" /></td>
+            <td><strong>Discharged:</strong> <x-tdate :value="$admission->discharge_date" fallback="d M Y" /></td>
         </tr>
         <tr>
             <td><strong>Ward / Bed:</strong> {{ $admission->bed->ward->name ?? 'N/A' }} / {{ $admission->bed->bed_number ?? 'N/A' }}</td>
@@ -60,7 +60,7 @@
             <tbody>
                 @foreach($vitals->take(5) as $vital)
                     <tr>
-                        <td>{{ $vital->recorded_at?->format('d M Y H:i') }}</td>
+                        <td><x-tdate :value="$vital->recorded_at" fallback="d M Y H:i" :datetime="true" /></td>
                         <td>{{ $vital->temperature ?? '—' }}</td>
                         <td>{{ $vital->blood_pressure ?? '—' }}</td>
                         <td>{{ $vital->pulse ?? '—' }}</td>
@@ -74,7 +74,7 @@
     @if($notes->count() > 0)
         <h2>Nursing Notes (latest)</h2>
         @foreach($notes->take(5) as $note)
-            <p><strong>{{ $note->recorded_at?->format('d M Y H:i') }}:</strong> {{ $note->note }}</p>
+            <p><strong><x-tdate :value="$note->recorded_at" fallback="d M Y H:i" :datetime="true" />:</strong> {{ $note->note }}</p>
         @endforeach
     @endif
 

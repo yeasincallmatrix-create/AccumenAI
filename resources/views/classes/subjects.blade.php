@@ -44,7 +44,7 @@
 
     <div class="print-header d-none">
         <h4 class="mb-1">{{ $institute->name ?? '' }} — {{ mawa_e('classes.tab_subjects') }}</h4>
-        <p class="mb-0 text-muted">{{ $subjectsCount }} subjects · {{ now()->format('d M Y') }}</p>
+        <p class="mb-0 text-muted">{{ $subjectsCount }} subjects · <x-tdate :value="now()" fallback="d M Y" /></p>
     </div>
 
     <form class="d-flex flex-wrap gap-2 mb-3 align-items-end monetix-print-hidden" method="GET" action="{{ route('classes.subjects') }}" data-ajax-filter>

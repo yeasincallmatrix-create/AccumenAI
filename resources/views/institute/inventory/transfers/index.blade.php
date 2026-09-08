@@ -110,7 +110,7 @@
                         <td><a href="{{ route('inventory.transfers.show', $t) }}" class="fw-semibold">{{ $t->transfer_no }}</a></td>
                         <td>{{ $t->sourceWarehouse?->name ?? '—' }}</td>
                         <td>{{ $t->destinationWarehouse?->name ?? '—' }}</td>
-                        <td>{{ $t->created_at?->format('Y-m-d H:i') }}</td>
+                        <td><x-tdate :value="$t->created_at" fallback="Y-m-d H:i" :datetime="true" /></td>
                         <td><span class="badge text-bg-{{ $t->status === 'posted' ? 'success' : 'secondary' }}">{{ ucfirst($t->status) }}</span></td>
                         <td class="text-end">
                             <a href="{{ route('inventory.transfers.show', $t) }}" class="btn btn-sm btn-outline-primary rounded-pill">View</a>

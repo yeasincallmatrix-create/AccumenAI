@@ -41,9 +41,9 @@
                         N/A
                     @endif
                 </p>
-                <p><strong>Invoice Date:</strong> {{ $invoice->invoice_date?->format('d M Y') }}</p>
+                <p><strong>Invoice Date:</strong> <x-tdate :value="$invoice->invoice_date" fallback="d M Y" /></p>
                 <p><strong>Due Date:</strong>
-                    {{ $invoice->due_date?->format('d M Y') ?? '—' }}
+                    <x-tdate :value="$invoice->due_date" fallback="d M Y" />
                     @if($invoice->isOverdue())
                         <span class="badge bg-danger">Overdue</span>
                     @endif

@@ -58,7 +58,7 @@
         <div class="grid">
             <div class="field">
                 <label for="application_date">Application Date <span class="req">*</span></label>
-                <input id="application_date" type="date" name="application_date" value="{{ old('application_date', now()->format('Y-m-d')) }}" required>
+                <x-tdate-input id="application_date" name="application_date" value="{{ old('application_date', now()->format('Y-m-d')) }}" required />
                 @error('application_date') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
             </div>
             <div class="field">
@@ -142,7 +142,7 @@
             </div>
             <div class="field">
                 <label for="dob">Date of Birth</label>
-                <input id="dob" type="date" name="dob" value="{{ old('dob') }}">
+                <x-tdate-input id="dob" name="dob" value="{{ old('dob') }}" />
                 @error('dob') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
             </div>
             <div class="field">

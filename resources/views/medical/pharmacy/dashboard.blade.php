@@ -85,7 +85,7 @@
                             <strong>{{ $dispense->stock->medicine->display_name ?? 'N/A' }}</strong>
                             <span class="text-muted">× {{ $dispense->quantity_dispensed }}</span>
                             <span class="text-muted small">→ {{ $dispense->prescriptionItem->prescription->patient->full_name ?? 'N/A' }}</span>
-                            <span class="badge bg-secondary float-end">{{ $dispense->dispense_date?->format('d M') }}</span>
+                            <span class="badge bg-secondary float-end"><x-tdate :value="$dispense->dispense_date" fallback="d M" /></span>
                         </li>
                         @endforeach
                     </ul>

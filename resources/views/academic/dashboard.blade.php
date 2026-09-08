@@ -42,7 +42,7 @@
             <i class="bi bi-calendar-check me-1"></i>
             {{ mawa_e('academic_dashboard.current_year') }}:
             @if ($year)
-                {{ $year->name }} ({{ $year->start_date?->format('d M Y') }} – {{ $year->end_date?->format('d M Y') }})
+                {{ $year->name }} (<x-tdate :value="$year->start_date" fallback="d M Y" /> – <x-tdate :value="$year->end_date" fallback="d M Y" />)
             @else
                 {{ mawa_e('academic_dashboard.not_set') }}
             @endif

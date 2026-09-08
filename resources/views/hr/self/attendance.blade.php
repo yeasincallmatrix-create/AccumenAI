@@ -16,7 +16,7 @@
                 <table class="table table-sm mb-0">
                     <thead><tr><th>Date</th><th>Status</th><th>In</th><th>Out</th></tr></thead>
                     <tbody>
-                        @foreach($summary['records'] as $r)<tr><td>{{ $r->attendance_date->format('Y-m-d') }}</td><td><span class="badge text-bg-secondary">{{ $r->status }}</span></td><td>{{ $r->check_in ?? '—' }}</td><td>{{ $r->check_out ?? '—' }}</td></tr>@endforeach
+                        @foreach($summary['records'] as $r)<tr><td><x-tdate :value="$r->attendance_date" fallback="Y-m-d" /></td><td><span class="badge text-bg-secondary">{{ $r->status }}</span></td><td>{{ $r->check_in ?? '—' }}</td><td>{{ $r->check_out ?? '—' }}</td></tr>@endforeach
                     </tbody>
                 </table>
             </div>
@@ -27,7 +27,7 @@
             <h6>Request Correction</h6>
             <form method="POST" action="{{ route('hr.self.attendance.correction') }}">
                 @csrf
-                <div class="mb-2"><label class="form-label small">Date *</label><input type="date" name="correction_date" class="form-control form-control-sm" required></div>
+                <div class="mb-2"><label class="form-label small">Date *</label><x-tdate-input name="correction_date" class="form-control form-control-sm" required /></div>
                 <div class="mb-2"><label class="form-label small">Status *</label><select name="requested_status" class="form-select form-select-sm" required><option value="present">Present</option><option value="absent">Absent</option><option value="late">Late</option><option value="leave">Leave</option></select></div>
                 <div class="mb-2"><label class="form-label small">Reason *</label><textarea name="reason" class="form-control form-control-sm" rows="2" required></textarea></div>
                 <button type="submit" class="btn btn-primary btn-sm w-100">Submit</button>
@@ -35,7 +35,7 @@
         </div>
         <div class="admin-card p-3 mt-3">
             <h6>Correction Status</h6>
-            @foreach($corrections as $c)<div class="small border-bottom py-1">{{ $c->correction_date->format('Y-m-d') }} — {{ $c->requested_status }} <span class="badge text-bg-secondary">{{ $c->status }}</span></div>@endforeach
+            @foreach($corrections as $c)<div class="small border-bottom py-1"><x-tdate :value="$c->correction_date" fallback="Y-m-d" /> — {{ $c->requested_status }} <span class="badge text-bg-secondary">{{ $c->status }}</span></div>@endforeach
         </div>
     </div>
 </div>

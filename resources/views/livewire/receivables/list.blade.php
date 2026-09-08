@@ -8,7 +8,7 @@
             </div>
             <div class="filter-span">
                 <label class="form-label mb-1">As of</label>
-                <input type="date" class="form-control form-control-sm" wire:model.live="asOfDate">
+                <x-live-date model="asOfDate" :value="$asOfDate ?? ''" class="form-control form-control-sm" />
             </div>
             <div class="filter-span">
                 <button class="btn btn-outline-secondary btn-sm mt-1" wire:click="resetFilters"><i class="bi bi-arrow-counterclockwise"></i> Reset</button>

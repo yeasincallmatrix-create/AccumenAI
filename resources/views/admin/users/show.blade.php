@@ -20,7 +20,7 @@
                         <td>{{ $m->institution->name ?? '— (#'.$m->institution_id.')' }} @if($m->institution?->deleted_at)<span class="badge text-bg-secondary">trashed</span>@endif</td>
                         <td>{{ $m->role->name ?? $m->role_id }}</td>
                         <td><span class="badge text-bg-{{ $m->status==='active'?'success':'secondary' }}">{{ $m->status }}</span> @if($m->deleted_at)<span class="badge text-bg-warning">soft-deleted</span>@endif</td>
-                        <td class="text-muted small">{{ $m->created_at?->format('d M Y') ?? '—' }}</td>
+                        <td class="text-muted small"><x-tdate :value="$m->created_at" fallback="d M Y" empty="—" /></td>
                     </tr>
                     @empty<tr><td colspan="4" class="text-muted text-center py-3">No memberships — orphaned account (safe to keep or delete via explicit user deletion).</td></tr>@endforelse
                 </tbody>

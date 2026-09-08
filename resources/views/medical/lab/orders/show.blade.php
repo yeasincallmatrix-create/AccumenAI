@@ -53,13 +53,13 @@
                     @endif
                 </p>
                 <p><strong>Doctor:</strong> {{ $order->doctor->name ?? 'N/A' }}</p>
-                <p><strong>Order Date:</strong> {{ $order->order_date?->format('d M Y') }}</p>
+                <p><strong>Order Date:</strong> <x-tdate :value="$order->order_date" fallback="d M Y" /></p>
                 <p><strong>Collected:</strong>
-                    {{ $order->collected_at?->format('d M Y h:i A') ?? '—' }}
+                    <x-tdate :value="$order->collected_at" fallback="d M Y h:i A" :datetime="true" />
                     @if($order->collectedBy) by {{ $order->collectedBy->name }} @endif
                 </p>
                 <p class="mb-0"><strong>Completed:</strong>
-                    {{ $order->completed_at?->format('d M Y h:i A') ?? '—' }}
+                    <x-tdate :value="$order->completed_at" fallback="d M Y h:i A" :datetime="true" />
                     @if($order->completedBy) by {{ $order->completedBy->name }} @endif
                 </p>
                 @if($order->clinical_notes)

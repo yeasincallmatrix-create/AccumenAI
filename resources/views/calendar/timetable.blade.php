@@ -35,11 +35,11 @@
     <form class="row g-2 align-items-end mb-3" method="GET" action="{{ route('calendar.timetable') }}">
         <div class="col-md-2">
             <label class="form-label mb-1 small">{{ mawa_e('calendar.from_date') }}</label>
-            <input type="date" class="form-control form-control-sm" name="start_date" value="{{ $startDate }}">
+            <x-tdate-input class="form-control form-control-sm" name="start_date" value="{{ $startDate }}">
         </div>
         <div class="col-md-2">
             <label class="form-label mb-1 small">{{ mawa_e('calendar.to_date') }}</label>
-            <input type="date" class="form-control form-control-sm" name="end_date" value="{{ $endDate }}">
+            <x-tdate-input class="form-control form-control-sm" name="end_date" value="{{ $endDate }}">
         </div>
         <div class="col-md-2">
             <label class="form-label mb-1 small">{{ mawa_e('calendar.branch') }}</label>
@@ -115,7 +115,7 @@
                     <th class="time-col">{{ mawa_e('calendar.time') }}</th>
                     @foreach ($days as $day)
                         <th class="day-col" style="{{ $day->isToday() ? 'background:#e7f1ff;' : '' }}">
-                            {{ $day->format('D') }}<br><span class="fw-normal">{{ $day->format('j M') }}</span>
+                            {{ $day->format('D') }}<br><span class="fw-normal"><x-tdate :value="$day" fallback="j M" /></span>
                         </th>
                     @endforeach
                 </tr>

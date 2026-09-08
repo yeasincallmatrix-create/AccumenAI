@@ -20,7 +20,7 @@
         </h4>
         <p class="page-header-desc mb-0">
             {{ $curriculum->course?->name ?? '—' }} @if ($curriculum->course?->course_code)({{ $curriculum->course->course_code }})@endif
-            · Effective {{ $curriculum->effective_date?->format('d M Y') ?? 'not set' }}
+            · Effective <x-tdate :value="$curriculum->effective_date" fallback="d M Y" empty="not set" />
         </p>
     </div>
     <div class="page-header-actions d-flex gap-2">

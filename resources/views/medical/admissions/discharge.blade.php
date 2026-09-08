@@ -19,7 +19,7 @@
         <div class="card">
             <div class="card-header"><h6 class="mb-0">Stay Summary</h6></div>
             <div class="card-body">
-                <p><strong>Admitted:</strong> {{ $admission->admission_date?->format('d M Y') }}</p>
+                <p><strong>Admitted:</strong> <x-tdate :value="$admission->admission_date" fallback="d M Y" /></p>
                 <p><strong>Bed:</strong>
                     @if($admission->bed)
                         {{ $admission->bed->bed_number }} ({{ $admission->bed->ward->name ?? '' }})
@@ -42,9 +42,7 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label" for="discharge_date">Discharge Date <span class="text-danger">*</span></label>
-                                <input type="date" id="discharge_date" name="discharge_date"
-                                       class="form-control @error('discharge_date') is-invalid @enderror"
-                                       value="{{ old('discharge_date', date('Y-m-d')) }}" required>
+                                <x-tdate-input name="discharge_date" :value="old('discharge_date', date('Y-m-d'))" id="discharge_date" :class="'form-control'.($errors->has('discharge_date') ? ' is-invalid' : '')" required />
                                 @error('discharge_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         </div>

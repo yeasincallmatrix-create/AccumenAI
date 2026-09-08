@@ -221,7 +221,7 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label mb-1">Payment Date</label>
-                        <input type="date" class="form-control" name="paid_at" value="{{ now()->format('Y-m-d') }}">
+                        <x-tdate-input class="form-control" name="paid_at" value="{{ now()->format('Y-m-d') }}" />
                     </div>
                 </div>
 

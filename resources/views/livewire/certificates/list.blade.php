@@ -17,7 +17,7 @@
 
     <div class="print-header d-none">
         <h4 class="mb-1">{{ $institute->name ?? '' }} — Certificates</h4>
-        <p class="mb-0 text-muted">{{ $certificates->total() }} certificates issued · {{ now()->format('d M Y') }}</p>
+        <p class="mb-0 text-muted">{{ $certificates->total() }} certificates issued · <x-tdate :value="now()" fallback="d M Y" /></p>
     </div>
 
     <div class="filter-card mb-3">
@@ -114,7 +114,7 @@
                         </td>@endif
                         @if (in_array('course', $visibleColumns, true))<td>{{ $certificate->course->name ?? '—' }}</td>@endif
                         @if (in_array('batch', $visibleColumns, true))<td>{{ $certificate->batch->name ?? '—' }}</td>@endif
-                        @if (in_array('issue_date', $visibleColumns, true))<td>{{ $certificate->issue_date?->format('d M Y') ?? '—' }}</td>@endif
+                        @if (in_array('issue_date', $visibleColumns, true))<td><x-tdate :value="$certificate->issue_date" fallback="d M Y" empty="—" /></td>@endif
                         @if (in_array('status', $visibleColumns, true))<td>
                             <span class="badge {{ $statusBadge[$certificate->status] ?? 'text-bg-secondary' }}">{{ $statusNames[$certificate->status] ?? $certificate->status }}</span>
                         </td>@endif

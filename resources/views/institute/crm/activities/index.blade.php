@@ -78,7 +78,7 @@
                                 —
                             @endif
                         </td>
-                        <td class="small">{{ $activity->activity_at?->format('Y-m-d H:i') ?? '—' }}</td>
+                        <td class="small"><x-tdate :value="$activity->activity_at" fallback="Y-m-d H:i" :datetime="true" empty="—" /></td>
                         <td>{{ $activity->assignedUser?->name ?? '—' }}</td>
                         <td class="text-end">
                             <form method="POST" action="{{ route('crm.activities.destroy', $activity) }}" class="d-inline" data-ajax-delete="1" data-confirm="Remove this activity?">

@@ -33,11 +33,11 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label">From</label>
-                <input type="date" name="from" value="{{ request('from') }}" class="form-control form-control-sm">
+                <x-tdate-input name="from" :value="request('from')" class="form-control form-control-sm" />
             </div>
             <div class="col-md-2">
                 <label class="form-label">To</label>
-                <input type="date" name="to" value="{{ request('to') }}" class="form-control form-control-sm">
+                <x-tdate-input name="to" :value="request('to')" class="form-control form-control-sm" />
             </div>
             <div class="col-md-3">
                 <button class="btn btn-sm btn-primary rounded-pill" type="submit"><i class="bi bi-search me-1"></i>Filter</button>
@@ -68,8 +68,8 @@
                         <td class="fw-semibold">{{ $o->order_number }}</td>
                         <td>{{ $o->quotation?->quotation_number ?? '—' }}</td>
                         <td>{{ $o->customer?->name ?? '—' }}</td>
-                        <td>{{ $o->order_date->format('Y-m-d') }}</td>
-                        <td>{{ $o->expected_delivery_date?->format('Y-m-d') ?? '—' }}</td>
+                        <td><x-tdate :value="$o->order_date" fallback="Y-m-d" /></td>
+                        <td><x-tdate :value="$o->expected_delivery_date" fallback="Y-m-d" empty="—" /></td>
                         <td class="text-end">{{ number_format($o->grand_total, 2) }} {{ $o->currency?->code }}</td>
                         <td>
                             @php $colors = ['draft'=>'secondary','pending_approval'=>'warning','approved'=>'info','rejected'=>'danger','processing'=>'primary','ready_for_delivery'=>'success','completed'=>'dark','cancelled'=>'dark']; @endphp

@@ -105,7 +105,7 @@
             </div>
             <div class="col-md-4">
                 <label class="form-label">Customer since</label>
-                <input type="date" class="form-control form-control-sm" name="customer_since" value="{{ old('customer_since', $contact?->customer_since?->format('Y-m-d')) }}">
+                <x-tdate-input class="form-control form-control-sm" name="customer_since" value="{{ old('customer_since', $contact?->customer_since?->format('Y-m-d')) }}" />
             </div>
 
             <div class="col-md-4">

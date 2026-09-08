@@ -40,7 +40,7 @@
         <div class="col-md-3"><small class="text-muted d-block">Business / Institute</small><span class="fw-semibold">{{ $institute->name }}</span><br><small class="text-muted">{{ $institute->institute_code ?? $institute->slug }}</small></div>
         <div class="col-md-3"><small class="text-muted d-block">Industry</small><span class="fw-semibold">{{ $institute->industry ? (\App\Support\IndustryRules::label($institute->country ?? '', $institute->industry) ?? $institute->industry) : '—' }}</span></div>
         <div class="col-md-3"><small class="text-muted d-block">Sub-Industry</small><span class="fw-semibold">{{ $institute->sub_industry ?? '—' }}</span></div>
-        <div class="col-md-3"><small class="text-muted d-block">Current Package</small><span class="badge bg-primary">{{ $packageName }}</span> <small class="text-muted">{{ $institute->subscription_expiry ? 'Expiry: '.\Illuminate\Support\Carbon::parse($institute->subscription_expiry)->format('d M Y') : '' }}</small></div>
+        <div class="col-md-3"><small class="text-muted d-block">Current Package</small><span class="badge bg-primary">{{ $packageName }}</span> <small class="text-muted">{{ $institute->subscription_expiry ? 'Expiry: '.mawa_format_date($institute->subscription_expiry, null, 'd M Y') : '' }}</small></div>
     </div>
 </div>
 
@@ -149,7 +149,7 @@
                             <span class="fw-semibold">{{ $moduleName }}</span><br>
                             <small class="text-muted"><code>{{ $ent->module_key }}</code></small>
                             @if($ent->deleted_at) <span class="badge bg-dark ms-1">soft-deleted</span> @endif
-                            <br><small class="text-muted">Trial: {{ $ent->trial_starts_at ? $ent->trial_starts_at->format('d/m/Y') : '—' }} → {{ $ent->trial_ends_at ? $ent->trial_ends_at->format('d/m/Y') : '—' }}</small>
+                            <br><small class="text-muted">Trial: <x-tdate :value="$ent->trial_starts_at" fallback="d/m/Y" empty="—" /> → <x-tdate :value="$ent->trial_ends_at" fallback="d/m/Y" empty="—" /></small>
                         </td>
                         <td class="text-center">
                             @if($isGrant)
@@ -159,8 +159,8 @@
                             @endif
                         </td>
                         <td><span class="badge bg-{{ $statusBadge }}">{{ $ent->status }}</span></td>
-                        <td class="small">{{ $ent->starts_at ? $ent->starts_at->format('d/m/Y') : '—' }}</td>
-                        <td class="small">{{ $ent->ends_at ? $ent->ends_at->format('d/m/Y') : 'Permanent' }}</td>
+                        <td class="small"><x-tdate :value="$ent->starts_at" fallback="d/m/Y" empty="—" /></td>
+                        <td class="small"><x-tdate :value="$ent->ends_at" fallback="d/m/Y" empty="Permanent" /></td>
                         <td><span class="badge bg-{{ $effBadge }}">{{ $effLabel }}</span></td>
                         <td class="small">
                             @if($ent->monthly_price) M: {{ $ent->monthly_price }}<br>@endif
@@ -169,7 +169,7 @@
                             @if($ent->discount_percent) <span class="badge bg-warning-subtle text-warning border">{{ $ent->discount_percent }}% off</span> @endif
                             @if($ent->auto_renew) <span class="badge bg-info-subtle text-info border">auto-renew</span> @endif
                         </td>
-                        <td class="small">{{ $ent->grantedBy->email ?? $ent->granted_by ?? '—' }}<br><small class="text-muted">{{ $ent->created_at->format('d M Y') }}</small></td>
+                        <td class="small">{{ $ent->grantedBy->email ?? $ent->granted_by ?? '—' }}<br><small class="text-muted"><x-tdate :value="$ent->created_at" fallback="d M Y" /></small></td>
                         <td>
                             <div class="d-flex gap-1 flex-wrap">
                                 <!-- Revoke -->
@@ -188,7 +188,7 @@
                                         @csrf
                                         <div class="modal-content">
                                             <div class="modal-header">
-                                                <h6 class="modal-title">Extend {{ $moduleName }} — current expiry: {{ $ent->ends_at ? $ent->ends_at->format('d/m/Y') : 'Permanent' }}</h6>
+                                                <h6 class="modal-title">Extend {{ $moduleName }} — current expiry: <x-tdate :value="$ent->ends_at" fallback="d/m/Y" empty="Permanent" /></h6>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                             </div>
                                             <div class="modal-body">
@@ -205,12 +205,12 @@
                                                 </div>
                                                 <div class="mb-2">
                                                     <label class="form-label">Custom Expiry Date</label>
-                                                    <input type="date" name="ends_at" class="form-control">
+                                                    <x-tdate-input name="ends_at" class="form-control" />
                                                     <small class="text-muted">Leave blank if using preset.</small>
                                                 </div>
                                                 <div class="mb-2">
                                                     <label class="form-label">Trial End (if trial)</label>
-                                                    <input type="date" name="trial_ends_at" class="form-control">
+                                                    <x-tdate-input name="trial_ends_at" class="form-control" />
                                                 </div>
                                                 <div class="mb-2">
                                                     <label class="form-label">Notes</label>
@@ -255,7 +255,7 @@
             <tbody>
                 @forelse($history as $log)
                     <tr>
-                        <td class="small">{{ $log->created_at->format('d M Y H:i') }}</td>
+                        <td class="small"><x-tdate :value="$log->created_at" fallback="d M Y H:i" :datetime="true" /></td>
                         <td><code>{{ $log->module_key }}</code></td>
                         <td>
                             @php $acBadge = match($log->action){'entitlement_granted'=>'success','trial_started'=>'info','entitlement_revoked'=>'danger','entitlement_expired'=>'secondary','trial_expired'=>'warning','entitlement_extended'=>'primary','enable'=>'success','disable'=>'danger','package_added'=>'primary','package_removed'=>'warning', default=>'secondary'}; @endphp

@@ -37,7 +37,7 @@
                         </tr>
                         <tr>
                             <th class="text-body-secondary">{{ mawa_e('guardian.dob') }}</th>
-                            <td>{{ $student->dob ? $student->dob->format('d M Y') : mawa_e('guardian.na') }}</td>
+                            <td><x-tdate :value="$student->dob" fallback="d M Y" :empty="mawa_e('guardian.na')" /></td>
                         </tr>
                         <tr>
                             <th class="text-body-secondary">{{ mawa_e('guardian.phone') }}</th>
@@ -84,7 +84,7 @@
                             </tr>
                             <tr>
                                 <th class="text-body-secondary">{{ mawa_e('guardian.enrollment_date') }}</th>
-                                <td>{{ $enrollment->enrollment_date ? \Illuminate\Support\Carbon::parse($enrollment->enrollment_date)->format('d M Y') : mawa_e('guardian.na') }}</td>
+                                <td><x-tdate :value="$enrollment->enrollment_date" fallback="d M Y" :empty="mawa_e('guardian.na')" /></td>
                             </tr>
                             <tr>
                                 <th class="text-body-secondary">{{ mawa_e('guardian.fee_payable') }}</th>

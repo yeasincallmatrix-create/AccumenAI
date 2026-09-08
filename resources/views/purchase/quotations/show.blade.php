@@ -50,15 +50,15 @@
                 <p class="mb-1"><strong>Branch:</strong> <span class="text-muted">{{ $quotation->branch?->name ?? 'Institute-wide' }}</span></p>
             </div>
             <div class="col-md-6 text-md-end">
-                <p class="mb-1"><strong>Quotation Date:</strong> {{ $quotation->quotation_date?->format('Y-m-d') }}</p>
-                <p class="mb-1"><strong>Valid Until:</strong> {{ $quotation->validity_date?->format('Y-m-d') ?? '—' }} @if($quotation->isExpiredByDate()) <span class="badge bg-warning">Expired</span> @endif</p>
+                <p class="mb-1"><strong>Quotation Date:</strong> <x-tdate :value="$quotation->quotation_date" fallback="Y-m-d" /></p>
+                <p class="mb-1"><strong>Valid Until:</strong> <x-tdate :value="$quotation->validity_date" fallback="Y-m-d" empty="—" /> @if($quotation->isExpiredByDate()) <span class="badge bg-warning">Expired</span> @endif</p>
                 <p class="mb-1"><strong>Currency:</strong> {{ $quotation->currency?->code ?? '—' }}</p>
                 <p class="mb-1"><strong>Reference:</strong> {{ $quotation->reference ?? $quotation->reference_number ?? '—' }}</p>
                 @if ($quotation->converted_to_order_id)
                     <p class="mb-1"><strong>Converted Order:</strong> <a href="{{ route('purchase.orders.show', $quotation->converted_to_order_id) }}">#{{ $quotation->converted_to_order_id }}</a></p>
                 @endif
                 @if ($quotation->converted_at)
-                    <p class="mb-1 small text-muted">Converted: {{ $quotation->converted_at->format('Y-m-d H:i') }}</p>
+                    <p class="mb-1 small text-muted">Converted: <x-tdate :value="$quotation->converted_at" fallback="Y-m-d H:i" :datetime="true" /></p>
                 @endif
             </div>
         </div>

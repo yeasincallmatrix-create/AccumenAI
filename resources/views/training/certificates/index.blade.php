@@ -206,7 +206,7 @@ document.getElementById('certGenerateSelected')?.addEventListener('click', funct
                         @if($cert->student?->email)<div class="text-muted small">{{ $cert->student->email }}</div>@endif
                     </td>
                     <td data-col="batch">{{ $cert->batch?->name ?? '—' }}</td>
-                    <td data-col="issue_date">{{ $cert->issue_date ? \Illuminate\Support\Carbon::parse($cert->issue_date)->format('d M Y') : '—' }}</td>
+                    <td data-col="issue_date"><x-tdate :value="$cert->issue_date" fallback="d M Y" empty="—" /></td>
                     <td data-col="status"><span class="badge {{ $statusBadge[$cert->status] ?? 'text-bg-secondary' }}">{{ $cert->status }}</span></td>
                     <td data-col="design">Design {{ $cert->template_id ?? 1 }}</td>
                     <td data-col="qr" class="text-center">
@@ -256,7 +256,7 @@ document.getElementById('certGenerateSelected')?.addEventListener('click', funct
                     <td data-col="certificate_no">{{ $cert->certificate_number ?? '—' }}</td>
                     <td data-col="student">{{ $cert->student?->full_name ?? $cert->student->first_name ?? '—' }}</td>
                     <td data-col="batch">{{ $cert->batch?->name ?? '—' }}</td>
-                    <td data-col="issue_date">{{ $cert->issue_date ? \Illuminate\Support\Carbon::parse($cert->issue_date)->format('d M Y') : '—' }}</td>
+                    <td data-col="issue_date"><x-tdate :value="$cert->issue_date" fallback="d M Y" empty="—" /></td>
                     <td data-col="status">{{ ucfirst($cert->status) }}</td>
                     <td data-col="design">Design {{ $cert->template_id ?? 1 }}</td>
                 </tr>
@@ -302,7 +302,7 @@ document.getElementById('certGenerateSelected')?.addEventListener('click', funct
                     </div>
                     <div class="col-md-6">
                         <label class="form-label" for="edit_issue_date">Issue Date *</label>
-                        <input type="date" name="issue_date" id="edit_issue_date" class="form-control" required>
+                        <x-tdate-input name="issue_date" id="edit_issue_date" class="form-control" required />
                     </div>
                 </div>
             </div>
@@ -435,6 +435,7 @@ document.getElementById('certGenerateSelected')?.addEventListener('click', funct
             var num = btn.getAttribute('data-certificate-number');
             certNumSpan.textContent = num || '#' + id;
             dateInput.value = date || new Date().toISOString().slice(0,10);
+            if (window.tdateSync) { window.tdateSync('edit_issue_date'); }
             if(nameInput) nameInput.value = btn.getAttribute('data-student-name') || '';
             if(fatherInput) fatherInput.value = btn.getAttribute('data-father-name') || '';
             if(nidInput) nidInput.value = btn.getAttribute('data-nid') || '';

@@ -36,10 +36,10 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <input type="date" name="from_date" class="form-control" value="{{ request('from_date') }}" onchange="this.form.submit()">
+                    <x-tdate-input name="from_date" :value="request('from_date')" class="form-control" onchange="if(window.tdateReady&&window.tdateReady('from_date'))this.form.submit()" />
                 </div>
                 <div class="col-md-2">
-                    <input type="date" name="to_date" class="form-control" value="{{ request('to_date') }}" onchange="this.form.submit()">
+                    <x-tdate-input name="to_date" :value="request('to_date')" class="form-control" onchange="if(window.tdateReady&&window.tdateReady('to_date'))this.form.submit()" />
                 </div>
                 <div class="col-md-2 text-end">
                     <a href="{{ route('medical.prescriptions.index') }}" class="btn btn-secondary">Reset</a>
@@ -66,7 +66,7 @@
                         <td><strong>{{ $prescription->prescription_number }}</strong></td>
                         <td>{{ $prescription->patient->full_name ?? 'N/A' }}</td>
                         <td>{{ $prescription->doctor->name ?? 'N/A' }}</td>
-                        <td>{{ $prescription->prescription_date?->format('d M Y') }}</td>
+                        <td><x-tdate :value="$prescription->prescription_date" fallback="d M Y" /></td>
                         <td>{{ $prescription->pending_items_count + $prescription->dispensed_items_count }}</td>
                         <td>
                             @if($prescription->is_finalized)

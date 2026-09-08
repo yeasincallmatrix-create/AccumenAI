@@ -182,7 +182,7 @@
                         <td data-col="title" @if(!in_array('title', $visibleColumns, true)) style="display:none" @endif>
                             <a href="{{ route('curricula.show', $curriculum) }}" class="text-decoration-none fw-semibold">{{ $curriculum->title }}</a>
                         </td>
-                        <td data-col="effective" class="text-muted" @if(!in_array('effective', $visibleColumns, true)) style="display:none" @endif>{{ $curriculum->effective_date?->format('d M Y') ?? '—' }}</td>
+                        <td data-col="effective" class="text-muted" @if(!in_array('effective', $visibleColumns, true)) style="display:none" @endif><x-tdate :value="$curriculum->effective_date" fallback="d M Y" empty="—" /></td>
                         <td data-col="modules" class="text-center" @if(!in_array('modules', $visibleColumns, true)) style="display:none" @endif>{{ $curriculum->modules_count }}</td>
                         <td data-col="batches" class="text-center" @if(!in_array('batches', $visibleColumns, true)) style="display:none" @endif>{{ $curriculum->batches_count }}</td>
                         <td data-col="status" @if(!in_array('status', $visibleColumns, true)) style="display:none" @endif>
@@ -241,7 +241,7 @@
                     <td data-col="course" @if(!in_array('course', $visibleColumns, true)) style="display:none" @endif>{{ $curriculum->course?->name ?? '—' }}</td>
                     <td data-col="version" @if(!in_array('version', $visibleColumns, true)) style="display:none" @endif>v{{ $curriculum->version }}</td>
                     <td data-col="title" @if(!in_array('title', $visibleColumns, true)) style="display:none" @endif>{{ $curriculum->title }}</td>
-                    <td data-col="effective" @if(!in_array('effective', $visibleColumns, true)) style="display:none" @endif>{{ $curriculum->effective_date?->format('d M Y') ?? '—' }}</td>
+                    <td data-col="effective" @if(!in_array('effective', $visibleColumns, true)) style="display:none" @endif><x-tdate :value="$curriculum->effective_date" fallback="d M Y" empty="—" /></td>
                     <td data-col="modules" @if(!in_array('modules', $visibleColumns, true)) style="display:none" @endif>{{ $curriculum->modules_count }}</td>
                     <td data-col="batches" @if(!in_array('batches', $visibleColumns, true)) style="display:none" @endif>{{ $curriculum->batches_count }}</td>
                     <td data-col="status" @if(!in_array('status', $visibleColumns, true)) style="display:none" @endif>{{ $statusNames[$curriculum->status] ?? ucfirst($curriculum->status) }}</td>

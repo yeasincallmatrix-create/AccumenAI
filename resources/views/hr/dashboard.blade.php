@@ -89,7 +89,7 @@
         <thead><tr><th>Employee</th><th>Document</th><th>Type</th><th>Expiry</th></tr></thead>
         <tbody>
         @foreach($docStats['expired'] as $doc)
-            <tr><td><a href="{{ route('hr.employees.show', $doc->documentable_id) }}">{{ $doc->documentable?->display_name ?? 'Employee #'.$doc->documentable_id }}</a> <code>{{ $doc->documentable?->employee_code }}</code></td><td>{{ $doc->title ?? $doc->original_filename }}</td><td>{{ $doc->category?->name }}</td><td class="text-danger">{{ $doc->expiry_date?->format('Y-m-d') }}</td></tr>
+            <tr><td><a href="{{ route('hr.employees.show', $doc->documentable_id) }}">{{ $doc->documentable?->display_name ?? 'Employee #'.$doc->documentable_id }}</a> <code>{{ $doc->documentable?->employee_code }}</code></td><td>{{ $doc->title ?? $doc->original_filename }}</td><td>{{ $doc->category?->name }}</td><td class="text-danger"><x-tdate :value="$doc->expiry_date" fallback="Y-m-d" /></td></tr>
         @endforeach
         </tbody>
     </table></div>
@@ -103,7 +103,7 @@
         <thead><tr><th>Employee</th><th>Document</th><th>Type</th><th>Expiry</th></tr></thead>
         <tbody>
         @foreach($docStats['expiring_soon'] as $doc)
-            <tr><td><a href="{{ route('hr.employees.show', $doc->documentable_id) }}">{{ $doc->documentable?->display_name ?? 'Employee #'.$doc->documentable_id }}</a> <code>{{ $doc->documentable?->employee_code }}</code></td><td>{{ $doc->title ?? $doc->original_filename }}</td><td>{{ $doc->category?->name }}</td><td class="text-warning">{{ $doc->expiry_date?->format('Y-m-d') }}</td></tr>
+            <tr><td><a href="{{ route('hr.employees.show', $doc->documentable_id) }}">{{ $doc->documentable?->display_name ?? 'Employee #'.$doc->documentable_id }}</a> <code>{{ $doc->documentable?->employee_code }}</code></td><td>{{ $doc->title ?? $doc->original_filename }}</td><td>{{ $doc->category?->name }}</td><td class="text-warning"><x-tdate :value="$doc->expiry_date" fallback="Y-m-d" /></td></tr>
         @endforeach
         </tbody>
     </table></div>

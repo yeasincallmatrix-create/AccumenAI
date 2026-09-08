@@ -9,7 +9,7 @@
 @if($errors->any())<div class="alert alert-danger"><ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>@endif
 <div class="card mb-4"><div class="card-body"><div class="row">
 <div class="col-md-6"><h6>Supplier</h6><p class="mb-1 fw-semibold">{{ $invoice->supplier?->name }}</p><p class="mb-1 text-muted small">{{ $invoice->supplier?->phone }} {{ $invoice->supplier?->email ? '• '.$invoice->supplier?->email : '' }}</p><p class="mb-1"><strong>PO:</strong> @if($invoice->purchaseOrder)<a href="{{ route('purchase.orders.show',$invoice->purchaseOrder) }}">{{ $invoice->purchaseOrder->order_number }}</a>@else — @endif</p><p class="mb-1"><strong>GRN:</strong> @if($invoice->goodsReceipt)<a href="{{ route('purchase.receipts.show',$invoice->goodsReceipt) }}">{{ $invoice->goodsReceipt->receipt_number }}</a>@else — @endif</p></div>
-<div class="col-md-6 text-md-end"><p class="mb-1"><strong>Invoice Date:</strong> {{ $invoice->invoice_date->format('Y-m-d') }}</p><p class="mb-1"><strong>Due Date:</strong> {{ $invoice->due_date?->format('Y-m-d') ?? '—' }}</p><p class="mb-1"><strong>Currency:</strong> {{ $invoice->currency?->code }}</p><p class="mb-1"><strong>Branch:</strong> {{ $invoice->branch?->name ?? 'Institute-wide' }}</p><p class="mb-1"><strong>Journal:</strong> @if($invoice->journal) {{ $invoice->journal->journal_no }} @else — @endif</p></div>
+<div class="col-md-6 text-md-end"><p class="mb-1"><strong>Invoice Date:</strong> <x-tdate :value="$invoice->invoice_date" fallback="Y-m-d" /></p><p class="mb-1"><strong>Due Date:</strong> <x-tdate :value="$invoice->due_date" fallback="Y-m-d" empty="—" /></p><p class="mb-1"><strong>Currency:</strong> {{ $invoice->currency?->code }}</p><p class="mb-1"><strong>Branch:</strong> {{ $invoice->branch?->name ?? 'Institute-wide' }}</p><p class="mb-1"><strong>Journal:</strong> @if($invoice->journal) {{ $invoice->journal->journal_no }} @else — @endif</p></div>
 </div>
 @if($invoice->notes)<div class="mt-3"><strong>Notes:</strong><p class="text-muted">{{ $invoice->notes }}</p></div>@endif
 </div></div>
@@ -53,7 +53,7 @@
 <thead><tr><th>#</th><th>Date</th><th class="text-end">Amount</th><th>Method</th><th>Journal</th><th></th></tr></thead>
 <tbody>
 @forelse($invoice->payments as $pay)
-<tr><td>{{ $loop->iteration }}</td><td>{{ $pay->paid_at->format('Y-m-d H:i') }}</td><td class="text-end">{{ number_format($pay->amount,2) }}</td><td>{{ ucfirst($pay->payment_method) }}</td><td>{{ $pay->journal?->journal_no ?? '—' }}</td><td class="text-end"><form method="POST" action="{{ route('purchase.payments.reverse',$pay) }}">@csrf<button class="btn btn-sm btn-outline-warning rounded-pill" onclick="return confirm('Reverse this payment?')">Reverse</button></form></td></tr>
+<tr><td>{{ $loop->iteration }}</td><td><x-tdate :value="$pay->paid_at" fallback="Y-m-d H:i" :datetime="true" /></td><td class="text-end">{{ number_format($pay->amount,2) }}</td><td>{{ ucfirst($pay->payment_method) }}</td><td>{{ $pay->journal?->journal_no ?? '—' }}</td><td class="text-end"><form method="POST" action="{{ route('purchase.payments.reverse',$pay) }}">@csrf<button class="btn btn-sm btn-outline-warning rounded-pill" onclick="return confirm('Reverse this payment?')">Reverse</button></form></td></tr>
 @empty<tr><td colspan="6" class="text-center text-muted py-3">No payments yet.</td></tr>@endforelse
 </tbody>
 </table></div>

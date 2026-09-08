@@ -16,11 +16,11 @@
     <form class="filter-layout d-flex align-items-end gap-2 flex-wrap" method="GET" action="{{ route('accounting.executive.insights') }}">
         <div>
             <label class="form-label mb-1">From</label>
-            <input type="date" class="form-control form-control-sm" name="from" value="{{ $from }}">
+            <x-tdate-input class="form-control form-control-sm" name="from" value="{{ $from }}" />
         </div>
         <div>
             <label class="form-label mb-1">To</label>
-            <input type="date" class="form-control form-control-sm" name="to" value="{{ $to }}">
+            <x-tdate-input class="form-control form-control-sm" name="to" value="{{ $to }}" />
         </div>
         <button class="btn btn-outline-primary btn-sm" type="submit"><i class="bi bi-funnel"></i> Apply</button>
         <a class="btn btn-outline-secondary btn-sm" href="{{ route('accounting.executive.index') }}"><i class="bi bi-arrow-left"></i> Back</a>
@@ -173,7 +173,7 @@
                             @foreach ($overdue_invoices as $invoice)
                                 <tr>
                                     <td>{{ $invoice->invoice_no }}</td>
-                                    <td>{{ $invoice->due_date?->format('Y-m-d') ?? '—' }}</td>
+                                    <td><x-tdate :value="$invoice->due_date" fallback="Y-m-d" empty="—" /></td>
                                     <td class="text-end">{{ number_format($invoice->total_amount ?? 0, 2) }}</td>
                                     <td><span class="badge text-bg-danger">Overdue</span></td>
                                 </tr>

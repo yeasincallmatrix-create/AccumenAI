@@ -26,7 +26,7 @@
         <div class="filter-search-row align-items-end flex-wrap">
             <div class="filter-span flex-shrink-0" style="min-width:180px">
                 <label class="form-label mb-1">Date</label>
-                <input type="date" name="attendance_date" value="{{ $date?->format('Y-m-d') }}" class="form-control form-control-sm">
+                <x-tdate-input name="attendance_date" value="{{ $date?->format('Y-m-d') }}" class="form-control form-control-sm" />
             </div>
             <div class="filter-span flex-shrink-0" style="min-width:170px">
                 <label class="form-label mb-1">Class / Grade</label>
@@ -71,7 +71,7 @@
         </p>
     @else
         <div class="meta-line mb-3">
-            <span><span class="label">Date:</span> {{ $report['date']->format('M j, Y (l)') }}</span>
+            <span><span class="label">Date:</span> <x-tdate :value="$report['date']" fallback="M j, Y (l)" /></span>
             <span><span class="label">Academic Year:</span> {{ $report['year']->name ?: ($report['year']->code ?: 'Year #'.$report['year']->id) }}</span>
             <span><span class="label">Class / Grade:</span> {{ $classId ? ($classes->firstWhere('id', $classId)?->name ?? ('Class #'.$classId)) : 'All classes' }}</span>
             <span><span class="label">Group / Stream:</span> {{ $groupId ? ($groups->firstWhere('id', $groupId)?->name ?? '—') : 'All groups' }}</span>
@@ -177,7 +177,7 @@
         </div>
 
         <div class="text-center text-muted small mt-4">
-            Generated {{ now()->format('F j, Y') }} · AccumenAI
+            Generated <x-tdate :value="now()" fallback="F j, Y" /> · AccumenAI
         </div>
     @endif
 </div>

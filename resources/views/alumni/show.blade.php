@@ -128,7 +128,7 @@
             <div class="card-body">
                 <dl class="row mb-0">
                     <dt class="col-5 text-muted">{{ mawa_e('alumni.field_graduation_date') }}</dt>
-                    <dd class="col-7">{{ $alumni->graduation_date?->format('d M Y') ?? '—' }}</dd>
+                    <dd class="col-7"><x-tdate :value="$alumni->graduation_date" fallback="d M Y" empty="—" /></dd>
 
                     <dt class="col-5 text-muted">{{ mawa_e('alumni.field_completion_year') }}</dt>
                     <dd class="col-7">{{ $alumni->completionAcademicYear?->name ?? '—' }}</dd>
@@ -169,7 +169,7 @@
                                 <td class="text-muted">{{ $certificate->certificate_number ?? '—' }}</td>
                                 <td>{{ $certificate->course?->name ?? '—' }}</td>
                                 <td>{{ $certificate->batch?->name ?? '—' }}</td>
-                                <td>{{ $certificate->issue_date?->format('d M Y') ?? '—' }}</td>
+                                <td><x-tdate :value="$certificate->issue_date" fallback="d M Y" empty="—" /></td>
                                 <td>
                                     <span class="badge {{ $certStatusBadge[$certificate->status] ?? 'text-bg-secondary' }}">{{ ucfirst($certificate->status) }}</span>
                                 </td>

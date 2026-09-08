@@ -36,7 +36,7 @@
             <div class="d-flex align-items-center gap-2">
                 <span class="badge text-bg-success"><i class="bi bi-check-circle me-1"></i>{{ mawa_e('guardian.published') }}</span>
                 @if ($result->published_at)
-                    <span class="small text-body-secondary">{{ \Illuminate\Support\Carbon::parse($result->published_at)->format('d M Y') }}</span>
+                    <span class="small text-body-secondary"><x-tdate :value="$result->published_at" fallback="d M Y" /></span>
                 @endif
             </div>
         </div>

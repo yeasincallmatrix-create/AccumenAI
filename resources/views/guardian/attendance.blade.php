@@ -25,11 +25,11 @@
             </div>
             <div class="col-6 col-md-3">
                 <label class="form-label small mb-1">{{ mawa_e('guardian.from') }}</label>
-                <input type="date" class="form-control form-control-sm" name="start_date" value="{{ $start->toDateString() }}">
+                <x-tdate-input class="form-control form-control-sm" name="start_date" value="{{ $start->toDateString() }}" />
             </div>
             <div class="col-6 col-md-3">
                 <label class="form-label small mb-1">{{ mawa_e('guardian.to') }}</label>
-                <input type="date" class="form-control form-control-sm" name="end_date" value="{{ $end->toDateString() }}">
+                <x-tdate-input class="form-control form-control-sm" name="end_date" value="{{ $end->toDateString() }}" />
             </div>
             <div class="col-12 col-md-2">
                 <button class="btn btn-sm btn-primary rounded-pill w-100" type="submit"><i class="bi bi-funnel me-1"></i>{{ mawa_e('guardian.apply') }}</button>
@@ -99,7 +99,7 @@
                         <tbody>
                             @foreach ($records as $record)
                                 <tr>
-                                    <td>{{ \Illuminate\Support\Carbon::parse($record->class_date)->format('d M Y') }}</td>
+                                    <td><x-tdate :value="$record->class_date" fallback="d M Y" /></td>
                                     <td>
                                         <span class="badge text-bg-{{ $record->status === 'present' ? 'success' : ($record->status === 'absent' ? 'danger' : ($record->status === 'late' ? 'warning' : 'secondary')) }}">{{ $record->status }}</span>
                                     </td>

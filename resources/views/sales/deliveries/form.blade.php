@@ -30,7 +30,7 @@
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Delivery Date *</label>
-                    <input type="date" name="delivery_date" value="{{ old('delivery_date', date('Y-m-d')) }}" class="form-control" required>
+                    <x-tdate-input name="delivery_date" :value="old('delivery_date', date('Y-m-d'))" class="form-control" required />
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Warehouse</label>

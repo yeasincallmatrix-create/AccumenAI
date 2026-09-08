@@ -84,6 +84,7 @@
         setVal('e_gender', d.gender);
         setVal('e_dob', d.dob);
         setVal('e_admission_date', d.admission_date);
+        if (window.tdateSync) { window.tdateSync('e_dob'); window.tdateSync('e_admission_date'); }
         setPhone(document.getElementById('e_phone'), d.phone);
         setVal('e_email', d.email);
         setVal('e_religion', d.religion);

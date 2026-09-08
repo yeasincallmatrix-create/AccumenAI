@@ -29,7 +29,7 @@
             @csrf
             <div class="col-md-3">
                 <label class="form-label">As-of Date</label>
-                <input type="date" class="form-control form-control-sm" name="as_of_date" value="{{ now()->toDateString() }}" required>
+                <x-tdate-input class="form-control form-control-sm" name="as_of_date" value="{{ now()->toDateString() }}" required />
             </div>
             <div class="col-md-3">
                 <label class="form-label">Currency (optional, leave blank for all)</label>
@@ -64,7 +64,7 @@
             <tbody>
                 @forelse ($revaluations as $fxr)
                     <tr>
-                        <td>{{ $fxr->as_of_date?->format('Y-m-d') }}</td>
+                        <td><x-tdate :value="$fxr->as_of_date" fallback="Y-m-d" /></td>
                         <td>{{ $fxr->currency->code ?? 'N/A' }}</td>
                         <td>{{ number_format((float) $fxr->closing_rate, 8) }}</td>
                         <td>{{ number_format((float) $fxr->carrying_value, 4) }}</td>

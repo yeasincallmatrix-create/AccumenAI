@@ -39,7 +39,7 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label">Effective date</label>
-                <input type="date" class="form-control form-control-sm" name="effective_date" value="{{ old('effective_date', $curriculum?->effective_date?->format('Y-m-d')) }}">
+                <x-tdate-input class="form-control form-control-sm" name="effective_date" value="{{ old('effective_date', $curriculum?->effective_date?->format('Y-m-d')) }}" />
             </div>
             <div class="col-md-3">
                 <label class="form-label">Total classes</label>

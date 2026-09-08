@@ -116,7 +116,13 @@ class InstituteSettingController extends Controller
         $data = $request->validate([
             'timezone' => ['required', 'timezone'],
             'language' => ['required', 'in:bn,en'],
+            'date_format' => ['required', 'in:dmy,mdy,ymd'],
         ]);
+
+        // Graceful while the date_format migration is pending on an environment.
+        if (! \Illuminate\Support\Facades\Schema::hasColumn('institute_settings', 'date_format')) {
+            unset($data['date_format']);
+        }
 
         InstituteSetting::updateOrCreate(
             ['institute_id' => $this->resolveInstituteId($request->user())],
@@ -263,6 +269,7 @@ class InstituteSettingController extends Controller
                 'secondary_color' => '#FFC107',
                 'timezone' => 'Asia/Dhaka',
                 'language' => 'bn',
+                'date_format' => 'dmy',
             ];
 
             $industry = Institute::query()->where('id', $instituteId)->value('industry');

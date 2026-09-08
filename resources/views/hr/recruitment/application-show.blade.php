@@ -35,7 +35,7 @@
             @endif
             <h6>History</h6>
             @foreach($application->histories as $h)
-                <div class="small border-bottom py-1">{{ $h->from_stage ?? '—' }} → <strong>{{ $h->to_stage }}</strong> by {{ $h->changer?->email ?? 'System' }} <span class="text-muted">{{ $h->created_at->format('Y-m-d H:i') }}</span> @if($h->notes)<div class="text-muted">{{ $h->notes }}</div>@endif</div>
+                <div class="small border-bottom py-1">{{ $h->from_stage ?? '—' }} → <strong>{{ $h->to_stage }}</strong> by {{ $h->changer?->email ?? 'System' }} <span class="text-muted"><x-tdate :value="$h->created_at" fallback="Y-m-d H:i" :datetime="true" /></span> @if($h->notes)<div class="text-muted">{{ $h->notes }}</div>@endif</div>
             @endforeach
         </div>
     </div>
@@ -44,7 +44,7 @@
             <h6>Interviews</h6>
             @foreach($application->interviews as $iv)
                 <div class="small border-bottom py-2">
-                    {{ $iv->scheduled_at->format('Y-m-d H:i') }} — {{ $iv->interview_type }} — {{ $iv->status }}
+                    <x-tdate :value="$iv->scheduled_at" fallback="Y-m-d H:i" :datetime="true" /> — {{ $iv->interview_type }} — {{ $iv->status }}
                     @if($iv->score) Score: {{ $iv->score }} @endif
                     @if($iv->feedback) <div class="text-muted">{{ $iv->feedback }}</div> @endif
                 </div>
@@ -72,7 +72,7 @@
                     @csrf
                     <input type="hidden" name="application_id" value="{{ $application->id }}">
                     <div class="col-6"><input type="number" step="0.01" name="offered_salary" class="form-control form-control-sm" placeholder="Offered Salary"></div>
-                    <div class="col-6"><input type="date" name="joining_date" class="form-control form-control-sm"></div>
+                    <div class="col-6"><x-tdate-input name="joining_date" class="form-control form-control-sm" /></div>
                     <div class="col-12"><button type="submit" class="btn btn-sm btn-outline-primary w-100">Create Offer</button></div>
                 </form>
                 @endif

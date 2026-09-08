@@ -36,6 +36,7 @@
         @yield('content')
     </div>
 
+    <script src="{{ asset('js/auto-caps.js') }}"></script>
     @stack('scripts')
 </body>
 </html>

@@ -51,13 +51,13 @@
         <dd class="col-sm-9 text-danger">{{ $log->error ?? '—' }}</dd>
 
         <dt class="col-sm-3">{{ mawa_e('notifications_page.created_at') }}</dt>
-        <dd class="col-sm-9">{{ optional($log->created_at)->format('Y-m-d H:i:s') }}</dd>
+        <dd class="col-sm-9"><x-tdate :value="$log->created_at" fallback="Y-m-d H:i:s" :datetime="true" /></dd>
 
         <dt class="col-sm-3">{{ mawa_e('notifications_page.sent_at') }}</dt>
-        <dd class="col-sm-9">{{ optional($log->sent_at)->format('Y-m-d H:i:s') ?: '—' }}</dd>
+        <dd class="col-sm-9"><x-tdate :value="$log->sent_at" fallback="Y-m-d H:i:s" :datetime="true" empty="—" /></dd>
 
         <dt class="col-sm-3">{{ mawa_e('notifications_page.failed_at') }}</dt>
-        <dd class="col-sm-9">{{ optional($log->failed_at)->format('Y-m-d H:i:s') ?: '—' }}</dd>
+        <dd class="col-sm-9"><x-tdate :value="$log->failed_at" fallback="Y-m-d H:i:s" :datetime="true" empty="—" /></dd>
 
         <dt class="col-sm-3">{{ mawa_e('notifications_page.metadata') }}</dt>
         <dd class="col-sm-9"><pre class="mb-0 small" style="white-space:pre-wrap">{{ json_encode($log->metadata, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre></dd>

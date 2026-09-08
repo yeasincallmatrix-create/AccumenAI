@@ -16,6 +16,7 @@ class Student extends Model
 {
     use Concerns\BranchScoped;
     use Concerns\DeletesFiles;
+    use Concerns\NormalizesPersonNames;
     use Concerns\TenantScoped;
     use SoftDeletes;
 

@@ -10,7 +10,7 @@
     <p>
         {{ $invoice->party?->name ?? $invoice->student?->name ?? 'Walk-in' }}
         @if ($invoice->invoice_type) · {{ str_replace('_', ' ', $invoice->invoice_type) }} @endif
-        · {{ $invoice->created_at?->format('Y-m-d') }}
+        · <x-tdate :value="$invoice->created_at" fallback="Y-m-d" />
     </p>
     <div class="d-flex gap-2 flex-wrap align-items-center">
         @if ($invoice->status !== 'cancelled' && (float) $invoice->due_amount > 0)
@@ -57,7 +57,7 @@
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Paid at</label>
-                        <input type="date" class="form-control form-control-sm" name="paid_at" value="{{ old('paid_at', now()->toDateString()) }}">
+                        <x-tdate-input class="form-control form-control-sm" name="paid_at" value="{{ old('paid_at', now()->toDateString()) }}" />
                     </div>
                     <div class="col-md-2">
                         <label class="form-label">Ref / txn</label>
@@ -148,7 +148,7 @@
                     <span>
                         <span class="badge text-bg-light border">{{ $payment->payment_method }}</span>
                         {{ number_format((float) $payment->amount, 2) }}
-                        <span class="small text-muted">{{ $payment->paid_at?->format('Y-m-d H:i') }}</span>
+                        <span class="small text-muted"><x-tdate :value="$payment->paid_at" fallback="Y-m-d H:i" :datetime="true" /></span>
                     </span>
                     <span class="d-flex align-items-center gap-1">
                         @if ($payment->journal?->status === 'posted')

@@ -37,7 +37,7 @@
         @endif
     </p>
     <p class="text-muted small mb-2">
-        @if ($assessment->exam_date)Exam date: {{ $assessment->exam_date->format('d M Y') }} · @endif
+        @if ($assessment->exam_date)Exam date: <x-tdate :value="$assessment->exam_date" fallback="d M Y" /> · @endif
         Position: {{ $assessment->display_order }} ·
         {{ $assessment->subjects->count() }} subject(s)
         @if ($assessment->creator) · Created by {{ $assessment->creator->first_name }} {{ $assessment->creator->last_name }}@endif
@@ -81,7 +81,7 @@
             Locked by {{ $assessment->lockedBy->first_name }} {{ $assessment->lockedBy->last_name }}
         @endif
         @if ($assessment->locked_at)
-            on {{ $assessment->locked_at->format('d M Y H:i') }}.
+            on <x-tdate :value="$assessment->locked_at" fallback="d M Y H:i" :datetime="true" />.
         @endif
     </div>
 @endif

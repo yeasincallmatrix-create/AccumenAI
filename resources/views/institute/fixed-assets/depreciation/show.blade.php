@@ -7,7 +7,7 @@
 
 <div class="standalone-heading">
     <h4>Depreciation Run</h4>
-    <p>Period {{ $run->period_start->format('Y-m-d') }} to {{ $run->period_end->format('Y-m-d') }}</p>
+    <p>Period <x-tdate :value="$run->period_start" fallback="Y-m-d" /> to <x-tdate :value="$run->period_end" fallback="Y-m-d" /></p>
     <div class="d-flex gap-2 flex-wrap align-items-center">
         <span class="badge text-bg-{{ $run->status === 'posted' ? 'success' : 'secondary' }}">{{ ucfirst($run->status) }}</span>
         @if ($run->journal)
@@ -20,11 +20,11 @@
     <div class="row g-3">
         <div class="col-md-3">
             <div class="small text-muted">Period Start</div>
-            <div>{{ $run->period_start->format('Y-m-d') }}</div>
+            <div><x-tdate :value="$run->period_start" fallback="Y-m-d" /></div>
         </div>
         <div class="col-md-3">
             <div class="small text-muted">Period End</div>
-            <div>{{ $run->period_end->format('Y-m-d') }}</div>
+            <div><x-tdate :value="$run->period_end" fallback="Y-m-d" /></div>
         </div>
         <div class="col-md-3">
             <div class="small text-muted">Status</div>
@@ -32,7 +32,7 @@
         </div>
         <div class="col-md-3">
             <div class="small text-muted">Created</div>
-            <div>{{ $run->created_at?->format('Y-m-d H:i') }}</div>
+            <div><x-tdate :value="$run->created_at" fallback="Y-m-d H:i" :datetime="true" /></div>
         </div>
     </div>
 </div>

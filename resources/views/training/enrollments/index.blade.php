@@ -33,7 +33,7 @@
                     <td><span class="badge text-bg-primary">{{ $enrollment->roll_no ?? '—' }}</span></td>
                     <td><span class="badge text-bg-light">{{ $enrollment->status }}</span></td>
                     <td><span class="badge text-bg-light">{{ $enrollment->payment_status }}</span></td>
-                    <td class="small text-muted">{{ $enrollment->enrollment_date?->format('Y-m-d') ?? '—' }}</td>
+                    <td class="small text-muted"><x-tdate :value="$enrollment->enrollment_date" fallback="Y-m-d" empty="—" /></td>
                     <td class="text-end d-flex gap-1 justify-content-end">
                         <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editRollModal{{ $enrollment->id }}" title="Edit Roll"><i class="bi bi-pencil"></i></button>
                         <a href="{{ route('training.attendance.index', ['batch_id' => $enrollment->batch_id]) }}" class="btn btn-sm btn-outline-primary" title="Mark Attendance"><i class="bi bi-calendar-check"></i></a>

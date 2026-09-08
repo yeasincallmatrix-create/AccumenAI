@@ -161,7 +161,7 @@
                             <td><span class="badge bg-{{ $statusColors[$v->status] ?? 'secondary' }}">{{ ucfirst($v->status) }}</span></td>
                             <td class="text-end">{{ number_format($v->total_amount, 2) }}</td>
                             <td>{{ $v->reason ?? '—' }}</td>
-                            <td>{{ $v->created_at?->format('d M Y H:i') ?? '—' }}</td>
+                            <td><x-tdate :value="$v->created_at" fallback="d M Y H:i" :datetime="true" empty="—" /></td>
                         </tr>
                     @endforeach
                 </tbody>

@@ -21,11 +21,11 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label">Start date <span class="text-danger">*</span></label>
-                <input type="date" class="form-control form-control-sm" name="start_date" value="{{ old('start_date') }}" required>
+                <x-tdate-input class="form-control form-control-sm" name="start_date" value="{{ old('start_date') }}" required />
             </div>
             <div class="col-md-3">
                 <label class="form-label">End date <span class="text-danger">*</span></label>
-                <input type="date" class="form-control form-control-sm" name="end_date" value="{{ old('end_date') }}" required>
+                <x-tdate-input class="form-control form-control-sm" name="end_date" value="{{ old('end_date') }}" required />
             </div>
             <div class="col-md-2 d-flex align-items-end">
                 <button class="btn btn-primary btn-sm w-100" type="submit"><i class="bi bi-plus-lg me-1"></i>Create</button>

@@ -166,9 +166,9 @@
                     </td>
                     <td class="small text-muted">
                         @if($u->_last_login){{ \Illuminate\Support\Carbon::parse($u->_last_login)->diffForHumans() }}@else — @endif
-                        <div class="small">{{ $u->last_login_at?->format('d M Y H:i') ?? '' }}</div>
+                        <div class="small"><x-tdate :value="$u->last_login_at" fallback="d M Y H:i" :datetime="true" empty="" /></div>
                     </td>
-                    <td class="small text-muted">{{ $u->created_at->format('d M Y') }}</td>
+                    <td class="small text-muted"><x-tdate :value="$u->created_at" fallback="d M Y" /></td>
                     <td class="text-end text-nowrap">
                         <div class="dropdown">
                             <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-three-dots"></i></button>
@@ -219,7 +219,7 @@
                 @if($u->email_verified_at)<span class="badge text-bg-success">Verified</span>@else<span class="badge text-bg-danger">Unverified</span>@endif
                 @if(($u->_e26_owned_active ?? 0)>0)<span class="badge text-bg-warning">Owner {{ $u->_e26_owned_active }}</span>@endif
             </div>
-            <div class="small text-muted">Last Login: {{ $u->_last_login ? \Illuminate\Support\Carbon::parse($u->_last_login)->diffForHumans() : '—' }} · Created: {{ $u->created_at->format('d M Y') }}</div>
+            <div class="small text-muted">Last Login: {{ $u->_last_login ? \Illuminate\Support\Carbon::parse($u->_last_login)->diffForHumans() : '—' }} · Created: <x-tdate :value="$u->created_at" fallback="d M Y" /></div>
             <div class="mt-2 d-flex gap-1 flex-wrap">
                 @if($u->deleted_at)
                     <button type="button" class="btn btn-sm btn-success user-restore-btn" data-action="{{ route('admin.users.restore',$u) }}"><i class="bi bi-arrow-counterclockwise"></i> Restore</button>

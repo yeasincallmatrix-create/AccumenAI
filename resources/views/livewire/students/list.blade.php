@@ -18,7 +18,7 @@
 
     <div class="print-header d-none">
         <h4 class="mb-1">{{ $institute->name ?? '' }} — {{ $isProfessional ? mawa_e('sidebar.trainees') : mawa_e('sidebar.students') }}</h4>
-        <p class="mb-0 text-muted">{{ $students->total() }} {{ $isProfessional ? strtolower(mawa_e('sidebar.trainees')) : 'students' }} · {{ now()->format('d M Y') }}</p>
+        <p class="mb-0 text-muted">{{ $students->total() }} {{ $isProfessional ? strtolower(mawa_e('sidebar.trainees')) : 'students' }} · <x-tdate :value="now()" fallback="d M Y" /></p>
     </div>
 
     <div class="d-flex flex-wrap gap-2 mb-3 align-items-end monetix-print-hidden">
@@ -158,7 +158,7 @@
                         @if (in_array('email', $visibleColumns, true))<td>{{ $student->email ?? '—' }}</td>@endif
                         @if (in_array('reg', $visibleColumns, true))<td>{{ $student->reg_no ?? '—' }}</td>@endif
                         @if (in_array('gender', $visibleColumns, true))<td>{{ $student->gender ?: '—' }}</td>@endif
-                        @if (in_array('dob', $visibleColumns, true))<td>{{ $student->dob?->format('d M Y') ?? '—' }}</td>@endif
+                        @if (in_array('dob', $visibleColumns, true))<td><x-tdate :value="$student->dob" fallback="d M Y" empty="—" /></td>@endif
                         @if (in_array('age', $visibleColumns, true))<td>
                             @if ($student->dob && ! $student->dob->isFuture())
                                 {{ $student->dob->diff(now())->format('%y') }}
@@ -173,7 +173,7 @@
                         @if (in_array('passport', $visibleColumns, true))<td>{{ $student->passport_number ?? '—' }}</td>@endif
                         @if (in_array('branch', $visibleColumns, true))<td>{{ $student->branch->name ?? '—' }}</td>@endif
                         @if (in_array('guardian', $visibleColumns, true))<td>{{ $student->guardian_phone ?? '—' }}</td>@endif
-                        @if (in_array('admission', $visibleColumns, true))<td>{{ $student->admission_date?->format('d M Y') }}</td>@endif
+                        @if (in_array('admission', $visibleColumns, true))<td><x-tdate :value="$student->admission_date" fallback="d M Y" /></td>@endif
                         @if (in_array('status', $visibleColumns, true))<td>
                             <span class="badge {{ $statusBadge[$student->status] ?? 'bg-secondary' }}">{{ $statusNames[$student->status] ?? $student->status }}</span>
                         </td>@endif

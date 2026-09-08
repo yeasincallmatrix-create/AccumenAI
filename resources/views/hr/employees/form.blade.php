@@ -44,11 +44,11 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label">Date of Birth</label>
-                <input type="date" name="date_of_birth" class="form-control form-control-sm" value="{{ old('date_of_birth', $employee?->date_of_birth?->format('Y-m-d')) }}">
+                <x-tdate-input name="date_of_birth" :value="old('date_of_birth', $employee?->date_of_birth?->format('Y-m-d'))" class="form-control form-control-sm" />
             </div>
             <div class="col-md-3">
                 <label class="form-label">Joining Date</label>
-                <input type="date" name="joining_date" class="form-control form-control-sm" value="{{ old('joining_date', $employee?->joining_date?->format('Y-m-d')) }}">
+                <x-tdate-input name="joining_date" :value="old('joining_date', $employee?->joining_date?->format('Y-m-d'))" class="form-control form-control-sm" />
             </div>
             <div class="col-md-3">
                 <label class="form-label">Profile Photo</label>

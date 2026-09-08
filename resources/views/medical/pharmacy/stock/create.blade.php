@@ -45,27 +45,21 @@
                 <div class="col-md-4">
                     <div class="mb-3">
                         <label class="form-label" for="manufacturing_date">Mfg Date</label>
-                        <input type="date" id="manufacturing_date" name="manufacturing_date"
-                               class="form-control @error('manufacturing_date') is-invalid @enderror"
-                               value="{{ old('manufacturing_date') }}">
+                        <x-tdate-input name="manufacturing_date" :value="old('manufacturing_date')" id="manufacturing_date" :class="'form-control'.($errors->has('manufacturing_date') ? ' is-invalid' : '')" />
                         @error('manufacturing_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="mb-3">
                         <label class="form-label" for="expiry_date">Expiry Date <span class="text-danger">*</span></label>
-                        <input type="date" id="expiry_date" name="expiry_date"
-                               class="form-control @error('expiry_date') is-invalid @enderror"
-                               value="{{ old('expiry_date') }}" required>
+                        <x-tdate-input name="expiry_date" :value="old('expiry_date')" id="expiry_date" :class="'form-control'.($errors->has('expiry_date') ? ' is-invalid' : '')" required />
                         @error('expiry_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="mb-3">
                         <label class="form-label" for="received_date">Received Date</label>
-                        <input type="date" id="received_date" name="received_date"
-                               class="form-control @error('received_date') is-invalid @enderror"
-                               value="{{ old('received_date', date('Y-m-d')) }}">
+                        <x-tdate-input name="received_date" :value="old('received_date', date('Y-m-d'))" id="received_date" :class="'form-control'.($errors->has('received_date') ? ' is-invalid' : '')" />
                         @error('received_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>

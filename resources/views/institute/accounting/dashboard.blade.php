@@ -418,7 +418,7 @@
                     <tbody>
                         @forelse ($recentJournals as $journal)
                             <tr>
-                                <td>{{ $journal->journal_date?->toDateString() }}</td>
+                                <td><x-tdate :value="$journal->journal_date" /></td>
                                 <td>
                                     <a href="{{ route('finance.journals.show', $journal->id) }}" class="text-decoration-none">{{ $journal->journal_no }}</a>
                                 </td>

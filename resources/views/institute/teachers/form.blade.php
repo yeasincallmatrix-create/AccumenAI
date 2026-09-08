@@ -92,7 +92,7 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label">Joining date</label>
-                <input type="date" class="form-control form-control-sm" name="joining_date" value="{{ old('joining_date', $teacher?->joining_date ? \Illuminate\Support\Carbon::parse($teacher->joining_date)->format('Y-m-d') : '') }}">
+                <x-tdate-input class="form-control form-control-sm" name="joining_date" value="{{ old('joining_date', $teacher?->joining_date ? \Illuminate\Support\Carbon::parse($teacher->joining_date)->format('Y-m-d') : '') }}" />
             </div>
             <div class="col-md-3">
                 <label class="form-label">Employment type</label>
@@ -123,7 +123,7 @@
             </div>
             <div class="col-md-3">
                 <label class="form-label">Date of birth</label>
-                <input type="date" class="form-control form-control-sm" name="date_of_birth" value="{{ old('date_of_birth', $profile?->date_of_birth?->format('Y-m-d')) }}">
+                <x-tdate-input class="form-control form-control-sm" name="date_of_birth" value="{{ old('date_of_birth', $profile?->date_of_birth?->format('Y-m-d')) }}" />
             </div>
             <div class="col-md-6">
                 <label class="form-label">Address</label>

@@ -45,11 +45,11 @@
                 <div class="row g-3">
                     <div class="col-md-3">
                         <label class="form-label">Order Date *</label>
-                        <input type="date" name="order_date" value="{{ old('order_date', date('Y-m-d')) }}" class="form-control" required>
+                        <x-tdate-input name="order_date" :value="old('order_date', date('Y-m-d'))" class="form-control" required />
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Expected Delivery</label>
-                        <input type="date" name="expected_delivery_date" value="{{ old('expected_delivery_date') }}" class="form-control">
+                        <x-tdate-input name="expected_delivery_date" :value="old('expected_delivery_date')" class="form-control" />
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Billing Address</label>
@@ -90,11 +90,11 @@
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">Order Date *</label>
-                    <input type="date" name="order_date" value="{{ old('order_date', $order?->order_date?->format('Y-m-d') ?? date('Y-m-d')) }}" class="form-control" required>
+                    <x-tdate-input name="order_date" :value="old('order_date', $order?->order_date?->format('Y-m-d') ?? date('Y-m-d'))" class="form-control" required />
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">Expected Delivery</label>
-                    <input type="date" name="expected_delivery_date" value="{{ old('expected_delivery_date', $order?->expected_delivery_date?->format('Y-m-d') ?? '') }}" class="form-control">
+                    <x-tdate-input name="expected_delivery_date" :value="old('expected_delivery_date', $order?->expected_delivery_date?->format('Y-m-d') ?? '')" class="form-control" />
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">Currency *</label>

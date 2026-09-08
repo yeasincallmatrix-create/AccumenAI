@@ -33,7 +33,7 @@
                 <select name="delivery_id" class="form-select">
                     <option value="">— Invoice without delivery filter (uses all delivered quantities) —</option>
                     @foreach($deliveries as $d)
-                        <option value="{{ $d->id }}" {{ old('delivery_id')==$d->id?'selected':'' }}>{{ $d->delivery_number }} — {{ $d->delivery_date->format('Y-m-d') }} — {{ ucfirst($d->status) }} @if($d->warehouse) ({{ $d->warehouse->name }}) @endif</option>
+                        <option value="{{ $d->id }}" {{ old('delivery_id')==$d->id?'selected':'' }}>{{ $d->delivery_number }} — <x-tdate :value="$d->delivery_date" fallback="Y-m-d" /> — {{ ucfirst($d->status) }} @if($d->warehouse) ({{ $d->warehouse->name }}) @endif</option>
                     @endforeach
                 </select>
                 <small class="text-muted">If a delivery is selected, only quantities from that delivery are considered. Otherwise, invoicing uses aggregate delivered quantities.</small>

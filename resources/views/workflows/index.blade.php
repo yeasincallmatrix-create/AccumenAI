@@ -91,7 +91,7 @@
                             @endphp
                             <span class="badge {{ $badge }}">{{ ucfirst(str_replace('_', ' ', $workflow->status)) }}</span>
                         </td>
-                        <td class="text-muted small">{{ $workflow->created_at?->format('d M Y') }}</td>
+                        <td class="text-muted small"><x-tdate :value="$workflow->created_at" fallback="d M Y" /></td>
                     </tr>
                 @empty
                     <tr>

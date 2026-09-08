@@ -21,8 +21,8 @@
     <form method="POST" action="{{ route('hr.payroll.periods.store') }}" class="row g-2">
         @csrf
         <div class="col-md-3"><input type="text" name="name" class="form-control form-control-sm" placeholder="Name eg Jan 2026" required></div>
-        <div class="col-md-3"><input type="date" name="start_date" class="form-control form-control-sm" value="{{ now()->startOfMonth()->toDateString() }}" required></div>
-        <div class="col-md-3"><input type="date" name="end_date" class="form-control form-control-sm" value="{{ now()->endOfMonth()->toDateString() }}" required></div>
+        <div class="col-md-3"><x-tdate-input name="start_date" :value="now()->startOfMonth()->toDateString()" class="form-control form-control-sm" required /></div>
+        <div class="col-md-3"><x-tdate-input name="end_date" :value="now()->endOfMonth()->toDateString()" class="form-control form-control-sm" required /></div>
         <div class="col-md-3"><button type="submit" class="btn btn-primary btn-sm w-100">Create</button></div>
     </form>
 </div>
@@ -35,7 +35,7 @@
                 @foreach($periods as $p)
                     <tr>
                         <td><a href="{{ route('hr.payroll.periods.show',$p) }}">{{ $p->name }}</a></td>
-                        <td>{{ $p->start_date->format('Y-m-d') }} → {{ $p->end_date->format('Y-m-d') }}</td>
+                        <td><x-tdate :value="$p->start_date" fallback="Y-m-d" /> → <x-tdate :value="$p->end_date" fallback="Y-m-d" /></td>
                         <td><span class="badge text-bg-{{ $p->status==='paid'?'success':($p->status==='approved'?'primary':'secondary') }}">{{ $p->status }}</span></td>
                         <td>{{ $p->total_employees }}</td>
                         <td>{{ number_format($p->total_net,2) }}</td>

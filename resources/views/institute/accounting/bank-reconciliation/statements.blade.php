@@ -24,7 +24,7 @@
         <div class="row g-2 align-items-end">
             <div class="col-md-4">
                 <label class="form-label mb-1">Statement Date</label>
-                <input type="date" class="form-control form-control-sm" name="statement_date" value="{{ now()->toDateString() }}" required>
+                <x-tdate-input class="form-control form-control-sm" name="statement_date" value="{{ now()->toDateString() }}" required />
             </div>
             <div class="col-md-2">
                 <button class="btn btn-primary btn-sm w-100" type="submit"><i class="bi bi-plus"></i> Create</button>

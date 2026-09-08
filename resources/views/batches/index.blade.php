@@ -105,11 +105,11 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label" for="e_start_date">{{ mawa_e('batches.start_date') }} *</label>
-                            <input type="date" id="e_start_date" name="start_date" class="form-control" required>
+                            <x-tdate-input id="e_start_date" name="start_date" class="form-control" required />
                         </div>
                         <div class="col-md-4">
                             <label class="form-label" for="e_end_date">{{ mawa_e('batches.end_date') }}</label>
-                            <input type="date" id="e_end_date" name="end_date" class="form-control">
+                            <x-tdate-input id="e_end_date" name="end_date" class="form-control" />
                         </div>
                         <div class="col-md-4">
                             <label class="form-label" for="e_seat_capacity">{{ mawa_e('batches.seat_capacity') }}</label>

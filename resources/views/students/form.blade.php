@@ -232,13 +232,13 @@
             </div>
             <div class="field">
                 <label for="dob">Date of Birth</label>
-                <input id="dob" type="date" name="dob" value="{{ old('dob', $student->dob?->format('Y-m-d')) }}">
+                <x-tdate-input id="dob" name="dob" value="{{ old('dob', $student->dob?->format('Y-m-d')) }}" />
                 <div class="hint">Used for age calculation &amp; reports.</div>
                 @error('dob') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
             </div>
             <div class="field">
                 <label for="admission_date">Admission Date <span class="req">*</span></label>
-                <input id="admission_date" type="date" name="admission_date" value="{{ old('admission_date', $student->admission_date?->format('Y-m-d')) }}" required>
+                <x-tdate-input id="admission_date" name="admission_date" value="{{ old('admission_date', $student->admission_date?->format('Y-m-d')) }}" required />
                 <div class="hint">Date the student was admitted.</div>
                 @error('admission_date') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
             </div>

@@ -5,7 +5,7 @@
 @section('content')
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2">
     <div class="page-header-text">
-        <h4 class="page-header-title">Daily Report — {{ today()->format('d M Y') }}</h4>
+        <h4 class="page-header-title">Daily Report — <x-tdate :value="today()" fallback="d M Y" /></h4>
     </div>
     <div class="page-header-actions">
         <a class="btn btn-secondary" href="{{ route('medical.reports.monthly') }}">

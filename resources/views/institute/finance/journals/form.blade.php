@@ -17,7 +17,7 @@
         <div class="row g-3">
             <div class="col-md-3">
                 <label class="form-label">Journal date <span class="text-danger">*</span></label>
-                <input type="date" class="form-control form-control-sm" name="journal_date" value="{{ old('journal_date', now()->toDateString()) }}" required>
+                <x-tdate-input class="form-control form-control-sm" name="journal_date" value="{{ old('journal_date', now()->toDateString()) }}" required />
             </div>
             <div class="col-md-3">
                 <label class="form-label">Type <span class="text-danger">*</span></label>

@@ -8,6 +8,7 @@ use App\Http\Middleware\EnsureInstituteContext;
 use App\Http\Middleware\ForceJsonResponse;
 use App\Http\Middleware\MedicalDomain;
 use App\Http\Middleware\MedicalModuleAccess;
+use App\Http\Middleware\NormalizePersonNames;
 use App\Http\Middleware\PlatformMaintenance;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetFortifyGuard;
@@ -55,12 +56,14 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->web(append: [
+            NormalizePersonNames::class,
             SetLocale::class,
             SecurityHeaders::class,
             PlatformMaintenance::class,
         ]);
 
         $middleware->api(append: [
+            NormalizePersonNames::class,
             ForceJsonResponse::class,
             SetLocale::class,
         ]);

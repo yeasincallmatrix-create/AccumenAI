@@ -76,7 +76,7 @@
                         <tr class="{{ $batch->is_expired ? 'table-danger' : '' }}">
                             <td>{{ $batch->batch_number }}</td>
                             <td>
-                                {{ $batch->expiry_date?->format('d M Y') }}
+                                <x-tdate :value="$batch->expiry_date" fallback="d M Y" />
                                 @if($batch->is_expired)
                                     <span class="badge bg-danger">Expired</span>
                                 @elseif($batch->days_to_expiry <= 30)

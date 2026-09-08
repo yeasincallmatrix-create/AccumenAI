@@ -236,7 +236,7 @@
                         <td data-col="subscription" @if(!in_array('subscription', $visibleColumns, true)) style="display:none" @endif>
                             @if ($institute->subscription_expiry)
                                 <span class="{{ \Illuminate\Support\Carbon::parse($institute->subscription_expiry)->lt(now()) ? 'text-danger' : '' }}">
-                                    {{ \Illuminate\Support\Carbon::parse($institute->subscription_expiry)->format('d M Y') }}
+                                    <x-tdate :value="\Illuminate\Support\Carbon::parse($institute->subscription_expiry)" fallback="d M Y" />
                                 </span>
                             @else
                                 <span class="text-muted">—</span>
@@ -324,7 +324,7 @@
                     <td data-col="package" @if(!in_array('package', $visibleColumns, true)) style="display:none" @endif>{{ $institute->package->name ?? '—' }}</td>
                     <td data-col="students" @if(!in_array('students', $visibleColumns, true)) style="display:none" @endif>{{ $institute->students_count }}</td>
                     <td data-col="subscription" @if(!in_array('subscription', $visibleColumns, true)) style="display:none" @endif>
-                        {{ $institute->subscription_expiry ? \Illuminate\Support\Carbon::parse($institute->subscription_expiry)->format('d M Y') : '—' }}
+                        <x-tdate :value="\Illuminate\Support\Carbon::parse($institute->subscription_expiry)" fallback="d M Y" empty="—" />
                     </td>
                     <td data-col="status" @if(!in_array('status', $visibleColumns, true)) style="display:none" @endif>{{ ucwords($institute->status) }}</td>
                 </tr>

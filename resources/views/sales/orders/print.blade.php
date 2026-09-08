@@ -24,8 +24,8 @@
         </div>
     </div>
     <div style="text-align:right">
-        <div><strong>Order Date:</strong> {{ $order->order_date->format('Y-m-d') }}</div>
-        <div><strong>Expected:</strong> {{ $order->expected_delivery_date?->format('Y-m-d') ?? '—' }}</div>
+        <div><strong>Order Date:</strong> <x-tdate :value="$order->order_date" fallback="Y-m-d" /></div>
+        <div><strong>Expected:</strong> <x-tdate :value="$order->expected_delivery_date" fallback="Y-m-d" empty="—" /></div>
         <div><strong>Currency:</strong> {{ $order->currency?->code }}</div>
     </div>
 </div>
@@ -61,7 +61,7 @@
 @if($order->notes)<p><strong>Notes:</strong><br>{{ $order->notes }}</p>@endif
 @if($order->terms_conditions)<p><strong>Terms:</strong><br><small>{{ $order->terms_conditions }}</small></p>@endif
 
-<p class="text-muted" style="margin-top:24px">Printed: {{ now()->format('Y-m-d H:i') }}</p>
+<p class="text-muted" style="margin-top:24px">Printed: <x-tdate :value="now()" fallback="Y-m-d H:i" :datetime="true" /></p>
 <div class="no-print" style="margin-top:12px"><button onclick="window.print()">Print</button></div>
 </body>
 </html>

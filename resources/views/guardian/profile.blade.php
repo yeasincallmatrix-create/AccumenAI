@@ -32,7 +32,7 @@
                         </tr>
                         <tr>
                             <th class="text-body-secondary">{{ mawa_e('guardian.member_since') }}</th>
-                            <td>{{ $guardian->created_at?->format('d M Y') }}</td>
+                            <td><x-tdate :value="$guardian->created_at" fallback="d M Y" /></td>
                         </tr>
                     </tbody>
                 </table>

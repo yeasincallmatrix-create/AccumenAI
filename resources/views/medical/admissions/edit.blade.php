@@ -72,9 +72,7 @@
                 <div class="col-md-3">
                     <div class="mb-3">
                         <label class="form-label" for="admission_date">Admission Date <span class="text-danger">*</span></label>
-                        <input type="date" id="admission_date" name="admission_date"
-                               class="form-control @error('admission_date') is-invalid @enderror"
-                               value="{{ old('admission_date', $admission->admission_date?->format('Y-m-d')) }}" required>
+                        <x-tdate-input name="admission_date" :value="old('admission_date', $admission->admission_date?->format('Y-m-d'))" id="admission_date" :class="'form-control'.($errors->has('admission_date') ? ' is-invalid' : '')" required />
                         @error('admission_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>

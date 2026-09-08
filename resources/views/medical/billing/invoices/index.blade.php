@@ -22,7 +22,7 @@
         <form method="GET" class="mb-3">
             <div class="row g-2">
                 <div class="col-md-2">
-                    <select name="status" class="form-select" onchange="this.form.submit()">
+                    <select name="status" class="form-select" onchange="guardTdateSubmit(this)">
                         <option value="">All Status</option>
                         @foreach(['draft' => 'Draft', 'pending' => 'Pending', 'partial' => 'Partial', 'paid' => 'Paid', 'cancelled' => 'Cancelled'] as $value => $label)
                             <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
@@ -30,7 +30,7 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <select name="type" class="form-select" onchange="this.form.submit()">
+                    <select name="type" class="form-select" onchange="guardTdateSubmit(this)">
                         <option value="">All Types</option>
                         @foreach(['opd' => 'OPD', 'ipd' => 'IPD', 'pharmacy' => 'Pharmacy', 'lab' => 'Lab', 'surgery' => 'Surgery'] as $value => $label)
                             <option value="{{ $value }}" @selected(request('type') === $value)>{{ $label }}</option>
@@ -38,7 +38,7 @@
                     </select>
                 </div>
                 <div class="col-md-4">
-                    <select name="patient_id" class="form-select" onchange="this.form.submit()">
+                    <select name="patient_id" class="form-select" onchange="guardTdateSubmit(this)">
                         <option value="">All Patients</option>
                         @foreach($patients as $patient)
                             <option value="{{ $patient->id }}" @selected((string) request('patient_id') === (string) $patient->id)>
@@ -48,7 +48,7 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <input type="date" name="from_date" class="form-control" value="{{ request('from_date') }}" onchange="this.form.submit()">
+                    <x-tdate-input name="from_date" :value="request('from_date')" class="form-control" onchange="guardTdateSubmit(this)" />
                 </div>
                 <div class="col-md-2 text-end">
                     <a href="{{ route('medical.billing.invoices.index') }}" class="btn btn-secondary">Reset</a>
@@ -67,7 +67,7 @@
                         <td><strong>{{ $invoice->invoice_number }}</strong></td>
                         <td>{{ $invoice->patient->full_name ?? 'N/A' }}</td>
                         <td><span class="badge bg-{{ $invoice->type_class }}">{{ strtoupper($invoice->type) }}</span></td>
-                        <td>{{ $invoice->invoice_date?->format('d M Y') }}</td>
+                        <td><x-tdate :value="$invoice->invoice_date" fallback="d M Y" /></td>
                         <td>৳{{ number_format($invoice->total, 2) }}</td>
                         <td>
                             ৳{{ number_format($invoice->due_amount, 2) }}

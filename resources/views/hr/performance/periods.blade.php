@@ -7,8 +7,8 @@
     <form method="POST" action="{{ route('hr.performance.periods.store') }}" class="row g-2">
         @csrf
         <div class="col-md-3"><input type="text" name="name" class="form-control form-control-sm" placeholder="Name *" required></div>
-        <div class="col-md-2"><input type="date" name="start_date" class="form-control form-control-sm" required></div>
-        <div class="col-md-2"><input type="date" name="end_date" class="form-control form-control-sm" required></div>
+        <div class="col-md-2"><x-tdate-input name="start_date" class="form-control form-control-sm" required /></div>
+        <div class="col-md-2"><x-tdate-input name="end_date" class="form-control form-control-sm" required /></div>
         <div class="col-md-2"><select name="branch_id" class="form-select form-select-sm"><option value="">All branches</option>@foreach($branches as $b)<option value="{{ $b->id }}">{{ $b->name }}</option>@endforeach</select></div>
         <div class="col-md-1"><button type="submit" class="btn btn-sm btn-primary">Create</button></div>
     </form>
@@ -21,7 +21,7 @@
                 @forelse($periods as $p)
                     <tr>
                         <td>{{ $p->name }}@if($p->code) <code>{{ $p->code }}</code> @endif<div class="text-muted small">{{ $p->description ?? '' }}</div></td>
-                        <td>{{ $p->start_date->format('Y-m-d') }} → {{ $p->end_date->format('Y-m-d') }}</td>
+                        <td><x-tdate :value="$p->start_date" fallback="Y-m-d" /> → <x-tdate :value="$p->end_date" fallback="Y-m-d" /></td>
                         <td>{{ $p->branch?->name ?? 'All' }}</td>
                         <td><span class="badge {{ $p->status==='active' ? 'text-bg-success' : ($p->status==='closed' ? 'text-bg-secondary' : 'text-bg-warning') }}">{{ $p->status }}</span></td>
                         <td>

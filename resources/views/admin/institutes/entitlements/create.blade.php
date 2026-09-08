@@ -66,22 +66,22 @@
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Start Date</label>
-                    <input type="date" name="starts_at" value="{{ old('starts_at') }}" class="form-control @error('starts_at') is-invalid @enderror">
+                    <x-tdate-input name="starts_at" :value="old('starts_at')" :class="'form-control'.($errors->has('starts_at') ? ' is-invalid' : '')" />
                     @error('starts_at')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">End Date</label>
-                    <input type="date" name="ends_at" value="{{ old('ends_at') }}" class="form-control @error('ends_at') is-invalid @enderror">
+                    <x-tdate-input name="ends_at" :value="old('ends_at')" :class="'form-control'.($errors->has('ends_at') ? ' is-invalid' : '')" />
                     @error('ends_at')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Trial Start</label>
-                    <input type="date" name="trial_starts_at" value="{{ old('trial_starts_at') }}" class="form-control @error('trial_starts_at') is-invalid @enderror">
+                    <x-tdate-input name="trial_starts_at" :value="old('trial_starts_at')" :class="'form-control'.($errors->has('trial_starts_at') ? ' is-invalid' : '')" />
                     @error('trial_starts_at')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Trial End</label>
-                    <input type="date" name="trial_ends_at" value="{{ old('trial_ends_at') }}" class="form-control @error('trial_ends_at') is-invalid @enderror">
+                    <x-tdate-input name="trial_ends_at" :value="old('trial_ends_at')" :class="'form-control'.($errors->has('trial_ends_at') ? ' is-invalid' : '')" />
                     @error('trial_ends_at')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-3">

@@ -50,11 +50,11 @@
                     </div>
                     <div class="col-md-4">
                         <label class="form-label text-muted mb-0">Request Date</label>
-                        <div>{{ $purchaseRequest->request_date?->format('Y-m-d') }}</div>
+                        <div><x-tdate :value="$purchaseRequest->request_date" fallback="Y-m-d" /></div>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label text-muted mb-0">Required By</label>
-                        <div>{{ $purchaseRequest->required_by_date?->format('Y-m-d') ?? '—' }}</div>
+                        <div><x-tdate :value="$purchaseRequest->required_by_date" fallback="Y-m-d" empty="—" /></div>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label text-muted mb-0">Warehouse</label>
@@ -121,16 +121,16 @@
             <div class="card-body">
                 <ul class="list-unstyled mb-0">
                     <li class="mb-2">
-                        <strong>Created:</strong> {{ $purchaseRequest->created_at?->format('Y-m-d H:i') ?? '—' }}
+                        <strong>Created:</strong> <x-tdate :value="$purchaseRequest->created_at" fallback="Y-m-d H:i" :datetime="true" empty="—" />
                     </li>
                     @if ($purchaseRequest->approved_at)
                         <li class="mb-2">
-                            <strong>Approved:</strong> {{ $purchaseRequest->approved_at?->format('Y-m-d H:i') }}
+                            <strong>Approved:</strong> <x-tdate :value="$purchaseRequest->approved_at" fallback="Y-m-d H:i" :datetime="true" />
                         </li>
                     @endif
                     @if ($purchaseRequest->converted_at)
                         <li class="mb-2">
-                            <strong>Converted:</strong> {{ $purchaseRequest->converted_at?->format('Y-m-d H:i') }}
+                            <strong>Converted:</strong> <x-tdate :value="$purchaseRequest->converted_at" fallback="Y-m-d H:i" :datetime="true" />
                         </li>
                     @endif
                     @if ($purchaseRequest->convertedOrder)

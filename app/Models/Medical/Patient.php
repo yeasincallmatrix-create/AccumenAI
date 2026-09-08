@@ -2,12 +2,14 @@
 
 namespace App\Models\Medical;
 
+use App\Models\Concerns\NormalizesPersonNames;
 use App\Models\Institute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Patient extends Model
 {
+    use NormalizesPersonNames;
     use SoftDeletes;
 
     protected $table = 'patients';
@@ -78,6 +80,11 @@ class Patient extends Model
     public function getAgeAttribute()
     {
         return $this->date_of_birth ? $this->date_of_birth->age : null;
+    }
+
+    public function getAgeCategoryAttribute(): ?string
+    {
+        return mawa_age_category($this->date_of_birth);
     }
 
     public function scopeActive($query)

@@ -28,6 +28,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
 {
     /** @use HasFactory<UserFactory> */
     use Concerns\DeletesFiles;
+    use Concerns\NormalizesPersonNames;
     use HasFactory, HasUserPreferences, MustVerifyEmail, Notifiable, SoftDeletes, TwoFactorAuthenticatable;
 
     protected $fileColumns = ['photo'];

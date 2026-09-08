@@ -22,7 +22,7 @@
                         <span class="badge text-bg-secondary">{{ $u->_e26_deleted_businesses ?? 0 }} deleted</span>
                         <div class="text-muted small">Total: {{ $u->_e26_total_memberships ?? 0 }} · Owner active: {{ $u->_e26_owned_active ?? 0 }}</div>
                     </td>
-                    <td class="text-muted small">{{ \Illuminate\Support\Carbon::parse($u->deleted_at)->format('d M Y H:i') }}</td>
+                    <td class="text-muted small"><x-tdate :value="\Illuminate\Support\Carbon::parse($u->deleted_at)" fallback="d M Y H:i" :datetime="true" /></td>
                     <td class="text-end text-nowrap">
                         <button type="button" class="btn btn-sm btn-success user-restore-btn" data-action="{{ route('admin.users.restore', $u) }}" title="Restore"><i class="bi bi-arrow-counterclockwise"></i></button>
                         <button type="button" class="btn btn-sm btn-outline-danger user-force-btn" title="Permanent Delete"

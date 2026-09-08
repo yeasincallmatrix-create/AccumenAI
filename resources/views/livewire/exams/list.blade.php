@@ -1,7 +1,3 @@
-@php
-    $fmtDate = fn ($date) => $date ? \Illuminate\Support\Carbon::parse($date)->format('d M Y, h:i A') : '—';
-@endphp
-
 <div class="admin-card" data-ajax-table>
 
     <div class="filter-card">
@@ -110,7 +106,7 @@
                             @endif
                         </td>@endif
                         @if (in_array('subjects', $visibleColumns, true))<td>{{ $exam->subjects->pluck('subject.name')->filter()->implode(', ') ?: '—' }}</td>@endif
-                        @if (in_array('date', $visibleColumns, true))<td>{{ $fmtDate($exam->exam_date) }}</td>@endif
+                        @if (in_array('date', $visibleColumns, true))<td><x-tdate :value="$exam->exam_date" fallback="d M Y, h:i A" :datetime="true" empty="—" /></td>@endif
                         @if (in_array('marks', $visibleColumns, true))<td>{{ rtrim(rtrim(number_format($exam->full_marks, 2), '0'), '.') }} / {{ rtrim(rtrim(number_format($exam->pass_marks, 2), '0'), '.') }}</td>@endif
                         @if (in_array('students', $visibleColumns, true))<td>{{ $exam->students_count ?? $exam->results_count }}</td>@endif
                         @if (in_array('pass', $visibleColumns, true))<td class="text-success fw-semibold">{{ $exam->pass_count ?? 0 }}</td>@endif

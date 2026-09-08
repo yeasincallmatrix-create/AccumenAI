@@ -373,19 +373,31 @@ class ModuleAccessService
         return false;
     }
 
+    /**
+     * Industry compatibility gate for industry-scoped modules.
+     *
+     * The map is industry → module (keys are industries, values are module keys),
+     * so a reverse lookup via array_search() finds the owning industry for a
+     * given module key. A direct $map[$moduleKey] lookup would be wrong because
+     * module keys (e.g. 'medical') are values, not keys, and would always miss.
+     * Non-industry modules (finance, crm, ...) have no owner and are always
+     * compatible.
+     */
     protected function isIndustryCompatible(Institute $institute, string $moduleKey): bool
     {
         $industry = $institute->industry ?? null;
 
-        // Industry modules: only compatible with matching institute industry
+        // Industry modules: only compatible with matching institute industry.
+        // Map is industry→module; use array_search to find the owning industry for a module key.
         $industryModuleMap = [
             'education' => 'education',
             'healthcare' => 'medical',
             'training_center' => 'training_center',
         ];
 
-        if (in_array($moduleKey, array_values($industryModuleMap), true)) {
-            return ($industryModuleMap[$moduleKey] ?? null) === $industry;
+        $ownerIndustry = array_search($moduleKey, $industryModuleMap, true);
+        if ($ownerIndustry !== false) {
+            return $ownerIndustry === $industry;
         }
 
         return true;

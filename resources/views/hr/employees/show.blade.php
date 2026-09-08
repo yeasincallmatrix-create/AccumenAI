@@ -6,7 +6,7 @@
 
 <div class="standalone-heading">
     <h4>{{ $employee->display_name }} <small class="text-muted"><code>{{ $employee->employee_code }}</code></small></h4>
-    <p>{{ $employee->employment_status === 'active' ? 'Active' : ucfirst($employee->employment_status) }} @if($employee->employment_type) · {{ ucwords(str_replace('_',' ', $employee->employment_type)) }} @endif @if($currentPeriod) · Since {{ $currentPeriod->start_date->format('Y-m-d') }} @endif · {{ $totalServiceDays }} days total</p>
+    <p>{{ $employee->employment_status === 'active' ? 'Active' : ucfirst($employee->employment_status) }} @if($employee->employment_type) · {{ ucwords(str_replace('_',' ', $employee->employment_type)) }} @endif @if($currentPeriod) · Since <x-tdate :value="$currentPeriod->start_date" fallback="Y-m-d" /> @endif · {{ $totalServiceDays }} days total</p>
     <div class="d-flex flex-wrap gap-2">
         <a href="{{ route('hr.employees.index') }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left me-1"></i>Back</a>
         @if ($canUpdate)
@@ -56,14 +56,14 @@
                         <strong>—</strong>
                     @endif
                 </div>
-                <div class="mt-2"><span class="text-muted">Joining</span><br><strong>{{ $employee->joining_date?->format('Y-m-d') ?? '—' }}</strong></div>
+                <div class="mt-2"><span class="text-muted">Joining</span><br><strong><x-tdate :value="$employee->joining_date" fallback="Y-m-d" empty="—" /></strong></div>
             </div>
         </div>
 
         <div class="admin-card p-3 mt-3">
             <h6>Employment Summary</h6>
             <div class="small">
-                <div class="d-flex justify-content-between"><span class="text-muted">Current Period</span><strong>{{ $currentPeriod ? $currentPeriod->start_date->format('Y-m-d').' — '.($currentPeriod->end_date?->format('Y-m-d') ?? 'present') : '—' }}</strong></div>
+                <div class="d-flex justify-content-between"><span class="text-muted">Current Period</span><strong>{{ $currentPeriod ? mawa_format_date($currentPeriod->start_date).' — '.($currentPeriod->end_date ? mawa_format_date($currentPeriod->end_date) : 'present') : '—' }}</strong></div>
                 <div class="d-flex justify-content-between mt-1"><span class="text-muted">Total Service</span><strong>{{ $totalServiceDays }} days</strong></div>
                 <div class="d-flex justify-content-between mt-1"><span class="text-muted">Periods</span><strong>{{ $periods->count() }}</strong></div>
                 <div class="d-flex justify-content-between mt-1"><span class="text-muted">History Events</span><strong>{{ $histories->count() }}</strong></div>
@@ -77,8 +77,8 @@
                         <tbody>
                             @foreach ($periods as $p)
                                 <tr>
-                                    <td>{{ $p->start_date->format('Y-m-d') }}</td>
-                                    <td>{{ $p->end_date?->format('Y-m-d') ?? '—' }}</td>
+                                    <td><x-tdate :value="$p->start_date" fallback="Y-m-d" /></td>
+                                    <td><x-tdate :value="$p->end_date" fallback="Y-m-d" empty="—" /></td>
                                     <td><span class="badge {{ $p->status === 'active' ? 'text-bg-success' : 'text-bg-secondary' }}">{{ $p->status }}</span></td>
                                     <td>{{ $p->end_reason ?? '—' }}</td>
                                 </tr>
@@ -97,8 +97,8 @@
                 <div class="col-6"><span class="text-muted">Middle</span><br><strong>{{ $employee->middle_name ?? '—' }}</strong></div>
                 <div class="col-6"><span class="text-muted">Last</span><br><strong>{{ $employee->last_name }}</strong></div>
                 <div class="col-6"><span class="text-muted">Gender</span><br><strong>{{ $employee->gender ? ucfirst($employee->gender) : '—' }}</strong></div>
-                <div class="col-6"><span class="text-muted">DOB</span><br><strong>{{ $employee->date_of_birth?->format('Y-m-d') ?? '—' }}</strong></div>
-                <div class="col-6"><span class="text-muted">Joining Date</span><br><strong>{{ $employee->joining_date?->format('Y-m-d') ?? '—' }}</strong></div>
+                <div class="col-6"><span class="text-muted">DOB</span><br><strong><x-tdate :value="$employee->date_of_birth" fallback="Y-m-d" empty="—" /></strong></div>
+                <div class="col-6"><span class="text-muted">Joining Date</span><br><strong><x-tdate :value="$employee->joining_date" fallback="Y-m-d" empty="—" /></strong></div>
                 <div class="col-6"><span class="text-muted">Phone</span><br><strong>{{ $employee->phone ?? '—' }}</strong></div>
                 <div class="col-6"><span class="text-muted">Email</span><br><strong>{{ $employee->email ?? '—' }}</strong></div>
                 <div class="col-12"><span class="text-muted">Address</span><br><strong>{{ $employee->address ?? '—' }}</strong></div>
@@ -129,7 +129,7 @@
                         <tbody>
                             @foreach ($histories as $h)
                                 <tr>
-                                    <td>{{ $h->effective_date->format('Y-m-d') }}</td>
+                                    <td><x-tdate :value="$h->effective_date" fallback="Y-m-d" /></td>
                                     <td><span class="badge text-bg-light border">{{ str_replace('_',' ', $h->event_type) }}</span>@if($h->approval_status) <span class="badge {{ $h->approval_status === 'approved' ? 'text-bg-success' : ($h->approval_status === 'pending' ? 'text-bg-warning' : 'text-bg-danger') }}">{{ $h->approval_status }}</span> @endif</td>
                                     <td>
                                         @if($h->previous_branch_id || $h->new_branch_id) Branch: {{ $h->previousBranch?->name ?? '—' }} → {{ $h->newBranch?->name ?? '—' }}<br> @endif
@@ -157,7 +157,7 @@
                                             </div>
                                         @endif
                                     </td>
-                                    <td>{{ $h->changedBy?->email ?? '—' }}<div class="text-muted">{{ $h->created_at->format('Y-m-d H:i') }}</div></td>
+                                    <td>{{ $h->changedBy?->email ?? '—' }}<div class="text-muted"><x-tdate :value="$h->created_at" fallback="Y-m-d H:i" :datetime="true" /></div></td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -203,7 +203,7 @@
                         <tbody>
                             @foreach($trainingEnrollments as $en)
                                 <tr>
-                                    <td>{{ $en->training->title }}<div class="text-muted small">{{ $en->training->start_date->format('Y-m-d') }}</div></td>
+                                    <td>{{ $en->training->title }}<div class="text-muted small"><x-tdate :value="$en->training->start_date" fallback="Y-m-d" /></div></td>
                                     <td>{{ $en->status }}</td>
                                     <td>{{ $en->result }}</td>
                                     <td>@if($en->certificate_path)<a href="{{ Storage::url($en->certificate_path) }}" target="_blank">View</a>@else — @endif</td>
@@ -287,8 +287,8 @@
                 <div class="col-md-3"><input type="text" name="title" class="form-control form-control-sm" maxlength="200" placeholder="Title (optional)"></div>
                 <div class="col-md-3"><input type="text" name="document_number" class="form-control form-control-sm" maxlength="100" placeholder="Doc number / ref"></div>
                 <div class="col-md-3"><input type="file" name="file" class="form-control form-control-sm" required></div>
-                <div class="col-md-3"><label class="small text-muted">Issue date</label><input type="date" name="issue_date" class="form-control form-control-sm"></div>
-                <div class="col-md-3"><label class="small text-muted">Expiry date</label><input type="date" name="expiry_date" class="form-control form-control-sm"></div>
+                <div class="col-md-3"><label class="small text-muted">Issue date</label><x-tdate-input name="issue_date" class="form-control form-control-sm" /></div>
+                <div class="col-md-3"><label class="small text-muted">Expiry date</label><x-tdate-input name="expiry_date" class="form-control form-control-sm" /></div>
                 <div class="col-md-4"><input type="text" name="description" class="form-control form-control-sm" maxlength="2000" placeholder="Notes"></div>
                 <div class="col-md-2 text-end"><button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-upload me-1"></i>Upload</button></div>
             </form>
@@ -312,8 +312,8 @@
             <div class="mb-2"><label class="form-label small">Title</label><input type="text" name="title" id="hrDocEditTitle" class="form-control form-control-sm" maxlength="200"></div>
             <div class="mb-2"><label class="form-label small">Document number</label><input type="text" name="document_number" id="hrDocEditNumber" class="form-control form-control-sm" maxlength="100"></div>
             <div class="mb-2"><label class="form-label small">Category</label><select name="category_id" id="hrDocEditCategory" class="form-select form-select-sm"></select></div>
-            <div class="mb-2"><label class="form-label small">Issue date</label><input type="date" name="issue_date" id="hrDocEditIssue" class="form-control form-control-sm"></div>
-            <div class="mb-2"><label class="form-label small">Expiry date</label><input type="date" name="expiry_date" id="hrDocEditExpiry" class="form-control form-control-sm"></div>
+            <div class="mb-2"><label class="form-label small">Issue date</label><x-tdate-input name="issue_date" id="hrDocEditIssue" class="form-control form-control-sm" /></div>
+            <div class="mb-2"><label class="form-label small">Expiry date</label><x-tdate-input name="expiry_date" id="hrDocEditExpiry" class="form-control form-control-sm" /></div>
             <div class="mb-2"><label class="form-label small">Notes</label><textarea name="description" id="hrDocEditDesc" class="form-control form-control-sm" rows="2" maxlength="2000"></textarea></div>
         </div>
         <div class="modal-footer"><button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-sm btn-primary">Save</button></div>
@@ -432,7 +432,7 @@ loadCategories(); loadDocs();
             <div class="modal-content">
                 <div class="modal-header"><h6 class="modal-title">Transfer Employee</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
-                    <div class="mb-2"><label class="form-label small">Effective Date *</label><input type="date" name="effective_date" class="form-control form-control-sm" value="{{ now()->toDateString() }}" required></div>
+                    <div class="mb-2"><label class="form-label small">Effective Date *</label><x-tdate-input name="effective_date" :value="now()->toDateString()" class="form-control form-control-sm" required /></div>
                     <div class="mb-2"><label class="form-label small">Branch</label><select name="branch_id" class="form-select form-select-sm"><option value="">— Keep —</option>@foreach($branches as $b)<option value="{{ $b->id }}" @selected($employee->branch_id==$b->id)>{{ $b->name }}</option>@endforeach</select></div>
                     <div class="mb-2"><label class="form-label small">Department</label><select name="department_id" class="form-select form-select-sm"><option value="">— Keep —</option>@foreach($departments as $d)<option value="{{ $d->id }}" @selected($employee->department_id==$d->id)>{{ $d->name }}</option>@endforeach</select></div>
                     <div class="mb-2"><label class="form-label small">Designation</label><select name="designation_id" class="form-select form-select-sm"><option value="">— Keep —</option>@foreach($designations as $de)<option value="{{ $de->id }}" @selected($employee->designation_id==$de->id)>{{ $de->name }}</option>@endforeach</select></div>
@@ -457,7 +457,7 @@ loadCategories(); loadDocs();
             <div class="modal-content">
                 <div class="modal-header"><h6 class="modal-title">Promotion / Demotion</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
-                    <div class="mb-2"><label class="form-label small">Effective Date *</label><input type="date" name="effective_date" class="form-control form-control-sm" value="{{ now()->toDateString() }}" required></div>
+                    <div class="mb-2"><label class="form-label small">Effective Date *</label><x-tdate-input name="effective_date" :value="now()->toDateString()" class="form-control form-control-sm" required /></div>
                     <div class="mb-2"><label class="form-label small">Type</label><select name="event_type" class="form-select form-select-sm"><option value="promotion">Promotion</option><option value="demotion">Demotion</option></select></div>
                     <div class="mb-2"><label class="form-label small">Department</label><select name="department_id" class="form-select form-select-sm"><option value="">— Keep —</option>@foreach($departments as $d)<option value="{{ $d->id }}" @selected($employee->department_id==$d->id)>{{ $d->name }}</option>@endforeach</select></div>
                     <div class="mb-2"><label class="form-label small">Designation</label><select name="designation_id" class="form-select form-select-sm"><option value="">— Keep —</option>@foreach($designations as $de)<option value="{{ $de->id }}" @selected($employee->designation_id==$de->id)>{{ $de->name }}</option>@endforeach</select></div>
@@ -482,8 +482,8 @@ loadCategories(); loadDocs();
             <div class="modal-content">
                 <div class="modal-header"><h6 class="modal-title">Resignation</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
-                    <div class="mb-2"><label class="form-label small">Resignation Date *</label><input type="date" name="resignation_date" class="form-control form-control-sm" value="{{ now()->toDateString() }}" required></div>
-                    <div class="mb-2"><label class="form-label small">Last Working Date *</label><input type="date" name="last_working_date" class="form-control form-control-sm" value="{{ now()->addDays(30)->toDateString() }}" required></div>
+                    <div class="mb-2"><label class="form-label small">Resignation Date *</label><x-tdate-input name="resignation_date" :value="now()->toDateString()" class="form-control form-control-sm" required /></div>
+                    <div class="mb-2"><label class="form-label small">Last Working Date *</label><x-tdate-input name="last_working_date" :value="now()->addDays(30)->toDateString()" class="form-control form-control-sm" required /></div>
                     <div class="mb-2"><label class="form-label small">Reason</label><input type="text" name="reason" class="form-control form-control-sm"></div>
                     <div class="mb-2"><label class="form-label small">Notes</label><textarea name="notes" class="form-control form-control-sm" rows="2"></textarea></div>
                     <div class="small text-muted">Creates pending resignation; approval required via timeline. No payroll settlement here.</div>
@@ -504,7 +504,7 @@ loadCategories(); loadDocs();
             <div class="modal-content">
                 <div class="modal-header"><h6 class="modal-title">Termination</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
-                    <div class="mb-2"><label class="form-label small">Termination Date *</label><input type="date" name="termination_date" class="form-control form-control-sm" value="{{ now()->toDateString() }}" required></div>
+                    <div class="mb-2"><label class="form-label small">Termination Date *</label><x-tdate-input name="termination_date" :value="now()->toDateString()" class="form-control form-control-sm" required /></div>
                     <div class="mb-2"><label class="form-label small">Reason *</label><input type="text" name="reason" class="form-control form-control-sm" required></div>
                     <div class="mb-2"><label class="form-label small">Notes</label><textarea name="notes" class="form-control form-control-sm" rows="2"></textarea></div>
                     <div class="small text-muted">Authorized action only. Audited.</div>
@@ -525,7 +525,7 @@ loadCategories(); loadDocs();
             <div class="modal-content">
                 <div class="modal-header"><h6 class="modal-title">Rejoin / Reactivate</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <div class="modal-body">
-                    <div class="mb-2"><label class="form-label small">Effective Date *</label><input type="date" name="effective_date" class="form-control form-control-sm" value="{{ now()->toDateString() }}" required></div>
+                    <div class="mb-2"><label class="form-label small">Effective Date *</label><x-tdate-input name="effective_date" :value="now()->toDateString()" class="form-control form-control-sm" required /></div>
                     <div class="mb-2"><label class="form-label small">Reason</label><input type="text" name="reason" class="form-control form-control-sm"></div>
                     <div class="mb-2"><label class="form-label small">Notes</label><textarea name="notes" class="form-control form-control-sm" rows="2"></textarea></div>
                     <div class="small text-muted">Preserves previous periods; opens new active period.</div>

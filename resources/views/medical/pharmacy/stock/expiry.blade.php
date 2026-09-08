@@ -48,7 +48,7 @@
                             <td>{{ $alert['medicine']->display_name ?? 'N/A' }}</td>
                             <td>{{ $alert['batch'] }}</td>
                             <td>{{ $alert['quantity'] }}</td>
-                            <td>{{ $alert['expiry_date']?->format('d M Y') }}</td>
+                            <td><x-tdate :value="$alert['expiry_date']" fallback="d M Y" /></td>
                             <td><span class="badge bg-danger">{{ $alert['days_left'] }}d</span></td>
                         </tr>
                         @endforeach
@@ -74,7 +74,7 @@
                             <td>{{ $alert['medicine']->display_name ?? 'N/A' }}</td>
                             <td>{{ $alert['batch'] }}</td>
                             <td>{{ $alert['quantity'] }}</td>
-                            <td>{{ $alert['expiry_date']?->format('d M Y') }}</td>
+                            <td><x-tdate :value="$alert['expiry_date']" fallback="d M Y" /></td>
                             <td><span class="badge bg-warning text-dark">{{ $alert['days_left'] }}d</span></td>
                         </tr>
                         @endforeach
@@ -100,7 +100,7 @@
                             <td>{{ $alert['medicine']->display_name ?? 'N/A' }}</td>
                             <td>{{ $alert['batch'] }}</td>
                             <td>{{ $alert['quantity'] }}</td>
-                            <td>{{ $alert['expiry_date']?->format('d M Y') }}</td>
+                            <td><x-tdate :value="$alert['expiry_date']" fallback="d M Y" /></td>
                             <td><span class="badge bg-secondary">{{ $alert['days_overdue'] }}d ago</span></td>
                         </tr>
                         @endforeach

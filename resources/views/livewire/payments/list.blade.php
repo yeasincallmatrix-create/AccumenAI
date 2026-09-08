@@ -13,11 +13,11 @@
             </div>
             <div class="filter-span">
                 <label class="form-label mb-1">From</label>
-                <input type="date" class="form-control form-control-sm" wire:model.live="filters.from">
+                <x-live-date model="filters.from" :value="$filters['from'] ?? ''" class="form-control form-control-sm" />
             </div>
             <div class="filter-span">
                 <label class="form-label mb-1">To</label>
-                <input type="date" class="form-control form-control-sm" wire:model.live="filters.to">
+                <x-live-date model="filters.to" :value="$filters['to'] ?? ''" class="form-control form-control-sm" />
             </div>
             <div class="filter-span">
                 <button class="btn btn-outline-secondary btn-sm mt-1" wire:click="resetFilters">Reset</button>
@@ -56,7 +56,7 @@
                             @endif
                         </td>@endif
                         @if (in_array('amount', $visibleColumns, true))<td class="text-end fw-semibold">{{ number_format((float) $payment->amount, 2) }}</td>@endif
-                        @if (in_array('paid_at', $visibleColumns, true))<td>{{ $payment->paid_at?->format('Y-m-d H:i') }}</td>@endif
+                        @if (in_array('paid_at', $visibleColumns, true))<td><x-tdate :value="$payment->paid_at" fallback="Y-m-d H:i" :datetime="true" /></td>@endif
                         @if (in_array('received_by', $visibleColumns, true))<td>{{ $payment->receivedBy?->name ?? '—' }}</td>@endif
                         @if (in_array('action', $visibleColumns, true))<td class="text-end">
                             @if ($payment->journal?->status === 'posted')

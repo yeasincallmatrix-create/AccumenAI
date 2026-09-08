@@ -26,10 +26,10 @@
                 <p class="mb-1"><strong>Warehouse:</strong> {{ $delivery->warehouse?->name ?? '—' }}</p>
             </div>
             <div class="col-md-6 text-md-end">
-                <p class="mb-1"><strong>Delivery Date:</strong> {{ $delivery->delivery_date->format('Y-m-d') }}</p>
+                <p class="mb-1"><strong>Delivery Date:</strong> <x-tdate :value="$delivery->delivery_date" fallback="Y-m-d" /></p>
                 <p class="mb-1"><strong>Branch:</strong> {{ $delivery->branch?->name ?? 'Institute-wide' }}</p>
                 @if($delivery->delivered_at)
-                    <p class="mb-1"><strong>Delivered At:</strong> {{ $delivery->delivered_at->format('Y-m-d H:i') }}</p>
+                    <p class="mb-1"><strong>Delivered At:</strong> <x-tdate :value="$delivery->delivered_at" fallback="Y-m-d H:i" :datetime="true" /></p>
                 @endif
                 <p class="mb-1"><strong>Shipping:</strong> {{ $delivery->shipping_address ?? '—' }}</p>
             </div>

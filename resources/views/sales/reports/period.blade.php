@@ -10,8 +10,8 @@
     </div>
 </div>
 <form method="GET" class="card mb-3"><div class="card-body d-flex flex-wrap gap-2 align-items-end">
-    <div><label class="form-label small mb-1">From</label><input type="date" name="from" value="{{ $filters['from'] }}" class="form-control form-control-sm"></div>
-    <div><label class="form-label small mb-1">To</label><input type="date" name="to" value="{{ $filters['to'] }}" class="form-control form-control-sm"></div>
+    <div><label class="form-label small mb-1">From</label><x-tdate-input name="from" :value="$filters['from']" class="form-control form-control-sm" /></div>
+    <div><label class="form-label small mb-1">To</label><x-tdate-input name="to" :value="$filters['to']" class="form-control form-control-sm" /></div>
     <div><label class="form-label small mb-1">Customer</label><input type="number" name="customer_id" value="{{ $filters['customer_id'] }}" placeholder="ID" class="form-control form-control-sm" style="width:120px"></div>
     <div><label class="form-label small mb-1">Status</label><select name="status" class="form-select form-select-sm"><option value="">All</option><option value="approved" {{ $filters['status']=='approved'?'selected':'' }}>Approved</option><option value="completed" {{ $filters['status']=='completed'?'selected':'' }}>Completed</option></select></div>
     <button class="btn btn-sm btn-primary rounded-pill">Filter</button>

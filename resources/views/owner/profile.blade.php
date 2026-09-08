@@ -61,7 +61,7 @@
                 <div class="text-muted small"><i class="bi bi-briefcase me-1"></i>Industry</div>
             </div>
             <div class="col-6 col-md-3 text-center">
-                <div class="fw-bold">{{ $user->created_at?->format('d M Y') ?? '—' }}</div>
+                <div class="fw-bold"><x-tdate :value="$user->created_at" fallback="d M Y" empty="—" /></div>
                 <div class="text-muted small"><i class="bi bi-calendar me-1"></i>Joined</div>
             </div>
             <div class="col-6 col-md-3 text-center">
@@ -92,10 +92,10 @@
                 <dt class="col-sm-4">Account Type</dt>
                 <dd class="col-sm-8">{{ $user->isOwnerAccount() ? 'Owner' : 'Staff' }}</dd>
                 <dt class="col-sm-4">Member Since</dt>
-                <dd class="col-sm-8">{{ $user->created_at?->format('d M Y') ?? '—' }}</dd>
+                <dd class="col-sm-8"><x-tdate :value="$user->created_at" fallback="d M Y" empty="—" /></dd>
                 @if ($user->last_login_at)
                     <dt class="col-sm-4">Last Login</dt>
-                    <dd class="col-sm-8">{{ $user->last_login_at->format('d M Y H:i') }}</dd>
+                    <dd class="col-sm-8"><x-tdate :value="$user->last_login_at" fallback="d M Y H:i" :datetime="true" /></dd>
                 @endif
             </dl>
         </div>
@@ -130,7 +130,7 @@
                     @endif
                     @if ($membership?->joining_date)
                         <dt class="col-sm-4">Joined</dt>
-                        <dd class="col-sm-8">{{ $membership->joining_date->format('d M Y') }}</dd>
+                        <dd class="col-sm-8"><x-tdate :value="$membership->joining_date" fallback="d M Y" /></dd>
                     @endif
                     @if ($membership?->designation)
                         <dt class="col-sm-4">Designation</dt>

@@ -214,7 +214,7 @@
                     @foreach($logs as $log)
                     <tr>
                         <td class="small">#{{ $log->id }}</td>
-                        <td class="small text-muted text-nowrap">{{ $log->created_at?->format('Y-m-d H:i:s') }}</td>
+                        <td class="small text-muted text-nowrap"><x-tdate :value="$log->created_at" fallback="Y-m-d H:i:s" :datetime="true" /></td>
                         <td><span class="badge {{ $log->type === 'git' ? 'bg-dark' : 'bg-info' }}">{{ strtoupper($log->type) }}</span></td>
                         <td class="small font-monospace" style="max-width:160px; overflow:hidden; text-overflow:ellipsis;" title="{{ $log->version }}">{{ \Illuminate\Support\Str::limit($log->version ?? '—', 30) }}</td>
                         <td>

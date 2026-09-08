@@ -36,13 +36,13 @@
         <dt class="col-sm-4">Reg No.</dt><dd class="col-sm-8">{{ $student->reg_no ?? '—' }}</dd>
         <dt class="col-sm-4">Roll</dt><dd class="col-sm-8">{{ $student->roll_number ?? '—' }}</dd>
         <dt class="col-sm-4">Gender</dt><dd class="col-sm-8">{{ $student->gender ? ucfirst($student->gender) : '—' }}</dd>
-        <dt class="col-sm-4">Date of birth</dt><dd class="col-sm-8">{{ $student->dob?->format('d M Y') ?? '—' }}</dd>
+        <dt class="col-sm-4">Date of birth</dt><dd class="col-sm-8"><x-tdate :value="$student->dob" fallback="d M Y" empty="—" /></dd>
         <dt class="col-sm-4">Phone</dt><dd class="col-sm-8">{{ $student->phone ?? '—' }}</dd>
         <dt class="col-sm-4">Email</dt><dd class="col-sm-8">{{ $student->email ?? '—' }}</dd>
-        <dt class="col-sm-4">Admission date</dt><dd class="col-sm-8">{{ $student->admission_date?->format('d M Y') ?? '—' }}</dd>
+        <dt class="col-sm-4">Admission date</dt><dd class="col-sm-8"><x-tdate :value="$student->admission_date" fallback="d M Y" empty="—" /></dd>
         <dt class="col-sm-4">Present address</dt><dd class="col-sm-8">{{ $student->present_address ?? '—' }}</dd>
         <dt class="col-sm-4">Permanent address</dt><dd class="col-sm-8">{{ $student->permanent_address ?? '—' }}</dd>
-        <dt class="col-sm-4">Added</dt><dd class="col-sm-8">{{ $student->created_at->format('d M Y H:i') }}</dd>
+        <dt class="col-sm-4">Added</dt><dd class="col-sm-8"><x-tdate :value="$student->created_at" fallback="d M Y H:i" :datetime="true" /></dd>
     </dl>
 </div>
 

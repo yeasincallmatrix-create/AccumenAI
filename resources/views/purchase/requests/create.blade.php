@@ -17,11 +17,11 @@
             <div class="row g-3">
                 <div class="col-md-4">
                     <label class="form-label">Request Date <span class="text-danger">*</span></label>
-                    <input type="date" name="request_date" value="{{ old('request_date', now()->toDateString()) }}" class="form-control" required>
+                    <x-tdate-input name="request_date" :value="old('request_date', now()->toDateString())" class="form-control" required />
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Required By</label>
-                    <input type="date" name="required_by_date" value="{{ old('required_by_date') }}" class="form-control">
+                    <x-tdate-input name="required_by_date" :value="old('required_by_date')" class="form-control" />
                 </div>
                 <div class="col-md-4">
                     <label class="form-label">Warehouse</label>

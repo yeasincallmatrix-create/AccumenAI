@@ -53,6 +53,24 @@ final class Workspace
     {
         $user = auth()->user();
 
+        if (! $user instanceof User) {
+            return null;
+        }
+
+        return self::membershipFor($user);
+    }
+
+    /**
+     * Same as membership(), but for an explicitly passed user instead of
+     * auth()->user(). Lets view composers / jobs resolve the workspace for
+     * a known user without depending on the currently bound guard.
+     */
+    public static function membershipFor(?User $user): ?Membership
+    {
+        if ($user === null) {
+            return null;
+        }
+
         if ($user instanceof PlatformAdmin) {
             return null;
         }

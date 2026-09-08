@@ -49,7 +49,7 @@
             </select>
         </div>
         <div class="col-md-2">
-            <input type="date" name="date" class="form-control form-control-sm" value="{{ $filters['date'] }}">
+            <x-tdate-input name="date" class="form-control form-control-sm" value="{{ $filters['date'] }}" />
         </div>
         <div class="col-md-2">
             <button class="btn btn-outline-primary btn-sm" type="submit">{{ mawa_e('notifications_page.apply') }}</button>
@@ -92,7 +92,7 @@
                             @endphp
                             <span class="badge {{ $badge }}">{{ $log->status }}</span>
                         </td>
-                        <td class="small">{{ optional($log->created_at)->format('Y-m-d H:i') }}</td>
+                        <td class="small"><x-tdate :value="$log->created_at" fallback="Y-m-d H:i" :datetime="true" /></td>
                         <td class="text-end">
                             <a class="btn btn-sm btn-outline-primary" href="{{ route('settings.notifications.logs.show', $log) }}"><i class="bi bi-eye"></i></a>
                             @if ($log->status === 'failed' && $log->retry_count < $log->max_retries)

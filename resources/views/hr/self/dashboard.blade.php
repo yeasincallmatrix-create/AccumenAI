@@ -21,7 +21,7 @@
         </div>
         <div class="admin-card p-3 mt-3">
             <h6>Recent Leave (5)</h6>
-            @foreach($leaveHistory as $l)<div class="small border-bottom py-1">{{ $l->leaveType?->name ?? 'Leave' }} {{ $l->start_date->format('Y-m-d') }} → {{ $l->end_date->format('Y-m-d') }} <span class="badge text-bg-secondary">{{ $l->status }}</span></div>@endforeach
+            @foreach($leaveHistory as $l)<div class="small border-bottom py-1">{{ $l->leaveType?->name ?? 'Leave' }} <x-tdate :value="$l->start_date" fallback="Y-m-d" /> → <x-tdate :value="$l->end_date" fallback="Y-m-d" /> <span class="badge text-bg-secondary">{{ $l->status }}</span></div>@endforeach
             <a href="{{ route('hr.self.leave') }}" class="btn btn-sm btn-outline-primary mt-2">Manage Leave</a>
         </div>
     </div>

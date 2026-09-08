@@ -14,7 +14,7 @@
         <div class="col-md-4"><strong>Designation</strong><br>{{ $employee->designation?->name ?? '—' }} <span class="text-muted">(HR)</span></div>
         <div class="col-md-4"><strong>Branch</strong><br>{{ $employee->branch?->name ?? '—' }} <span class="text-muted">(HR)</span></div>
         <div class="col-md-4"><strong>Status</strong><br>{{ $employee->employment_status }}</div>
-        <div class="col-md-4"><strong>Joining</strong><br>{{ $employee->joining_date?->format('Y-m-d') ?? '—' }}</div>
+        <div class="col-md-4"><strong>Joining</strong><br><x-tdate :value="$employee->joining_date" fallback="Y-m-d" empty="—" /></div>
     </div>
     <hr>
     <h6>Editable Profile</h6>
