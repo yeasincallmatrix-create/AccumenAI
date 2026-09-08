@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\View\View;
 
@@ -30,6 +31,8 @@ class SystemHealthController extends Controller implements HasMiddleware
         return view('admin.system-health.index', [
             'ram' => $this->ramUsage(),
             'disk' => $this->diskUsage(),
+            'accountRam' => $this->accountRamUsage(),
+            'accountDisk' => $this->accountDiskUsage(),
             'cacheStatus' => $this->cacheStatus(),
             'php' => [
                 'version' => PHP_VERSION,
@@ -144,6 +147,119 @@ class SystemHealthController extends Controller implements HasMiddleware
             'unit' => 'GB',
             'path' => $path,
         ];
+    }
+
+    /** @return array<string, mixed> */
+    private function accountRamUsage(): array
+    {
+        $limit = $this->parsePhpMemoryLimit((string) ini_get('memory_limit'));
+        $usedMb = round(memory_get_usage(true) / 1024 / 1024, 2);
+
+        return [
+            'limit' => $limit,          // MB, null = unlimited
+            'used' => $usedMb,
+            'percent' => $limit !== null && $limit > 0 ? min(100, (int) round(($usedMb / $limit) * 100)) : 0,
+        ];
+    }
+
+    /** @return int|null bytes, null = unlimited */
+    private function parsePhpMemoryLimit(string $value): ?int
+    {
+        $value = trim($value);
+        if ($value === '' || $value === '-1') {
+            return null;
+        }
+        if (! preg_match('/^(\d+(?:\.\d+)?)\s*([kmg]?)/i', $value, $m)) {
+            return null;
+        }
+        $bytes = (float) $m[1];
+        $bytes *= match (strtolower($m[2])) {
+            'g' => 1024 * 1024 * 1024,
+            'm' => 1024 * 1024,
+            'k' => 1024,
+            default => 1,
+        };
+
+        return (int) round($bytes / 1024 / 1024);
+    }
+
+    /**
+     * Account storage: home-directory size vs the hosting quota.
+     *
+     * Home defaults to the parent of the app root (…/public_html on cPanel);
+     * quota defaults to 2048 MB. Override per environment:
+     *   ACCOUNT_HOME_PATH=/home/accumena  ACCOUNT_QUOTA_MB=2048
+     *
+     * Directory walks are cached for 10 minutes and capped so a huge home
+     * cannot stall the dashboard; truncated scans are flagged.
+     *
+     * @return array{home: string, quota_mb: int, used_mb: float, percent: int, truncated: bool, measured_at: string}
+     */
+    private function accountDiskUsage(): array
+    {
+        $home = (string) (env('ACCOUNT_HOME_PATH') ?: dirname(base_path()));
+        $quotaMb = max(1, (int) (env('ACCOUNT_QUOTA_MB', 2048)));
+
+        $measured = Cache::remember('system-health:account-disk', 600, function () use ($home) {
+            return $this->measureDirectory($home);
+        });
+
+        $usedMb = round($measured['bytes'] / 1024 / 1024, 2);
+
+        return [
+            'home' => $home,
+            'quota_mb' => $quotaMb,
+            'used_mb' => $usedMb,
+            'percent' => min(100, (int) round(($usedMb / $quotaMb) * 100)),
+            'over_quota' => $usedMb > $quotaMb,
+            'truncated' => $measured['truncated'],
+            'measured_at' => $measured['measured_at'],
+        ];
+    }
+
+    /** @return array{bytes: int, truncated: bool, measured_at: string} */
+    private function measureDirectory(string $path): array
+    {
+        $result = ['bytes' => 0, 'truncated' => false, 'measured_at' => now()->toDateTimeString()];
+
+        if (! is_dir($path) || ! is_readable($path)) {
+            return $result;
+        }
+
+        // Fast path on Linux when exec() is available.
+        if (PHP_OS_FAMILY !== 'Windows' && function_exists('exec')) {
+            $out = [];
+            @exec('du -sb '.escapeshellarg($path).' 2>/dev/null', $out);
+            if (isset($out[0]) && preg_match('/^(\d+)\s/', (string) $out[0], $m)) {
+                $result['bytes'] = (int) $m[1];
+
+                return $result;
+            }
+        }
+
+        // Portable fallback: capped recursive walk (symlinks skipped).
+        $count = 0;
+        $cap = 100000;
+        try {
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::LEAVES_ONLY
+            );
+            foreach ($iterator as $file) {
+                if (! $file->isFile() || $file->isLink()) {
+                    continue;
+                }
+                $result['bytes'] += $file->getSize();
+                if (++$count >= $cap) {
+                    $result['truncated'] = true;
+                    break;
+                }
+            }
+        } catch (\Throwable) {
+            $result['truncated'] = true;
+        }
+
+        return $result;
     }
 
     /** @return array<string, array{count: int, size: float}> */

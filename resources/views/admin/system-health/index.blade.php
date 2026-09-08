@@ -70,6 +70,44 @@
     </div>
 </div>
 
+<div class="row g-3 mt-1">
+    <div class="col-md-6">
+        <div class="admin-card h-100">
+            <div class="table-toolbar">
+                <div class="toolbar-info"><i class="bi bi-person-fill"></i> Account RAM <span class="text-muted small">(PHP memory_limit)</span></div>
+            </div>
+            @if ($accountRam['limit'] !== null)
+                <h5 class="mt-2">{{ $accountRam['used'] }} MB / {{ $accountRam['limit'] }} MB</h5>
+                <div class="progress" style="height:20px;">
+                    <div class="progress-bar bg-info" role="progressbar" style="width: {{ $accountRam['percent'] }}%">{{ $accountRam['percent'] }}%</div>
+                </div>
+            @else
+                <h5 class="mt-2">{{ $accountRam['used'] }} MB <span class="text-muted small">(no PHP limit)</span></h5>
+            @endif
+            <p class="text-muted small mb-0 mt-2">Current process usage vs configured PHP limit.</p>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="admin-card h-100">
+            <div class="table-toolbar">
+                <div class="toolbar-info"><i class="bi bi-hdd"></i> Account Storage <span class="text-muted small">(cPanel quota)</span></div>
+            </div>
+            <h5 class="mt-2">{{ $accountDisk['used_mb'] }} MB / {{ $accountDisk['quota_mb'] }} MB
+                @if ($accountDisk['over_quota'])
+                    <span class="badge bg-danger ms-1">Over quota</span>
+                @endif
+            </h5>
+            <div class="progress" style="height:20px;">
+                <div class="progress-bar {{ $accountDisk['over_quota'] ? 'bg-danger' : 'bg-success' }}" role="progressbar" style="width: {{ $accountDisk['percent'] }}%">{{ $accountDisk['percent'] }}%</div>
+            </div>
+            <p class="text-muted small mb-0 mt-2">
+                {{ $accountDisk['home'] }} · measured {{ $accountDisk['measured_at'] }} (cached 10 min)
+                @if ($accountDisk['truncated']) · <span class="text-warning">scan capped — figure is partial</span>@endif
+            </p>
+        </div>
+    </div>
+</div>
+
 <div class="admin-card mt-4">
     <div class="table-toolbar">
         <div class="toolbar-info"><i class="bi bi-exclamation-triangle-fill"></i> Actions</div>
