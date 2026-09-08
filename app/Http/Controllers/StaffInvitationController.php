@@ -29,7 +29,16 @@ class StaffInvitationController extends Controller
 
         $institutionId = $this->resolveInstitutionId($user);
 
+        // Only global roles plus roles belonging to the current institute —
+        // never another institute's roles (e.g. diagnostic-staff of 191 must
+        // not be offered at Central Hospital 189).
         $roles = Role::query()
+            ->where(function ($query) use ($institutionId) {
+                $query->whereNull('institute_id');
+                if ($institutionId !== null) {
+                    $query->orWhere('institute_id', $institutionId);
+                }
+            })
             ->where('slug', '!=', 'institute-owner')
             ->where('status', 'active')
             ->orderBy('name')
@@ -83,6 +92,46 @@ class StaffInvitationController extends Controller
         return redirect()
             ->route('staff.invite')
             ->with('status', mawa_lang('staff.invited_ok', ['name' => $user->name]));
+    }
+
+    /**
+     * Change a member's role within the current institute.
+     */
+    public function updateRole(Request $request, Membership $member): RedirectResponse
+    {
+        $institutionId = $this->resolveInstitutionId($request->user());
+        abort_if($member->institution_id !== $institutionId, 403);
+
+        $data = $request->validate([
+            'role_id' => ['required', 'integer', 'exists:roles,id'],
+        ]);
+
+        $role = Role::query()->findOrFail($data['role_id']);
+        abort_if($role->slug === 'institute-owner', 422, 'Owners cannot be assigned via staff management.');
+
+        app(MembershipService::class)->changeRole($member, $role->id);
+
+        return redirect()
+            ->route('staff.invite')
+            ->with('status', mawa_lang('staff.role_updated_ok', ['name' => $member->user?->name ?? '']));
+    }
+
+    /**
+     * Remove a staff member from the current institute.
+     */
+    public function destroy(Request $request, Membership $member): RedirectResponse
+    {
+        $institutionId = $this->resolveInstitutionId($request->user());
+        abort_if($member->institution_id !== $institutionId, 403);
+        abort_if($member->hasRole('institute-owner'), 422, 'The institute owner cannot be removed.');
+        abort_if((int) $member->user_id === (int) $request->user()?->getKey(), 422, 'You cannot remove yourself.');
+
+        $name = $member->user?->name ?? '';
+        $member->delete();
+
+        return redirect()
+            ->route('staff.invite')
+            ->with('status', mawa_lang('staff.removed_ok', ['name' => $name]));
     }
 
     protected function resolveInstitutionId($user): ?int

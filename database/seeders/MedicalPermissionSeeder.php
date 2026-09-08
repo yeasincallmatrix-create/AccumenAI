@@ -165,6 +165,65 @@ class MedicalPermissionSeeder extends Seeder
             }
         }
 
+        // Doctor management (additive). Department ΓåÆ Specialty ΓåÆ Doctor with
+        // weekly availability; slugs stay `module.action` like the rest.
+        $doctorExtras = [
+            'medical_doctors' => [
+                'view' => 'View Doctors',
+                'create' => 'Add Doctors',
+                'edit' => 'Edit Doctors',
+                'delete' => 'Delete Doctors',
+            ],
+        ];
+
+        foreach ($doctorExtras as $module => $actions) {
+            foreach ($actions as $action => $label) {
+                Permission::firstOrCreate(
+                    ['slug' => $module.'.'.$action],
+                    ['module' => $module, 'name' => $label]
+                );
+            }
+        }
+
         $this->command->info('Medical permissions seeded successfully!');
+
+        // Create diagnostic-staff role for diagnostic center institutes
+        $diagnosticInstitutes = Institute::where('industry', 'healthcare')
+            ->where('sub_industry', 'diagnostic_center')
+            ->get();
+
+        foreach ($diagnosticInstitutes as $institute) {
+            $role = Role::firstOrCreate(
+                ['institute_id' => $institute->id, 'slug' => 'diagnostic-staff'],
+                [
+                    'name' => 'Diagnostic Staff',
+                    'is_system' => false,
+                    'status' => 'active',
+                ]
+            );
+
+            $labPermissions = Permission::whereIn('module', ['medical_lab', 'medical_reports'])
+                ->pluck('id')
+                ->toArray();
+
+            if (! empty($labPermissions)) {
+                $existing = DB::table('role_permissions')
+                    ->where('role_id', $role->id)
+                    ->whereIn('permission_id', $labPermissions)
+                    ->pluck('permission_id')
+                    ->toArray();
+
+                foreach (array_diff($labPermissions, $existing) as $permId) {
+                    DB::table('role_permissions')->insert([
+                        'role_id' => $role->id,
+                        'permission_id' => $permId,
+                    ]);
+                }
+            }
+        }
+
+        if ($diagnosticInstitutes->isNotEmpty()) {
+            $this->command->info("Diagnostic staff role created for {$diagnosticInstitutes->count()} diagnostic center(s).");
+        }
     }
 }

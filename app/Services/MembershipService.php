@@ -13,6 +13,7 @@ class MembershipService
     public function assign(User $user, int $institutionId, int $roleId, array $attributes = []): Membership
     {
         $this->assertRoleAllowed($user, $roleId);
+        $this->assertRoleInInstitute($roleId, $institutionId);
 
         return Membership::create(array_merge([
             'user_id' => $user->id,
@@ -25,6 +26,7 @@ class MembershipService
     public function changeRole(Membership $membership, int $roleId): Membership
     {
         $this->assertRoleAllowed($membership->user, $roleId);
+        $this->assertRoleInInstitute($roleId, (int) $membership->institution_id);
 
         $membership->role_id = $roleId;
         $membership->save();
@@ -60,6 +62,22 @@ class MembershipService
         }
         if (! $isOwnerRole && ! $user->isStaffAccount()) {
             throw AccountTypeMismatchException::ownerCannotBeStaff();
+        }
+    }
+
+    /**
+     * Block cross-tenant role assignment: a role carrying an institute_id may
+     * only be attached inside that same institute. Global roles
+     * (institute_id NULL) are allowed everywhere.
+     */
+    public function assertRoleInInstitute(int $roleId, int $institutionId): void
+    {
+        $role = Role::findOrFail($roleId);
+
+        if ($role->institute_id !== null && (int) $role->institute_id !== $institutionId) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'role_id' => ['The selected role does not belong to this organization.'],
+            ]);
         }
     }
 }

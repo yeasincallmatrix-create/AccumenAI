@@ -97,6 +97,7 @@
                     <th>{{ mawa_e('auth.email') }}</th>
                     <th>{{ mawa_e('staff.col_role') }}</th>
                     <th>{{ mawa_e('staff.col_type') }}</th>
+                    <th class="text-end">{{ mawa_e('staff.col_actions') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -116,10 +117,32 @@
                                 <span class="badge bg-secondary">{{ mawa_e('account_type.staff') }}</span>
                             @endif
                         </td>
+                        <td class="text-end text-nowrap">
+                            @if(!$member->hasRole('institute-owner'))
+                                <form action="{{ route('staff.members.role', $member) }}" method="POST" class="d-inline-flex gap-1 align-items-center">
+                                    @csrf @method('PUT')
+                                    <select name="role_id" class="form-select form-select-sm" style="width:auto;" required title="{{ mawa_e('staff.change_role') }}">
+                                        @foreach($roles as $role)
+                                            <option value="{{ $role->id }}" @selected($member->role_id == $role->id)>{{ $role->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button class="btn btn-sm btn-outline-primary" title="{{ mawa_e('staff.change_role') }}"><i class="bi bi-check-lg"></i></button>
+                                </form>
+                                @if(($user ?? null) && $user->hasPermission('roles.manage') && $member->relationLoaded('role') && $member->role && $member->role->institute_id)
+                                    <a href="{{ route('staff.roles.edit', $member->role) }}" class="btn btn-sm btn-outline-warning" title="{{ mawa_e('staff.edit_role') }}"><i class="bi bi-pencil"></i></a>
+                                @endif
+                                <form action="{{ route('staff.members.destroy', $member) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ mawa_e('staff.confirm_remove') }}')">
+                                    @csrf @method('DELETE')
+                                    <button class="btn btn-sm btn-outline-danger" title="{{ mawa_e('staff.remove_member') }}"><i class="bi bi-trash"></i></button>
+                                </form>
+                            @else
+                                <span class="text-muted small">—</span>
+                            @endif
+                        </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-4">{{ mawa_e('staff.members_empty') }}</td>
+                        <td colspan="7" class="text-center text-muted py-4">{{ mawa_e('staff.members_empty') }}</td>
                     </tr>
                 @endforelse
             </tbody>

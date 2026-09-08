@@ -434,6 +434,22 @@ class RegistrationFlowController extends Controller
         } catch (\Throwable $e) { Log::warning('RegistrationFlow: learning structure failed', ['institute_id' => $institute->id, 'error' => $e->getMessage()]); report($e); }
         try { app(\App\Services\AcademicSetupService::class)->ensureDefaults($institute); } catch (\Throwable $e) { Log::warning('RegistrationFlow: academic defaults failed', ['institute_id' => $institute->id, 'error' => $e->getMessage()]); report($e); }
         try { app(\App\Services\Demo\DemoDataService::class)->seed($institute, $user, ['force' => false]); } catch (\Throwable $e) { Log::warning('RegistrationFlow: demo seeding failed', ['institute_id' => $institute->id, 'error' => $e->getMessage()]); report($e); }
+        if (class_exists(\App\Services\RoleTemplateService::class)) {
+            try { app(\App\Services\RoleTemplateService::class)->seedForInstitute($institute); } catch (\Exception $e) { Log::warning('RegistrationFlow: role template seeding failed', ['institute_id' => $institute->id, 'error' => $e->getMessage()]); }
+        }
+
+        // Auto-enable medical module for healthcare tenants
+        if (($org['industry'] ?? null) === 'healthcare') {
+            try {
+                app(\App\Services\MedicalModuleActivator::class)->activateForHealthcare($institute);
+            } catch (\Throwable $e) {
+                Log::warning('RegistrationFlow: medical module activation failed', [
+                    'institute_id' => $institute->id,
+                    'error' => $e->getMessage(),
+                ]);
+                report($e);
+            }
+        }
 
         // Log the new user in? Spec says do not automatically log in after Step1, but after full flow should land on setup/dashboard. We will log in now.
         \Illuminate\Support\Facades\Auth::guard('web')->login($user);

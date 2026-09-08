@@ -4,6 +4,9 @@ use App\Http\Controllers\Medical\AdmissionController;
 use App\Http\Controllers\Medical\AppointmentController;
 use App\Http\Controllers\Medical\BedController;
 use App\Http\Controllers\Medical\BillingController;
+use App\Http\Controllers\Medical\CategoryController;
+use App\Http\Controllers\Medical\DepartmentController;
+use App\Http\Controllers\Medical\DoctorController;
 use App\Http\Controllers\Medical\InvoiceController;
 use App\Http\Controllers\Medical\LabController;
 use App\Http\Controllers\Medical\LabOrderController;
@@ -197,4 +200,15 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     // TPA settlement (approve/reject POSTs are defined in Phase 0).
     Route::post('tpa/claims/{claim}/settle', [TpaClaimController::class, 'settle'])
         ->name('tpa.claims.settle');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Doctor Management ΓÇö Department ΓåÆ Specialty ΓåÆ Doctor + weekly availability
+    |--------------------------------------------------------------------------
+    */
+    Route::get('departments/{department}/specialties', [DepartmentController::class, 'getSpecialties'])->name('departments.specialties');
+    Route::post('categories/store', [CategoryController::class, 'store'])->name('categories.store');
+    Route::get('categories/departments', [CategoryController::class, 'departments'])->name('categories.departments');
+    Route::get('doctors/{doctor}/slots', [DoctorController::class, 'getSlots'])->name('doctors.slots');
+    Route::resource('doctors', DoctorController::class);
 });

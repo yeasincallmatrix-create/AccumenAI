@@ -63,7 +63,7 @@
                         <td>{{ $patient->age !== null ? $patient->age.' years' : 'N/A' }}</td>
                         <td>{{ ucfirst($patient->gender) }}</td>
                         <td>{{ $patient->phone }}</td>
-                        <td><span class="badge bg-info text-dark">{{ $patient->blood_group ?? 'N/A' }}</span></td>
+                        <td><span class="text-danger fw-bold">{{ $patient->blood_group ?? 'N/A' }}</span></td>
                         <td>
                             @if($patient->is_active)
                                 <span class="badge bg-success">Active</span>

@@ -172,6 +172,18 @@ class InstituteCreationController extends Controller
             report($e);
         }
 
+        // Industry-aware staff role templates ΓÇö idempotent, never blocks creation
+        if (class_exists(\App\Services\RoleTemplateService::class)) {
+            try {
+                app(\App\Services\RoleTemplateService::class)->seedForInstitute($institute);
+            } catch (\Exception $e) {
+                Log::warning('InstituteCreation: role template seeding failed', [
+                    'institute_id' => $institute->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         // Auto demo seeding disabled (undistructive mode) - keeps existing institutes/logins clean.
         // To seed manually: app(DemoDataService::class)->seed($institute, $user, ['force' => true])
         try {
