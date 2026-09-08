@@ -343,6 +343,11 @@ Route::middleware(['auth:platform_admin', 'verified'])->prefix('admin')->name('a
     Route::get('artisan-commands', [\App\Http\Controllers\Admin\ArtisanCommandController::class, 'index'])->name('artisan-commands.index');
     Route::post('artisan-commands/execute', [\App\Http\Controllers\Admin\ArtisanCommandController::class, 'execute'])->name('artisan-commands.execute')->middleware('throttle:10,60');
 
+    // System Health Dashboard — RAM/storage/cache visibility + guarded cleanup
+    Route::get('system-health', [\App\Http\Controllers\Admin\SystemHealthController::class, 'index'])->name('system-health.index');
+    Route::post('system-health/clear-cache', [\App\Http\Controllers\Admin\SystemHealthController::class, 'clearCache'])->name('system-health.clear-cache')->middleware('throttle:5,60');
+    Route::post('system-health/clear-temp', [\App\Http\Controllers\Admin\SystemHealthController::class, 'clearTempFiles'])->name('system-health.clear-temp')->middleware('throttle:5,60');
+
     // Dual Deployment System — Git + ZIP (admin.deploy, audited, throttled, backup retention 5)
     Route::get('deploy', [\App\Http\Controllers\Admin\DeployController::class, 'index'])->name('deploy.index')->middleware('permission:admin.deploy');
     Route::post('deploy/git', [\App\Http\Controllers\Admin\DeployController::class, 'gitDeploy'])->name('deploy.git')->middleware(['permission:admin.deploy', 'throttle:5,60']);

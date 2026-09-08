@@ -409,6 +409,9 @@
                     <a class="nav-link {{ request()->routeIs('admin.artisan-commands.*') ? 'active' : '' }}" href="{{ route('admin.artisan-commands.index') }}">
                         <i class="bi bi-terminal-fill"></i><span class="sidebar-label">Artisan Commands</span>
                     </a>
+                    <a class="nav-link {{ request()->routeIs('admin.system-health.*') ? 'active' : '' }}" href="{{ route('admin.system-health.index') }}">
+                        <i class="bi bi-heart-pulse-fill"></i><span class="sidebar-label">System Health</span>
+                    </a>
                     <a class="nav-link {{ request()->routeIs('admin.deploy.*') ? 'active' : '' }}" href="{{ route('admin.deploy.index') }}">
                         <i class="bi bi-rocket-takeoff-fill"></i><span class="sidebar-label">Deploy</span>
                     </a>
