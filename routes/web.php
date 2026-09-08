@@ -231,6 +231,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->group(func
 Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->prefix('staff')->name('staff.')->group(function () {
     Route::get('invite', [StaffInvitationController::class, 'create'])->middleware('permission:staff.manage')->name('invite');
     Route::post('invite', [StaffInvitationController::class, 'store'])->middleware('permission:staff.manage')->name('invite.store');
+    Route::resource('roles', \App\Http\Controllers\Staff\RoleController::class)->except(['show']);
 });
 
 Route::middleware(['auth:platform_admin', 'verified'])->prefix('admin')->name('admin.')->group(function () {

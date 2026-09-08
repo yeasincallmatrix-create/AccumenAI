@@ -415,8 +415,13 @@
                     </a>
                 @endif
                 @if ($workspaceAllowedStaffManage ?? false)
-                    <a class="nav-link {{ request()->routeIs('staff.*') ? 'active' : '' }}" href="{{ route('staff.invite') }}">
+                    <a class="nav-link {{ request()->routeIs('staff.invite*') ? 'active' : '' }}" href="{{ route('staff.invite') }}">
                         <i class="bi bi-person-plus-fill"></i><span class="sidebar-label">{{ mawa_e('sidebar.team') }}</span>
+                    </a>
+                @endif
+                @if($user && $user->hasPermission('roles.manage'))
+                    <a class="nav-link sub {{ request()->routeIs('staff.roles.*') ? 'active' : '' }}" href="{{ route('staff.roles.index') }}">
+                        <i class="bi bi-shield-lock"></i><span class="sidebar-label">Roles</span>
                     </a>
                 @endif
                 @if ($workspaceAllowedFinance ?? false)
