@@ -49,7 +49,9 @@
                     if (window.Monetix && Monetix.toast) Monetix.toast('Invalid filter value — please refresh.', 'danger');
                     return;
                 }
-                Monetix.loadPage(url, { preserveFocus: true });
+                // Filter keystrokes are transient states: replace the history
+                // entry instead of pushing one per keystroke (Fix A).
+                Monetix.loadPage(url, { preserveFocus: true, replace: true });
             }
 
             if (form) {

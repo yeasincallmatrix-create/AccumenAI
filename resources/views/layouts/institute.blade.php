@@ -9,6 +9,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="login-url" content="{{ route('login') }}">
     <title>@yield('title', 'AccumenAI')</title>
+    <link rel="icon" href="{{ platform_logo_url() }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
@@ -32,6 +33,8 @@
                 <a class="brand d-flex align-items-center gap-2" href="{{ route('business.profile') }}" title="View business profile">
                     @if($institute->logo_url)
                         <img src="{{ $institute->logo_url }}" alt="{{ $institute->name }}" style="height:40px;">
+                    @else
+                        @include('partials.platform-logo', ['height' => 32])
                     @endif
                     <span>{{ $institute->name ?? 'AccumenAI' }}</span>
                     @if ($institute)
@@ -43,6 +46,8 @@
                     @if ($isInstituteStaff)
                         @if($institute->logo_url)
                             <img src="{{ $institute->logo_url }}" alt="{{ $institute->name }}" style="height:40px;">
+                        @else
+                            @include('partials.platform-logo', ['height' => 32])
                         @endif
                         <span>{{ $institute->name ?? 'AccumenAI' }}</span>
                         @if ($institute)
@@ -1245,7 +1250,8 @@
         var url = link.getAttribute('href');
         if (url && url !== location.href) {
             e.preventDefault();
-            Monetix.loadPage(url);
+            // Tab switches are transient states: replace, don't push (Fix A).
+            Monetix.loadPage(url, { replace: true });
         }
     });
 

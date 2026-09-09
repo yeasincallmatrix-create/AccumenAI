@@ -1684,6 +1684,14 @@ Route::middleware(['auth:platform_admin', 'verified'])->prefix('admin')->name('a
     Route::post('geo/{country}/toggle', [$adminGeo, 'toggleStatus'])->name('geo.toggle');
     Route::get('geo/imports', [$adminGeoImp, 'index'])->name('geo.imports');
     Route::post('geo/imports', [$adminGeoImp, 'store'])->name('geo.imports.store');
+    Route::get('geo/imports/template', [$adminGeoImp, 'template'])->name('geo.imports.template');
+    Route::post('geo/imports/convert', [$adminGeoImp, 'convert'])->name('geo.imports.convert');
+    Route::post('geo/imports/{import}/rollback', [$adminGeoImp, 'rollback'])->name('geo.imports.rollback');
+    Route::get('geo/clear/preview', [$adminGeoImp, 'clearPreview'])->name('geo.clear.preview');
+    Route::post('geo/clear', [$adminGeoImp, 'clear'])->name('geo.clear');
+    Route::get('geo/duplicates', [\App\Http\Controllers\Admin\GeoDuplicatesController::class, 'index'])->name('geo.duplicates');
+    Route::post('geo/duplicates/merge', [\App\Http\Controllers\Admin\GeoDuplicatesController::class, 'merge'])->name('geo.duplicates.merge');
+    Route::delete('geo/duplicates/{unit}', [\App\Http\Controllers\Admin\GeoDuplicatesController::class, 'destroy'])->name('geo.duplicates.destroy');
     Route::post('geo/imports/{import}/validate', [$adminGeoImp, 'validatePackage'])->name('geo.imports.validate');
     Route::post('geo/imports/{import}/run', [$adminGeoImp, 'run'])->name('geo.imports.run');
     Route::get('geo/imports/{import}/status', [$adminGeoImp, 'status'])->name('geo.imports.status');

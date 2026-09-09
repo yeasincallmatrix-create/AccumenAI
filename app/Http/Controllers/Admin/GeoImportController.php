@@ -95,7 +95,8 @@ class GeoImportController extends Controller
         $service = GeoImportService::fromConfig();
 
         try {
-            $report = $service->validate($provider, $import->country);
+            // Phase 2 preview: validate + read-only impact analysis.
+            $report = $service->preview($provider, $import->country);
         } catch (\Throwable $e) {
             return $this->importResponse(false, 'Validation failed: '.$e->getMessage());
         }
@@ -113,7 +114,13 @@ class GeoImportController extends Controller
             'completed_at' => now(),
         ])->save();
 
-        return $this->importResponse($report['errors'] === 0, 'Validation finished.', ['import' => $this->importPayload($import)]);
+        // Success = validation completed (even with row errors) so the UI
+        // can always render the impact preview; row problems live in the
+        // preview payload and the import status.
+        return $this->importResponse(true, 'Validation finished.', [
+            'import' => $this->importPayload($import),
+            'preview' => $report['preview'] ?? null,
+        ]);
     }
 
     /**
@@ -125,7 +132,7 @@ class GeoImportController extends Controller
         if (in_array($import->status, ['completed', 'failed', 'validated'], true) && $import->status !== 'importing' && $import->total_records > 0 && $import->status === 'validated') {
             // Allow validated -> importing transition
         }
-        if (in_array($import->status, ['completed', 'failed'], true)) {
+        if (in_array($import->status, ['completed', 'failed', 'rolled_back'], true)) {
             return $this->importResponse(true, 'Import already finished.', $this->importPayload($import));
         }
 
@@ -153,6 +160,211 @@ class GeoImportController extends Controller
     public function status(Request $request, GeoImport $import): JsonResponse
     {
         return $this->importResponse(true, 'ok', ['import' => $this->importPayload($import)]);
+    }
+
+    /**
+     * Phase 3: undo a completed (or partially failed) import using its
+     * snapshot trail. Re-running a rolled-back import is blocked — upload
+     * a fresh package instead.
+     */
+    public function rollback(Request $request, GeoImport $import): JsonResponse
+    {
+        if (! in_array($import->status, ['completed', 'failed'], true)) {
+            return $this->importResponse(false, 'Only completed or failed imports can be rolled back.');
+        }
+
+        try {
+            $result = GeoImportService::fromConfig()->rollback($import);
+        } catch (\Throwable $e) {
+            return $this->importResponse(false, 'Rollback failed: '.$e->getMessage());
+        }
+
+        return $this->importResponse(true, 'Import rolled back.', [
+            'import' => $this->importPayload($import->fresh()),
+            'rollback' => $result,
+        ]);
+    }
+
+    /** Phase 3: read-only counts shown before the type-to-confirm step. */
+    public function clearPreview(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'country_id' => ['required', 'integer', 'exists:countries,id'],
+        ]);
+
+        $country = Country::query()->findOrFail($data['country_id']);
+
+        return $this->importResponse(true, 'ok', [
+            'preview' => GeoImportService::fromConfig()->clearPreview($country),
+        ]);
+    }
+
+    /**
+     * Phase 3 danger zone: delete every administrative unit of a country.
+     * Requires typing the exact country name as confirmation.
+     */
+    public function clear(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'country_id' => ['required', 'integer', 'exists:countries,id'],
+            'confirm' => ['required', 'string'],
+        ]);
+
+        $country = Country::query()->findOrFail($data['country_id']);
+
+        if (trim($data['confirm']) !== trim($country->name)) {
+            return $this->importResponse(false, 'Confirmation does not match the country name. Nothing was deleted.');
+        }
+
+        try {
+            $result = GeoImportService::fromConfig()->clearCountry($country);
+        } catch (\Throwable $e) {
+            return $this->importResponse(false, 'Clear failed (nothing was deleted): '.$e->getMessage());
+        }
+
+        return $this->importResponse(true, "All geography rows for {$country->name} were deleted.", [
+            'country' => $country->name,
+            'result' => $result,
+        ]);
+    }
+
+    /**
+     * Download a minimal JSONL package template (division + district +
+     * upazila with parent linkage) so admins see the exact expected shape.
+     */
+    public function template()
+    {
+        $lines = [
+            ['level' => 1, 'code' => 'XX-DIVISION', 'name' => 'Example Division', 'parent_code' => null, 'postal_code' => null, 'latitude' => null, 'longitude' => null],
+            ['level' => 2, 'code' => 'XX-DIVISION-DISTRICT', 'name' => 'Example District', 'parent_code' => 'XX-DIVISION', 'postal_code' => null, 'latitude' => null, 'longitude' => null],
+            ['level' => 3, 'code' => 'XX-U1', 'name' => 'Example Upazila', 'parent_code' => 'XX-DIVISION-DISTRICT', 'postal_code' => '1230', 'latitude' => null, 'longitude' => null],
+        ];
+
+        $body = implode("\n", array_map(fn ($r) => json_encode($r, JSON_UNESCAPED_UNICODE), $lines))."\n";
+
+        return response($body, 200, [
+            'Content-Type' => 'application/jsonl',
+            'Content-Disposition' => 'attachment; filename="geo-package-template.jsonl"',
+        ]);
+    }
+
+    /**
+     * Convert a legacy flat file ({level_1, level_2, level_3, code,
+     * postal_code} rows) into an import-ready JSONL download.
+     *
+     * No database writes: division/district codes are reused from existing
+     * units (matched by name within the target country) so a later import
+     * updates instead of duplicating; only genuinely new names get minted
+     * `{ISO2}-...` codes.
+     */
+    public function convert(Request $request)
+    {
+        $data = $request->validate([
+            'country_id' => ['required', 'integer', 'exists:countries,id'],
+            'file' => ['required', 'file'],
+        ]);
+
+        $country = Country::query()->findOrFail($data['country_id']);
+
+        $raw = (string) file_get_contents($request->file('file')->getRealPath());
+        $rows = json_decode($raw, true);
+        if (! is_array($rows)) {
+            return response()->json(['success' => false, 'message' => 'File is not valid JSON.'], 422);
+        }
+        if (isset($rows['level_1'])) {
+            $rows = [$rows];
+        }
+
+        // Existing units by level+name for code reuse (duplicate-proofing).
+        $existing = \App\Models\AdministrativeUnit::query()
+            ->where('administrative_units.country_id', $country->id)
+            ->join('administrative_levels as l', 'l.id', '=', 'administrative_units.administrative_level_id')
+            ->select('administrative_units.code', 'administrative_units.name', 'l.level_number')
+            ->get();
+        $known = [];
+        foreach ($existing as $unit) {
+            $known[(int) $unit->level_number][$this->slugify($unit->name)] = (string) $unit->code;
+        }
+
+        $prefix = strtoupper((string) $country->iso2);
+        $divCodes = [];
+        $distCodes = [];
+        $lines = [];
+        $skipped = 0;
+
+        $codeFor = function (int $level, string $name, ?string $parentCode, ?string $fallback) use (&$known, $prefix) {
+            $slug = $this->slugify($name);
+            if (isset($known[$level][$slug])) {
+                return $known[$level][$slug];
+            }
+            $minted = $fallback ?? ($prefix.'-'.strtoupper($slug));
+            $known[$level][$slug] = $minted;
+
+            return $minted;
+        };
+
+        foreach ($rows as $row) {
+            if (! is_array($row)) {
+                $skipped++;
+                continue;
+            }
+            $l1 = trim((string) ($row['level_1'] ?? ''));
+            $l2 = trim((string) ($row['level_2'] ?? ''));
+            $l3 = trim((string) ($row['level_3'] ?? ''));
+            if ($l1 === '' || $l2 === '' || $l3 === '') {
+                $skipped++;
+                continue;
+            }
+            $divCode = $codeFor(1, $l1, null, null);
+            $distCode = $codeFor(2, $l2, $divCode, null);
+            // Remember division/district rows once.
+            if (! isset($divCodes[$divCode])) {
+                $divCodes[$divCode] = true;
+                $lines['div'][] = ['level' => 1, 'code' => $divCode, 'name' => $l1, 'parent_code' => null, 'postal_code' => null, 'latitude' => null, 'longitude' => null];
+            }
+            if (! isset($distCodes[$distCode])) {
+                $distCodes[$distCode] = true;
+                $lines['dist'][] = ['level' => 2, 'code' => $distCode, 'name' => $l2, 'parent_code' => $divCode, 'postal_code' => null, 'latitude' => null, 'longitude' => null];
+            }
+            $upCode = trim((string) ($row['code'] ?? ''));
+            if ($upCode === '') {
+                $upCode = $distCode.'-'.$this->slugify($l3);
+                $upCode = strtoupper($upCode);
+            }
+            $postal = trim((string) ($row['postal_code'] ?? ''));
+            $lines['up'][] = [
+                'level' => 3,
+                'code' => $upCode,
+                'name' => $l3,
+                'parent_code' => $distCode,
+                'postal_code' => $postal !== '' ? $postal : null,
+                'latitude' => null,
+                'longitude' => null,
+            ];
+        }
+
+        $ordered = array_merge($lines['div'] ?? [], $lines['dist'] ?? [], $lines['up'] ?? []);
+        if (empty($ordered)) {
+            return response()->json(['success' => false, 'message' => 'No convertible rows found. Expect objects with level_1, level_2 and level_3 keys.'], 422);
+        }
+
+        $body = implode("\n", array_map(fn ($r) => json_encode($r, JSON_UNESCAPED_UNICODE), $ordered))."\n";
+        $orig = pathinfo((string) $request->file('file')->getClientOriginalName(), PATHINFO_FILENAME);
+
+        return response($body, 200, [
+            'Content-Type' => 'application/jsonl',
+            'Content-Disposition' => 'attachment; filename="converted-'.$orig.'.jsonl"',
+            'X-Convert-Total' => (string) count($ordered),
+            'X-Convert-Skipped' => (string) $skipped,
+        ]);
+    }
+
+    private function slugify(string $value): string
+    {
+        $value = strtolower(trim($value));
+        $value = (string) preg_replace('/[^a-z0-9]+/', '-', $value);
+
+        return trim($value, '-');
     }
 
     private function providerFor(GeoImport $import): LocalPackageProvider

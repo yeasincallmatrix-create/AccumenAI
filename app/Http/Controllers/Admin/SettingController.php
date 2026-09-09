@@ -47,6 +47,8 @@ class SettingController extends Controller
             'activeTheme' => $activeTheme,
             'sidebarColor' => $user->preference('sidebar_color'),
             'tallNavigation' => (bool) $user->preference('tall_navigation'),
+            'platformLogo' => Setting::get('brand.logo'),
+            'platformLogoUrl' => platform_logo_url(),
             'smtpHost' => Setting::get('smtp.host', ''),
             'smtpPort' => Setting::get('smtp.port', '587'),
             'smtpEncryption' => Setting::get('smtp.encryption', 'none'),
@@ -180,6 +182,8 @@ class SettingController extends Controller
             'activeTheme' => $activeTheme,
             'sidebarColor' => $user->preference('sidebar_color'),
             'tallNavigation' => (bool) $user->preference('tall_navigation'),
+            'platformLogo' => Setting::get('brand.logo'),
+            'platformLogoUrl' => platform_logo_url(),
         ]);
     }
 
@@ -212,6 +216,48 @@ class SettingController extends Controller
         }
 
         return redirect(route('admin.settings.index').'#pane-appearance')->with('status', 'Appearance settings saved.');
+    }
+
+    /**
+     * Upload the platform logo (Admin → Settings → Appearance).
+     * Stored on the public disk; the relative path is kept in the
+     * `brand.logo` setting consumed by platform_logo_url().
+     */
+    public function uploadLogo(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'logo' => ['required', 'image', 'mimes:jpeg,png,jpg,gif,svg,webp', 'max:2048'],
+        ]);
+
+        $file = $request->file('logo');
+        $ext = strtolower($file->getClientOriginalExtension()) ?: 'png';
+        $path = 'brand/platform-logo.'.$ext;
+
+        $old = Setting::get('brand.logo');
+        if (is_string($old) && $old !== '' && $old !== $path
+            && \Illuminate\Support\Facades\Storage::disk('public')->exists($old)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($old);
+        }
+
+        \Illuminate\Support\Facades\Storage::disk('public')->putFileAs('brand', $file, 'platform-logo.'.$ext);
+        Setting::set('brand.logo', $path);
+
+        return redirect(route('admin.settings.index').'#pane-appearance')->with('status', 'Platform logo updated.');
+    }
+
+    /**
+     * Remove the platform logo and fall back to the bundled mark.
+     */
+    public function removeLogo(): RedirectResponse
+    {
+        $old = Setting::get('brand.logo');
+        if (is_string($old) && $old !== ''
+            && \Illuminate\Support\Facades\Storage::disk('public')->exists($old)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($old);
+        }
+        Setting::set('brand.logo', null);
+
+        return redirect(route('admin.settings.index').'#pane-appearance')->with('status', 'Platform logo removed. Default will be used.');
     }
 
     public function mailPayment(Request $request): View

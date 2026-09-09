@@ -1761,6 +1761,11 @@ return [
         'import_records' => 'Records',
         'import_added' => 'Added / Updated',
         'import_no_history' => 'No imports yet. Upload a package above to get started.',
+        'import_template' => 'Download Template',
+        'import_convert_title' => 'Convert Legacy File',
+        'import_convert_desc' => 'Flat file with level_1, level_2, level_3 columns? Convert it to import-ready JSONL first — nothing is written to the database.',
+        'import_convert_btn' => 'Convert & Download',
+        'import_format_hint' => 'Tip: JSONL (one object per line) is the most reliable format.',
     ],
     'academic_dashboard' => [
         'title' => 'Academic Operations',

@@ -293,6 +293,8 @@ Route::middleware(['auth:platform_admin', 'verified'])->prefix('admin')->name('a
     Route::post('settings/password', [SettingController::class, 'updatePassword'])->name('settings.password');
     Route::post('settings/language', [SettingController::class, 'updateLanguage'])->name('settings.language');
     Route::post('settings/appearance', [SettingController::class, 'updateAppearance'])->name('settings.appearance.update');
+    Route::post('settings/logo', [SettingController::class, 'uploadLogo'])->name('settings.logo.upload');
+    Route::delete('settings/logo', [SettingController::class, 'removeLogo'])->name('settings.logo.remove');
     Route::post('settings/mail-payment', [SettingController::class, 'updateMailPayment'])->name('settings.mail-payment.update');
     Route::post('settings/mail-payment/test', [SettingController::class, 'testMail'])->name('settings.mail-payment.test');
     Route::get('settings/ai', [\App\Http\Controllers\Admin\AiSettingController::class, 'index'])->name('settings.ai');

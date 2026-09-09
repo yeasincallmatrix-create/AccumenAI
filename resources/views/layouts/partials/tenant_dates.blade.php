@@ -3,6 +3,10 @@
      Pairs [data-tdate-display] text with hidden ISO (server always gets Y-m-d).
      Calendar buttons ([data-tdate-picker] / [data-live-date-picker]) open a
      built-in month popup; picked dates fill back in tenant format.
+     Manual typing is filter-only (digits + slash, caret preserved) — the text
+     is parsed (tenant order, ISO year-first, - . separators, 8-digit runs)
+     and the hidden ISO synced live; valid entries are normalized to tenant
+     format on blur. Invalid entries are flagged and block filter submits.
      window.tdateSync(id) refreshes the visible text after programmatic hidden-value sets.
      window.tdateReady(id) / window.guardTdateSubmit(el) guard filter-form submits. --}}
 <style>
@@ -56,17 +60,51 @@ window.MAWA_DATE_ORDER = @json(mawa_date_format_key());
         if (chk.getFullYear() !== yy || chk.getMonth() !== mm - 1 || chk.getDate() !== dd) return '';
         return yy + '-' + String(mm).padStart(2, '0') + '-' + String(dd).padStart(2, '0');
     }
-    function maskDigits(digits, order) {
-        if (order === 'ymd') {
-            digits = digits.slice(0, 8);
-            if (digits.length > 6) return digits.slice(0, 4) + '/' + digits.slice(4, 6) + '/' + digits.slice(6);
-            if (digits.length > 4) return digits.slice(0, 4) + '/' + digits.slice(4);
-            return digits;
+    // Keep only date characters (digits + slash), capped at maxLen.
+    function stripToDateChars(value, maxLen) {
+        var out = '';
+        for (var i = 0; i < value.length && out.length < maxLen; i++) {
+            var ch = value.charAt(i);
+            if ((ch >= '0' && ch <= '9') || ch === '/') out += ch;
         }
-        digits = digits.slice(0, 8);
-        if (digits.length > 4) return digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4);
-        if (digits.length > 2) return digits.slice(0, 2) + '/' + digits.slice(2);
-        return digits;
+        return out;
+    }
+    // Caret position after stripping: kept chars before the old caret,
+    // clamped to the cleaned length.
+    function caretAfterStrip(raw, pos, maxPos) {
+        var kept = 0;
+        for (var i = 0; i < raw.length && i < pos; i++) {
+            var ch = raw.charAt(i);
+            if ((ch >= '0' && ch <= '9') || ch === '/') kept++;
+        }
+        return Math.min(kept, maxPos);
+    }
+    // Parse free-typed text to ISO (strict — rejects overflow like 31/02).
+    // Accepts tenant order with / - . separators, 8-digit runs (DDMMYYYY /
+    // MMDDYYYY / YYYYMMDD per order), and year-first ISO in any order.
+    function parseToIso(text, order) {
+        var t = (text || '').trim().replace(/[.]/g, '/').replace(/-/g, '/');
+        var m = /^(\d{4})\/(\d{1,2})\/(\d{1,2})$/.exec(t);
+        if (m) {
+            var y0 = +m[1], mo0 = +m[2], d0 = +m[3];
+            var dt0 = new Date(y0, mo0 - 1, d0);
+            if (dt0.getFullYear() === y0 && dt0.getMonth() === mo0 - 1 && dt0.getDate() === d0) {
+                return m[1] + '-' + String(mo0).padStart(2, '0') + '-' + String(d0).padStart(2, '0');
+            }
+            return '';
+        }
+        var d8 = /^(\d{2})(\d{2})(\d{4})$/.exec(t);
+        if (order !== 'ymd' && d8) {
+            var viaDayFirst = toIso(d8[1] + '/' + d8[2] + '/' + d8[3], order);
+            if (viaDayFirst) return viaDayFirst;
+            // Day-first split invalid (e.g. stripped ISO "20260911" in dmy):
+            // fall through to the year-first attempt below.
+        }
+        var y8 = /^(\d{4})(\d{2})(\d{2})$/.exec(t);
+        if (y8) {
+            return parseToIso(y8[1] + '/' + y8[2] + '/' + y8[3], order);
+        }
+        return toIso(t, order);
     }
     function fullLen(order) { return 10; }
     // Set a hidden ISO input and notify listeners (e.g. DOB → age calculators).
@@ -91,15 +129,25 @@ window.MAWA_DATE_ORDER = @json(mawa_date_format_key());
         var t = (disp.value || '').trim();
         return t === '' || hidden.value !== '';
     };
-    // Filter-form submit guard: skips submit while any tenant date field is incomplete.
+    // Filter-form submit guard: skips submit while any tenant date field is
+    // incomplete/invalid — flagging the first bad field and focusing it so
+    // the skip is visible instead of silent.
     window.guardTdateSubmit = function (el) {
         var form = el && el.form ? el.form : (el && el.closest ? el.closest('form') : null);
         if (form && form.querySelectorAll) {
             var displays = form.querySelectorAll('[data-tdate-display]');
+            var bad = null;
             for (var i = 0; i < displays.length; i++) {
                 var h = document.getElementById(displays[i].getAttribute('data-tdate-display'));
                 var t = (displays[i].value || '').trim();
-                if (t !== '' && (!h || h.value === '')) return;
+                if (t !== '' && (!h || h.value === '')) {
+                    displays[i].classList.add('is-invalid');
+                    if (!bad) bad = displays[i];
+                }
+            }
+            if (bad) {
+                try { bad.focus(); } catch (e) {}
+                return;
             }
             form.submit();
         } else if (el && el.form) {
@@ -110,12 +158,43 @@ window.MAWA_DATE_ORDER = @json(mawa_date_format_key());
         var disp = e.target && e.target.closest ? e.target.closest('[data-tdate-display]') : null;
         if (!disp) return;
         var order = orderOf(disp);
-        var out = maskDigits(disp.value.replace(/\D/g, ''), order);
-        disp.value = out;
+        // Filter only: never regroup mid-string edits (that scrambled
+        // day/month changes into the year) and never move the caret
+        // except to account for stripped illegal characters.
+        var raw = disp.value || '';
+        var cleaned = stripToDateChars(raw, fullLen(order));
+        if (cleaned !== raw) {
+            var caret = caretAfterStrip(raw, disp.selectionStart || 0, cleaned.length);
+            disp.value = cleaned;
+            try { disp.setSelectionRange(caret, caret); } catch (err) {}
+        }
         var hidden = document.getElementById(disp.getAttribute('data-tdate-display'));
-        var iso = out.length === fullLen(order) ? toIso(out, order) : '';
-        setHiddenIso(hidden, iso);
-        disp.classList.toggle('is-invalid', out !== '' && iso === '');
+        var iso = cleaned.trim() === '' ? '' : parseToIso(cleaned, order);
+        setHiddenIso(hidden, iso || '');
+        disp.classList.toggle('is-invalid', cleaned.trim() !== '' && !iso);
+    });
+    // Blur: normalize a valid entry to tenant format (1/9/2026 → 01/09/2026,
+    // 2026-09-11 → 11/09/2026, 11092026 → 11/09/2026); flag invalid ones.
+    document.addEventListener('focusout', function (e) {
+        var disp = e.target && e.target.closest ? e.target.closest('[data-tdate-display]') : null;
+        if (!disp) return;
+        var order = orderOf(disp);
+        var hidden = document.getElementById(disp.getAttribute('data-tdate-display'));
+        var t = (disp.value || '').trim();
+        if (t === '') {
+            setHiddenIso(hidden, '');
+            disp.classList.remove('is-invalid');
+            return;
+        }
+        var iso = parseToIso(t, order);
+        if (iso) {
+            setHiddenIso(hidden, iso);
+            disp.value = toDisplay(iso, order);
+            disp.classList.remove('is-invalid');
+        } else {
+            setHiddenIso(hidden, '');
+            disp.classList.add('is-invalid');
+        }
     });
     document.addEventListener('submit', function (e) {
         var form = e.target;
@@ -123,7 +202,7 @@ window.MAWA_DATE_ORDER = @json(mawa_date_format_key());
         form.querySelectorAll('[data-tdate-display]').forEach(function (disp) {
             var hidden = document.getElementById(disp.getAttribute('data-tdate-display'));
             if (hidden && disp.value && disp.value.length === fullLen(orderOf(disp))) {
-                var iso = toIso(disp.value, orderOf(disp));
+                var iso = parseToIso(disp.value, orderOf(disp));
                 if (iso) hidden.value = iso;
             }
         });
@@ -150,9 +229,16 @@ window.MAWA_DATE_ORDER = @json(mawa_date_format_key());
         var hidden = wrap.querySelector('[data-live-date-hidden]');
         if (!hidden) return;
         var order = orderOf(disp);
-        var out = maskDigits(disp.value.replace(/\D/g, ''), order);
-        disp.value = out;
-        if (out === '') {
+        // Filter only (same fix as the standard handler above): no regrouping,
+        // caret preserved; tolerant parse pushes ISO to Livewire when valid.
+        var raw = disp.value || '';
+        var cleaned = stripToDateChars(raw, fullLen(order));
+        if (cleaned !== raw) {
+            var caret = caretAfterStrip(raw, disp.selectionStart || 0, cleaned.length);
+            disp.value = cleaned;
+            try { disp.setSelectionRange(caret, caret); } catch (err) {}
+        }
+        if (cleaned === '') {
             disp.classList.remove('is-invalid');
             if (hidden.value !== '') {
                 hidden.value = '';
@@ -160,8 +246,8 @@ window.MAWA_DATE_ORDER = @json(mawa_date_format_key());
             }
             return;
         }
-        var iso = out.length === fullLen(order) ? toIso(out, order) : '';
-        disp.classList.toggle('is-invalid', out !== '' && iso === '');
+        var iso = parseToIso(cleaned, order);
+        disp.classList.toggle('is-invalid', !iso);
         if (iso !== '' && hidden.value !== iso) {
             hidden.value = iso;
             hidden.dispatchEvent(new Event('input', { bubbles: true }));
@@ -308,6 +394,11 @@ window.MAWA_DATE_ORDER = @json(mawa_date_format_key());
             if (p.disp) {
                 p.disp.value = toDisplay(iso, orderOf(p.disp));
                 p.disp.classList.remove('is-invalid');
+                // Programmatic sets fire no events on their own: notify
+                // filter forms (onchange="guardTdateSubmit(this)") so a
+                // calendar-picked date actually refreshes the list. Booking
+                // forms carry no change handler, so they are unaffected.
+                try { p.disp.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) {}
             }
         }
         closeDatePicker();

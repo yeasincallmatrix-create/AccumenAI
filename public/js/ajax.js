@@ -114,7 +114,8 @@
                     return;
                 }
                 Monetix.toast(res && res.message, 'success');
-                Monetix.loadPage(window.location.pathname + window.location.search, { preserveFocus: false });
+                // Same-URL refresh: replace, never push (avoids duplicate history entries).
+                Monetix.loadPage(window.location.pathname + window.location.search, { preserveFocus: false, replace: true });
             });
     });
 
@@ -136,7 +137,8 @@
                     return;
                 }
                 Monetix.toast(res && res.message, 'success');
-                Monetix.loadPage(window.location.pathname + window.location.search, { preserveFocus: false });
+                // Same-URL refresh: replace, never push (avoids duplicate history entries).
+                Monetix.loadPage(window.location.pathname + window.location.search, { preserveFocus: false, replace: true });
             });
     });
 
@@ -155,6 +157,12 @@
         opts = opts || {};
         var main = document.querySelector('main.content');
         if (!main) { window.location.href = url; return; }
+
+        // Fix D — prevent duplicate navigation: ignore a request for the exact
+        // URL that is already being fetched (e.g. double-clicks, racing
+        // debounced keystrokes).
+        if (Monetix._loadingUrl && Monetix._loadingUrl === url) { return; }
+        Monetix._loadingUrl = url;
 
         // Remember what the user was interacting with so we can restore focus
         // (and cursor position) after the content swap.
@@ -184,6 +192,7 @@
             return response.text();
         })
         .then(function (html) {
+            Monetix._loadingUrl = null;
             if (html === null) { return; }
             var doc = new DOMParser().parseFromString(html, 'text/html');
             var newMain = doc.querySelector('main.content');
@@ -223,7 +232,22 @@
                 document.dispatchEvent(new CustomEvent('loadPage'));
             }
 
-            if (opts.push !== false) {
+            // History hygiene (Fix A):
+            // - never push an entry identical to the current URL (same-URL
+            //   refreshes after POST actions previously stacked duplicates,
+            //   forcing extra back-button clicks that appeared to do nothing);
+            // - transient states (filter keystrokes, tab switches) pass
+            //   { replace: true } and update the URL via replaceState instead.
+            var sameAsCurrent = false;
+            try {
+                sameAsCurrent = (new URL(url, window.location.origin).href === window.location.href);
+            } catch (e) { sameAsCurrent = false; }
+
+            if (opts.replace || sameAsCurrent) {
+                if (!sameAsCurrent) {
+                    try { history.replaceState({ mtx: true, url: url }, '', url); } catch (e) {}
+                }
+            } else if (opts.push !== false) {
                 try { history.pushState({ mtx: true, url: url }, '', url); } catch (e) {}
             }
 
@@ -262,6 +286,7 @@
             if (opts.onDone) { opts.onDone(); }
         })
         .catch(function () {
+            Monetix._loadingUrl = null;
             window.location.href = url;
         });
     };

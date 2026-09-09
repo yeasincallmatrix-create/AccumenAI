@@ -1003,3 +1003,24 @@ if (! function_exists('generateStudentRegNo')) {
         return $lastTwo . $year . $month . $random . $dayLastDigit;
     }
 }
+
+if (! function_exists('platform_logo_url')) {
+    /**
+     * URL of the platform logo uploaded under Admin → Settings → Appearance.
+     * Falls back to the bundled default mark when none is uploaded (or the
+     * file is missing / settings storage is unreachable).
+     */
+    function platform_logo_url(): string
+    {
+        try {
+            $path = \App\Models\Setting::get('brand.logo');
+            if (is_string($path) && $path !== '' && is_file(public_path('storage/'.$path))) {
+                return asset('storage/'.$path);
+            }
+        } catch (\Throwable) {
+            // Fail open to the bundled logo.
+        }
+
+        return asset('images/platform-logo.svg');
+    }
+}

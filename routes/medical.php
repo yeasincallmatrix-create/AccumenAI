@@ -53,6 +53,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     Route::resource('appointments', AppointmentController::class);
     Route::post('appointments/{appointment}/checkin', [AppointmentController::class, 'checkin'])->name('appointments.checkin');
     Route::post('appointments/{appointment}/complete', [AppointmentController::class, 'complete'])->name('appointments.complete');
+    Route::post('appointments/{appointment}/transfer', [AppointmentController::class, 'transfer'])->name('appointments.transfer');
 
     // Admissions (IPD) — explicit GETs before the resource so they are not
     // swallowed by the {admission} wildcard.
@@ -213,5 +214,6 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     Route::post('categories/store', [CategoryController::class, 'store'])->name('categories.store');
     Route::get('categories/departments', [CategoryController::class, 'departments'])->name('categories.departments');
     Route::get('doctors/{doctor}/slots', [DoctorController::class, 'getSlots'])->name('doctors.slots');
+    Route::post('doctors/quick-user', [DoctorController::class, 'quickUser'])->name('doctors.quick-user');
     Route::resource('doctors', DoctorController::class);
 });

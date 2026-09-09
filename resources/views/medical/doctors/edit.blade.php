@@ -91,6 +91,28 @@
                         @error('consultation_fee')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label" for="first_visit_fee">First Visit Fee (৳)</label>
+                        <input type="number" id="first_visit_fee" name="first_visit_fee" class="form-control @error('first_visit_fee') is-invalid @enderror" value="{{ old('first_visit_fee', $doctor->first_visit_fee ?? 700) }}" min="0" step="0.01">
+                        @error('first_visit_fee')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label" for="follow_up_fee">Follow-up Fee (৳)</label>
+                        <input type="number" id="follow_up_fee" name="follow_up_fee" class="form-control @error('follow_up_fee') is-invalid @enderror" value="{{ old('follow_up_fee', $doctor->follow_up_fee ?? 500) }}" min="0" step="0.01">
+                        @error('follow_up_fee')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label" for="follow_up_days">Follow-up Period (days)</label>
+                        <input type="number" id="follow_up_days" name="follow_up_days" class="form-control @error('follow_up_days') is-invalid @enderror" value="{{ old('follow_up_days', $doctor->follow_up_days ?? 30) }}" min="1" max="365">
+                        <div class="form-text">Days within which follow-up fee applies.</div>
+                        @error('follow_up_days')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div>
                 <div class="col-md-6">
                     <div class="mb-3">
                         <label class="form-label" for="phone">Phone</label>

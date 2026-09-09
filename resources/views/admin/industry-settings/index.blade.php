@@ -95,10 +95,6 @@
             <i class="bi bi-palette-fill"></i>
             <span>Manage Themes</span>
         </button>
-        <button class="settings-nav-item settings-tab-btn" type="button" data-target="pane-geo" aria-selected="false">
-            <i class="bi bi-globe2"></i>
-            <span>Geo Settings</span>
-        </button>
     </div>
 
     <div class="settings-content">
@@ -210,44 +206,6 @@
                         </div>
                     @endforeach
                 </div>
-
-            <div class="settings-pane" id="pane-geo">
-                <div class="table-toolbar">
-                    <div class="toolbar-info"><i class="bi bi-globe2"></i> Geo Settings</div>
-                </div>
-                <p class="text-muted">Manage the geography data used across the platform — countries, administrative levels/units and geography package imports.</p>
-
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <a class="text-decoration-none" href="{{ route('admin.geo.index') }}">
-                            <div class="border rounded p-3 h-100">
-                                <div class="d-flex align-items-center gap-3">
-                                    <span class="fs-3"><i class="bi bi-globe"></i></span>
-                                    <div>
-                                        <div class="fw-semibold fs-6">Locations</div>
-                                        <div class="text-muted small">Manage countries, levels and the world's modern administrative units.</div>
-                                    </div>
-                                </div>
-                                <div class="mt-2 text-primary small"><i class="bi bi-arrow-right"></i> Open Locations</div>
-                            </div>
-                        </a>
-                    </div>
-                    <div class="col-md-6">
-                        <a class="text-decoration-none" href="{{ route('admin.geo.imports') }}">
-                            <div class="border rounded p-3 h-100">
-                                <div class="d-flex align-items-center gap-3">
-                                    <span class="fs-3"><i class="bi bi-cloud-arrow-up"></i></span>
-                                    <div>
-                                        <div class="fw-semibold fs-6">Import Geography Package</div>
-                                        <div class="text-muted small">Import a geography package for countries and administrative units.</div>
-                                    </div>
-                                </div>
-                                <div class="mt-2 text-primary small"><i class="bi bi-arrow-right"></i> Open Import</div>
-                            </div>
-                        </a>
-                    </div>
-                </div>
-            </div>
 
         </div>
     </div>

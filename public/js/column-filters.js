@@ -44,7 +44,8 @@
         var qs = cleaned.toString();
         var url = qs ? (window.location.pathname + '?' + qs) : window.location.pathname;
         if (Monetix.loadPage) {
-            Monetix.loadPage(url, { preserveFocus: true });
+            // Column filter toggles are transient: replace, don't push (Fix A).
+            Monetix.loadPage(url, { preserveFocus: true, replace: true });
         } else {
             window.location.href = url;
         }

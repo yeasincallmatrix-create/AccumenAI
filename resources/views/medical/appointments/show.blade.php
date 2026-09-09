@@ -34,7 +34,24 @@
                 <p><strong>Date:</strong> <x-tdate :value="$appointment->appointment_date" fallback="d M Y" /></p>
                 <p><strong>Time:</strong> {{ $appointment->appointment_time ? \Carbon\Carbon::parse($appointment->appointment_time)->format('h:i A') : 'N/A' }}</p>
                 <p><strong>Serial:</strong> #{{ $appointment->serial_number }}</p>
-                <p class="mb-0"><strong>Status:</strong>
+                <p><strong>Fee Applied:</strong>
+                    @if($appointment->fee_applied !== null)
+                        ৳{{ number_format((float) $appointment->fee_applied, 2) }}
+                    @else
+                        <span class="text-muted">—</span>
+                    @endif
+                </p>
+                <p class="mb-0"><strong>Visit Type:</strong>
+                    @if($appointment->isFollowUp())
+                        <span class="badge bg-info">Follow-up</span>
+                        @if($appointment->daysSinceLastVisit() !== null)
+                            <small class="text-muted">(Last visit: {{ $appointment->daysSinceLastVisit() }} days ago)</small>
+                        @endif
+                    @else
+                        <span class="badge bg-primary">First Visit</span>
+                    @endif
+                </p>
+                <p class="mb-0 mt-2"><strong>Status:</strong>
                     <span class="badge bg-{{ $appointment->status === 'completed' ? 'success' : ($appointment->status === 'scheduled' ? 'primary' : ($appointment->status === 'in_progress' ? 'warning' : ($appointment->status === 'cancelled' ? 'danger' : 'secondary'))) }}">
                         {{ ucfirst(str_replace('_', ' ', $appointment->status)) }}
                     </span>

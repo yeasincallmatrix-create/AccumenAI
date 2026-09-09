@@ -8,6 +8,7 @@ use App\Models\Institute;
 use App\Models\Medical\Appointment;
 use App\Models\Medical\Patient;
 use App\Models\User;
+use App\Services\Medical\AppointmentFeeService;
 use App\Services\Medical\MrNumberGenerator;
 use App\Services\Medical\QueueManager;
 use App\Support\Workspace;
@@ -22,7 +23,7 @@ class AppointmentController extends MedicalController implements HasMiddleware
         return [
             new Middleware('permission:medical_appointments.view', only: ['index', 'show', 'queue']),
             new Middleware('permission:medical_appointments.create', only: ['create', 'store']),
-            new Middleware('permission:medical_appointments.edit', only: ['edit', 'update', 'checkin', 'complete']),
+            new Middleware('permission:medical_appointments.edit', only: ['edit', 'update', 'checkin', 'complete', 'transfer']),
             new Middleware('permission:medical_appointments.delete', only: ['destroy']),
         ];
     }
@@ -112,7 +113,7 @@ class AppointmentController extends MedicalController implements HasMiddleware
     /**
      * Store a new appointment.
      */
-    public function store(AppointmentRequest $request)
+    public function store(AppointmentRequest $request, AppointmentFeeService $feeService)
     {
         $instituteId = $this->instituteId();
         $data = $request->validated();
@@ -125,10 +126,24 @@ class AppointmentController extends MedicalController implements HasMiddleware
             $data['appointment_date']
         );
 
+        // First-visit vs follow-up fee (null when the doctor user has no
+        // Doctor profile — booking then continues exactly as before).
+        $patient = Patient::where('institute_id', $instituteId)->findOrFail($data['patient_id']);
+        $quote = $feeService->calculateFor((int) $data['doctor_id'], $patient, $instituteId);
+        if ($quote['fee'] !== null) {
+            $data['fee_applied'] = $quote['fee'];
+        }
+
         $appointment = Appointment::create($data);
 
+        $message = 'Appointment booked successfully! Serial: '.$appointment->serial_number;
+        if ($appointment->fee_applied !== null) {
+            $message .= ' Fee: ৳'.number_format((float) $appointment->fee_applied, 2)
+                .($quote['is_follow_up'] ? ' (Follow-up)' : ' (First visit)');
+        }
+
         return redirect()->route('medical.appointments.show', $appointment)
-            ->with('status', 'Appointment booked successfully! Serial: '.$appointment->serial_number);
+            ->with('status', $message);
     }
 
     /**
@@ -228,6 +243,49 @@ class AppointmentController extends MedicalController implements HasMiddleware
         $this->queueManager->checkIn($appointment);
 
         return redirect()->back()->with('status', 'Patient checked in successfully!');
+    }
+
+    /**
+     * Transfer a scheduled appointment to another date.
+     *
+     * Keeps patient/doctor/time; moves appointment_date and issues a fresh
+     * serial for the target date (serials are doctor+date scoped).
+     */
+    public function transfer(Request $request, Appointment $appointment)
+    {
+        $this->ensureSameInstitute($appointment, 'appointment');
+
+        $validated = $request->validate([
+            'appointment_date' => 'required|date|after_or_equal:today',
+        ]);
+
+        if ($appointment->status !== 'scheduled') {
+            return redirect()->back()->withErrors(
+                ['appointment_date' => 'Only scheduled appointments can be transferred to another date.']
+            )->withInput();
+        }
+
+        $newDate = \Carbon\Carbon::parse($validated['appointment_date'])->format('Y-m-d');
+
+        if ($newDate === $appointment->appointment_date->format('Y-m-d')) {
+            return redirect()->back()->withErrors(
+                ['appointment_date' => 'Appointment is already on this date. Pick a different date.']
+            )->withInput();
+        }
+
+        $serial = $this->queueManager->getNextSerial(
+            $appointment->institute_id,
+            $appointment->doctor_id,
+            $newDate
+        );
+
+        $appointment->update([
+            'appointment_date' => $newDate,
+            'serial_number' => $serial,
+        ]);
+
+        return redirect()->route('medical.appointments.index', ['date' => $newDate])
+            ->with('status', 'Appointment transferred to '.$newDate.'. New serial: #'.$serial);
     }
 
     /**

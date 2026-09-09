@@ -160,6 +160,12 @@ class LocalPackageProvider implements GeoDataProvider
     /**
      * Streams a top-level JSON array of objects without loading it whole.
      * Records are expected to be flat (name/value or simple key/object values).
+     *
+     * Handles pretty-printed, minified, and single-object files: each element
+     * of a top-level array is yielded as it closes; a bare top-level object
+     * is yielded once. (Previously only the final `]` triggered a yield, so
+     * whole arrays collapsed into one undecodable blob and every record was
+     * silently lost.)
      */
     private function json(string $file): Generator
     {
@@ -168,11 +174,24 @@ class LocalPackageProvider implements GeoDataProvider
             return;
         }
 
-        $buffer = '';
-        $depth = 0;       // object/array nesting outside strings
+        $depth = 0;       // bracket nesting outside strings
         $inString = false;
         $escaped = false;
+        $inTopArray = false;
         $element = '';
+        $elementOpener = '';  // '{' or '[' that opened the buffered element
+
+        $flush = function () use (&$element) {
+            if (trim($element) !== '') {
+                $decoded = json_decode(trim($element), true);
+                $element = '';
+                if (is_array($decoded)) {
+                    return $decoded;
+                }
+            }
+
+            return null;
+        };
 
         while (($chunk = fread($fh, 65536)) !== false && $chunk !== '') {
             for ($i = 0, $len = strlen($chunk); $i < $len; $i++) {
@@ -198,7 +217,23 @@ class LocalPackageProvider implements GeoDataProvider
                     continue;
                 }
 
+                if ($char === '[' && $depth === 0 && ! $inTopArray) {
+                    $inTopArray = true;
+
+                    continue;
+                }
+
+                if ($char === ']' && $depth === 0 && $inTopArray) {
+                    $inTopArray = false;
+                    $element = '';
+
+                    continue;
+                }
+
                 if ($char === '{' || $char === '[') {
+                    if (trim($element) === '') {
+                        $elementOpener = $char;
+                    }
                     $depth++;
                     $element .= $char;
 
@@ -208,9 +243,16 @@ class LocalPackageProvider implements GeoDataProvider
                 if ($char === '}' || $char === ']') {
                     $depth--;
                     $element .= $char;
-                    if ($depth <= 0 && trim($element) !== '') {
+                    // The top-level array's own brackets are never buffered,
+                    // so every element — inside an array or standalone —
+                    // spans depth 0 → 1 → 0. Its own opener must be what
+                    // just closed; deeper closings belong to nested content.
+                    $closedOwn = ($char === '}' && $elementOpener === '{')
+                        || ($char === ']' && $elementOpener === '[');
+                    if ($depth === 0 && $closedOwn && trim($element) !== '') {
                         $decoded = json_decode(trim($element), true);
                         $element = '';
+                        $elementOpener = '';
                         if (is_array($decoded)) {
                             yield $decoded;
                         }
@@ -219,18 +261,18 @@ class LocalPackageProvider implements GeoDataProvider
                     continue;
                 }
 
-                $element .= $char;
-                if ($depth === 0 && $char === ',') {
+                // Structural commas/whitespace outside any element carry no data.
+                if ($depth === 0 && ($char === ',' || ctype_space($char))) {
                     continue;
                 }
+
+                $element .= $char;
             }
         }
 
-        if (trim($element) !== '') {
-            $decoded = json_decode(trim($element), true);
-            if (is_array($decoded)) {
-                yield $decoded;
-            }
+        $decoded = $flush();
+        if (is_array($decoded)) {
+            yield $decoded;
         }
         fclose($fh);
     }

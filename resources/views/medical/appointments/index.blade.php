@@ -84,6 +84,12 @@
                                 <a href="{{ route('medical.appointments.edit', $appointment) }}" class="btn btn-warning" title="Edit">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+                                @if($appointment->status === 'scheduled')
+                                <button type="button" class="btn btn-primary" title="Transfer to another date"
+                                        onclick="openTransferModal({{ $appointment->id }})">
+                                    <i class="bi bi-calendar-date"></i>
+                                </button>
+                                @endif
                                 <button type="button" class="btn btn-danger" title="Cancel"
                                         onclick="confirmMedicalCancel({{ $appointment->id }})">
                                     <i class="bi bi-x-lg"></i>
@@ -116,6 +122,7 @@
 
 @include('medical.patients._quick_create_modal')
 @include('medical.appointments._book_modal')
+@include('medical.appointments._transfer_modal')
 @endsection
 
 @push('scripts')

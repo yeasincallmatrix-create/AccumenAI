@@ -66,6 +66,40 @@
     </form>
 </div>
 
+<div class="admin-card mt-3">
+    <div class="table-toolbar">
+        <div class="toolbar-info"><i class="bi bi-image"></i> Platform Logo</div>
+    </div>
+    <div class="row g-3 align-items-center">
+        <div class="col-md-3 text-center">
+            <img src="{{ $platformLogoUrl ?? platform_logo_url() }}" alt="Platform logo"
+                 class="img-thumbnail" style="max-height:96px;max-width:100%;">
+            <div class="small text-muted mt-1">
+                @if(!empty($platformLogo)) Custom logo active @else Default mark @endif
+            </div>
+        </div>
+        <div class="col-md-9">
+            <form method="POST" action="{{ route('admin.settings.logo.upload') }}" enctype="multipart/form-data" class="d-flex flex-wrap align-items-end gap-2">
+                @csrf
+                <div>
+                    <label class="form-label" for="platform_logo">Upload logo (JPG, PNG, GIF, SVG, WEBP — max 2MB)</label>
+                    <input type="file" id="platform_logo" name="logo" class="form-control" accept=".jpg,.jpeg,.png,.gif,.svg,.webp" required>
+                    @error('logo')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                </div>
+                <button class="btn btn-primary" type="submit"><i class="bi bi-upload"></i> Upload</button>
+            </form>
+            @if(!empty($platformLogo))
+                <form method="POST" action="{{ route('admin.settings.logo.remove') }}" class="mt-2"
+                      onsubmit="return confirm('Remove the custom logo and restore the default mark?')">
+                    @csrf @method('DELETE')
+                    <button class="btn btn-sm btn-outline-secondary" type="submit"><i class="bi bi-arrow-counterclockwise"></i> Restore default</button>
+                </form>
+            @endif
+            <div class="form-text mt-2">Applies everywhere the platform logo appears: login page, topbars and the browser tab icon.</div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @section('scripts')

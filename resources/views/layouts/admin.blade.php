@@ -9,6 +9,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="login-url" content="{{ route('login') }}">
     <title>@yield('title', 'AccumenAI')</title>
+    <link rel="icon" href="{{ platform_logo_url() }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
@@ -29,14 +30,16 @@
                 <i class="bi bi-list"></i>
             </button>
             @if ($isInstituteStaff && !empty($institute->slug))
-                <a class="brand" href="{{ route('business.show', $institute->slug) }}" title="View business page">
+                <a class="brand d-flex align-items-center gap-2" href="{{ route('business.show', $institute->slug) }}" title="View business page">
+                    @include('partials.platform-logo', ['height' => 32])
                     {{ $institute->name ?? 'AccumenAI' }}
                     @if ($institute)
                         <i class="bi bi-patch-check-fill verified-badge is-verified" title="Verified"></i>
                     @endif
                 </a>
             @else
-                <a class="brand" href="{{ route('dashboard') }}">
+                <a class="brand d-flex align-items-center gap-2" href="{{ route('dashboard') }}">
+                    @include('partials.platform-logo', ['height' => 32])
                     @if ($isInstituteStaff)
                         {{ $institute->name ?? 'AccumenAI' }}
                         @if ($institute)

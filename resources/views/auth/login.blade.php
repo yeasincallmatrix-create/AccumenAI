@@ -9,6 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link href="{{ asset('css/base.css') }}" rel="stylesheet">
     <link href="{{ asset('css/pages.css') }}" rel="stylesheet">
+    <link rel="icon" href="{{ platform_logo_url() }}">
 </head>
 <body class="bg-body-tertiary">
 @php
@@ -33,7 +34,7 @@
         <div class="row justify-content-center">
             <div class="col-md-6 col-lg-5">
                 <div class="auth-card mb-3 text-center">
-                    <div class="d-flex align-items-center justify-content-center gap-2 mb-2 fw-bold text-primary" style="font-size:20px"><i class="bi bi-shield-lock-fill"></i> AccumenAI</div>
+                    <div class="d-flex align-items-center justify-content-center gap-2 mb-2 fw-bold text-primary" style="font-size:20px">@include('partials.platform-logo', ['height' => 36]) AccumenAI</div>
                     <h1 class="auth-title h3 mb-2">{{ $loginTitle }}</h1>
                     <p class="auth-subtitle mb-4">{{ $hint }}</p>
 
