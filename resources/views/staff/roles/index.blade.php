@@ -50,7 +50,7 @@
                     @forelse($roles as $role)
                     <tr>
                         <td>
-                            <strong>{{ $role->name }}</strong>
+                            <strong>{{ mawa_role_label($role) }}</strong>
                             @if(!$role->managed)
                                 <span class="badge bg-secondary ms-1" title="Global role — read only">Global</span>
                             @endif

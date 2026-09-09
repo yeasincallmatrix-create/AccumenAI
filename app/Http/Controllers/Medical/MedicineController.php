@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Medical;
 
 use App\Http\Requests\Medical\MedicineRequest;
+use App\Models\Medical\ClinicalAuditLog;
 use App\Models\Medical\Medicine;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -32,7 +33,9 @@ class MedicineController extends MedicalController implements HasMiddleware
             $query->where(function ($q) use ($search) {
                 $q->where('generic_name', 'LIKE', "%{$search}%")
                     ->orWhere('brand_name', 'LIKE', "%{$search}%")
-                    ->orWhere('code', 'LIKE', "%{$search}%");
+                    ->orWhere('code', 'LIKE', "%{$search}%")
+                    ->orWhere('dgda_code', 'LIKE', "%{$search}%")
+                    ->orWhere('dgda_dar_number', 'LIKE', "%{$search}%");
             });
         }
 
@@ -42,6 +45,16 @@ class MedicineController extends MedicalController implements HasMiddleware
 
         if ($request->filled('status')) {
             $query->where('is_active', $request->status === 'active');
+        }
+
+        if ($request->filled('dgda')) {
+            if ($request->dgda === 'coded') {
+                $query->whereNotNull('dgda_code')->where('dgda_code', '!=', '');
+            } elseif ($request->dgda === 'pending') {
+                $query->where(function ($q) {
+                    $q->whereNull('dgda_code')->orWhere('dgda_code', '');
+                });
+            }
         }
 
         $medicines = $query->orderBy('generic_name')->paginate(20)->withQueryString();
@@ -125,6 +138,14 @@ class MedicineController extends MedicalController implements HasMiddleware
             return redirect()->back()->with('error', 'Cannot delete medicine with existing stock.');
         }
 
+        // Phase 03: master deletion leaves an attributable trail (zero-
+        // quantity batches cascade with the medicine; dispense-linked
+        // batches are already protected at the stock level).
+        ClinicalAuditLog::record($medicine, 'deleted', [
+            'old' => array_merge(ClinicalAuditLog::snapshot($medicine), [
+                'batch_count' => $medicine->stocks()->count(),
+            ]),
+        ]);
         $medicine->delete();
 
         return redirect()->route('medical.pharmacy.medicines.index')

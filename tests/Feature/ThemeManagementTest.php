@@ -28,7 +28,7 @@ class ThemeManagementTest extends TestCase
         TenantContext::clear();
         $this->actingAs($this->platformAdmin(), 'platform_admin');
 
-        $this->get(route('admin.industry-settings'))
+        $this->get(route('admin.platform-settings.index'))
             ->assertOk()
             ->assertSee('Manage Themes')
             ->assertSee('Ocean Blue')
@@ -41,7 +41,7 @@ class ThemeManagementTest extends TestCase
         TenantContext::clear();
         $this->actingAs($this->platformAdmin(), 'platform_admin');
 
-        $this->get(route('admin.industry-settings', ['industry' => 'education']))
+        $this->get(route('admin.platform-settings.index', ['industry' => 'education']))
             ->assertOk()
             ->assertSee('Education Settings')
             ->assertSee('Manage Themes')
@@ -63,7 +63,7 @@ class ThemeManagementTest extends TestCase
             'status' => 'active',
             'is_dark' => 1,
             'is_default' => 1,
-        ])->assertRedirect(route('admin.industry-settings'));
+        ])->assertRedirect(route('admin.platform-settings.index').'#pane-industry');
 
         $theme->refresh();
         $this->assertSame('Ocean Blue X', $theme->name);
@@ -89,7 +89,7 @@ class ThemeManagementTest extends TestCase
             'secondary_color' => $purple->secondary_color,
             'status' => 'active',
             'is_default' => 1,
-        ])->assertRedirect(route('admin.industry-settings'));
+        ])->assertRedirect(route('admin.platform-settings.index').'#pane-industry');
 
         $this->assertSame(1, $purple->fresh()->is_default);
         $this->assertSame(0, $ocean->fresh()->is_default);

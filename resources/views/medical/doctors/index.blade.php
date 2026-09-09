@@ -16,9 +16,11 @@
         <p class="page-header-desc">{{ $doctors->total() }} doctors</p>
     </div>
     <div class="page-header-actions">
+        @if(! mawa_fenced_doctor_id())
         <a href="{{ route('medical.doctors.create') }}" class="btn btn-primary">
             <i class="bi bi-plus-lg me-1"></i>Add Doctor
         </a>
+        @endif
     </div>
 </div>
 
@@ -91,12 +93,14 @@
                             <a href="{{ route('medical.doctors.show', $doctor) }}" class="btn btn-sm btn-info" title="View">
                                 <i class="bi bi-eye"></i>
                             </a>
+                            @if(! mawa_fenced_doctor_id())
                             <a href="{{ route('medical.doctors.edit', $doctor) }}" class="btn btn-sm btn-warning" title="Edit / availability">
                                 <i class="bi bi-pencil"></i>
                             </a>
                             <button class="btn btn-sm btn-danger" title="Remove" onclick="confirmDelete({{ $doctor->id }})">
                                 <i class="bi bi-trash"></i>
                             </button>
+                            @endif
                         </td>
                     </tr>
                     @empty

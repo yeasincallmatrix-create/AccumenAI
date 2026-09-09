@@ -27,6 +27,13 @@ class AppointmentRequest extends FormRequest
             'doctor_id' => [
                 'required',
                 Rule::exists('users', 'id')->where(fn ($q) => $q->where('status', 'active')),
+                // Phase 02: active globally is not enough — the account must
+                // belong to this institute (membership or Doctor profile).
+                function ($attribute, $value, $fail) use ($instituteId) {
+                    if (! MedicalScope::isDoctorInInstitute((int) $value, (int) $instituteId)) {
+                        $fail('Selected doctor does not belong to this institute.');
+                    }
+                },
             ],
             'appointment_date' => 'required|date|after_or_equal:today',
             'appointment_time' => 'required|date_format:H:i',

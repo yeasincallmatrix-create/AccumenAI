@@ -33,6 +33,12 @@ class AdmissionRequest extends FormRequest
             'admitting_doctor_id' => [
                 'required',
                 Rule::exists('users', 'id')->where(fn ($q) => $q->where('status', 'active')),
+                // Phase 02: the admitting doctor must belong to this institute.
+                function ($attribute, $value, $fail) use ($instituteId) {
+                    if (! MedicalScope::isDoctorInInstitute((int) $value, (int) $instituteId)) {
+                        $fail('Selected doctor does not belong to this institute.');
+                    }
+                },
             ],
             'admission_date' => 'required|date',
             'admission_time' => 'required|date_format:H:i',

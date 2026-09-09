@@ -83,4 +83,12 @@
         @endif
     </div>
 </div>
+
+@if(!empty($doctorId) && ($user ?? null) && $user->hasPermission('medical_queue.reorder'))
+    <div class="card mt-3">
+        <div class="card-body">
+            @livewire('medical.queue-manager', ['doctorUserId' => (int) $doctorId, 'date' => $date, 'instituteId' => $instituteId], key('medical-queue-'.$doctorId.'-'.$date))
+        </div>
+    </div>
+@endif
 @endsection

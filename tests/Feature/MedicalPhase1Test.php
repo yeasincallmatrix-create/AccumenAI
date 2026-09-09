@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Institute;
 use App\Models\Medical\Appointment;
+use App\Models\Medical\Doctor;
 use App\Models\Medical\Patient;
 use App\Models\Membership;
 use App\Models\Role;
@@ -64,6 +65,15 @@ class MedicalPhase1Test extends TestCase
             'account_type' => 'staff',
             'email_verified_at' => now(),
             'status' => 'active',
+        ]);
+
+        // Phase 02 security contract: selectable doctors hold a Doctor
+        // profile in the institute (mirrors production onboarding, where
+        // staff invite / quickUser provisions institute linkage).
+        Doctor::create([
+            'institute_id' => $this->institute->id,
+            'user_id' => $this->doctor->id,
+            'registration_number' => 'REG-'.strtoupper(uniqid()),
         ]);
 
         $this->actingAs($this->owner, 'web');

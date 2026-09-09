@@ -6,13 +6,13 @@
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb mb-0">
         <li class="breadcrumb-item"><a href="{{ route('staff.roles.index') }}" class="text-decoration-none">Roles</a></li>
-        <li class="breadcrumb-item active" aria-current="page">{{ $role->name }}</li>
+        <li class="breadcrumb-item active" aria-current="page">{{ mawa_role_label($role) }}</li>
     </ol>
 </nav>
 
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2">
     <div class="page-header-text">
-        <h4 class="page-header-title">Edit Role — {{ $role->name }}</h4>
+        <h4 class="page-header-title">Edit Role — {{ mawa_role_label($role) }}</h4>
         <p class="page-header-desc"><code>{{ $role->slug }}</code></p>
     </div>
     <div class="page-header-actions">

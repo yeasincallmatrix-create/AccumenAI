@@ -5,9 +5,12 @@ namespace App\Models\Medical;
 use App\Models\Institute;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LabOrder extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'lab_orders';
 
     protected $fillable = [

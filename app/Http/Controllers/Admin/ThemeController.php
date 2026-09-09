@@ -46,6 +46,6 @@ class ThemeController extends Controller
 
         $theme->save();
 
-        return redirect(route('admin.industry-settings'))->with('status', "Theme \"{$theme->name}\" updated.");
+        return redirect(route('admin.platform-settings.index').'#pane-industry')->with('status', "Theme \"{$theme->name}\" updated.");
     }
 }

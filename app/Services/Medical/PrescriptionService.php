@@ -3,6 +3,7 @@
 namespace App\Services\Medical;
 
 use App\Models\Medical\Prescription;
+use App\Models\Medical\PrescriptionAuditLog;
 use App\Models\Medical\PrescriptionItem;
 use App\Support\MedicalScope;
 use Illuminate\Database\Eloquent\Collection;
@@ -68,7 +69,10 @@ class PrescriptionService
                 PrescriptionItem::create($item);
             }
 
-            return $prescription->load('items');
+            $loaded = $prescription->load('items');
+            PrescriptionAuditLog::record($loaded, 'created', count($items).' item(s)');
+
+            return $loaded;
         });
     }
 
@@ -87,11 +91,74 @@ class PrescriptionService
     }
 
     /**
-     * Finalize a prescription.
+     * Finalize (sign) a prescription: locks items, stamps signing metadata
+     * and writes the audit trail. Signing hash binds number + parties +
+     * item set + timestamp so the printed QR can be re-verified.
      */
     public function finalize(Prescription $prescription): void
     {
-        $prescription->update(['is_finalized' => true]);
+        $now = now();
+        $itemKey = $prescription->items()
+            ->orderBy('id')
+            ->get(['medicine_id', 'medicine_name', 'dosage', 'frequency', 'duration_days', 'quantity'])
+            ->map(fn ($i) => implode('|', [$i->medicine_id, $i->medicine_name, $i->dosage, $i->frequency, $i->duration_days, $i->quantity]))
+            ->implode(';');
+
+        $prescription->update([
+            'is_finalized' => true,
+            'signed_at' => $now,
+            'signed_by' => $this->actorId(),
+            'signature_hash' => hash('sha256', implode('|', [
+                $prescription->prescription_number,
+                $prescription->institute_id,
+                $prescription->patient_id,
+                $prescription->doctor_id,
+                $itemKey,
+                $now->format('Y-m-d H:i:s'),
+            ])),
+        ]);
+
+        PrescriptionAuditLog::record($prescription, 'signed',
+            'Signed by #'.$prescription->signed_by.' ('.$prescription->items()->count().' items)');
+    }
+
+    /**
+     * Verification payload encoded in the printed QR code.
+     */
+    public function verificationPayload(Prescription $prescription): string
+    {
+        return implode('|', [
+            'RX:'.$prescription->prescription_number,
+            'INST:'.$prescription->institute_id,
+            'SIG:'.substr((string) $prescription->signature_hash, 0, 12),
+        ]);
+    }
+
+    /**
+     * QR code (SVG data URI, no GD extension needed) for print views.
+     */
+    public function verificationQr(Prescription $prescription): string
+    {
+        try {
+            return (string) (new \chillerlan\QRCode\QRCode(
+                new \chillerlan\QRCode\QROptions([
+                    'outputType' => \chillerlan\QRCode\Output\QRMarkupSVG::class,
+                ])
+            ))->render($this->verificationPayload($prescription));
+        } catch (\Throwable) {
+            return '';
+        }
+    }
+
+    private function actorId(): ?int
+    {
+        try {
+            $staff = auth('institute_user')->user() ?? auth('web')->user() ?? auth()->user();
+
+            return $staff ? (int) $staff->getKey() : null;
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     /**
@@ -106,6 +173,10 @@ class PrescriptionService
             'patient' => $prescription->patient,
             'doctor' => $prescription->doctor,
             'items' => $prescription->items,
+            'qr' => $prescription->is_finalized ? $this->verificationQr($prescription) : '',
+            'verifyCode' => $prescription->is_finalized
+                ? $this->verificationPayload($prescription)
+                : '',
         ];
     }
 

@@ -264,14 +264,31 @@ class AppServiceProvider extends ServiceProvider
 
             $roleLabel = match (true) {
                 $user instanceof PlatformAdmin => 'Super Admin',
-                $user instanceof InstituteUser => $user->role?->name ?? 'Institute Staff',
-                $user instanceof User && $membership !== null => $membership->role?->name ?? 'Institute Staff',
+                $user instanceof InstituteUser => mawa_role_label($user->role, $institute) ?: mawa_org_word($institute).' Staff',
+                $user instanceof User && $membership !== null => mawa_role_label($membership->role, $institute) ?: mawa_org_word($institute).' Staff',
                 default => '',
             };
 
             $accountTypeLabel = $user instanceof User
                 ? ($user->isOwnerAccount() ? mawa_lang('account_type.owner') : mawa_lang('account_type.staff'))
                 : null;
+
+            // Doctors carry their profession on the chip instead of the
+            // generic Staff label (owners keep the Owner chip).
+            if ($accountTypeLabel !== null && $institute !== null
+                && ! $user->isOwnerAccount()) {
+                try {
+                    $hasDoctorProfile = \App\Models\Medical\Doctor::where('institute_id', $institute->id)
+                        ->where('user_id', $user->id)
+                        ->where('is_active', true)
+                        ->exists();
+                } catch (\Throwable) {
+                    $hasDoctorProfile = false;
+                }
+                if ($hasDoctorProfile) {
+                    $accountTypeLabel = mawa_lang('account_type.doctor');
+                }
+            }
 
             $workspaceMemberships = $user instanceof User
                 ? Membership::query()

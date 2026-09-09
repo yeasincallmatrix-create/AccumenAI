@@ -41,6 +41,14 @@
                         <span class="text-muted">—</span>
                     @endif
                 </p>
+                <p><strong>Fee Collected:</strong>
+                    @if($appointment->fee_collected_at)
+                        ৳{{ number_format((float) $appointment->fee_collected_amount, 2) }}
+                        <small class="text-muted">by {{ $appointment->fee_collected_by_name ?? '—' }} on {{ $appointment->fee_collected_at->format('d M Y, h:i A') }}</small>
+                    @else
+                        <span class="text-muted">Not collected yet</span>
+                    @endif
+                </p>
                 <p class="mb-0"><strong>Visit Type:</strong>
                     @if($appointment->isFollowUp())
                         <span class="badge bg-info">Follow-up</span>
@@ -89,7 +97,7 @@
                         </button>
                     </form>
                 @endif
-                @if(!in_array($appointment->status, ['completed', 'cancelled'], true))
+                @if(!in_array($appointment->status, ['completed', 'cancelled'], true) && ($appointment->fee_collected_at === null || ($canDeleteFinalized ?? false) || ($isOwnDoctor ?? false)))
                     <form action="{{ route('medical.appointments.destroy', $appointment) }}" method="POST"
                           onsubmit="return confirm('Cancel this appointment?')">
                         @csrf

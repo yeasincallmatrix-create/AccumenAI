@@ -31,7 +31,7 @@ class IndustrySettingsTest extends TestCase
         TenantContext::clear();
         $this->actingAs($this->platformAdmin(), 'platform_admin');
 
-        $this->get(route('admin.industry-settings'))
+        $this->get(route('admin.platform-settings.index'))
             ->assertOk()
             ->assertSee('Default Color Theme')
             ->assertSee('theme-option', false)
@@ -45,13 +45,13 @@ class IndustrySettingsTest extends TestCase
         TenantContext::clear();
         $this->actingAs($this->platformAdmin(), 'platform_admin');
 
-        $this->get(route('admin.industry-settings'))
+        $this->get(route('admin.platform-settings.index'))
             ->assertOk()
             ->assertSee('country-filter', false)
             ->assertSee('Filter by country')
             ->assertDontSee('sub-industry-filter', false);
 
-        $this->get(route('admin.industry-settings', ['industry' => 'education']))
+        $this->get(route('admin.platform-settings.index', ['industry' => 'education']))
             ->assertOk()
             ->assertSee('country-filter', false)
             ->assertSee('sub-industry-filter', false)
@@ -67,7 +67,7 @@ class IndustrySettingsTest extends TestCase
         $this->post(route('admin.industry-settings.theme'), [
             'industry_key' => 'education',
             'theme_slug' => 'royal-purple',
-        ])->assertRedirect(route('admin.industry-settings', ['industry' => 'education']));
+        ])->assertRedirect(route('admin.platform-settings.index', ['industry' => 'education']).'#pane-industry');
 
         $this->assertSame('royal-purple', IndustrySetting::where('industry_key', 'education')->value('theme_slug'));
     }
@@ -80,7 +80,7 @@ class IndustrySettingsTest extends TestCase
         $this->post(route('admin.industry-settings.theme'), [
             'industry_key' => 'all',
             'theme_slug' => 'crimson-red',
-        ])->assertRedirect(route('admin.industry-settings'));
+        ])->assertRedirect(route('admin.platform-settings.index').'#pane-industry');
 
         $this->assertSame('crimson-red', IndustrySetting::where('industry_key', 'all')->value('theme_slug'));
     }

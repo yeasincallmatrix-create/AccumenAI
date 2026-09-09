@@ -26,8 +26,8 @@ class OwnerProfileController extends Controller
         $institute = $instituteId ? Institute::with('package', 'country')->find($instituteId) : null;
 
         $roleLabel = match (true) {
-            $user instanceof InstituteUser => $user->role?->name ?? 'Staff',
-            $user instanceof User && $membership !== null => $membership->role?->name ?? 'Staff',
+            $user instanceof InstituteUser => mawa_role_label($user->role, $institute) ?: mawa_org_word($institute).' Staff',
+            $user instanceof User && $membership !== null => mawa_role_label($membership->role, $institute) ?: mawa_org_word($institute).' Staff',
             default => '',
         };
 

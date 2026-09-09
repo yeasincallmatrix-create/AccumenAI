@@ -138,7 +138,7 @@
                     @if ($owner)
                         <tr>
                             <td class="fw-semibold">{{ $owner->name }}</td>
-                            <td><span class="badge text-bg-primary">{{ $owner->role->name ?? 'Owner' }}</span></td>
+                            <td><span class="badge text-bg-primary">{{ mawa_role_label($owner->role, $institute) ?: mawa_org_word($institute).' Owner' }}</span></td>
                             <td>{{ $owner->email }}</td>
                             <td><span class="badge text-bg-{{ $owner->status === 'active' ? 'success' : 'secondary' }}">{{ $owner->status }}</span></td>
                             <td class="text-end text-muted small">Owner — cannot delete</td>
@@ -147,7 +147,7 @@
                     @foreach ($staff as $user)
                         <tr>
                             <td>{{ $user->name ?? '—' }}</td>
-                            <td>{{ $user->role->name ?? '—' }}</td>
+                            <td>{{ mawa_role_label($user->role, $institute) ?: '—' }}</td>
                             <td>{{ $user->email }}</td>
                             <td><span class="badge text-bg-{{ $user->status === 'active' ? 'success' : 'secondary' }}">{{ $user->status }}</span></td>
                             <td class="text-end">

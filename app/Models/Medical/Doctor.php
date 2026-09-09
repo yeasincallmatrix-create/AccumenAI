@@ -14,6 +14,7 @@ class Doctor extends Model
         'institute_id', 'user_id', 'department_id', 'specialty_id', 'registration_number',
         'qualification', 'experience_years', 'consultation_fee',
         'first_visit_fee', 'follow_up_fee', 'follow_up_days',
+        'collect_fee_before_visit',
         'chamber_address', 'room_no', 'phone', 'email', 'bio', 'is_active',
     ];
 
@@ -22,6 +23,7 @@ class Doctor extends Model
         'first_visit_fee' => 'decimal:2',
         'follow_up_fee' => 'decimal:2',
         'follow_up_days' => 'integer',
+        'collect_fee_before_visit' => 'boolean',
         'experience_years' => 'integer',
         'is_active' => 'boolean',
     ];
@@ -89,10 +91,14 @@ class Doctor extends Model
 
     /**
      * Most recent completed visit of the given patient with this doctor.
+     *
+     * Phase 02: constrained to this profile's institute — history rows from
+     * another institute must never influence fee calculation here.
      */
     public function lastCompletedVisitFor(Patient $patient): ?Appointment
     {
-        return Appointment::where('patient_id', $patient->id)
+        return Appointment::where('institute_id', $this->institute_id)
+            ->where('patient_id', $patient->id)
             ->where('doctor_id', $this->user_id)
             ->where('status', 'completed')
             ->latest('appointment_date')

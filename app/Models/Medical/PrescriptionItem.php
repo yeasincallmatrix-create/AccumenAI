@@ -30,6 +30,20 @@ class PrescriptionItem extends Model
         return $this->belongsTo(Prescription::class);
     }
 
+    /**
+     * DGDA registry code / concept of the linked catalog medicine (null for
+     * free-text items or uncoded catalog rows).
+     */
+    public function getDgdaCodeAttribute(): ?string
+    {
+        return $this->medicine?->dgda_code;
+    }
+
+    public function getDgdaConceptIdAttribute(): ?string
+    {
+        return $this->medicine?->dgda_concept_id;
+    }
+
     public function medicine()
     {
         return $this->belongsTo(Medicine::class);

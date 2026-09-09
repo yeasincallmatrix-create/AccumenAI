@@ -46,7 +46,7 @@
                                     <div>
                                         <div class="fw-bold">{{ $membership->institution?->name ?? '#' . $membership->institution_id }}</div>
                                         <div class="small text-secondary">{{ mawa_lang('workspace.branch', ['name' => $membership->branch?->name ?? mawa_lang('workspace.all_branches')]) }}</div>
-                                        <div class="small text-secondary">{{ $membership->role?->name ?? $membership->role_id }}</div>
+                                        <div class="small text-secondary">{{ mawa_role_label($membership->role, $membership->institution) ?: $membership->role_id }}</div>
                                     </div>
                                     <i class="bi bi-box-arrow-in-right"></i>
                                 </div>

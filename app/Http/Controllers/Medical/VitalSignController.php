@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Medical;
 
 use App\Http\Requests\Medical\VitalSignRequest;
 use App\Models\Medical\Admission;
+use App\Models\Medical\ClinicalAuditLog;
 use App\Models\Medical\NursingNote;
 use App\Models\Medical\VitalSign;
 use App\Support\MedicalScope;
@@ -37,6 +38,7 @@ class VitalSignController extends MedicalController implements HasMiddleware
         $admission = Admission::where('institute_id', $this->instituteId())
             ->with(['patient', 'bed.ward'])
             ->findOrFail($admissionId);
+        $this->ensureDoctorOwns($admission, 'admitting_doctor_id', 'admission');
 
         if ($admission->status !== 'active') {
             return redirect()->back()->with('error', 'Cannot record vitals for a discharged patient.');
@@ -53,6 +55,10 @@ class VitalSignController extends MedicalController implements HasMiddleware
         $data = $request->validated();
         $data['recorded_by'] = MedicalScope::recorderId();
         $data['recorded_at'] = now();
+
+        $admission = Admission::where('institute_id', $this->instituteId())
+            ->findOrFail($data['admission_id']);
+        $this->ensureDoctorOwns($admission, 'admitting_doctor_id', 'admission');
 
         VitalSign::create($data);
 
@@ -75,6 +81,7 @@ class VitalSignController extends MedicalController implements HasMiddleware
         $admission = Admission::where('institute_id', $this->instituteId())
             ->with('patient')
             ->findOrFail($admissionId);
+        $this->ensureDoctorOwns($admission, 'admitting_doctor_id', 'admission');
 
         $vitals = VitalSign::where('admission_id', $admission->id)
             ->orderBy('recorded_at', 'desc')
@@ -103,9 +110,12 @@ class VitalSignController extends MedicalController implements HasMiddleware
      */
     public function destroy(VitalSign $vital)
     {
-        Admission::where('institute_id', $this->instituteId())->findOrFail($vital->admission_id);
+        $admission = Admission::where('institute_id', $this->instituteId())->findOrFail($vital->admission_id);
+        $this->ensureDoctorOwns($admission, 'admitting_doctor_id', 'admission');
 
         $admissionId = $vital->admission_id;
+        // Phase 01: vitals removal is archival (soft delete) + audited.
+        ClinicalAuditLog::record($vital, 'deleted', ['old' => ClinicalAuditLog::snapshot($vital)]);
         $vital->delete();
 
         return redirect()->route('medical.admissions.show', $admissionId)
@@ -118,6 +128,7 @@ class VitalSignController extends MedicalController implements HasMiddleware
     public function storeNote(Request $request, Admission $admission)
     {
         $this->ensureSameInstitute($admission, 'admission');
+        $this->ensureDoctorOwns($admission, 'admitting_doctor_id', 'admission');
 
         if ($admission->status !== 'active') {
             return redirect()->back()->with('error', 'Cannot add notes to a discharged admission.');
@@ -141,9 +152,12 @@ class VitalSignController extends MedicalController implements HasMiddleware
      */
     public function destroyNote(NursingNote $note)
     {
-        Admission::where('institute_id', $this->instituteId())->findOrFail($note->admission_id);
+        $admission = Admission::where('institute_id', $this->instituteId())->findOrFail($note->admission_id);
+        $this->ensureDoctorOwns($admission, 'admitting_doctor_id', 'admission');
 
         $admissionId = $note->admission_id;
+        // Phase 01: note removal is archival (soft delete) + audited.
+        ClinicalAuditLog::record($note, 'deleted', ['old' => ClinicalAuditLog::snapshot($note)]);
         $note->delete();
 
         return redirect()->route('medical.admissions.show', $admissionId)

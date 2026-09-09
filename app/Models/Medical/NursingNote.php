@@ -4,9 +4,12 @@ namespace App\Models\Medical;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class NursingNote extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'nursing_notes';
 
     protected $fillable = [

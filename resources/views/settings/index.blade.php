@@ -45,6 +45,10 @@
                 <i class="bi bi-palette"></i>
                 <span>{{ mawa_e('settings_page.appearance') }}</span>
             </button>
+            <button class="settings-nav-item settings-tab-btn" type="button" data-target="pane-medical" aria-selected="false">
+                <i class="bi bi-capsule"></i>
+                <span>Medical</span>
+            </button>
         @endif
 <button class="settings-nav-item settings-tab-btn" type="button" data-target="pane-security" aria-selected="false">
                 <i class="bi bi-shield-lock"></i>
@@ -280,6 +284,41 @@
                             paint();
                         })();
                         </script>
+                    </form>
+                </div>
+
+                <div class="settings-pane" id="pane-medical">
+                    <div class="table-toolbar">
+                        <div class="toolbar-info"><i class="bi bi-capsule"></i> Medical Settings</div>
+                    </div>
+                    @php $platformDgda = \App\Services\Medical\DgdaService::enabled(); @endphp
+                    <form method="POST" action="{{ route('settings.dgda.update') }}">
+                        @csrf
+                        @method('PUT')
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold" for="dgdaToggle">DGDA Drug Codes for this organization</label>
+                                <div class="form-check form-switch">
+                                    <input type="hidden" name="dgda_enabled" value="0">
+                                    <input class="form-check-input" type="checkbox" name="dgda_enabled" value="1"
+                                           id="dgdaToggle" {{ old('dgda_enabled', $setting?->dgda_enabled ?? false) ? 'checked' : '' }}
+                                           {{ ! $platformDgda ? 'disabled' : '' }}>
+                                    <label class="form-check-label" for="dgdaToggle">
+                                        {{ old('dgda_enabled', $setting?->dgda_enabled ?? false) ? 'Enabled' : 'Disabled' }}
+                                    </label>
+                                </div>
+                                @error('dgda_enabled')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                            </div>
+                        </div>
+                        @if(! $platformDgda)
+                            <div class="alert alert-warning">
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                DGDA is currently disabled at the platform level. Contact the Super Admin to enable it first.
+                            </div>
+                        @else
+                            <p class="text-muted small">When enabled, prescription forms show DGDA codes, print/PDF tables carry a DGDA column, and uncoded items raise a notice on save.</p>
+                        @endif
+                        <button class="btn btn-primary" type="submit" {{ ! $platformDgda ? 'disabled' : '' }}><i class="bi bi-check-lg"></i> Save Medical Settings</button>
                     </form>
                 </div>
             @endif

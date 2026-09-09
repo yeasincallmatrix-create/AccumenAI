@@ -58,11 +58,11 @@
             <i class="bi bi-arrow-counterclockwise"></i>
         </button>
         <div class="ms-auto d-flex gap-2 align-items-center">
-            <div class="dropdown">
+            <div class="dropdown" data-bs-auto-close="outside">
                 <button type="button" class="candle-btn" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="bi bi-layout-three-columns me-1"></i>{{ mawa_e('actions.columns') }} <i class="bi bi-chevron-down small"></i>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end">
+                <ul class="dropdown-menu dropdown-menu-end" data-student-columns-menu>
                     <li><h6 class="dropdown-header">{{ mawa_e('actions.show_hide_columns') }}</h6></li>
                     <li><hr class="dropdown-divider"></li>
                     @foreach ([
@@ -89,9 +89,11 @@
                         'action'    => mawa_e('actions.actions'),
                     ] as $col => $label)
                         <li>
-                            <label class="dropdown-item" for="student-col-{{ $col }}">
+                            <label class="dropdown-item" for="student-col-{{ $col }}" onclick="event.stopPropagation()">
                                 <input type="checkbox" id="student-col-{{ $col }}" class="form-check-input me-2"
-                                       wire:click="toggleColumn('{{ $col }}')"
+                                       wire:key="student-col-{{ $col }}"
+                                       wire:change="toggleColumn('{{ $col }}')"
+                                       data-student-col="{{ $col }}"
                                        @checked(in_array($col, $visibleColumns, true))>
                                 {{ $label }}
                             </label>
@@ -256,15 +258,103 @@
 (function () {
     var all = document.getElementById('monetixSelectAll');
     var boxes = document.querySelectorAll('.monetix-check');
-    if (!all || !boxes.length) { return; }
-    all.addEventListener('change', function () {
-        boxes.forEach(function (b) { b.checked = all.checked; });
-    });
-    boxes.forEach(function (b) {
-        b.addEventListener('change', function () {
-            var checked = Array.prototype.filter.call(boxes, function (x) { return x.checked; }).length;
-            all.checked = checked === boxes.length;
+    if (all && boxes.length) {
+        all.addEventListener('change', function () {
+            boxes.forEach(function (b) { b.checked = all.checked; });
         });
+        boxes.forEach(function (b) {
+            b.addEventListener('change', function () {
+                var checked = Array.prototype.filter.call(boxes, function (x) { return x.checked; }).length;
+                all.checked = checked === boxes.length;
+            });
+        });
+    }
+})();
+</script>
+
+<script>
+(function () {
+    // Local backup so the column choice survives even an instant refresh
+    // (before the Livewire round-trip finishes). Server preference remains
+    // the source of truth; this only mirrors + restores it.
+    var KEY = 'accumenai:students:columns:v1';
+    var ORDER = ['serial','no','uid','roll','name','phone','email','reg','gender','dob','age','blood','religion','nationality','nid','passport','branch','guardian','admission','status','action'];
+
+    function readChecks() {
+        return Array.prototype.slice.call(document.querySelectorAll('[data-student-col]'));
+    }
+
+    function currentChecked() {
+        return readChecks().filter(function (c) { return c.checked; }).map(function (c) { return c.getAttribute('data-student-col'); });
+    }
+
+    function saveLocal() {
+        try { localStorage.setItem(KEY, JSON.stringify(currentChecked())); } catch (e) {}
+    }
+
+    function ordered(list) {
+        var set = {};
+        (list || []).forEach(function (c) { set[c] = true; });
+        return ORDER.filter(function (c) { return set[c]; });
+    }
+
+    document.addEventListener('change', function (e) {
+        if (e.target && e.target.matches && e.target.matches('[data-student-col]')) {
+            saveLocal();
+        }
     });
+
+    function livewireComponent() {
+        // Livewire v3/v4: find the component owning the columns menu.
+        try {
+            if (window.Livewire) {
+                var menu = document.querySelector('[data-student-columns-menu]');
+                if (menu && window.Livewire.find) {
+                    var el = menu.closest('[wire\\:id]');
+                    if (el && el.getAttribute('wire:id')) {
+                        return window.Livewire.find(el.getAttribute('wire:id'));
+                    }
+                }
+                if (window.Livewire.getByName) {
+                    var comps = window.Livewire.getByName('student-list');
+                    if (comps && comps.length) { return comps[0]; }
+                }
+            }
+        } catch (err) {}
+        return null;
+    }
+
+    function restoreOnce() {
+        var raw = null;
+        try { raw = localStorage.getItem(KEY); } catch (e) {}
+        if (! raw) { return; }
+        var stored;
+        try { stored = ordered(JSON.parse(raw)); } catch (e) { return; }
+        if (! stored.length) { return; }
+        var server = ordered(currentChecked());
+        if (JSON.stringify(server) === JSON.stringify(stored)) { return; }
+        var comp = livewireComponent();
+        if (! comp) { return false; }
+        // updatedVisibleColumns() on the server auto-persists this.
+        try {
+            if (comp.set) { comp.set('visibleColumns', stored); return true; }
+        } catch (e) {}
+        return false;
+    }
+
+    var attempts = 0;
+    function tryRestore() {
+        if (restoreOnce() === true) { return; }
+        attempts++;
+        if (attempts < 40) { setTimeout(tryRestore, 250); }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () { setTimeout(tryRestore, 300); });
+    } else {
+        setTimeout(tryRestore, 300);
+    }
+    document.addEventListener('livewire:init', function () { setTimeout(tryRestore, 100); });
+    document.addEventListener('livewire:initialized', function () { setTimeout(tryRestore, 100); });
 })();
 </script>

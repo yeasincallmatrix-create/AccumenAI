@@ -182,11 +182,13 @@ class BillingService
     }
 
     /**
-     * Get revenue summary for a period of paid invoices.
+     * Get revenue summary for a period of paid invoices. Optional doctor
+     * fence restricts to that doctor's own billing (null = institute-wide).
      */
-    public function getRevenueSummary(int $instituteId, string $period = 'today'): array
+    public function getRevenueSummary(int $instituteId, string $period = 'today', ?int $doctorUserId = null): array
     {
         $query = Invoice::where('institute_id', $instituteId)->where('status', 'paid');
+        $query->visibleToDoctor($instituteId, $doctorUserId);
 
         if ($period === 'today') {
             $query->whereDate('invoice_date', today());

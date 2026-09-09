@@ -18,7 +18,7 @@
                     @forelse($user->memberships as $m)
                     <tr>
                         <td>{{ $m->institution->name ?? '— (#'.$m->institution_id.')' }} @if($m->institution?->deleted_at)<span class="badge text-bg-secondary">trashed</span>@endif</td>
-                        <td>{{ $m->role->name ?? $m->role_id }}</td>
+                        <td>{{ mawa_role_label($m->role, $m->institution) ?: $m->role_id }}</td>
                         <td><span class="badge text-bg-{{ $m->status==='active'?'success':'secondary' }}">{{ $m->status }}</span> @if($m->deleted_at)<span class="badge text-bg-warning">soft-deleted</span>@endif</td>
                         <td class="text-muted small"><x-tdate :value="$m->created_at" fallback="d M Y" empty="—" /></td>
                     </tr>

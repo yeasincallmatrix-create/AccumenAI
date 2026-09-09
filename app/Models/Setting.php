@@ -57,13 +57,14 @@ class Setting extends Model
         return filled(static::get($key));
     }
 
+    protected static array $memoryCache = [];
+
     public static function get(string $key, mixed $default = null): mixed
     {
         // Request-level in-memory cache + short cache to avoid N queries per request
         // (View composer + boot both call this 3-4 times; without cache = 100+ queries).
-        static $cache = [];
-        if (array_key_exists($key, $cache)) {
-            return $cache[$key] ?? $default;
+        if (array_key_exists($key, self::$memoryCache)) {
+            return self::$memoryCache[$key] ?? $default;
         }
 
         // Try 60s cache first to collapse duplicate concurrent lookups
@@ -71,7 +72,7 @@ class Setting extends Model
         try {
             if (\Illuminate\Support\Facades\Cache::has($cacheKey)) {
                 $val = \Illuminate\Support\Facades\Cache::get($cacheKey);
-                $cache[$key] = $val;
+                self::$memoryCache[$key] = $val;
                 return $val ?? $default;
             }
         } catch (Throwable) {}
@@ -85,7 +86,7 @@ class Setting extends Model
         }
 
         if (! $row) {
-            $cache[$key] = null;
+            self::$memoryCache[$key] = null;
             try { \Illuminate\Support\Facades\Cache::put($cacheKey, null, 60); } catch (Throwable) {}
             return $default;
         }
@@ -97,12 +98,12 @@ class Setting extends Model
                 // Legacy plaintext value written before encryption was enabled.
                 $val = $row->value;
             }
-            $cache[$key] = $val;
+            self::$memoryCache[$key] = $val;
             try { \Illuminate\Support\Facades\Cache::put($cacheKey, $val, 60); } catch (Throwable) {}
             return $val;
         }
 
-        $cache[$key] = $row->value;
+        self::$memoryCache[$key] = $row->value;
         try { \Illuminate\Support\Facades\Cache::put($cacheKey, $row->value, 60); } catch (Throwable) {}
         return $row->value;
     }
@@ -118,7 +119,8 @@ class Setting extends Model
             ['value' => $value === null ? null : (string) $value]
         );
 
-        // Invalidate caches on write
+        // Invalidate caches on write (both request-memory and 60s cache).
+        unset(self::$memoryCache[$key]);
         try { \Illuminate\Support\Facades\Cache::forget('setting:'.$key); } catch (Throwable) {}
     }
 }

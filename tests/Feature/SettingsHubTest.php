@@ -24,12 +24,14 @@ class SettingsHubTest extends TestCase
         $this->actingAs($admin, 'platform_admin');
 
         $this->get(route('admin.settings.index'))
+            ->assertRedirect(route('admin.platform-settings.index').'#pane-admin-account');
+
+        $this->get(route('admin.platform-settings.index'))
             ->assertOk()
             ->assertSee('Settings')
             ->assertSee('Staff Requests')
             ->assertSee('Change Password')
-            ->assertSee('Security')
-            ->assertSee('Back to Dashboard');
+            ->assertSee('Security');
 
         $this->get(route('admin.settings.account'))
             ->assertOk()
@@ -65,7 +67,7 @@ class SettingsHubTest extends TestCase
         $this->post(route('admin.settings.appearance.update'), [
             'theme_id' => 4,
             'language' => 'en',
-        ])->assertRedirect(route('admin.settings.index').'#pane-appearance');
+        ])->assertRedirect(route('admin.platform-settings.index').'#pane-admin-appearance');
 
         $admin->refresh();
         $this->assertEquals(4, $admin->preference('theme_id'));

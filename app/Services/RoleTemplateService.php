@@ -42,6 +42,7 @@ class RoleTemplateService
                     'permissions' => [
                         'medical_patients.view', 'medical_patients.create', 'medical_patients.edit',
                         'medical_appointments.view', 'medical_appointments.create', 'medical_appointments.edit',
+                        'medical_queue.reorder',
                         'medical_prescriptions.view', 'medical_prescriptions.create', 'medical_prescriptions.edit',
                         'medical_lab.view', 'medical_lab.create', 'medical_lab.edit',
                         'medical_doctors.view',
@@ -78,6 +79,7 @@ class RoleTemplateService
                     'permissions' => [
                         'medical_patients.view', 'medical_patients.create', 'medical_patients.edit',
                         'medical_appointments.view', 'medical_appointments.create', 'medical_appointments.edit',
+                        'medical_queue.reorder',
                         'medical_doctors.view',
                     ],
                 ],

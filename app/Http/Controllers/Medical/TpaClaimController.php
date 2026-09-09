@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Medical;
 
 use App\Http\Requests\Medical\TpaClaimRequest;
+use App\Models\Medical\ClinicalAuditLog;
 use App\Models\Medical\Invoice;
 use App\Models\Medical\Patient;
 use App\Models\Medical\TpaClaim;
@@ -55,12 +56,13 @@ class TpaClaimController extends MedicalController implements HasMiddleware
             $query->where('tpa_company_name', 'LIKE', '%'.$request->tpa_company.'%');
         }
 
+        if (($fence = $this->doctorFenceId()) !== null) {
+            $query->whereHas('invoice', fn ($q) => $q->visibleToDoctor($instituteId, $fence));
+        }
+
         $claims = $query->orderBy('claim_date', 'desc')->paginate(20)->withQueryString();
-        $patients = Patient::where('institute_id', $instituteId)
-            ->active()
-            ->orderBy('first_name')
-            ->get();
-        $stats = $this->tpaService->getClaimStats($instituteId);
+        $patients = $this->ownPatientOptions($instituteId);
+        $stats = $this->tpaService->getClaimStats($instituteId, $fence);
 
         return view('medical.tpa.claims.index', compact('claims', 'patients', 'stats'));
     }
@@ -68,12 +70,12 @@ class TpaClaimController extends MedicalController implements HasMiddleware
     public function create(Request $request)
     {
         $instituteId = $this->instituteId();
-        $patients = Patient::where('institute_id', $instituteId)
-            ->active()
-            ->orderBy('first_name')
-            ->get();
-        $invoices = Invoice::where('institute_id', $instituteId)
+        $fence = $this->doctorFenceId();
+        $patients = $this->ownPatientOptions($instituteId, $fence);
+        $invoiceQuery = Invoice::where('institute_id', $instituteId)
             ->whereIn('status', ['pending', 'partial'])
+            ->visibleToDoctor($instituteId, $fence);
+        $invoices = $invoiceQuery
             ->with(['patient'])
             ->orderBy('invoice_date', 'desc')
             ->get();
@@ -82,12 +84,18 @@ class TpaClaimController extends MedicalController implements HasMiddleware
         if ($request->filled('patient_id')) {
             $selectedPatient = Patient::where('institute_id', $instituteId)
                 ->find($request->patient_id);
+            if ($selectedPatient && ! $this->mayActOnPatient($selectedPatient, $fence)) {
+                abort(403, 'You do not have permission to book for this patient.');
+            }
         }
 
         $selectedInvoice = null;
         if ($request->filled('invoice_id')) {
             $selectedInvoice = Invoice::where('institute_id', $instituteId)
                 ->find($request->invoice_id);
+            if ($selectedInvoice) {
+                $this->ensureInvoiceVisible($selectedInvoice);
+            }
         }
 
         return view('medical.tpa.claims.create', compact(
@@ -97,6 +105,15 @@ class TpaClaimController extends MedicalController implements HasMiddleware
 
     public function store(TpaClaimRequest $request)
     {
+        $data = $request->validated();
+        if (($fence = $this->doctorFenceId()) !== null && ! empty($data['invoice_id'])) {
+            $invoice = \App\Models\Medical\Invoice::where('institute_id', $this->instituteId())
+                ->find($data['invoice_id']);
+            if (! $invoice) {
+                abort(404);
+            }
+            $this->ensureInvoiceVisible($invoice);
+        }
         try {
             $claim = $this->tpaService->createClaim($request->validated());
         } catch (\Throwable $e) {
@@ -110,6 +127,7 @@ class TpaClaimController extends MedicalController implements HasMiddleware
     public function show(TpaClaim $claim)
     {
         $this->ensureSameInstitute($claim, 'claim');
+        $this->ensureClaimVisible($claim);
         $claim->load(['patient', 'invoice']);
 
         return view('medical.tpa.claims.show', compact('claim'));
@@ -118,18 +136,18 @@ class TpaClaimController extends MedicalController implements HasMiddleware
     public function edit(TpaClaim $claim)
     {
         $this->ensureSameInstitute($claim, 'claim');
+        $this->ensureClaimVisible($claim);
 
         if ($claim->status !== 'pending') {
             return redirect()->back()->with('error', 'Only pending claims can be edited.');
         }
 
         $instituteId = $this->instituteId();
-        $patients = Patient::where('institute_id', $instituteId)
-            ->active()
-            ->orderBy('first_name')
-            ->get();
-        $invoices = Invoice::where('institute_id', $instituteId)
+        $patients = $this->ownPatientOptions($instituteId);
+        $invoiceQuery = Invoice::where('institute_id', $instituteId)
             ->whereIn('status', ['pending', 'partial'])
+            ->visibleToDoctor($instituteId, $this->doctorFenceId());
+        $invoices = $invoiceQuery
             ->with(['patient'])
             ->orderBy('invoice_date', 'desc')
             ->get();
@@ -140,12 +158,32 @@ class TpaClaimController extends MedicalController implements HasMiddleware
     public function update(TpaClaimRequest $request, TpaClaim $claim)
     {
         $this->ensureSameInstitute($claim, 'claim');
+        $this->ensureClaimVisible($claim);
 
         if ($claim->status !== 'pending') {
             return redirect()->back()->with('error', 'Only pending claims can be updated.');
         }
 
-        $claim->update($request->validated());
+        $data = $request->validated();
+        if (($fence = $this->doctorFenceId()) !== null) {
+            if (! empty($data['invoice_id']) && (int) $data['invoice_id'] !== (int) $claim->invoice_id) {
+                $invoice = \App\Models\Medical\Invoice::where('institute_id', $claim->institute_id)
+                    ->find($data['invoice_id']);
+                if (! $invoice) {
+                    abort(404);
+                }
+                $this->ensureInvoiceVisible($invoice);
+            }
+            if (! empty($data['patient_id']) && (int) $data['patient_id'] !== (int) $claim->patient_id) {
+                $patient = \App\Models\Medical\Patient::where('institute_id', $claim->institute_id)
+                    ->find($data['patient_id']);
+                if (! $patient || ! $this->mayActOnPatient($patient, $fence)) {
+                    abort(403, 'You do not have permission to book for this patient.');
+                }
+            }
+        }
+
+        $claim->update($data);
 
         return redirect()->route('medical.tpa.claims.show', $claim)
             ->with('status', 'TPA claim updated successfully!');
@@ -154,6 +192,7 @@ class TpaClaimController extends MedicalController implements HasMiddleware
     public function approve(Request $request, TpaClaim $claim)
     {
         $this->ensureSameInstitute($claim, 'claim');
+        $this->ensureClaimVisible($claim);
 
         if ($claim->status !== 'pending') {
             return redirect()->back()->with('error', 'Only pending claims can be approved.');
@@ -176,6 +215,7 @@ class TpaClaimController extends MedicalController implements HasMiddleware
     public function reject(Request $request, TpaClaim $claim)
     {
         $this->ensureSameInstitute($claim, 'claim');
+        $this->ensureClaimVisible($claim);
 
         if ($claim->status !== 'pending') {
             return redirect()->back()->with('error', 'Only pending claims can be rejected.');
@@ -194,6 +234,7 @@ class TpaClaimController extends MedicalController implements HasMiddleware
     public function settle(TpaClaim $claim)
     {
         $this->ensureSameInstitute($claim, 'claim');
+        $this->ensureClaimVisible($claim);
 
         try {
             $this->tpaService->settleClaim($claim);
@@ -208,11 +249,16 @@ class TpaClaimController extends MedicalController implements HasMiddleware
     public function destroy(TpaClaim $claim)
     {
         $this->ensureSameInstitute($claim, 'claim');
+        $this->ensureClaimVisible($claim);
 
         if ($claim->status !== 'pending') {
             return redirect()->back()->with('error', 'Only pending claims can be deleted.');
         }
 
+        // Phase 03: pending-claim removal leaves an attributable trail.
+        ClinicalAuditLog::record($claim, 'deleted', [
+            'old' => ClinicalAuditLog::snapshot($claim),
+        ]);
         $claim->delete();
 
         return redirect()->route('medical.tpa.claims.index')

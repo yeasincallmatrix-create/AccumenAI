@@ -348,18 +348,12 @@
                     <a class="nav-link {{ request()->routeIs('admin.modules.access-logs') ? 'active' : '' }}" href="{{ route('admin.modules.access-logs') }}">
                         <i class="bi bi-clock-history"></i><span class="sidebar-label">Module Access Logs</span>
                     </a>
-                    <a class="nav-link {{ request()->routeIs('admin.industry-settings') ? 'active' : '' }}" href="{{ $selectedIndustryKey && $selectedIndustryKey !== '' ? route('admin.industry-settings', ['industry' => $selectedIndustryKey]) : route('admin.industry-settings') }}">
-                        <i class="bi bi-gear-fill"></i><span class="sidebar-label">Industry Settings</span>
-                    </a>
 
                     {{-- ═══ CONFIGURATION ═══ --}}
                     <div class="sidebar-section-label">CONFIGURATION</div>
 
                     <a class="nav-link {{ request()->routeIs('admin.platform-settings.*') ? 'active' : '' }}" href="{{ route('admin.platform-settings.index') }}">
                         <i class="bi bi-sliders"></i><span class="sidebar-label">Configuration Center</span>
-                    </a>
-                    <a class="nav-link {{ request()->routeIs('admin.settings.*') && !request()->routeIs('admin.platform-settings.*') ? 'active' : '' }}" href="{{ route('admin.settings.index') }}">
-                        <i class="bi bi-gear"></i><span class="sidebar-label">Legacy Settings</span>
                     </a>
 
                     {{-- ═══ SECURITY ═══ --}}
@@ -425,13 +419,13 @@
         <div class="dropdown dropup sidebar-user-card">
             <button type="button" class="sidebar-user-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                 <div class="avatar-wrap">
-                    <span class="avatar-circle avatar-initials">{{ strtoupper(substr($user->email ?? $roleLabel, 0, 1)) }}</span>
+                    <span class="avatar-circle avatar-initials">{{ mb_strtoupper(mb_substr($user->name ?? $user->email ?? $roleLabel, 0, 1)) }}</span>
                     {{-- Live browser online/offline signal, sized/positioned exactly
                          where the old static green presence dot used to sit. --}}
                     <x-connectivity-signal :size="11.2" :wrap="11.2" class="cs-avatar-corner" />
                 </div>
                 <div class="sidebar-user-meta">
-                    <span class="sidebar-user-name">{{ $roleLabel }}</span>
+                    <span class="sidebar-user-name">{{ $user->name ?? $user->email ?? $roleLabel }}</span>
                     @if ($accountTypeLabel)
                         <span class="badge role-badge mt-1 {{ $user?->isOwnerAccount() ? 'bg-success text-white' : 'bg-info-subtle text-dark border' }}">{{ $accountTypeLabel }}</span>
                     @else
@@ -442,7 +436,7 @@
             </button>
             <button type="button" class="sidebar-user-link" data-bs-toggle="dropdown" aria-expanded="false" title="{{ $roleLabel }}">
                 <div class="avatar-wrap">
-                    <span class="avatar-circle avatar-initials">{{ strtoupper(substr($user->email ?? $roleLabel, 0, 1)) }}</span>
+                    <span class="avatar-circle avatar-initials">{{ mb_strtoupper(mb_substr($user->name ?? $user->email ?? $roleLabel, 0, 1)) }}</span>
                     <x-connectivity-signal :size="11.2" :wrap="11.2" class="cs-avatar-corner" />
                 </div>
             </button>
@@ -453,7 +447,7 @@
                     <li><a class="dropdown-item" href="{{ route('account.security') }}"><i class="bi bi-shield-lock me-2"></i>{{ mawa_e('security.title') }}</a></li>
                 @else
                     @auth('platform_admin')
-                        <li><a class="dropdown-item" href="{{ route('admin.settings.index') }}"><i class="bi bi-gear me-2"></i>{{ mawa_e('sidebar.settings') }}</a></li>
+                        <li><a class="dropdown-item" href="{{ route('admin.platform-settings.index') }}#pane-admin-account"><i class="bi bi-gear me-2"></i>{{ mawa_e('sidebar.settings') }}</a></li>
                         <li><a class="dropdown-item" href="{{ route('admin.security') }}"><i class="bi bi-shield-lock me-2"></i>{{ mawa_e('security.title') }}</a></li>
                         <li><a class="dropdown-item" href="{{ route('admin.modules.index') }}"><i class="bi bi-puzzle me-2"></i>Modules &amp; Packages</a></li>
                     @endauth

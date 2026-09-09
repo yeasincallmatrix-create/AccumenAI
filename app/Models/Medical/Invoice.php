@@ -74,6 +74,34 @@ class Invoice extends Model
     }
 
     /**
+     * Doctor isolation: invoices tied to the doctor's admissions, plus
+     * invoices of single-doctor patients (shared-patient invoices from other
+     * doctors stay hidden), plus brand-new-patient invoices with nothing
+     * attributable yet. Null fence returns the query untouched.
+     */
+    public function scopeVisibleToDoctor($query, int $instituteId, ?int $fence)
+    {
+        if ($fence === null) {
+            return $query;
+        }
+
+        return $query->where(function ($qq) use ($fence, $instituteId) {
+            $qq->whereHas('admission', fn ($a) => $a
+                    ->where('admitting_doctor_id', $fence))
+                ->orWhere(function ($qqq) use ($fence, $instituteId) {
+                    $qqq->whereHas('patient.appointments', fn ($a) => $a
+                            ->where('institute_id', $instituteId)
+                            ->where('doctor_id', $fence))
+                        ->whereDoesntHave('patient.appointments', fn ($a) => $a
+                            ->where('institute_id', $instituteId)
+                            ->where('doctor_id', '!=', $fence));
+                })
+                ->orWhereDoesntHave('patient.appointments', fn ($a) => $a
+                    ->where('institute_id', $instituteId));
+        });
+    }
+
+    /**
      * Phase 4 addition.
      *
      * Overdue = still unpaid past its due date (null due date never overdue).

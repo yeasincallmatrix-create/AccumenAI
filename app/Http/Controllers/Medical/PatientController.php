@@ -6,6 +6,7 @@ use App\Http\Requests\Medical\PatientRequest;
 use App\Models\AdministrativeUnit;
 use App\Models\Country;
 use App\Models\Institute;
+use App\Models\Medical\ClinicalAuditLog;
 use App\Models\Medical\Patient;
 use App\Services\Medical\MrNumberGenerator;
 use App\Support\CountryCodes;
@@ -20,7 +21,7 @@ class PatientController extends MedicalController implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:medical_patients.view', only: ['index', 'show', 'history', 'lookup']),
+            new Middleware('permission:medical_patients.view', only: ['index', 'show', 'history', 'lookup', 'reactIndex', 'reactData']),
             new Middleware('permission:medical_patients.create', only: ['create', 'store', 'quickStore']),
             new Middleware('permission:medical_patients.edit', only: ['edit', 'update']),
             new Middleware('permission:medical_patients.delete', only: ['destroy']),
@@ -64,6 +65,9 @@ class PatientController extends MedicalController implements HasMiddleware
         }
 
         $query = Patient::where('institute_id', $this->instituteId());
+
+        // Fenced doctors list only their own patients.
+        $query = $this->scopeOwnPatients($query);
 
         // Search by MR number, name, or phone.
         if (is_string($search) && trim($search) !== '') {
@@ -196,6 +200,12 @@ class PatientController extends MedicalController implements HasMiddleware
             ->whereIn('phone', $candidates)
             ->first();
 
+        // Fenced doctors may only discover their own (or brand-new) patients;
+        // anyone else's reads as not-found — no existence oracle.
+        if ($patient && ! $this->mayActOnPatient($patient)) {
+            return response()->json(['found' => false]);
+        }
+
         if (! $patient) {
             return response()->json(['found' => false]);
         }
@@ -222,6 +232,55 @@ class PatientController extends MedicalController implements HasMiddleware
                 'url' => route('medical.patients.show', $patient),
             ],
         ]);
+    }
+
+    /**
+     * React-powered patient list page (Blade host for resources/js/medical/patients.js).
+     *
+     * The Blade patients index is untouched; React mounts only on this page
+     * and polls reactData() every 10 seconds.
+     */
+    public function reactIndex()
+    {
+        $props = [
+            'initialPatients' => $this->reactPatientPayload(),
+            'refreshUrl' => route('medical.patients.react.data'),
+        ];
+
+        return view('medical.patients-react', compact('props'));
+    }
+
+    /**
+     * JSON feed for the React patient list (polled every 10 seconds).
+     */
+    public function reactData()
+    {
+        return response()->json($this->reactPatientPayload());
+    }
+
+    /**
+     * Patient rows for the React list (institute-scoped, doctor-fenced,
+     * capped so the initial payload stays small; search happens client-side).
+     */
+    private function reactPatientPayload(): array
+    {
+        $query = Patient::where('institute_id', $this->instituteId());
+        $query = $this->scopeOwnPatients($query);
+
+        return $query->orderBy('first_name')
+            ->limit(200)
+            ->get()
+            ->map(fn (Patient $patient) => [
+                'id' => $patient->id,
+                'mr_number' => $patient->mr_number,
+                'name' => $patient->full_name,
+                'age' => $patient->age,
+                'gender' => $patient->gender,
+                'phone' => $patient->phone,
+                'blood_group' => $patient->blood_group,
+                'is_active' => (bool) $patient->is_active,
+            ])
+            ->all();
     }
 
     /**
@@ -278,6 +337,7 @@ class PatientController extends MedicalController implements HasMiddleware
         $data['mr_number'] = $this->mrGenerator->generate($instituteId);
 
         $patient = Patient::create($data);
+        $patient->syncStructuredAllergies();
 
         return response()->json([
             'created' => true,
@@ -316,6 +376,7 @@ class PatientController extends MedicalController implements HasMiddleware
         $data['mr_number'] = $this->mrGenerator->generate($instituteId);
 
         $patient = Patient::create($data);
+        $patient->syncStructuredAllergies();
 
         return redirect()->route('medical.patients.show', $patient)
             ->with('status', 'Patient registered successfully! MR: '.$patient->mr_number);
@@ -327,24 +388,56 @@ class PatientController extends MedicalController implements HasMiddleware
     public function show(Patient $patient)
     {
         $this->ensureSameInstitute($patient, 'patient');
+        $this->ensurePatientVisible($patient);
+
+        // Fenced doctors see only their own records in each history section
+        // (shared patients must not leak another doctor's visits/fees).
+        $fence = $this->doctorFenceId();
+        $instituteId = $this->instituteId();
 
         $patient->load([
-            'appointments' => function ($q) {
+            'appointments' => function ($q) use ($fence) {
                 $q->whereDate('appointment_date', '>=', now()->subDays(30))
                     ->orderBy('appointment_date', 'desc')
                     ->orderBy('appointment_time', 'desc');
+                if ($fence !== null) {
+                    $q->where('doctor_id', $fence);
+                }
             },
-            'admissions' => function ($q) {
+            'admissions' => function ($q) use ($fence) {
                 $q->orderBy('admission_date', 'desc');
+                if ($fence !== null) {
+                    $q->where('admitting_doctor_id', $fence);
+                }
             },
-            'prescriptions' => function ($q) {
+            'prescriptions' => function ($q) use ($fence) {
                 $q->orderBy('prescription_date', 'desc')->limit(5);
+                if ($fence !== null) {
+                    $q->where('doctor_id', $fence);
+                }
             },
-            'labOrders' => function ($q) {
+            'labOrders' => function ($q) use ($fence) {
                 $q->orderBy('order_date', 'desc')->limit(5);
+                if ($fence !== null) {
+                    $q->where('doctor_id', $fence);
+                }
             },
-            'invoices' => function ($q) {
+            'invoices' => function ($q) use ($fence, $instituteId) {
                 $q->orderBy('invoice_date', 'desc')->limit(5);
+                if ($fence !== null) {
+                    $q->where(function ($qq) use ($fence, $instituteId) {
+                        $qq->whereHas('admission', fn ($a) => $a
+                                ->where('admitting_doctor_id', $fence))
+                            ->orWhere(function ($qqq) use ($fence, $instituteId) {
+                                $qqq->whereHas('patient.appointments', fn ($a) => $a
+                                        ->where('institute_id', $instituteId)
+                                        ->where('doctor_id', $fence))
+                                    ->whereDoesntHave('patient.appointments', fn ($a) => $a
+                                        ->where('institute_id', $instituteId)
+                                        ->where('doctor_id', '!=', $fence));
+                            });
+                    });
+                }
             },
         ]);
 
@@ -357,6 +450,7 @@ class PatientController extends MedicalController implements HasMiddleware
     public function edit(Patient $patient)
     {
         $this->ensureSameInstitute($patient, 'patient');
+        $this->ensurePatientVisible($patient);
         $presentAddress = $this->addressData($patient);
 
         return view('medical.patients.edit', compact('patient', 'presentAddress'));
@@ -368,6 +462,7 @@ class PatientController extends MedicalController implements HasMiddleware
     public function update(PatientRequest $request, Patient $patient)
     {
         $this->ensureSameInstitute($patient, 'patient');
+        $this->ensurePatientVisible($patient);
         $data = $request->validated();
         unset($data['age'], $data['age_unit']);
         if (array_key_exists('last_name', $data) && $data['last_name'] === null) {
@@ -379,7 +474,16 @@ class PatientController extends MedicalController implements HasMiddleware
                 $data['phone'] = $normalized;
             }
         }
+        // Phase 01: snapshot before mutation for the amendment audit.
+        $original = ClinicalAuditLog::snapshot($patient);
         $patient->update($data);
+        $patient->syncStructuredAllergies();
+
+        // Phase 01: clinical amendments must stay attributable.
+        [$old, $new] = ClinicalAuditLog::diff($original, ClinicalAuditLog::snapshot($patient->refresh()));
+        if ($old !== [] || $new !== []) {
+            ClinicalAuditLog::record($patient, 'updated', ['old' => $old, 'new' => $new]);
+        }
 
         return redirect()->route('medical.patients.show', $patient)
             ->with('status', 'Patient updated successfully!');
@@ -391,7 +495,11 @@ class PatientController extends MedicalController implements HasMiddleware
     public function destroy(Patient $patient)
     {
         $this->ensureSameInstitute($patient, 'patient');
+        $this->ensurePatientVisible($patient);
+        // Phase 01: keep the deleted record attributable.
+        $snapshot = ClinicalAuditLog::snapshot($patient);
         $patient->delete();
+        ClinicalAuditLog::record($patient, 'deleted', ['old' => $snapshot]);
 
         return redirect()->route('medical.patients.index')
             ->with('status', 'Patient deleted successfully!');
@@ -403,19 +511,34 @@ class PatientController extends MedicalController implements HasMiddleware
     public function history(Patient $patient)
     {
         $this->ensureSameInstitute($patient, 'patient');
+        $this->ensurePatientVisible($patient);
+
+        $fence = $this->doctorFenceId();
 
         $patient->load([
-            'appointments' => function ($q) {
+            'appointments' => function ($q) use ($fence) {
                 $q->orderBy('appointment_date', 'desc');
+                if ($fence !== null) {
+                    $q->where('doctor_id', $fence);
+                }
             },
-            'admissions' => function ($q) {
+            'admissions' => function ($q) use ($fence) {
                 $q->orderBy('admission_date', 'desc');
+                if ($fence !== null) {
+                    $q->where('admitting_doctor_id', $fence);
+                }
             },
-            'prescriptions' => function ($q) {
+            'prescriptions' => function ($q) use ($fence) {
                 $q->orderBy('prescription_date', 'desc');
+                if ($fence !== null) {
+                    $q->where('doctor_id', $fence);
+                }
             },
-            'labOrders' => function ($q) {
+            'labOrders' => function ($q) use ($fence) {
                 $q->orderBy('order_date', 'desc');
+                if ($fence !== null) {
+                    $q->where('doctor_id', $fence);
+                }
             },
         ]);
 

@@ -18,74 +18,11 @@ use Illuminate\View\View;
 
 class SettingController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request)
     {
-        $user = $request->user();
-
-        $pendingStaff = InstituteUser::query()
-            ->where('status', 'inactive')
-            ->with(['institute', 'role'])
-            ->orderByDesc('created_at')
-            ->get();
-
-        $activeTheme = null;
-        $themeId = $user->preference('theme_id');
-        if ($themeId !== null) {
-            $activeTheme = Theme::query()->where('status', 'active')->find($themeId);
-        }
-        if ($activeTheme === null) {
-            $activeTheme = Theme::query()->where('is_default', 1)->where('status', 'active')->first();
-        }
-
-        return view('admin.settings.index', [
-            'admin' => $user,
-            'pendingStaff' => $pendingStaff,
-            'pendingStaffCount' => $pendingStaff->count(),
-            'preferredLanguage' => $user->preferred_language ?? 'en',
-            'theme' => $user->preference('theme') ?? 'default',
-            'themes' => Theme::query()->where('status', 'active')->orderBy('is_default', 'desc')->orderBy('name')->get(),
-            'activeTheme' => $activeTheme,
-            'sidebarColor' => $user->preference('sidebar_color'),
-            'tallNavigation' => (bool) $user->preference('tall_navigation'),
-            'platformLogo' => Setting::get('brand.logo'),
-            'platformLogoUrl' => platform_logo_url(),
-            'smtpHost' => Setting::get('smtp.host', ''),
-            'smtpPort' => Setting::get('smtp.port', '587'),
-            'smtpEncryption' => Setting::get('smtp.encryption', 'none'),
-            'smtpUsername' => Setting::get('smtp.username', ''),
-            'smtpPasswordMasked' => Setting::masked('smtp.password'),
-            'smtpConfigured' => Setting::isConfigured('smtp.host'),
-            'paymentGateway' => Setting::get('payment.gateway', ''),
-            'securityUser' => $user,
-            'securityGuard' => $user instanceof PlatformAdmin ? 'platform_admin' : 'institute_user',
-            'sessions' => DB::table('sessions')
-                ->where('user_id', $user->getKey())
-                ->orderByDesc('last_activity')
-                ->get(),
-            'currentSessionId' => $request->session()->getId(),
-            'aiEnabled' => AiConfig::enabled(),
-            'provider' => AiConfig::provider(),
-            'model' => AiConfig::model(),
-            'hasApiKey' => filled(AiConfig::apiKey()),
-            'baseUrl' => AiConfig::baseUrl(),
-            'globalInstructions' => AiConfig::globalInstructions(),
-            'maxTokens' => AiConfig::maxTokens(),
-            'temperature' => AiConfig::temperature(),
-            'timeout' => AiConfig::timeout(),
-            'responseLanguage' => AiConfig::responseLanguage(),
-            'dailyLimit' => AiConfig::dailyLimit(),
-            'monthlyLimit' => AiConfig::monthlyLimit(),
-            'features' => AiConfig::features(),
-            'storePrompts' => AiConfig::storePrompts(),
-            'availableProviders' => [
-                'openai' => 'OpenAI',
-                'anthropic' => 'Anthropic (Claude)',
-                'gemini' => 'Google Gemini',
-                'groq' => 'Groq',
-                'custom' => 'Custom (OpenAI-compatible)',
-            ],
-            'implementedFeatures' => ['assistant' => 'AI Assistant'],
-        ]);
+        // Abolished as a standalone page — served as panes inside
+        // Configuration Center.
+        abort(redirect(route('admin.platform-settings.index').'#pane-admin-account', 301));
     }
 
     public function account(Request $request): View
@@ -128,7 +65,7 @@ class SettingController extends Controller
 
         app(PasswordService::class)->changePassword($admin, $data['current_password'], $data['password']);
 
-        return redirect(route('admin.settings.index').'#pane-account')->with('status', 'Password updated.');
+        return redirect(route('admin.platform-settings.index').'#pane-admin-account')->with('status', 'Password updated.');
     }
 
     public function updateLanguage(Request $request): RedirectResponse
@@ -141,7 +78,7 @@ class SettingController extends Controller
         $user->forceFill(['preferred_language' => $data['language']])->save();
         session(['mawa_lang' => $data['language']]);
 
-        return redirect(route('admin.settings.index').'#pane-account')->with('status', 'Language updated.');
+        return redirect(route('admin.platform-settings.index').'#pane-admin-account')->with('status', 'Language updated.');
     }
 
     public function staffAction(Request $request, InstituteUser $instituteUser): RedirectResponse
@@ -158,7 +95,7 @@ class SettingController extends Controller
             $message = 'Pending registration for '.($instituteUser->name ?? 'staff member').' was rejected.';
         }
 
-        return redirect(route('admin.settings.index').'#pane-staff')->with('status', $message);
+        return redirect(route('admin.platform-settings.index').'#pane-admin-staff')->with('status', $message);
     }
 
     public function appearance(Request $request): View
@@ -215,7 +152,7 @@ class SettingController extends Controller
             $user->save();
         }
 
-        return redirect(route('admin.settings.index').'#pane-appearance')->with('status', 'Appearance settings saved.');
+        return redirect(route('admin.platform-settings.index').'#pane-admin-appearance')->with('status', 'Appearance settings saved.');
     }
 
     /**
@@ -242,7 +179,7 @@ class SettingController extends Controller
         \Illuminate\Support\Facades\Storage::disk('public')->putFileAs('brand', $file, 'platform-logo.'.$ext);
         Setting::set('brand.logo', $path);
 
-        return redirect(route('admin.settings.index').'#pane-appearance')->with('status', 'Platform logo updated.');
+        return redirect(route('admin.platform-settings.index').'#pane-admin-appearance')->with('status', 'Platform logo updated.');
     }
 
     /**
@@ -257,7 +194,7 @@ class SettingController extends Controller
         }
         Setting::set('brand.logo', null);
 
-        return redirect(route('admin.settings.index').'#pane-appearance')->with('status', 'Platform logo removed. Default will be used.');
+        return redirect(route('admin.platform-settings.index').'#pane-admin-appearance')->with('status', 'Platform logo removed. Default will be used.');
     }
 
     public function mailPayment(Request $request): View
@@ -296,7 +233,7 @@ class SettingController extends Controller
         Setting::set('payment.gateway', $data['payment_gateway'] ?? '');
         \App\Models\PlatformAuditLog::record('email', 'smtp.host', 'updated');
 
-        return redirect(route('admin.settings.index').'#pane-mail-payment')->with('status', 'Mail and payment settings saved.');
+        return redirect(route('admin.platform-settings.index').'#pane-admin-mail')->with('status', 'Mail and payment settings saved.');
     }
 
     public function testMail(Request $request): RedirectResponse
@@ -335,6 +272,6 @@ class SettingController extends Controller
             return back()->withErrors(['smtp_test' => 'Test email failed: '.substr($msg, 0, 300)]);
         }
 
-        return redirect(route('admin.settings.index').'#pane-mail-payment')->with('status', 'Test email sent to '.$to.'.');
+        return redirect(route('admin.platform-settings.index').'#pane-admin-mail')->with('status', 'Test email sent to '.$to.'.');
     }
 }

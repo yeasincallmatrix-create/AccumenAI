@@ -154,6 +154,13 @@ class PharmacyStockController extends MedicalController implements HasMiddleware
             return redirect()->back()->with('error', 'Cannot delete stock with remaining quantity.');
         }
 
+        // Phase 03: a batch referenced by dispense rows carries dispensing
+        // history (pharmacy_dispenses.stock_id cascades). Fully-dispensed
+        // batches stay as history; only untouched empty batches may go.
+        if (\App\Models\Medical\PharmacyDispense::where('stock_id', $stock->id)->exists()) {
+            return redirect()->back()->with('error', 'Cannot delete a batch with dispensing history.');
+        }
+
         $stock->delete();
 
         return redirect()->route('medical.pharmacy.stock.index')

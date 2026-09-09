@@ -188,6 +188,32 @@ class MedicalPermissionSeeder extends Seeder
             }
         }
 
+        // Queue reordering (additive). Granted to existing doctor and
+        // receptionist roles; institute owners bypass permission checks.
+        $queuePermission = Permission::firstOrCreate(
+            ['slug' => 'medical_queue.reorder'],
+            ['module' => 'medical_queue', 'name' => 'Reorder Patient Queue']
+        );
+
+        $queueRoleIds = Role::whereIn('slug', ['doctor', 'receptionist'])
+            ->pluck('id')
+            ->toArray();
+
+        if (! empty($queueRoleIds)) {
+            $existing = DB::table('role_permissions')
+                ->where('permission_id', $queuePermission->id)
+                ->whereIn('role_id', $queueRoleIds)
+                ->pluck('role_id')
+                ->toArray();
+
+            foreach (array_diff($queueRoleIds, $existing) as $roleId) {
+                DB::table('role_permissions')->insert([
+                    'role_id' => $roleId,
+                    'permission_id' => $queuePermission->id,
+                ]);
+            }
+        }
+
         $this->command->info('Medical permissions seeded successfully!');
 
         // Create diagnostic-staff role for diagnostic center institutes

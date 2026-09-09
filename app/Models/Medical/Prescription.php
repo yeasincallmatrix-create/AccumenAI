@@ -22,12 +22,16 @@ class Prescription extends Model
         'advice',
         'follow_up_date',
         'is_finalized',
+        'signed_at',
+        'signed_by',
+        'signature_hash',
     ];
 
     protected $casts = [
         'prescription_date' => 'date',
         'follow_up_date' => 'date',
         'is_finalized' => 'boolean',
+        'signed_at' => 'datetime',
     ];
 
     public function institute()
@@ -48,6 +52,23 @@ class Prescription extends Model
     public function items()
     {
         return $this->hasMany(PrescriptionItem::class);
+    }
+
+    public function auditLogs()
+    {
+        return $this->hasMany(PrescriptionAuditLog::class);
+    }
+
+    /**
+     * Display status mapped from the finalized flag + signing metadata.
+     */
+    public function statusLabel(): string
+    {
+        if ($this->is_finalized) {
+            return 'signed';
+        }
+
+        return 'draft';
     }
 
     public function labOrders()

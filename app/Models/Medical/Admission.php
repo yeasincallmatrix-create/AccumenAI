@@ -5,9 +5,12 @@ namespace App\Models\Medical;
 use App\Models\Institute;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Admission extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'admissions';
 
     protected $fillable = [
@@ -55,6 +58,16 @@ class Admission extends Model
     public function dischargedBy()
     {
         return $this->belongsTo(User::class, 'discharged_by');
+    }
+
+    public function vitalSigns()
+    {
+        return $this->hasMany(VitalSign::class, 'admission_id');
+    }
+
+    public function nursingNotes()
+    {
+        return $this->hasMany(NursingNote::class, 'admission_id');
     }
 
     public function scopeActive($query)

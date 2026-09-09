@@ -31,6 +31,7 @@
                     <tr><th>Qualification</th><td>{{ $doctor->qualification ?? '—' }}</td></tr>
                     <tr><th>Experience</th><td>{{ $doctor->experience_years }} yrs</td></tr>
                     <tr><th>Fee</th><td>৳{{ number_format((float) $doctor->consultation_fee, 2) }}</td></tr>
+                    <tr><th>Fee Collection</th><td><span class="badge bg-{{ $doctor->collect_fee_before_visit ? 'warning text-dark' : 'info' }}">{{ $doctor->collect_fee_before_visit ? 'Pre-visit' : 'Post-visit' }}</span></td></tr>
                     <tr><th>Phone</th><td>{{ $doctor->phone ?? '—' }}</td></tr>
                     <tr><th>Email</th><td>{{ $doctor->email ?? '—' }}</td></tr>
                     <tr><th>Chamber</th><td>{{ $doctor->chamber_address ?? '—' }}</td></tr>
@@ -40,12 +41,14 @@
                     <p class="text-start small text-muted">{{ $doctor->bio }}</p>
                 @endif
                 <div class="d-flex gap-2 justify-content-center mt-3 flex-wrap">
+                    @if(! mawa_fenced_doctor_id())
                     <a href="{{ route('medical.doctors.edit', $doctor) }}" class="btn btn-sm btn-warning"><i class="bi bi-pencil me-1"></i>Edit</a>
                     <a href="{{ route('medical.doctors.edit', $doctor) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-calendar-week me-1"></i>Availability</a>
                     <form action="{{ route('medical.doctors.destroy', $doctor) }}" method="POST" onsubmit="return confirm('Remove this doctor?')">
                         @csrf @method('DELETE')
                         <button class="btn btn-sm btn-danger"><i class="bi bi-trash me-1"></i>Remove</button>
                     </form>
+                    @endif
                 </div>
             </div>
         </div>
@@ -58,7 +61,7 @@
                     <p class="text-muted mb-0">No availability set for this doctor.</p>
                 @else
                     <table class="table table-sm">
-                        <thead><tr><th>Day</th><th>Start</th><th>End</th><th>Slot</th><th>Status</th></tr></thead>
+                        <thead><tr><th>Day</th><th>Start</th><th>End</th><th>Slot</th><th>Room</th><th>Status</th></tr></thead>
                         <tbody>
                             @foreach($doctor->availabilities->sortBy(fn($a) => array_search($a->day_of_week, ['saturday','sunday','monday','tuesday','wednesday','thursday','friday'])) as $avail)
                             <tr>
@@ -66,6 +69,7 @@
                                 <td>{{ substr((string) $avail->start_time, 0, 5) }}</td>
                                 <td>{{ substr((string) $avail->end_time, 0, 5) }}</td>
                                 <td>{{ $avail->slot_duration }} min</td>
+                                <td>{{ $avail->room_no ?? '—' }}</td>
                                 <td><span class="badge bg-{{ $avail->is_available ? 'success' : 'secondary' }}">{{ $avail->is_available ? 'Available' : 'Off' }}</span></td>
                             </tr>
                             @endforeach

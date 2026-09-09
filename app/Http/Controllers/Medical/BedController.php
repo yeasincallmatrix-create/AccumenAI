@@ -151,6 +151,13 @@ class BedController extends MedicalController implements HasMiddleware
             return redirect()->back()->with('error', 'Cannot delete an occupied bed.');
         }
 
+        // Phase 03: a bed ever assigned to an admission carries bed-assignment
+        // history (admissions.bed_id nulls out on bed removal). Only beds that
+        // were never assigned may disappear; the rest stay as history.
+        if ($bed->admissions()->exists()) {
+            return redirect()->back()->with('error', 'Cannot delete a bed with admission history.');
+        }
+
         // Update ward counts.
         $ward = $bed->ward;
         $ward->decrement('total_beds');

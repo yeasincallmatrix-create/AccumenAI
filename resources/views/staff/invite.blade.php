@@ -59,7 +59,7 @@
             <select id="inv_role" name="role_id" class="form-select" required>
                 <option value="">{{ mawa_e('staff.select_role') }}</option>
                 @foreach ($roles as $role)
-                    <option value="{{ $role->id }}" @selected(old('role_id') == $role->id)>{{ $role->name }}</option>
+                    <option value="{{ $role->id }}" @selected(old('role_id') == $role->id)>{{ mawa_role_label($role) }}</option>
                 @endforeach
             </select>
         </div>
@@ -108,7 +108,7 @@
                         <td>@if($member->user?->uid)<x-uid-with-copy :uid="$member->user->uid" />@else<span class="text-muted">—</span>@endif</td>
                         <td>{{ $member->user?->email ?? '-' }}</td>
                         <td>
-                            <span class="badge bg-primary-subtle text-primary border">{{ $member->role?->name ?? $member->role_id }}</span>
+                            <span class="badge bg-primary-subtle text-primary border">{{ mawa_role_label($member->role) ?: $member->role_id }}</span>
                         </td>
                         <td>
                             @if (($member->user?->isOwnerAccount() ?? false))
@@ -123,7 +123,7 @@
                                     @csrf @method('PUT')
                                     <select name="role_id" class="form-select form-select-sm" style="width:auto;" required title="{{ mawa_e('staff.change_role') }}">
                                         @foreach($roles as $role)
-                                            <option value="{{ $role->id }}" @selected($member->role_id == $role->id)>{{ $role->name }}</option>
+                                            <option value="{{ $role->id }}" @selected($member->role_id == $role->id)>{{ mawa_role_label($role) }}</option>
                                         @endforeach
                                     </select>
                                     <button class="btn btn-sm btn-outline-primary" title="{{ mawa_e('staff.change_role') }}"><i class="bi bi-check-lg"></i></button>

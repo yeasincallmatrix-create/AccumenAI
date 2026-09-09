@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Phase 00 baseline: PHPUnit configuration for AccumenAI.
+
+    Why this file exists:
+      php artisan test (nunomaduro/collision TestCommand) REQUIRES
+      phpunit.xml (fallback phpunit.xml.dist) and passes it as the
+      PHPUnit configuration file. Without it every composer test and
+      artisan test run fails with Could not read XML. Direct
+      vendor bin phpunit works without config, but the canonical
+      commands do not.
+
+    Database strategy (deliberate):
+      DB settings are NOT set here. Under APP ENV testing Laravel loads
+      env.testing, which points at MySQL monetix_test. That database is
+      disposable: provision it with database/schema/full_data.sql
+      (a dump whose header declares itself FOR monetix_test), because the
+      17 migrations in database/migrations cover HMS deltas only; the
+      base schema lives in the dumps. Feature tests use
+      DatabaseTransactions (no migrate), so the DB must pre-exist.
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+>
+    <testsuites>
+        <testsuite name="Unit">
+            <directory suffix="Test.php">./tests/Unit</directory>
+        </testsuite>
+        <testsuite name="Feature">
+            <directory suffix="Test.php">./tests/Feature</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory suffix=".php">./app</directory>
+        </include>
+    </source>
+    <php>
+        <env name="APP_ENV" value="testing"/>
+        <env name="BCRYPT_ROUNDS" value="4"/>
+        <env name="CACHE_STORE" value="array"/>
+        <env name="FILESYSTEM_DISK" value="local"/>
+        <env name="MAIL_MAILER" value="array"/>
+        <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="SESSION_DRIVER" value="array"/>
+    </php>
+</phpunit>

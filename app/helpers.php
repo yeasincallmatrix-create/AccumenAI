@@ -1024,3 +1024,140 @@ if (! function_exists('platform_logo_url')) {
         return asset('images/platform-logo.svg');
     }
 }
+
+if (! function_exists('mawa_org_word')) {
+    /**
+     * Dynamic organization word for the current (or given) institute, driven
+     * by its subcategory: Hospital, School, Diagnostic Center… Falls back to
+     * the industry label, then to 'Institute' when unresolvable.
+     *
+     * Accepts an Institute model, an institute id, or null (resolves the
+     * current tenant via TenantContext → Workspace → authenticated user).
+     */
+    function mawa_org_word(mixed $institute = null): string
+    {
+        static $cache = [];
+
+        try {
+            $model = null;
+            if ($institute instanceof \App\Models\Institute) {
+                $model = $institute;
+                $cacheKey = 'model:'.$institute->getKey();
+            } else {
+                $instituteId = is_numeric($institute) && (int) $institute > 0
+                    ? (int) $institute
+                    : (\App\Support\TenantContext::id() ?? \App\Support\Workspace::id());
+                if (! $instituteId) {
+                    try {
+                        $instituteId = request()->user()->institute_id ?? null;
+                    } catch (\Throwable) {
+                        $instituteId = null;
+                    }
+                }
+                if (! $instituteId) {
+                    return 'Institute';
+                }
+                $cacheKey = 'id:'.$instituteId;
+                if (array_key_exists($cacheKey, $cache)) {
+                    return $cache[$cacheKey];
+                }
+                $model = \App\Models\Institute::whereKey($instituteId)->first();
+            }
+
+            $word = 'Institute';
+            if ($model) {
+                $country = (string) ($model->country ?? '');
+                $industry = (string) ($model->industry ?? '');
+                $sub = $model->sub_industry ?? null;
+                if (is_string($sub) && $sub !== '') {
+                    $subs = \App\Support\IndustryRules::subIndustries($country !== '' ? $country : null, $industry);
+                    if (isset($subs[$sub]) && is_string($subs[$sub]) && $subs[$sub] !== '') {
+                        $word = $subs[$sub];
+                    }
+                }
+                if ($word === 'Institute' && $industry !== '') {
+                    $inds = \App\Support\IndustryRules::industries($country !== '' ? $country : null);
+                    if (isset($inds[$industry]) && is_string($inds[$industry]) && $inds[$industry] !== '') {
+                        $word = $inds[$industry];
+                    }
+                }
+            }
+
+            $cache[$cacheKey] = $word;
+
+            return $word;
+        } catch (\Throwable) {
+            return 'Institute';
+        }
+    }
+}
+
+if (! function_exists('mawa_fenced_doctor_id')) {
+    /**
+     * Own doctor users.id when the current user is fenced to their own
+     * medical data, else null. Blade-safe (never throws) — use to hide
+     * admin-only actions like doctor profile management.
+     */
+    function mawa_fenced_doctor_id(): ?int
+    {
+        try {
+            return \App\Support\MedicalScope::ownDoctorUserId();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+}
+
+if (! function_exists('mawa_dgda_enabled')) {
+    /**
+     * Whether DGDA drug-code integration is active for the current (or
+     * given) institute: platform master switch AND institute opt-in.
+     * Blade-safe. Pass an Institute model/id to check a specific tenant.
+     */
+    function mawa_dgda_enabled(mixed $institute = null): bool
+    {
+        try {
+            return \App\Services\Medical\DgdaService::isEnabledForInstitute($institute);
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+}
+
+if (! function_exists('indSettingsLink')) {
+    /**
+     * Link to the merged Industry pane in Configuration Center, preserving
+     * filter query params and landing on the pane via hash.
+     */
+    function indSettingsLink(array $params): string
+    {
+        $q = http_build_query(array_filter($params, fn ($v) => $v !== null));
+        return route('admin.platform-settings.index').($q !== '' ? '?'.$q : '').'#pane-industry';
+    }
+}
+
+if (! function_exists('mawa_role_label')) {
+    /**
+     * Display label for a role, with the generic "Institute …" prefix swapped
+     * for the organization's own word: "Institute Owner" → "Hospital Owner",
+     * "…" → "School Owner". Roles that don't start with "Institute" (or
+     * "Institution") pass through untouched, as do form values (never use
+     * this for inputs — display only).
+     *
+     * Accepts a Role model, a role name string, or null (returns '').
+     */
+    function mawa_role_label(mixed $role, mixed $institute = null): string
+    {
+        $name = is_object($role) ? (string) ($role->name ?? '') : (string) ($role ?? '');
+        if ($name === '') {
+            return '';
+        }
+        if (preg_match('/^Institutes?\b/i', $name) !== 1 && preg_match('/^Institution\b/i', $name) !== 1) {
+            return $name;
+        }
+
+        $replaced = preg_replace('/^Institutes?\b/i', mawa_org_word($institute), $name, 1);
+
+        return preg_replace('/^Institution\b/i', mawa_org_word($institute), (string) $replaced, 1);
+    }
+}

@@ -139,7 +139,7 @@
 
 <datalist id="rx-medicine-list">
     @foreach($medicines as $medicine)
-        <option data-id="{{ $medicine->id }}" value="{{ $medicine->display_name }}"></option>
+        <option data-id="{{ $medicine->id }}" data-dgda="{{ $medicine->dgda_code ?? '' }}" value="{{ $medicine->display_name }}" label="{{ $medicine->dgda_code ? 'DGDA: '.$medicine->dgda_code : 'No DGDA code' }}">{{ $medicine->display_name }} — {{ $medicine->dgda_code ? 'DGDA: '.$medicine->dgda_code : 'No DGDA code' }}</option>
     @endforeach
 </datalist>
 @endsection
@@ -151,14 +151,37 @@
     var addBtn = document.getElementById('rx-add-item');
     var catalog = {};
     document.querySelectorAll('#rx-medicine-list option').forEach(function (opt) {
-        catalog[opt.value] = opt.getAttribute('data-id');
+        catalog[opt.value] = { id: opt.getAttribute('data-id'), dgda: opt.getAttribute('data-dgda') || '' };
     });
     var index = 0;
+    var dgdaOn = @json(mawa_dgda_enabled());
+
+    function syncDgdaTag(tr) {
+        if (!dgdaOn) return;
+        var tag = tr.querySelector('.rx-dgda');
+        var nameInput = tr.querySelector('.rx-med-name');
+        if (!tag || !nameInput) return;
+        var entry = catalog[nameInput.value];
+        if (entry && entry.dgda) {
+            tag.textContent = 'DGDA: ' + entry.dgda;
+            tag.title = 'DGDA registry code: ' + entry.dgda;
+            tag.className = 'badge rx-dgda mt-1 bg-success';
+        } else if (entry) {
+            tag.textContent = 'DGDA sync pending';
+            tag.title = 'No DGDA code — registry sync pending';
+            tag.className = 'badge rx-dgda mt-1 bg-warning text-dark';
+        } else {
+            tag.textContent = '';
+            tag.title = '';
+            tag.className = 'badge rx-dgda mt-1 d-none';
+        }
+    }
 
     function rowHtml(i) {
         return '<tr>' +
             '<td><input type="hidden" name="items[' + i + '][medicine_id]" class="rx-med-id">' +
-            '<input type="text" name="items[' + i + '][medicine_name]" class="form-control form-control-sm rx-med-name" list="rx-medicine-list" required maxlength="200" placeholder="Type or pick medicine"></td>' +
+            '<input type="text" name="items[' + i + '][medicine_name]" class="form-control form-control-sm rx-med-name" list="rx-medicine-list" required maxlength="200" placeholder="Type or pick medicine">' +
+            '<span class="badge rx-dgda mt-1 d-none"></span></td>' +
             '<td><input type="text" name="items[' + i + '][dosage]" class="form-control form-control-sm" required maxlength="50" placeholder="e.g. 500mg"></td>' +
             '<td><input type="text" name="items[' + i + '][frequency]" class="form-control form-control-sm" required maxlength="50" placeholder="e.g. 1+0+1"></td>' +
             '<td><input type="number" name="items[' + i + '][duration_days]" class="form-control form-control-sm" min="1" placeholder="Days"></td>' +
@@ -170,9 +193,13 @@
     function bindRow(tr) {
         var nameInput = tr.querySelector('.rx-med-name');
         var idInput = tr.querySelector('.rx-med-id');
-        nameInput.addEventListener('change', function () {
-            idInput.value = catalog[nameInput.value] || '';
-        });
+        var update = function () {
+            var entry = catalog[nameInput.value];
+            idInput.value = (entry && entry.id) || '';
+            syncDgdaTag(tr);
+        };
+        nameInput.addEventListener('change', update);
+        nameInput.addEventListener('input', update);
         tr.querySelector('.rx-remove').addEventListener('click', function () {
             tr.remove();
         });

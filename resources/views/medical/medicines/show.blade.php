@@ -33,6 +33,28 @@
                 <p><strong>Unit / Pack:</strong> {{ $medicine->unit }} × {{ $medicine->pack_size }}</p>
                 <p><strong>Buy / Sell:</strong> ৳{{ number_format($medicine->purchase_price, 2) }} / ৳{{ number_format($medicine->selling_price, 2) }}</p>
                 <p class="mb-0"><strong>Reorder Level / Qty:</strong> {{ $medicine->reorder_level }} / {{ $medicine->reorder_quantity }}</p>
+                <hr>
+                <p class="mb-1"><strong>DGDA Code:</strong>
+                    @if($medicine->dgda_code)
+                        <span class="badge bg-success">DGDA: {{ $medicine->dgda_code }}</span>
+                    @else
+                        <span class="badge bg-warning text-dark" title="No DGDA code — registry sync pending">DGDA sync pending</span>
+                    @endif
+                </p>
+                @if($medicine->dgda_dar_number)
+                    <p class="mb-1"><strong>DAR No:</strong> <code>{{ $medicine->dgda_dar_number }}</code></p>
+                @endif
+                @if($medicine->dgda_concept_id)
+                    <p class="mb-1"><strong>Registry Concept:</strong> <code>{{ $medicine->dgda_concept_id }}</code></p>
+                @endif
+                @if($medicine->dgda_status)
+                    <p class="mb-1"><strong>Sync Status:</strong>
+                        <span class="badge bg-{{ $medicine->dgda_status === 'synced' ? 'success' : ($medicine->dgda_status === 'failed' ? 'danger' : 'secondary') }}">{{ ucfirst($medicine->dgda_status) }}</span>
+                        @if($medicine->dgda_synced_at)
+                            <small class="text-muted">· {{ $medicine->dgda_synced_at->format('d M Y, h:i A') }}</small>
+                        @endif
+                    </p>
+                @endif
             </div>
         </div>
     </div>

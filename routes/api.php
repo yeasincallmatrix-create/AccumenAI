@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\GoodsReceiptController;
 use App\Http\Controllers\Api\HrApiController;
 use App\Http\Controllers\Api\InventoryApiController;
 use App\Http\Controllers\Api\InvoiceController;
+use App\Http\Controllers\Api\MedicalReactController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\PurchaseOrderController;
@@ -116,4 +117,12 @@ Route::middleware(['auth:sanctum', 'ensure.institute.context', 'throttle:60,1'])
         ->middleware('permission:inventory.view', 'module_access:inventory');
     Route::get('inventory/movements', [InventoryApiController::class, 'movements'])
         ->middleware('permission:inventory.view', 'module_access:inventory');
+
+    // Medical React feeds (token auth; sibling session-auth web feeds live
+    // on the medical.*.react.data routes and are what the Blade-mounted
+    // React components poll every 10 seconds).
+    Route::get('medical/queue/{doctorId}', [MedicalReactController::class, 'queue']);
+    Route::get('medical/appointments', [MedicalReactController::class, 'appointments']);
+    Route::get('medical/patients', [MedicalReactController::class, 'patients']);
+    Route::get('medical/prescriptions', [MedicalReactController::class, 'prescriptions']);
 });

@@ -10,7 +10,7 @@ class DoctorAvailability extends Model
 
     protected $fillable = [
         'doctor_id', 'day_of_week', 'start_time', 'end_time',
-        'slot_duration', 'is_available', 'notes',
+        'slot_duration', 'room_no', 'is_available', 'notes',
     ];
 
     protected $casts = [

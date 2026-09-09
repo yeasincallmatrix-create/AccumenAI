@@ -1324,6 +1324,7 @@ Route::middleware($tenant)->group(function () {
     // ─── SETTINGS (general) ────────────────────────────────────────────────
     Route::put('settings/appearance', [\App\Http\Controllers\InstituteSettingController::class, 'updateAppearance'])->name('settings.appearance.update');
     Route::put('settings/general', [\App\Http\Controllers\InstituteSettingController::class, 'updateGeneral'])->name('settings.general.update');
+    Route::put('settings/dgda', [\App\Http\Controllers\InstituteSettingController::class, 'updateDgda'])->name('settings.dgda.update');
     Route::put('settings/password', [\App\Http\Controllers\InstituteSettingController::class, 'updatePassword'])->name('settings.password');
 
     // ─── WORKFLOWS ─────────────────────────────────────────────────────────

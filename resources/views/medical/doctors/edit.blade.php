@@ -82,6 +82,19 @@
                         <label class="form-label" for="experience_years">Experience (years)</label>
                         <input type="number" id="experience_years" name="experience_years" class="form-control @error('experience_years') is-invalid @enderror" value="{{ old('experience_years', $doctor->experience_years) }}" min="0">
                         @error('experience_years')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <script>
+                        (function () {
+                            var el = document.getElementById('experience_years');
+                            if (!el) return;
+                            el.addEventListener('change', function () {
+                                var raw = (el.value || '').trim();
+                                if (raw === '') return;
+                                var n = Number(raw);
+                                if (!isFinite(n) || n < 0) return;
+                                el.value = String(Math.floor(n));
+                            });
+                        })();
+                        </script>
                     </div>
                 </div>
                 <div class="col-md-3">
@@ -136,16 +149,42 @@
                 </div>
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label class="form-label" for="room_no">Room / Chamber No.</label>
-                        <input type="text" id="room_no" name="room_no" class="form-control @error('room_no') is-invalid @enderror" value="{{ old('room_no', $doctor->room_no) }}" maxlength="50" placeholder="Room 204">
-                        @error('room_no')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
-                </div>
-                <div class="col-md-12">
-                    <div class="mb-3">
                         <label class="form-label" for="bio">Bio</label>
                         <textarea id="bio" name="bio" class="form-control @error('bio') is-invalid @enderror" rows="3">{{ old('bio', $doctor->bio) }}</textarea>
                         @error('bio')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Visit Fee Collection</label>
+                        <div class="form-check form-switch">
+                            <input type="checkbox" id="collect_fee_before_visit" name="collect_fee_before_visit" value="1" class="form-check-input" {{ old('collect_fee_before_visit', $doctor->collect_fee_before_visit ?? false) ? 'checked' : '' }}>
+                            <label class="form-check-label" for="collect_fee_before_visit" id="feeToggleLabel">Post-visit</label>
+                        </div>
+                        <div class="form-text" id="feeToggleHelp">Fee collected after prescription.</div>
+                        @error('collect_fee_before_visit')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+                <script>
+                (function () {
+                    var t = document.getElementById('collect_fee_before_visit');
+                    if (!t) return;
+                    function syncFeeToggle() {
+                        var on = t.checked;
+                        var label = document.getElementById('feeToggleLabel');
+                        var help = document.getElementById('feeToggleHelp');
+                        if (label) label.textContent = on ? 'Pre-visit' : 'Post-visit';
+                        if (help) help.textContent = on ? 'Fee collected before entering chamber.' : 'Fee collected after prescription.';
+                    }
+                    t.addEventListener('change', syncFeeToggle);
+                    syncFeeToggle();
+                })();
+                </script>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label" for="room_no">Room / Chamber No.</label>
+                        <input type="text" id="room_no" name="room_no" class="form-control @error('room_no') is-invalid @enderror" value="{{ old('room_no', $doctor->room_no) }}" maxlength="50" placeholder="Room 204">
+                        @error('room_no')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
                 <div class="col-md-12">

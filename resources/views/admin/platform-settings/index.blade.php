@@ -1,12 +1,17 @@
 @extends('layouts.standalone')
-@php $backUrl = route('admin.settings.index'); @endphp
+@php $backUrl = route('admin.platform-settings.index'); @endphp
 @section('title', 'Platform Configuration Center — Accumen AI')
 @section('page_title', 'Platform Configuration Center')
 
 @section('content')
-<div class="standalone-heading">
-    <h4><i class="bi bi-gear-wide-connected"></i> Platform Configuration Center</h4>
-    <p>Super Admin centralized settings for all platform services. Secrets are encrypted & masked.</p>
+<div class="standalone-heading d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <div>
+        <h4><i class="bi bi-gear-wide-connected"></i> Platform Configuration Center</h4>
+        <p>Super Admin centralized settings for all platform services. Secrets are encrypted & masked.</p>
+    </div>
+    <a href="{{ route('dashboard') }}" class="btn btn-outline-secondary rounded-pill px-3">
+        <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+    </a>
 </div>
 
 @if(session('status'))
@@ -40,6 +45,19 @@
         <button class="settings-nav-item settings-tab-btn" type="button" data-target="pane-payment"><i class="bi bi-credit-card"></i> <span>Payment Gateways</span></button>
         <button class="settings-nav-item settings-tab-btn" type="button" data-target="pane-ai"><i class="bi bi-robot"></i> <span>AI</span></button>
         <button class="settings-nav-item settings-tab-btn" type="button" data-target="pane-api"><i class="bi bi-code-slash"></i> <span>API &amp; Webhooks</span></button>
+
+        <div class="settings-nav-group-label">Medical</div>
+        <button class="settings-nav-item settings-tab-btn" type="button" data-target="pane-dgda"><i class="bi bi-capsule"></i> <span>DGDA Drug Codes</span></button>
+
+        <div class="settings-nav-group-label">Admin</div>
+        <button class="settings-nav-item settings-tab-btn" type="button" data-target="pane-admin-account"><i class="bi bi-person-gear"></i> <span>Account</span></button>
+        <button class="settings-nav-item settings-tab-btn" type="button" data-target="pane-admin-staff"><i class="bi bi-person-plus-fill"></i> <span>Staff Requests</span></button>
+        <button class="settings-nav-item settings-tab-btn" type="button" data-target="pane-admin-appearance"><i class="bi bi-palette"></i> <span>Appearance</span></button>
+        <button class="settings-nav-item settings-tab-btn" type="button" data-target="pane-admin-mail"><i class="bi bi-envelope-paper"></i> <span>Mail &amp; Payment</span></button>
+        <button class="settings-nav-item settings-tab-btn" type="button" data-target="pane-admin-ai"><i class="bi bi-robot"></i> <span>AI</span></button>
+        <button class="settings-nav-item settings-tab-btn" type="button" data-target="pane-admin-security"><i class="bi bi-shield-lock"></i> <span>Security</span></button>
+        <button class="settings-nav-item settings-tab-btn" type="button" data-target="pane-admin-geo"><i class="bi bi-globe2"></i> <span>Geo Settings</span></button>
+        <button class="settings-nav-item settings-tab-btn" type="button" data-target="pane-industry"><i class="bi bi-diagram-2-fill"></i> <span>Industry &amp; Themes</span></button>
     </div>
     <div class="settings-content">
         <div class="admin-card settings-options-card">
@@ -398,6 +416,483 @@
                 <div class="alert alert-secondary small mt-3">WhatsApp: <strong>{{ $whatsappStatus }}</strong> — future provider via SmsProviderContract architecture. Email/SMS are active channels.</div>
             </div>
 
+            {{-- DGDA --}}
+            <div class="settings-pane" id="pane-dgda">
+                <div class="table-toolbar"><div class="toolbar-info"><i class="bi bi-capsule"></i> DGDA Drug Codes</div></div>
+                <form method="POST" action="{{ route('admin.platform-settings.dgda') }}">@csrf
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label">DGDA Integration</label>
+                        <div class="form-check form-switch mt-1">
+                            <input type="hidden" name="dgda_enabled" value="0">
+                            <input class="form-check-input" type="checkbox" name="dgda_enabled" value="1" id="dgdaToggle" {{ ($dgdaEnabled ?? '0') === '1' ? 'checked' : '' }}>
+                            <label class="form-check-label" for="dgdaToggle">{{ ($dgdaEnabled ?? '0') === '1' ? 'Enabled' : 'Disabled' }}</label>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-primary" type="submit">Save DGDA</button>
+                </form>
+                <p class="text-muted small mt-2">When enabled, prescription forms show DGDA codes per medicine, print/PDF tables carry a DGDA column, uncoded items raise a notice on save, and <code>medical:dgda-sync</code> may run. When disabled, all of that is hidden or skipped. Registry codes themselves are never invented — they come from DGDA/OCL sync only.</p>
+            </div>
+
+            {{-- ADMIN: Account (merged from admin/settings) --}}
+            <div class="settings-pane" id="pane-admin-account">
+                <div class="table-toolbar">
+                    <div class="toolbar-info"><i class="bi bi-person-gear"></i> Account</div>
+                </div>
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Name</dt><dd class="col-sm-8">{{ $admin->name ?? 'Yasin Sheikh' }}</dd>
+                    <dt class="col-sm-4">Email</dt><dd class="col-sm-8">{{ $admin->email }}</dd>
+                    <dt class="col-sm-4">Role</dt><dd class="col-sm-8">{{ $roleLabel }}</dd>
+                </dl>
+
+                <hr>
+
+                <div class="table-toolbar">
+                    <div class="toolbar-info"><i class="bi bi-key"></i> {{ mawa_e('settings_page.change_password') }}</div>
+                </div>
+                <form method="POST" action="{{ route('admin.settings.password') }}">
+                    @csrf
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label" for="current_password">Current Password</label>
+                            <input type="password" id="current_password" name="current_password" class="form-control" required>
+                            @error('current_password')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="password">New Password</label>
+                            <input type="password" id="password" name="password" class="form-control" required>
+                            @error('password')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" for="password_confirmation">Confirm Password</label>
+                            <input type="password" id="password_confirmation" name="password_confirmation" class="form-control" required>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-key"></i> Update Password</button>
+                </form>
+
+                <hr>
+
+                <div class="table-toolbar">
+                    <div class="toolbar-info"><i class="bi bi-translate"></i> Language</div>
+                </div>
+                <form method="POST" action="{{ route('admin.settings.language') }}">
+                    @csrf
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label" for="language">Language</label>
+                            <select id="language" name="language" class="form-select">
+                                <option value="en" {{ $preferredLanguage === 'en' ? 'selected' : '' }}>English</option>
+                                <option value="bn" {{ $preferredLanguage === 'bn' ? 'selected' : '' }}>বাংলা</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-translate"></i> Save Language</button>
+                </form>
+            </div>
+
+            {{-- ADMIN: Staff Requests (merged from admin/settings) --}}
+            <div class="settings-pane" id="pane-admin-staff">
+                <div class="table-toolbar">
+                    <div class="toolbar-info"><i class="bi bi-person-plus-fill"></i> Staff Registration Requests ({{ $pendingStaff->count() }})</div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Institute</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Registered</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($pendingStaff as $staff)
+                                <tr>
+                                    <td class="fw-semibold">{{ $staff->name }}</td>
+                                    <td>{{ $staff->institute->name ?? '—' }}</td>
+                                    <td>{{ $staff->email }}</td>
+                                    <td>{{ $staff->phone }}</td>
+                                    <td><x-tdate :value="$staff->created_at" fallback="d M Y H:i" :datetime="true" /></td>
+                                    <td class="text-end">
+                                        <form class="d-inline" method="POST" action="{{ route('admin.settings.staff-action', $staff) }}">
+                                            @csrf
+                                            <input type="hidden" name="action" value="approve">
+                                            <button class="btn btn-sm btn-success" type="submit"><i class="bi bi-check-lg"></i> Approve</button>
+                                        </form>
+                                        <form class="d-inline" method="POST" action="{{ route('admin.settings.staff-action', $staff) }}"
+                                              onsubmit="return confirm('Reject registration for {{ $staff->name }}?');">
+                                            @csrf
+                                            <input type="hidden" name="action" value="reject">
+                                            <button class="btn btn-sm btn-outline-danger" type="submit"><i class="bi bi-x-lg"></i> Reject</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">No pending staff registrations.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {{-- ADMIN: Appearance (merged from admin/settings) --}}
+            <div class="settings-pane" id="pane-admin-appearance">
+                <div class="table-toolbar">
+                    <div class="toolbar-info"><i class="bi bi-palette"></i> {{ mawa_e('settings_page.theme_heading') }}</div>
+                </div>
+                <form method="POST" action="{{ route('admin.settings.appearance.update') }}">
+                    @csrf
+                    <div class="row g-3 mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Theme</label>
+                            <div class="row g-3">
+                                @foreach ($themes as $item)
+                                    <div class="col-6 col-md-4 col-lg-3">
+                                        <label class="theme-option {{ $activeTheme?->id === $item->id ? 'selected' : '' }}" data-theme-option>
+                                            <input type="radio" name="theme_id" value="{{ $item->id }}" {{ $activeTheme?->id === $item->id ? 'checked' : '' }}>
+                                            <div class="theme-swatch">
+                                                <div class="swatch-primary" style="background:{{ $item->primary_color }}"></div>
+                                                <div class="swatch-secondary" style="background:{{ $item->secondary_color }}"></div>
+                                            </div>
+                                            <span class="theme-name">{{ $item->name }}</span>
+                                            @if ($activeTheme?->id === $item->id)
+                                                <i class="bi bi-check-circle-fill theme-check"></i>
+                                            @endif
+                                        </label>
+                                    </div>
+                                @endforeach
+                            </div>
+                            @error('theme_id')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="sidebar_color">Navigation Drawer Color</label>
+                            <input type="color" id="sidebar_color" name="sidebar_color" class="form-control form-control-color"
+                                   value="{{ $sidebarColor ?? '#FFFFFF' }}">
+                            @error('sidebar_color')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tall Navigation</label>
+                            <div class="form-check form-switch mt-1">
+                                <input class="form-check-input" type="checkbox" id="tall_navigation" name="tall_navigation" value="1" @checked($tallNavigation ?? false)>
+                                <label class="form-check-label small text-muted" for="tall_navigation">
+                                    Topbar stretches full width, sidebar sits below it
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-check-lg"></i> Save</button>
+                </form>
+            </div>
+
+            {{-- ADMIN: Mail & Payment (merged from admin/settings) --}}
+            <div class="settings-pane" id="pane-admin-mail">
+                <div class="table-toolbar">
+                    <div class="toolbar-info"><i class="bi bi-envelope"></i> SMTP</div>
+                </div>
+                <form method="POST" action="{{ route('admin.settings.mail-payment.update') }}">
+                    @csrf
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="smtp_host">SMTP Host</label>
+                            <input type="text" id="smtp_host" name="smtp_host" class="form-control" value="{{ $smtpHost }}" placeholder="smtp.gmail.com">
+                            @error('smtp_host')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="smtp_port">SMTP Port</label>
+                            <input type="text" id="smtp_port" name="smtp_port" class="form-control" value="{{ $smtpPort }}" placeholder="587">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="smtp_encryption">Encryption</label>
+                            <select id="smtp_encryption" name="smtp_encryption" class="form-select">
+                                <option value="none" {{ $smtpEncryption === 'none' ? 'selected' : '' }}>None</option>
+                                <option value="tls" {{ $smtpEncryption === 'tls' ? 'selected' : '' }}>TLS</option>
+                                <option value="ssl" {{ $smtpEncryption === 'ssl' ? 'selected' : '' }}>SSL</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="smtp_username">SMTP Username</label>
+                            <input type="text" id="smtp_username" name="smtp_username" class="form-control" value="{{ $smtpUsername }}" placeholder="you@example.com">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="smtp_password">SMTP Password</label>
+                            <input type="password" id="smtp_password" name="smtp_password" class="form-control" value="" placeholder="{{ $smtpPasswordMasked ?? '••••••••' }}">
+                            <div class="form-text small text-muted">{{ ($smtpConfigured ?? false) ? 'Leave blank to keep existing password' : 'Not configured' }}</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-save"></i> Save</button>
+                </form>
+
+                <hr>
+
+                <div class="table-toolbar">
+                    <div class="toolbar-info"><i class="bi bi-credit-card"></i> {{ mawa_e('settings_page.payment_heading') }}</div>
+                </div>
+                <form method="POST" action="{{ route('admin.settings.mail-payment.update') }}">
+                    @csrf
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label" for="payment_gateway">Payment Gateway</label>
+                            <input type="text" id="payment_gateway" name="payment_gateway" class="form-control" value="{{ $paymentGateway }}" placeholder="bKash / Nagad / Stripe">
+                            @error('payment_gateway')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-save"></i> Save</button>
+                </form>
+
+                <hr>
+
+                <div class="table-toolbar">
+                    <div class="toolbar-info"><i class="bi bi-send"></i> {{ mawa_e('settings_page.test_email_heading') }}</div>
+                </div>
+                <form method="POST" action="{{ route('admin.settings.mail-payment.test') }}">
+                    @csrf
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label" for="test_email">Recipient</label>
+                            <input type="email" id="test_email" name="test_email" class="form-control" value="{{ $admin->email }}" placeholder="you@example.com">
+                            @error('smtp_test')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        </div>
+                    </div>
+                    <button class="btn btn-outline-primary" type="submit"><i class="bi bi-send"></i> Save & Test</button>
+                </form>
+            </div>
+
+            {{-- ADMIN: AI (merged from admin/settings) --}}
+            <div class="settings-pane" id="pane-admin-ai">
+                @include('admin.settings._ai', ['aiEmbedded' => true])
+            </div>
+
+            {{-- ADMIN: Security (merged from admin/settings) --}}
+            <div class="settings-pane" id="pane-admin-security">
+                @include('security._panel')
+            </div>
+
+            {{-- ADMIN: Geo Settings (merged from admin/settings) --}}
+            <div class="settings-pane" id="pane-admin-geo">
+                <div class="table-toolbar">
+                    <div class="toolbar-info"><i class="bi bi-globe2"></i> Geo Settings</div>
+                </div>
+                <p class="text-muted">Manage the geography data used across the platform — countries, administrative levels/units and geography package imports.</p>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <a class="text-decoration-none" href="{{ route('admin.geo.index') }}">
+                            <div class="border rounded p-3 h-100">
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="fs-3"><i class="bi bi-globe"></i></span>
+                                    <div>
+                                        <div class="fw-semibold fs-6">Locations</div>
+                                        <div class="text-muted small">Manage countries, levels and the world's modern administrative units.</div>
+                                    </div>
+                                </div>
+                                <div class="mt-2 text-primary small"><i class="bi bi-arrow-right"></i> Open Locations</div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-md-6">
+                        <a class="text-decoration-none" href="{{ route('admin.geo.imports') }}">
+                            <div class="border rounded p-3 h-100">
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="fs-3"><i class="bi bi-cloud-arrow-up"></i></span>
+                                    <div>
+                                        <div class="fw-semibold fs-6">Import Geography Package</div>
+                                        <div class="text-muted small">Import a geography package for countries and administrative units.</div>
+                                    </div>
+                                </div>
+                                <div class="mt-2 text-primary small"><i class="bi bi-arrow-right"></i> Open Import</div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {{-- INDUSTRY & THEMES (merged from abolished admin/industry-settings) --}}
+            <div class="settings-pane" id="pane-industry">
+                <div class="table-toolbar">
+                    <div class="toolbar-info"><i class="bi bi-diagram-2-fill"></i> {{ $selectedLabel }} Settings</div>
+                    <div class="d-flex align-items-center gap-2 ms-auto flex-wrap">
+                        <div class="dropdown country-filter">
+                            <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Filter by country">
+                                <i class="bi bi-globe2"></i>
+                                <span class="country-filter-label">
+                                    @if (isset($country) && $country)
+                                        <img src="{{ mawa_country_flag($country) }}" class="country-flag me-1" alt="" width="18" height="13">
+                                        {{ config('countries')[$country] ?? $country }}
+                                    @else
+                                        {{ mawa_e('dashboard.all_countries') }}
+                                    @endif
+                                </span>
+                                <i class="bi bi-chevron-down small"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item {{ ($country ?? null) === null ? 'active' : '' }}"
+                                       href="{{ indSettingsLink(['industry' => $selectedKey, 'sub_industry' => $subIndustry ?? null, 'country' => null]) }}">
+                                        <i class="bi bi-globe me-2"></i>{{ mawa_e('dashboard.all_countries') }}
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                @foreach (config('countries') as $value => $label)
+                                    <li>
+                                        <a class="dropdown-item {{ ($country ?? null) === $value ? 'active' : '' }}"
+                                           href="{{ indSettingsLink(['industry' => $selectedKey, 'sub_industry' => $subIndustry ?? null, 'country' => $value]) }}">
+                                            <img src="{{ mawa_country_flag($value) }}" class="country-flag me-1" alt="" width="18" height="13">
+                                            {{ $label }}
+                                        </a>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                        @if ($selectedKey !== 'all' && count($subIndustries) > 0)
+                            <div class="dropdown sub-industry-filter">
+                            <button class="btn btn-sm btn-outline-primary d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Filter by sub industry">
+                                <i class="bi bi-diagram-2-fill"></i>
+                                <span class="sub-industry-filter-label">
+                                    {{ ($subIndustry ?? null) ? ($subIndustries[$subIndustry] ?? $subIndustry) : mawa_e('dashboard.all_sub_industries') }}
+                                </span>
+                                <i class="bi bi-chevron-down small"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item {{ ($subIndustry ?? null) === null ? 'active' : '' }}"
+                                       href="{{ indSettingsLink(['industry' => $selectedKey, 'country' => $country ?? null, 'sub_industry' => null]) }}">
+                                        <i class="bi bi-collection me-2"></i>{{ mawa_e('dashboard.all_sub_industries') }}
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                @foreach ($subIndustries as $subValue => $subLabel)
+                                    <li>
+                                        <a class="dropdown-item {{ ($subIndustry ?? null) === $subValue ? 'active' : '' }}"
+                                           href="{{ indSettingsLink(['industry' => $selectedKey, 'country' => $country ?? null, 'sub_industry' => $subValue]) }}">
+                                            <i class="bi bi-diagram-2 me-2"></i>{{ $subLabel }}
+                                        </a>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </div>
+                        @endif
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="text-muted small mb-0" for="industrySelect">Industry:</label>
+                            <select id="industrySelect" class="form-select form-select-sm" style="max-width: 320px;" aria-label="Select an industry">
+                                <option value="{{ indSettingsLink(['country' => $country ?? null, 'sub_industry' => $subIndustry ?? null]) }}" {{ $selectedKey === 'all' ? 'selected' : '' }}>All Industries</option>
+                                @foreach ($industries as $key => $label)
+                                    <option value="{{ indSettingsLink(['industry' => $key, 'country' => $country ?? null, 'sub_industry' => $subIndustry ?? null]) }}" {{ $selectedKey === $key ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-toolbar mt-3">
+                    <div class="toolbar-info"><i class="bi bi-info-circle-fill"></i> How it works</div>
+                </div>
+                <p class="text-muted mb-0">Select an industry from the top-right to view and manage settings specific to that industry. Settings here apply platform-wide for institutes of the chosen industry. Choose "All Industries" to set a fallback used when no industry-specific theme exists, and to manage the platform themes themselves.</p>
+
+                <div class="table-toolbar mt-4">
+                    <div class="toolbar-info"><i class="bi bi-palette-fill"></i> Manage Themes</div>
+                </div>
+                <p class="text-muted">Edit the platform themes used across all industries. The theme marked as default is the fallback used by institutes before any industry default applies.</p>
+
+                <div class="table-toolbar mt-4">
+                    <div class="toolbar-info"><i class="bi bi-palette"></i> Default Color Theme</div>
+                </div>
+                <p class="text-muted">Choose the default theme applied to institutes of <strong>{{ $selectedLabel }}</strong> when they have not set their own theme.</p>
+                <form method="POST" action="{{ route('admin.industry-settings.theme') }}">
+                    @csrf
+                    <input type="hidden" name="industry_key" value="{{ $selectedKey }}">
+                    <div class="row g-3 mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Color Theme</label>
+                            <div class="row g-3">
+                                @foreach ($themes as $item)
+                                    <div class="col-6 col-md-4 col-lg-3">
+                                        <label class="theme-option {{ $setting?->theme_slug === $item->slug ? 'selected' : '' }}" data-theme-option>
+                                            <input type="radio" name="theme_slug" value="{{ $item->slug }}" {{ $setting?->theme_slug === $item->slug ? 'checked' : '' }}>
+                                            <div class="theme-swatch">
+                                                <div class="swatch-primary" style="background:{{ $item->primary_color }}"></div>
+                                                <div class="swatch-secondary" style="background:{{ $item->secondary_color }}"></div>
+                                            </div>
+                                            <span class="theme-name">{{ $item->name }}</span>
+                                            @if ($setting?->theme_slug === $item->slug)
+                                                <i class="bi bi-check-circle-fill theme-check"></i>
+                                            @endif
+                                        </label>
+                                    </div>
+                                @endforeach
+                            </div>
+                            @error('theme_slug')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                            @error('industry_key')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" type="submit"><i class="bi bi-check-lg"></i> Save Default Theme</button>
+                    @if (session('status'))
+                        <span class="text-success small ms-2">{{ session('status') }}</span>
+                    @endif
+                </form>
+
+                <hr class="my-4">
+
+                @foreach ($allThemes as $item)
+                    <div class="border rounded p-3 mb-3">
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            <span class="d-inline-block rounded-circle" style="width:18px;height:18px;background:{{ $item->primary_color }};border:1px solid rgba(0,0,0,.15)"></span>
+                            <span class="fw-semibold">{{ $item->name }}</span>
+                            @if ($item->is_default)
+                                <span class="badge bg-success">Default</span>
+                            @endif
+                            @if ($item->is_dark)
+                                <span class="badge bg-dark">Dark</span>
+                            @endif
+                        </div>
+                        <form method="POST" action="{{ route('admin.themes.update', $item) }}">
+                            @csrf
+                            @method('PUT')
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label" for="name_{{ $item->id }}">Theme Name</label>
+                                    <input type="text" id="name_{{ $item->id }}" name="name" class="form-control" value="{{ old('name', $item->name) }}" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label" for="primary_{{ $item->id }}">Primary</label>
+                                    <input type="color" id="primary_{{ $item->id }}" name="primary_color" class="form-control form-control-color" value="{{ old('primary_color', $item->primary_color) }}">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label" for="secondary_{{ $item->id }}">Secondary</label>
+                                    <input type="color" id="secondary_{{ $item->id }}" name="secondary_color" class="form-control form-control-color" value="{{ old('secondary_color', $item->secondary_color) }}">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label" for="status_{{ $item->id }}">Status</label>
+                                    <select id="status_{{ $item->id }}" name="status" class="form-select">
+                                        <option value="active" {{ old('status', $item->status) === 'active' ? 'selected' : '' }}>Active</option>
+                                        <option value="inactive" {{ old('status', $item->status) === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3 d-flex flex-column justify-content-end gap-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="is_dark" value="1" id="dark_{{ $item->id }}" {{ $item->is_dark ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="dark_{{ $item->id }}">Dark Mode</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="is_default" value="1" id="default_{{ $item->id }}" {{ $item->is_default ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="default_{{ $item->id }}">Mark as default</label>
+                                    </div>
+                                </div>
+                                <div class="col-12 d-flex justify-content-end">
+                                    @error('name')<span class="text-danger small me-2">{{ $message }}</span>@enderror
+                                    <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-check-lg"></i> Save</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                @endforeach
+            </div>
+
             {{-- BRANDING --}}
             <div class="settings-pane" id="pane-branding">
                 <div class="table-toolbar"><div class="toolbar-info"><i class="bi bi-brush"></i> Branding — <small class="text-muted">ACTIVE</small></div></div>
@@ -442,6 +937,35 @@
  function act(id){ tabs.forEach(b=>{b.classList.toggle('active',b.dataset.target===id)}); panes.forEach(p=>{p.classList.toggle('active',p.id===id)}); if(history.replaceState) history.replaceState(null,'','#'+id); }
  tabs.forEach(b=>b.addEventListener('click',()=>act(b.dataset.target)));
  var h=location.hash; if(h){ var id=h.slice(1); if(document.getElementById(id)) act(id); }
+})();
+</script>
+<script>
+// Merged industry pane: filter navigation guard + theme option picker.
+(function () {
+    var sel = document.getElementById('industrySelect');
+    if (sel) sel.addEventListener('change', function () {
+        var v = this && this.value ? String(this.value) : '';
+        if (!v || v.indexOf('[object') !== -1 || v.indexOf('%5Bobject') !== -1) { return; }
+        window.location.href = v;
+    });
+    document.querySelectorAll('[data-theme-option]').forEach(function (label) {
+        var input = label.querySelector('input');
+        label.addEventListener('click', function () {
+            document.querySelectorAll('[data-theme-option]').forEach(function (other) {
+                other.classList.remove('selected');
+                var check = other.querySelector('.theme-check');
+                if (check) check.remove();
+            });
+            label.classList.add('selected');
+            var check = label.querySelector('.theme-check');
+            if (!check) {
+                check = document.createElement('i');
+                check.className = 'bi bi-check-circle-fill theme-check';
+                label.appendChild(check);
+            }
+            if (input) input.checked = true;
+        });
+    });
 })();
 </script>
 @endpush

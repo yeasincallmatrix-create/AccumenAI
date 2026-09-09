@@ -138,9 +138,11 @@ class TpaService
     /**
      * Get claim statistics for an institute.
      */
-    public function getClaimStats(int $instituteId): array
+    public function getClaimStats(int $instituteId, ?int $doctorUserId = null): array
     {
-        $claims = TpaClaim::where('institute_id', $instituteId)->get();
+        $claims = TpaClaim::where('institute_id', $instituteId)
+            ->whereHas('invoice', fn ($q) => $q->visibleToDoctor($instituteId, $doctorUserId))
+            ->get();
 
         return [
             'total_claims' => $claims->count(),

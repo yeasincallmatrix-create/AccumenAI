@@ -1,6 +1,6 @@
 @extends('layouts.standalone')
 
-@php $backUrl = route('admin.settings.index'); @endphp
+@php $backUrl = route('admin.platform-settings.index').'#pane-admin-staff'; @endphp
 
 @section('title', mawa_e('settings_page.staff_requests') . ' — AccumenAI')
 @section('page_title', mawa_e('settings_page.staff_requests'))

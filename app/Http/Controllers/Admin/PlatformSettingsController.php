@@ -3,8 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\IndustrySetting;
+use App\Models\InstituteUser;
+use App\Models\PlatformAdmin;
 use App\Models\PlatformAuditLog;
 use App\Models\Setting;
+use App\Models\Theme;
+use App\Support\AiConfig;
+use App\Support\IndustryRules;
 use App\Services\Notification\Sms\HttpSmsProvider;
 use App\Services\Notification\Sms\LogSmsProvider;
 use App\Services\Platform\PlatformSettingsService;
@@ -17,7 +23,7 @@ use Illuminate\View\View;
 
 class PlatformSettingsController extends Controller
 {
-    private function viewData(): array
+    private function viewData(Request $request): array
     {
         return [
             // General
@@ -137,6 +143,106 @@ class PlatformSettingsController extends Controller
             'webhookSecretMasked' => PlatformSettingsService::masked('webhook.secret'),
             // Messaging
             'whatsappStatus' => Setting::get('whatsapp.enabled', '0') === '1' ? 'Configured' : 'NOT CONFIGURED',
+            // Medical: DGDA
+            'dgdaEnabled' => Setting::get('medical.dgda.enabled', '0'),
+        ] + $this->adminSections($request);
+    }
+
+    /**
+     * Data for the merged-in admin/settings + industry-settings panes
+     * (abolished as standalone pages; served here).
+     */
+    private function adminSections(Request $request): array
+    {
+        $user = $request->user();
+
+        $pendingStaff = InstituteUser::query()
+            ->where('status', 'inactive')
+            ->with(['institute', 'role'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        $activeTheme = null;
+        $themeId = $user ? $user->preference('theme_id') : null;
+        if ($themeId !== null) {
+            $activeTheme = Theme::query()->where('status', 'active')->find($themeId);
+        }
+        if ($activeTheme === null) {
+            $activeTheme = Theme::query()->where('is_default', 1)->where('status', 'active')->first();
+        }
+
+        $industries = IndustryRules::industries(null);
+        $selectedKey = $request->query('industry');
+        if ($selectedKey === null || $selectedKey === '' || ! array_key_exists($selectedKey, $industries)) {
+            $selectedKey = 'all';
+        }
+        $selectedLabel = $selectedKey === 'all' ? 'All Industries' : $industries[$selectedKey];
+        $country = $request->query('country');
+        $country = is_string($country) && array_key_exists($country, config('countries', [])) ? $country : null;
+        $subIndustries = $selectedKey === 'all' ? [] : IndustryRules::subIndustries($country ?? '', $selectedKey);
+        $subIndustry = $request->query('sub_industry');
+        $subIndustry = is_string($subIndustry) && $selectedKey !== 'all' && array_key_exists($subIndustry, $subIndustries)
+            ? $subIndustry
+            : null;
+
+        return [
+            // admin/settings panes
+            'admin' => $user,
+            'pendingStaff' => $pendingStaff,
+            'pendingStaffCount' => $pendingStaff->count(),
+            'preferredLanguage' => $user->preferred_language ?? 'en',
+            'theme' => $user ? ($user->preference('theme') ?? 'default') : 'default',
+            'themes' => Theme::query()->where('status', 'active')->orderBy('is_default', 'desc')->orderBy('name')->get(),
+            'activeTheme' => $activeTheme,
+            'sidebarColor' => $user ? $user->preference('sidebar_color') : null,
+            'tallNavigation' => $user ? (bool) $user->preference('tall_navigation') : false,
+            'platformLogo' => Setting::get('brand.logo'),
+            'platformLogoUrl' => platform_logo_url(),
+            'smtpHost' => Setting::get('smtp.host', ''),
+            'smtpPort' => Setting::get('smtp.port', '587'),
+            'smtpEncryption' => Setting::get('smtp.encryption', 'none'),
+            'smtpUsername' => Setting::get('smtp.username', ''),
+            'smtpPasswordMasked' => Setting::masked('smtp.password'),
+            'smtpConfigured' => Setting::isConfigured('smtp.host'),
+            'paymentGateway' => Setting::get('payment.gateway', ''),
+            'securityUser' => $user,
+            'securityGuard' => $user instanceof PlatformAdmin ? 'platform_admin' : 'institute_user',
+            'sessions' => DB::table('sessions')
+                ->where('user_id', $user ? $user->getKey() : 0)
+                ->orderByDesc('last_activity')
+                ->get(),
+            'currentSessionId' => $request->session()->getId(),
+            'aiEnabled' => AiConfig::enabled(),
+            'provider' => AiConfig::provider(),
+            'model' => AiConfig::model(),
+            'hasApiKey' => filled(AiConfig::apiKey()),
+            'baseUrl' => AiConfig::baseUrl(),
+            'globalInstructions' => AiConfig::globalInstructions(),
+            'maxTokens' => AiConfig::maxTokens(),
+            'temperature' => AiConfig::temperature(),
+            'timeout' => AiConfig::timeout(),
+            'responseLanguage' => AiConfig::responseLanguage(),
+            'dailyLimit' => AiConfig::dailyLimit(),
+            'monthlyLimit' => AiConfig::monthlyLimit(),
+            'features' => AiConfig::features(),
+            'storePrompts' => AiConfig::storePrompts(),
+            'availableProviders' => [
+                'openai' => 'OpenAI',
+                'anthropic' => 'Anthropic (Claude)',
+                'gemini' => 'Google Gemini',
+                'groq' => 'Groq',
+                'custom' => 'Custom (OpenAI-compatible)',
+            ],
+            'implementedFeatures' => ['assistant' => 'AI Assistant'],
+            // industry-settings panes
+            'industries' => $industries,
+            'selectedKey' => $selectedKey,
+            'selectedLabel' => $selectedLabel,
+            'country' => $country,
+            'subIndustry' => $subIndustry,
+            'subIndustries' => $subIndustries,
+            'allThemes' => Theme::query()->orderByDesc('is_default')->orderBy('name')->get(),
+            'setting' => IndustrySetting::query()->where('industry_key', $selectedKey)->first(),
         ];
     }
 
@@ -197,7 +303,7 @@ class PlatformSettingsController extends Controller
 
     public function index(Request $request): View
     {
-        return view('admin.platform-settings.index', $this->viewData());
+        return view('admin.platform-settings.index', $this->viewData($request));
     }
 
     // ── General
@@ -723,6 +829,17 @@ class PlatformSettingsController extends Controller
         }
         PlatformAuditLog::record('branding', 'brand.name', 'updated');
         return back()->with('status', 'Branding saved.');
+    }
+
+    // ── Medical: DGDA drug codes (platform kill switch)
+    public function updateDgda(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'dgda_enabled' => ['required', 'in:0,1'],
+        ]);
+        Setting::set('medical.dgda.enabled', $data['dgda_enabled']);
+        PlatformAuditLog::record('medical', 'medical.dgda.enabled', $data['dgda_enabled'] === '1' ? 'enabled' : 'disabled');
+        return back()->with('status', 'DGDA integration '.($data['dgda_enabled'] === '1' ? 'enabled.' : 'disabled.'));
     }
 
     // ── Maintenance

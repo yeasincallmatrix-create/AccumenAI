@@ -41,10 +41,16 @@ class LabTest extends Model
         return $query->where('is_active', true);
     }
 
+    /**
+     * Phase 02: keyword alternatives are grouped so a chained
+     * where('institute_id', ...) can never be escaped by the ORs.
+     */
     public function scopeSearch($query, $search)
     {
-        return $query->where('name', 'LIKE', "%{$search}%")
-            ->orWhere('code', 'LIKE', "%{$search}%");
+        return $query->where(function ($q) use ($search) {
+            $q->where('name', 'LIKE', "%{$search}%")
+                ->orWhere('code', 'LIKE', "%{$search}%");
+        });
     }
 
     /**

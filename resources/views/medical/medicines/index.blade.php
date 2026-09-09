@@ -18,17 +18,17 @@
     <div class="card-body">
         <form method="GET" class="mb-3">
             <div class="row g-2">
-                <div class="col-md-5">
+                <div class="col-md-4">
                     <div class="input-group">
                         <input type="text" name="search" class="form-control"
-                               placeholder="Search generic, brand or code..."
+                               placeholder="Search generic, brand, code or DGDA..."
                                value="{{ request('search') }}">
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-search"></i> Search
                         </button>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <select name="category" class="form-select" onchange="this.form.submit()">
                         <option value="">All Categories</option>
                         @foreach($categories as $category)
@@ -43,6 +43,13 @@
                         <option value="inactive" @selected(request('status') === 'inactive')>Inactive</option>
                     </select>
                 </div>
+                <div class="col-md-2">
+                    <select name="dgda" class="form-select" onchange="this.form.submit()" title="Filter by DGDA registry code">
+                        <option value="">All DGDA</option>
+                        <option value="coded" @selected(request('dgda') === 'coded')>With DGDA code</option>
+                        <option value="pending" @selected(request('dgda') === 'pending')>DGDA sync pending</option>
+                    </select>
+                </div>
                 <div class="col-md-2 text-end">
                     <a href="{{ route('medical.pharmacy.medicines.index') }}" class="btn btn-secondary">Reset</a>
                 </div>
@@ -55,6 +62,7 @@
                     <tr>
                         <th>Code</th>
                         <th>Medicine</th>
+                        <th>DGDA Code</th>
                         <th>Form / Strength</th>
                         <th>Price</th>
                         <th>Stock</th>
@@ -72,6 +80,16 @@
                             @endif
                             @if(!$medicine->requires_prescription)
                                 <span class="badge bg-info text-dark ms-1">OTC</span>
+                            @endif
+                        </td>
+                        <td>
+                            @if($medicine->dgda_code)
+                                <code>{{ $medicine->dgda_code }}</code>
+                                @if($medicine->dgda_status && $medicine->dgda_status !== 'synced')
+                                    <span class="badge bg-warning text-dark ms-1">{{ ucfirst($medicine->dgda_status) }}</span>
+                                @endif
+                            @else
+                                <span class="badge bg-warning text-dark" title="No DGDA code — registry sync pending">DGDA sync pending</span>
                             @endif
                         </td>
                         <td>{{ $medicine->dosage_form }}{{ $medicine->strength ? ' '.$medicine->strength : '' }}</td>
@@ -108,7 +126,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-4">
+                        <td colspan="7" class="text-center text-muted py-4">
                             <i class="bi bi-capsule fs-2 d-block mb-2"></i>
                             No medicines found.
                         </td>

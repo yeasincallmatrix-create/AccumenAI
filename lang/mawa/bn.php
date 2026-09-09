@@ -1632,6 +1632,7 @@ return [
     'account_type' => [
         'owner' => 'Owner',
         'staff' => 'Staff',
+        'doctor' => 'ডাক্তার',
     ],
     'staff' => [
         'title' => 'Team & Staff',

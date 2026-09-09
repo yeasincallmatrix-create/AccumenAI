@@ -151,11 +151,8 @@
                                     </a>
                                 @endif
                                 @if($user && $user->hasPermission('medical_appointments.view'))
-                                    <a class="nav-link sub {{ request()->routeIs('medical.appointments.*') && !request()->routeIs('medical.appointments.queue') ? 'active' : '' }}" href="{{ route('medical.appointments.index') }}">
+                                    <a class="nav-link sub {{ request()->routeIs('medical.appointments.*') ? 'active' : '' }}" href="{{ route('medical.appointments.index') }}">
                                         <i class="bi bi-calendar-event"></i><span class="sidebar-label">Appointments</span>
-                                    </a>
-                                    <a class="nav-link sub {{ request()->routeIs('medical.appointments.queue') ? 'active' : '' }}" href="{{ route('medical.appointments.queue') }}">
-                                        <i class="bi bi-people"></i><span class="sidebar-label">Queue</span>
                                     </a>
                                 @endif
                                 @if($user && $user->hasPermission('medical_doctors.view'))
@@ -690,7 +687,7 @@
                             <i class="bi bi-award-fill"></i><span class="sidebar-label">Grade Scales</span>
                         </a>
                     @endif
-                    <a class="nav-link {{ request()->routeIs('admin.industry-settings') ? 'active' : '' }}" href="{{ $selectedIndustryKey && $selectedIndustryKey !== '' ? route('admin.industry-settings', ['industry' => $selectedIndustryKey]) : route('admin.industry-settings') }}">
+                    <a class="nav-link {{ request()->routeIs('admin.platform-settings.*') ? 'active' : '' }}" href="{{ route('admin.platform-settings.index', array_filter(['industry' => $selectedIndustryKey && $selectedIndustryKey !== '' ? $selectedIndustryKey : null])) }}#pane-industry">
                         <i class="bi bi-gear-fill"></i><span class="sidebar-label">{{ $selectedIndustryLabel }} Settings</span>
                     </a>
                     <a class="nav-link {{ request()->routeIs('admin.modules.*', 'admin.packages.*') ? 'active' : '' }}" href="{{ route('admin.modules.index') }}">
@@ -712,13 +709,13 @@
         <div class="dropdown dropup sidebar-user-card">
             <button type="button" class="sidebar-user-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                 <div class="avatar-wrap">
-                    <span class="avatar-circle avatar-initials">{{ strtoupper(substr($user->email ?? $roleLabel, 0, 1)) }}</span>
+                    <span class="avatar-circle avatar-initials">{{ mb_strtoupper(mb_substr($user->name ?? $user->email ?? $roleLabel, 0, 1)) }}</span>
                     {{-- Live browser online/offline signal, sized/positioned exactly
                          where the old static green presence dot used to sit. --}}
                     <x-connectivity-signal :size="11.2" :wrap="11.2" class="cs-avatar-corner" />
                 </div>
                 <div class="sidebar-user-meta">
-                    <span class="sidebar-user-name">{{ $roleLabel }}</span>
+                    <span class="sidebar-user-name">{{ $user->name ?? $user->email ?? $roleLabel }}</span>
                     @if ($accountTypeLabel)
                         <span class="badge role-badge mt-1 {{ $user?->isOwnerAccount() ? 'bg-success text-white' : 'bg-info-subtle text-dark border' }}">{{ $accountTypeLabel }}</span>
                     @else
@@ -729,7 +726,7 @@
             </button>
             <button type="button" class="sidebar-user-link" data-bs-toggle="dropdown" aria-expanded="false" title="{{ $roleLabel }}">
                 <div class="avatar-wrap">
-                    <span class="avatar-circle avatar-initials">{{ strtoupper(substr($user->email ?? $roleLabel, 0, 1)) }}</span>
+                    <span class="avatar-circle avatar-initials">{{ mb_strtoupper(mb_substr($user->name ?? $user->email ?? $roleLabel, 0, 1)) }}</span>
                     <x-connectivity-signal :size="11.2" :wrap="11.2" class="cs-avatar-corner" />
                 </div>
             </button>
@@ -740,7 +737,7 @@
                     <li><a class="dropdown-item" href="{{ route('account.security') }}"><i class="bi bi-shield-lock me-2"></i>{{ mawa_e('security.title') }}</a></li>
                 @else
                     @auth('platform_admin')
-                        <li><a class="dropdown-item" href="{{ route('admin.settings.index') }}"><i class="bi bi-gear me-2"></i>{{ mawa_e('sidebar.settings') }}</a></li>
+                        <li><a class="dropdown-item" href="{{ route('admin.platform-settings.index') }}#pane-admin-account"><i class="bi bi-gear me-2"></i>{{ mawa_e('sidebar.settings') }}</a></li>
                         <li><a class="dropdown-item" href="{{ route('admin.security') }}"><i class="bi bi-shield-lock me-2"></i>{{ mawa_e('security.title') }}</a></li>
                         <li><a class="dropdown-item" href="{{ route('admin.modules.index') }}"><i class="bi bi-puzzle me-2"></i>Modules &amp; Packages</a></li>
                     @endauth

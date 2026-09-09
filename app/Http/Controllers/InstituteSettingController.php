@@ -134,6 +134,56 @@ class InstituteSettingController extends Controller
             ->with('status', 'General settings updated.');
     }
 
+    public function updateDgda(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $canManage = $user instanceof InstituteUser
+            ? $user->hasPermission('settings.manage')
+            : (Workspace::membershipFor($user)?->hasPermission('settings.manage') ?? false);
+        abort_unless($canManage, 403);
+
+        $data = $request->validate([
+            'dgda_enabled' => ['required', 'in:0,1'],
+        ]);
+
+        // Master switch wins: tenants cannot opt in while platform is off.
+        if (! \App\Services\Medical\DgdaService::enabled()) {
+            return redirect()
+                ->route('settings.index', '#pane-medical')
+                ->withErrors(['dgda_enabled' => 'DGDA is disabled at the platform level.']);
+        }
+
+        $instituteId = TenantContext::id();
+        abort_unless($instituteId, 403);
+
+        $previous = InstituteSetting::withoutGlobalScopes()
+            ->where('institute_id', $instituteId)
+            ->value('dgda_enabled');
+
+        InstituteSetting::updateOrCreate(
+            ['institute_id' => $instituteId],
+            ['dgda_enabled' => $data['dgda_enabled'] === '1']
+        );
+
+        AuditLog::create([
+            'institute_id' => $instituteId,
+            'user_type' => $user instanceof InstituteUser ? 'institute_user' : 'system',
+            'user_id' => $user->getKey(),
+            'action' => 'dgda_enabled_changed',
+            'module' => 'settings',
+            'record_id' => $instituteId,
+            'old_values' => json_encode(['dgda_enabled' => (bool) $previous]),
+            'new_values' => json_encode(['dgda_enabled' => $data['dgda_enabled'] === '1']),
+            'ip_address' => $request->ip(),
+            'user_agent' => substr((string) $request->userAgent(), 0, 255),
+            'created_at' => now(),
+        ]);
+
+        return redirect()
+            ->route('settings.index', '#pane-medical')
+            ->with('status', 'DGDA integration '.($data['dgda_enabled'] === '1' ? 'enabled.' : 'disabled.'));
+    }
+
     public function updateCertificateApprovalMode(Request $request): RedirectResponse
     {
         $data = $request->validate([

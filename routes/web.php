@@ -329,6 +329,7 @@ Route::middleware(['auth:platform_admin', 'verified'])->prefix('admin')->name('a
     Route::post('platform-settings/ai', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'updateAi'])->name('platform-settings.ai');
     Route::post('platform-settings/api', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'updateApi'])->name('platform-settings.api');
     Route::post('platform-settings/branding', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'updateBranding'])->name('platform-settings.branding');
+    Route::post('platform-settings/dgda', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'updateDgda'])->name('platform-settings.dgda');
     Route::post('platform-settings/maintenance', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'updateMaintenance'])->name('platform-settings.maintenance');
     Route::get('platform-audit', [\App\Http\Controllers\Admin\PlatformAuditController::class, 'index'])->name('platform-audit.index');
 

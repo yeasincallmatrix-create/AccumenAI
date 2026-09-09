@@ -30,6 +30,9 @@
             <a class="btn btn-primary" href="{{ route('medical.prescriptions.print', $prescription) }}">
                 <i class="bi bi-printer me-1"></i>Print
             </a>
+            <a class="btn btn-outline-primary" href="{{ route('medical.prescriptions.pdf', $prescription) }}">
+                <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+            </a>
         @endif
         <a class="btn btn-secondary" href="{{ route('medical.prescriptions.index') }}">
             <i class="bi bi-arrow-left me-1"></i>Back
@@ -54,6 +57,17 @@
                 <p><strong>Date:</strong> <x-tdate :value="$prescription->prescription_date" fallback="d M Y" /></p>
                 <p><strong>Diagnosis:</strong> {{ $prescription->diagnosis ?? '—' }}</p>
                 <p class="mb-0"><strong>Follow-up:</strong> <x-tdate :value="$prescription->follow_up_date" fallback="d M Y" /></p>
+                @if($prescription->is_finalized)
+                    <hr>
+                    <p class="mb-1"><strong>Signed:</strong> {{ $prescription->signed_at?->format('d M Y, h:i A') ?? '—' }}</p>
+                    <p class="mb-1"><strong>Signature:</strong> <code>{{ substr((string) $prescription->signature_hash, 0, 16) }}…</code></p>
+                    @if(!empty($qr))
+                        <div class="d-flex align-items-center gap-3 mt-2">
+                            <img src="{{ $qr }}" alt="Verification QR" width="110" height="110">
+                            <small class="text-muted">Scan to verify<br><code>{{ $verifyCode ?? '' }}</code></small>
+                        </div>
+                    @endif
+                @endif
             </div>
         </div>
     </div>
@@ -76,12 +90,19 @@
             <div class="table-responsive">
                 <table class="table table-sm table-hover align-middle">
                     <thead>
-                        <tr><th>Medicine</th><th>Dosage</th><th>Frequency</th><th>Days</th><th>Qty</th><th>Status</th><th></th></tr>
+                        <tr><th>Medicine</th><th>DGDA Code</th><th>Dosage</th><th>Frequency</th><th>Days</th><th>Qty</th><th>Status</th><th></th></tr>
                     </thead>
                     <tbody>
                         @foreach($prescription->items as $item)
                         <tr>
                             <td>{{ $item->medicine_name }}</td>
+                            <td>
+                                @if($item->dgda_code)
+                                    <span class="badge bg-success">DGDA: {{ $item->dgda_code }}</span>
+                                @else
+                                    <span class="badge bg-warning text-dark" title="No DGDA code — registry sync pending">DGDA sync pending</span>
+                                @endif
+                            </td>
                             <td>{{ $item->dosage }}</td>
                             <td>{{ $item->frequency }}</td>
                             <td>{{ $item->duration_days ?? '—' }}</td>

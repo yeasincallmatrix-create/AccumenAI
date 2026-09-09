@@ -72,6 +72,46 @@ class Patient extends Model
         return $this->hasMany(Invoice::class);
     }
 
+    public function structuredAllergies()
+    {
+        return $this->hasMany(PatientAllergy::class);
+    }
+
+    /**
+     * Mirror the free-text allergies column into structured rows (additive
+     * only — never deletes, so verified clinical rows are never lost).
+     */
+    public function syncStructuredAllergies(): void
+    {
+        $names = array_values(array_unique(array_filter(array_map(
+            fn ($v) => mb_substr(trim((string) $v), 0, 160),
+            explode(',', (string) ($this->allergies ?? ''))
+        ))));
+        if ($names === []) {
+            return;
+        }
+
+        $existing = $this->structuredAllergies()->pluck('allergen_name')
+            ->map(fn ($n) => mb_strtolower(trim((string) $n)))
+            ->all();
+
+        foreach ($names as $name) {
+            if (in_array(mb_strtolower($name), $existing, true)) {
+                continue;
+            }
+            $this->structuredAllergies()->create([
+                'institute_id' => $this->institute_id,
+                'medicine_id' => null,
+                'allergen_type' => 'drug',
+                'allergen_name' => $name,
+                'reaction' => null,
+                'severity' => 'moderate',
+                'is_verified' => false,
+            ]);
+            $existing[] = mb_strtolower($name);
+        }
+    }
+
     public function getFullNameAttribute()
     {
         return $this->first_name.' '.$this->last_name;
@@ -92,11 +132,17 @@ class Patient extends Model
         return $query->where('is_active', true);
     }
 
+    /**
+     * Phase 02: keyword alternatives are grouped so a chained
+     * where('institute_id', ...) can never be escaped by the ORs.
+     */
     public function scopeSearch($query, $search)
     {
-        return $query->where('mr_number', 'LIKE', "%{$search}%")
-            ->orWhere('first_name', 'LIKE', "%{$search}%")
-            ->orWhere('last_name', 'LIKE', "%{$search}%")
-            ->orWhere('phone', 'LIKE', "%{$search}%");
+        return $query->where(function ($q) use ($search) {
+            $q->where('mr_number', 'LIKE', "%{$search}%")
+                ->orWhere('first_name', 'LIKE', "%{$search}%")
+                ->orWhere('last_name', 'LIKE', "%{$search}%")
+                ->orWhere('phone', 'LIKE', "%{$search}%");
+        });
     }
 }

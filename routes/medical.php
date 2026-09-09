@@ -41,6 +41,18 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
         return view('medical.dashboard');
     })->name('dashboard');
 
+    // React-powered pages — Blade hosts that mount React components
+    // (resources/js/medical/*.js). The Blade + Livewire pages are untouched;
+    // React renders only here. JSON feeds are polled every 10 seconds.
+    // NOTE: registered before the resources below so `patients-react` etc.
+    // are never swallowed by the {patient} / {prescription} wildcards.
+    Route::get('queue-react', [AppointmentController::class, 'reactIndex'])->name('queue.react');
+    Route::get('queue-react/data', [AppointmentController::class, 'reactQueueData'])->name('queue.react.data');
+    Route::get('patients-react', [PatientController::class, 'reactIndex'])->name('patients.react');
+    Route::get('patients-react/data', [PatientController::class, 'reactData'])->name('patients.react.data');
+    Route::get('prescriptions-react', [PrescriptionController::class, 'reactIndex'])->name('prescriptions.react');
+    Route::get('prescriptions-react/data', [PrescriptionController::class, 'reactData'])->name('prescriptions.react.data');
+
     // Patients — explicit lookup before the resource so it is not
     // swallowed by the {patient} wildcard.
     Route::get('patients/lookup', [PatientController::class, 'lookup'])->name('patients.lookup');
@@ -48,12 +60,15 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     Route::resource('patients', PatientController::class);
     Route::get('patients/{patient}/history', [PatientController::class, 'history'])->name('patients.history');
 
-    // Appointments (OPD)
+    // Appointments (OPD) — the React list feed sits before the resource
+    // so it is never swallowed by the {appointment} wildcard.
+    Route::get('appointments-react/data', [AppointmentController::class, 'reactAppointmentsData'])->name('appointments.react.data');
     Route::get('appointments/queue/{doctor?}', [AppointmentController::class, 'queue'])->name('appointments.queue');
     Route::resource('appointments', AppointmentController::class);
     Route::post('appointments/{appointment}/checkin', [AppointmentController::class, 'checkin'])->name('appointments.checkin');
     Route::post('appointments/{appointment}/complete', [AppointmentController::class, 'complete'])->name('appointments.complete');
     Route::post('appointments/{appointment}/transfer', [AppointmentController::class, 'transfer'])->name('appointments.transfer');
+    Route::post('appointments/{appointment}/collect-fee', [AppointmentController::class, 'collectFee'])->name('appointments.collect-fee');
 
     // Admissions (IPD) — explicit GETs before the resource so they are not
     // swallowed by the {admission} wildcard.
@@ -71,6 +86,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     Route::resource('prescriptions', PrescriptionController::class);
     Route::post('prescriptions/{prescription}/finalize', [PrescriptionController::class, 'finalize'])->name('prescriptions.finalize');
     Route::get('prescriptions/{prescription}/print', [PrescriptionController::class, 'print'])->name('prescriptions.print');
+    Route::get('prescriptions/{prescription}/pdf', [PrescriptionController::class, 'downloadPdf'])->name('prescriptions.pdf');
 
     // Pharmacy
     Route::get('pharmacy/expiry-alerts', [PharmacyController::class, 'expiryAlerts'])->name('pharmacy.expiry-alerts');

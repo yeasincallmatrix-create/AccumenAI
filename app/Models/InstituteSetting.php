@@ -26,7 +26,13 @@ class InstituteSetting extends Model
             'sales_config' => 'array',
             'purchase_config' => 'array',
             'training_config' => 'array',
+            'dgda_enabled' => 'boolean',
         ];
+    }
+
+    public function isDgdaEnabled(): bool
+    {
+        return (bool) $this->dgda_enabled;
     }
 
     public function institute(): BelongsTo

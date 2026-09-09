@@ -9,21 +9,31 @@ class StudentList extends DataTable
 {
     protected const VIEW = 'livewire.students.list';
 
+    public const AVAILABLE_COLUMNS = [
+        'serial', 'no', 'uid', 'roll', 'name', 'phone', 'email', 'reg',
+        'gender', 'dob', 'age', 'blood', 'religion', 'nationality',
+        'nid', 'passport', 'branch', 'guardian', 'admission', 'status', 'action',
+    ];
+
+    public const DEFAULT_COLUMNS = [
+        'serial', 'no', 'roll', 'name', 'phone', 'email', 'reg',
+        'gender', 'dob', 'age', 'blood', 'religion', 'nationality',
+        'nid', 'passport', 'branch', 'guardian', 'admission', 'status', 'action',
+    ];
+
     public array $visibleColumns = [];
 
     public function mount(): void
     {
         $user = auth()->user();
-        $this->visibleColumns = $user->preference('columns_students', [
-            'serial', 'no', 'roll', 'name', 'phone', 'email', 'reg',
-            'gender', 'dob', 'age', 'blood', 'religion', 'nationality',
-            'nid', 'passport', 'branch', 'guardian', 'admission', 'status', 'action',
-        ]);
-        $this->visibleColumns = array_values(array_intersect([
-            'serial', 'no', 'roll', 'name', 'phone', 'email', 'reg',
-            'gender', 'dob', 'age', 'blood', 'religion', 'nationality',
-            'nid', 'passport', 'branch', 'guardian', 'admission', 'status', 'action',
-        ], $this->visibleColumns));
+        $stored = $user?->preference('columns_students', self::DEFAULT_COLUMNS);
+        if (! is_array($stored)) {
+            $stored = self::DEFAULT_COLUMNS;
+        }
+        // Keep only known columns; fall back to defaults when nothing valid remains.
+        // NOTE: order follows AVAILABLE_COLUMNS so rendering stays stable.
+        $filtered = array_values(array_intersect(self::AVAILABLE_COLUMNS, $stored));
+        $this->visibleColumns = $filtered !== [] ? $filtered : self::DEFAULT_COLUMNS;
 
         $request = request();
         $this->filters = [
@@ -138,12 +148,21 @@ class StudentList extends DataTable
     {
         $user = auth()->user();
         if ($user && method_exists($user, 'preference')) {
+            // Sanitize before persisting so a stale/invalid value can never wipe the view.
+            $clean = array_values(array_intersect(self::AVAILABLE_COLUMNS, $this->visibleColumns));
+            if ($clean === []) {
+                return;
+            }
+            $this->visibleColumns = $clean;
             $user->setPreference('columns_students', $this->visibleColumns);
         }
     }
 
     public function toggleColumn(string $column): void
     {
+        if (! in_array($column, self::AVAILABLE_COLUMNS, true)) {
+            return;
+        }
         $index = array_search($column, $this->visibleColumns, true);
         if ($index !== false) {
             unset($this->visibleColumns[$index]);
@@ -151,6 +170,15 @@ class StudentList extends DataTable
         } else {
             $this->visibleColumns[] = $column;
         }
+        $this->saveColumns();
+    }
+
+    /**
+     * Auto-persist when `visibleColumns` is synced from the browser
+     * (e.g. localStorage restore via `$wire.set(...)`).
+     */
+    public function updatedVisibleColumns(): void
+    {
         $this->saveColumns();
     }
 

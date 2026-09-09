@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Medical;
 
 use App\Http\Requests\Medical\LabOrderRequest;
 use App\Http\Requests\Medical\LabResultRequest;
+use App\Models\Medical\ClinicalAuditLog;
 use App\Models\Medical\LabOrder;
 use App\Models\Medical\LabTest;
 use App\Models\Medical\Patient;
 use App\Models\Medical\Prescription;
-use App\Models\User;
 use App\Services\Medical\LabService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -60,11 +60,12 @@ class LabOrderController extends MedicalController implements HasMiddleware
             $query->whereDate('order_date', '<=', $request->to_date);
         }
 
+        if (($fence = $this->doctorFenceId()) !== null) {
+            $query->where('doctor_id', $fence);
+        }
+
         $orders = $query->orderBy('order_date', 'desc')->paginate(20)->withQueryString();
-        $patients = Patient::where('institute_id', $instituteId)
-            ->active()
-            ->orderBy('first_name')
-            ->get();
+        $patients = $this->ownPatientOptions($instituteId);
 
         return view('medical.lab.orders.index', compact('orders', 'patients'));
     }
@@ -72,18 +73,23 @@ class LabOrderController extends MedicalController implements HasMiddleware
     public function create(Request $request)
     {
         $instituteId = $this->instituteId();
+        $fence = $this->doctorFenceId();
 
-        $patients = Patient::where('institute_id', $instituteId)
-            ->active()
-            ->orderBy('first_name')
-            ->get();
+        $patients = $this->ownPatientOptions($instituteId, $fence);
         $doctors = $this->doctors();
+        if ($fence !== null) {
+            $doctors = $doctors->where('id', $fence)->values();
+        }
         $tests = LabTest::where('institute_id', $instituteId)
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
-        $prescriptions = Prescription::where('institute_id', $instituteId)
-            ->where('is_finalized', true)
+        $prescriptionQuery = Prescription::where('institute_id', $instituteId)
+            ->where('is_finalized', true);
+        if ($fence !== null) {
+            $prescriptionQuery->where('doctor_id', $fence);
+        }
+        $prescriptions = $prescriptionQuery
             ->orderBy('prescription_date', 'desc')
             ->limit(100)
             ->get();
@@ -92,12 +98,19 @@ class LabOrderController extends MedicalController implements HasMiddleware
         if ($request->filled('patient_id')) {
             $selectedPatient = Patient::where('institute_id', $instituteId)
                 ->find($request->patient_id);
+            if ($selectedPatient && ! $this->mayActOnPatient($selectedPatient, $fence)) {
+                abort(403, 'You do not have permission to book for this patient.');
+            }
         }
 
         $selectedPrescription = null;
         if ($request->filled('prescription_id')) {
             $selectedPrescription = Prescription::where('institute_id', $instituteId)
                 ->find($request->prescription_id);
+            if ($selectedPrescription && $fence !== null
+                && (int) $selectedPrescription->doctor_id !== $fence) {
+                abort(403, 'You do not have permission to access this prescription.');
+            }
         }
 
         return view('medical.lab.orders.create', compact(
@@ -111,6 +124,20 @@ class LabOrderController extends MedicalController implements HasMiddleware
         $tests = $data['tests'];
         unset($data['tests']);
 
+        if (($fence = $this->doctorFenceId()) !== null) {
+            $data['doctor_id'] = $fence;
+            $patient = Patient::where('institute_id', $this->instituteId())->findOrFail($data['patient_id']);
+            if (! $this->mayActOnPatient($patient, $fence)) {
+                abort(403, 'You do not have permission to book for this patient.');
+            }
+            if (! empty($data['prescription_id'])) {
+                $linked = Prescription::where('institute_id', $this->instituteId())->find($data['prescription_id']);
+                if (! $linked || (int) $linked->doctor_id !== $fence) {
+                    abort(403, 'You do not have permission to access this prescription.');
+                }
+            }
+        }
+
         $order = $this->labService->createOrder($data, $tests);
 
         return redirect()->route('medical.lab.orders.show', $order)
@@ -120,6 +147,7 @@ class LabOrderController extends MedicalController implements HasMiddleware
     public function show(LabOrder $order)
     {
         $this->ensureSameInstitute($order, 'order');
+        $this->ensureDoctorOwns($order, 'doctor_id', 'order');
         $order->load(['patient', 'doctor', 'prescription', 'results.labTest', 'collectedBy', 'completedBy']);
 
         return view('medical.lab.orders.show', compact('order'));
@@ -128,17 +156,18 @@ class LabOrderController extends MedicalController implements HasMiddleware
     public function edit(LabOrder $order)
     {
         $this->ensureSameInstitute($order, 'order');
+        $this->ensureDoctorOwns($order, 'doctor_id', 'order');
 
         if ($order->status !== 'ordered') {
             return redirect()->back()->with('error', 'Only orders with status "ordered" can be edited.');
         }
 
         $instituteId = $this->instituteId();
-        $patients = Patient::where('institute_id', $instituteId)
-            ->active()
-            ->orderBy('first_name')
-            ->get();
+        $patients = $this->ownPatientOptions($instituteId);
         $doctors = $this->doctors();
+        if (($fence = $this->doctorFenceId()) !== null) {
+            $doctors = $doctors->where('id', $fence)->values();
+        }
         $tests = LabTest::where('institute_id', $instituteId)
             ->where('is_active', true)
             ->orderBy('name')
@@ -152,6 +181,7 @@ class LabOrderController extends MedicalController implements HasMiddleware
     public function update(LabOrderRequest $request, LabOrder $order)
     {
         $this->ensureSameInstitute($order, 'order');
+        $this->ensureDoctorOwns($order, 'doctor_id', 'order');
 
         if ($order->status !== 'ordered') {
             return redirect()->back()->with('error', 'Only orders with status "ordered" can be updated.');
@@ -163,6 +193,9 @@ class LabOrderController extends MedicalController implements HasMiddleware
 
         // Header update; test set replaced wholesale (results still pending
         // at this stage, so no entered values are lost).
+        // Phase 01: snapshot header + test set for the amendment audit.
+        $original = ClinicalAuditLog::snapshot($order);
+        $originalTests = $order->results()->pluck('lab_test_id')->sort()->values()->all();
         $order->update($data);
         $order->results()->delete();
         foreach ($tests as $test) {
@@ -170,6 +203,15 @@ class LabOrderController extends MedicalController implements HasMiddleware
                 'lab_test_id' => $test['lab_test_id'],
                 'status' => 'pending',
             ]);
+        }
+        [$old, $new] = ClinicalAuditLog::diff($original, ClinicalAuditLog::snapshot($order->refresh()));
+        $newTests = collect($tests)->pluck('lab_test_id')->sort()->values()->all();
+        if ($originalTests !== $newTests) {
+            $old['tests'] = $originalTests;
+            $new['tests'] = $newTests;
+        }
+        if ($old !== [] || $new !== []) {
+            ClinicalAuditLog::record($order, 'updated', ['old' => $old, 'new' => $new]);
         }
 
         return redirect()->route('medical.lab.orders.show', $order)
@@ -179,12 +221,18 @@ class LabOrderController extends MedicalController implements HasMiddleware
     public function destroy(LabOrder $order)
     {
         $this->ensureSameInstitute($order, 'order');
+        $this->ensureDoctorOwns($order, 'doctor_id', 'order');
 
         if ($order->status !== 'ordered') {
             return redirect()->back()->with('error', 'Cannot delete orders that are being processed.');
         }
 
+        // Phase 03: deletion is archival (soft delete) so result rows are
+        // never vaporized by the database cascade; the audit keeps context.
         $order->results()->delete();
+        ClinicalAuditLog::record($order, 'deleted', [
+            'old' => ClinicalAuditLog::snapshot($order),
+        ]);
         $order->delete();
 
         return redirect()->route('medical.lab.orders.index')
@@ -194,6 +242,7 @@ class LabOrderController extends MedicalController implements HasMiddleware
     public function collect(LabOrder $order)
     {
         $this->ensureSameInstitute($order, 'order');
+        $this->ensureDoctorOwns($order, 'doctor_id', 'order');
 
         if ($order->status !== 'ordered') {
             return redirect()->back()->with('error', 'This order cannot be collected.');
@@ -207,12 +256,13 @@ class LabOrderController extends MedicalController implements HasMiddleware
 
     /**
      * Result entry form (GET is served by the same URI pattern through the
-     * `medical.lab.orders.result` POST route's companion view link — the
+     * `medical.lab.orders.result` POST route's companion view link â€” the
      * show page links here via query; see routes/medical.php).
      */
     public function resultForm(LabOrder $order)
     {
         $this->ensureSameInstitute($order, 'order');
+        $this->ensureDoctorOwns($order, 'doctor_id', 'order');
 
         if (! $order->readyForResults()) {
             return redirect()->back()->with('error', 'This order is not ready for results.');
@@ -229,12 +279,23 @@ class LabOrderController extends MedicalController implements HasMiddleware
     public function enterResult(LabResultRequest $request, LabOrder $order)
     {
         $this->ensureSameInstitute($order, 'order');
+        $this->ensureDoctorOwns($order, 'doctor_id', 'order');
 
         if (! $order->readyForResults()) {
             return redirect()->back()->with('error', 'This order is not ready for results.');
         }
 
+        // Phase 01: snapshot pending rows; entered values must stay attributable.
+        $before = $order->results()->get()->mapWithKeys(fn ($r) => [
+            $r->getKey() => ClinicalAuditLog::snapshot($r),
+        ])->all();
+
         $this->labService->enterResults($order, $request->validated()['results']);
+
+        $after = $order->results()->get()->mapWithKeys(fn ($r) => [
+            $r->getKey() => ClinicalAuditLog::snapshot($r->refresh()),
+        ])->all();
+        ClinicalAuditLog::record($order, 'result_entered', ['old' => $before, 'new' => $after]);
 
         return redirect()->route('medical.lab.orders.show', $order)
             ->with('status', 'Results entered successfully!');
@@ -243,6 +304,7 @@ class LabOrderController extends MedicalController implements HasMiddleware
     public function report(LabOrder $order)
     {
         $this->ensureSameInstitute($order, 'order');
+        $this->ensureDoctorOwns($order, 'doctor_id', 'order');
 
         if ($order->status !== 'completed') {
             return redirect()->back()->with('error', 'Report is only available for completed orders.');
@@ -254,11 +316,11 @@ class LabOrderController extends MedicalController implements HasMiddleware
     }
 
     /**
-     * Doctors available for ordering (same documented limitation as
-     * OPD/IPD: no institute↔doctor mapping exists yet).
+     * Doctors available for ordering â€” tenant-scoped to members/profile
+     * holders of this institute (Phase 02; validation enforces the same).
      */
     private function doctors()
     {
-        return User::where('status', 'active')->orderBy('name')->get();
+        return \App\Support\MedicalScope::instituteDoctors($this->instituteId());
     }
 }

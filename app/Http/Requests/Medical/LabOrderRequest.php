@@ -27,6 +27,12 @@ class LabOrderRequest extends FormRequest
             'doctor_id' => [
                 'required',
                 Rule::exists('users', 'id')->where(fn ($q) => $q->where('status', 'active')),
+                // Phase 02: the ordering doctor must belong to this institute.
+                function ($attribute, $value, $fail) use ($instituteId) {
+                    if (! MedicalScope::isDoctorInInstitute((int) $value, (int) $instituteId)) {
+                        $fail('Selected doctor does not belong to this institute.');
+                    }
+                },
             ],
             'prescription_id' => [
                 'nullable',

@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers\Medical;
 
+use App\Models\Medical\Admission;
+use App\Models\Medical\Appointment;
 use App\Models\Medical\Department;
 use App\Models\Medical\Doctor;
+use App\Models\Medical\LabOrder;
+use App\Models\Medical\Prescription;
 use App\Models\Medical\Specialty;
 use App\Models\Role;
 use App\Models\User;
@@ -69,10 +73,12 @@ class DoctorController extends MedicalController implements HasMiddleware
 
     public function create()
     {
+        $this->ensureDoctorAdmin();
         $instituteId = $this->instituteId();
         $departments = Department::where('institute_id', $instituteId)->active()->orderBy('name')->get();
         $specialties = Specialty::where('institute_id', $instituteId)->active()->orderBy('name')->get();
-        $users = User::where('status', 'active')->orderBy('name')->get();
+        // Phase 02: account picker is tenant-scoped (members/profile holders).
+        $users = \App\Support\MedicalScope::instituteDoctors($instituteId);
 
         // Roles for the quick "Add Doctor Account" popup (same scope as staff invite).
         $inviteRoles = Role::query()
@@ -138,6 +144,8 @@ class DoctorController extends MedicalController implements HasMiddleware
 
     public function store(Request $request)
     {
+        $this->ensureDoctorAdmin();
+        $this->normalizeExperience($request);
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'department_id' => 'nullable|exists:medical_departments,id',
@@ -149,6 +157,7 @@ class DoctorController extends MedicalController implements HasMiddleware
             'first_visit_fee' => 'nullable|numeric|min:0',
             'follow_up_fee' => 'nullable|numeric|min:0',
             'follow_up_days' => 'nullable|integer|min:1|max:365',
+            'collect_fee_before_visit' => 'nullable|boolean',
             'chamber_address' => 'nullable|string',
             'room_no' => 'nullable|string|max:50',
             'phone' => 'nullable|string|max:20',
@@ -160,6 +169,7 @@ class DoctorController extends MedicalController implements HasMiddleware
             'availabilities.*.start_time' => 'required|date_format:H:i',
             'availabilities.*.end_time' => 'required|date_format:H:i',
             'availabilities.*.slot_duration' => 'nullable|integer|min:5|max:60',
+            'availabilities.*.room_no' => 'nullable|string|max:50',
         ]);
 
         foreach ((array) ($validated['availabilities'] ?? []) as $avail) {
@@ -173,7 +183,9 @@ class DoctorController extends MedicalController implements HasMiddleware
         $this->assertNoDuplicateOrOverlappingAvailabilities((array) ($validated['availabilities'] ?? []));
 
         $validated['institute_id'] = $this->instituteId();
+        $this->assertUserInInstitute((int) $validated['user_id'], (int) $validated['institute_id']);
         $validated['is_active'] = $request->boolean('is_active', true);
+        $validated['collect_fee_before_visit'] = $request->boolean('collect_fee_before_visit', false);
         $availabilities = $validated['availabilities'] ?? null;
         unset($validated['availabilities']);
 
@@ -211,6 +223,7 @@ class DoctorController extends MedicalController implements HasMiddleware
                             'start_time' => $avail['start_time'],
                             'end_time' => $avail['end_time'],
                             'slot_duration' => $avail['slot_duration'] ?? 10,
+                            'room_no' => $avail['room_no'] ?? null,
                             'is_available' => true,
                         ]);
                     }
@@ -243,10 +256,12 @@ class DoctorController extends MedicalController implements HasMiddleware
     public function edit(Doctor $doctor)
     {
         $this->ensureSameInstitute($doctor, 'doctor');
+        $this->ensureDoctorAdmin();
         $instituteId = $this->instituteId();
         $departments = Department::where('institute_id', $instituteId)->active()->orderBy('name')->get();
         $specialties = Specialty::where('institute_id', $instituteId)->active()->orderBy('name')->get();
-        $users = User::where('status', 'active')->orderBy('name')->get();
+        // Phase 02: account picker is tenant-scoped (members/profile holders).
+        $users = \App\Support\MedicalScope::instituteDoctors($instituteId);
         $doctor->load('availabilities');
 
         return view('medical.doctors.edit', compact('doctor', 'departments', 'specialties', 'users'));
@@ -255,7 +270,9 @@ class DoctorController extends MedicalController implements HasMiddleware
     public function update(Request $request, Doctor $doctor)
     {
         $this->ensureSameInstitute($doctor, 'doctor');
+        $this->ensureDoctorAdmin();
 
+        $this->normalizeExperience($request);
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'department_id' => 'nullable|exists:medical_departments,id',
@@ -267,6 +284,7 @@ class DoctorController extends MedicalController implements HasMiddleware
             'first_visit_fee' => 'nullable|numeric|min:0',
             'follow_up_fee' => 'nullable|numeric|min:0',
             'follow_up_days' => 'nullable|integer|min:1|max:365',
+            'collect_fee_before_visit' => 'nullable|boolean',
             'chamber_address' => 'nullable|string',
             'room_no' => 'nullable|string|max:50',
             'phone' => 'nullable|string|max:20',
@@ -278,6 +296,7 @@ class DoctorController extends MedicalController implements HasMiddleware
             'availabilities.*.start_time' => 'required|date_format:H:i',
             'availabilities.*.end_time' => 'required|date_format:H:i',
             'availabilities.*.slot_duration' => 'nullable|integer|min:5|max:60',
+            'availabilities.*.room_no' => 'nullable|string|max:50',
         ]);
 
         foreach ((array) ($validated['availabilities'] ?? []) as $avail) {
@@ -290,7 +309,9 @@ class DoctorController extends MedicalController implements HasMiddleware
 
         $this->assertNoDuplicateOrOverlappingAvailabilities((array) ($validated['availabilities'] ?? []));
 
+        $this->assertUserInInstitute((int) $validated['user_id'], (int) $doctor->institute_id);
         $validated['is_active'] = $request->boolean('is_active', true);
+        $validated['collect_fee_before_visit'] = $request->boolean('collect_fee_before_visit', false);
         $availabilities = $validated['availabilities'] ?? null;
         unset($validated['availabilities']);
 
@@ -326,6 +347,7 @@ class DoctorController extends MedicalController implements HasMiddleware
                             'start_time' => $avail['start_time'],
                             'end_time' => $avail['end_time'],
                             'slot_duration' => $avail['slot_duration'] ?? 10,
+                            'room_no' => $avail['room_no'] ?? null,
                             'is_available' => true,
                         ]);
                     }
@@ -348,10 +370,64 @@ class DoctorController extends MedicalController implements HasMiddleware
     public function destroy(Doctor $doctor)
     {
         $this->ensureSameInstitute($doctor, 'doctor');
+        $this->ensureDoctorAdmin();
+
+        // Phase 03: the profile carries credential/fee context for existing
+        // rows (appointments, prescriptions, admissions, lab orders keyed by
+        // users.id survive a profile delete). Profiles with history stay —
+        // deactivate instead; history-free profiles may be removed.
+        $hasHistory = Appointment::where('institute_id', $doctor->institute_id)
+                ->where('doctor_id', $doctor->user_id)->exists()
+            || Prescription::where('institute_id', $doctor->institute_id)
+                ->where('doctor_id', $doctor->user_id)->exists()
+            || Admission::where('institute_id', $doctor->institute_id)
+                ->where('admitting_doctor_id', $doctor->user_id)->exists()
+            || LabOrder::where('institute_id', $doctor->institute_id)
+                ->where('doctor_id', $doctor->user_id)->exists();
+        if ($hasHistory) {
+            return redirect()->back()->with('error', 'Cannot remove a doctor with clinical history. Deactivate the profile instead.');
+        }
+
         $doctor->delete();
 
         return redirect()->route('medical.doctors.index')
             ->with('status', 'Doctor removed successfully!');
+    }
+
+    /**
+     * Doctor profiles are managed by administrators only — a fenced doctor
+     * may neither edit/delete others' profiles nor their own.
+     */
+    private function ensureDoctorAdmin(): void
+    {
+        if ($this->doctorFenceId() !== null) {
+            abort(403, 'Only administrators may manage doctor profiles.');
+        }
+    }
+
+    /**
+     * Phase 02: the linked account must belong to this institute (active
+     * membership or existing Doctor profile) — a global user id from
+     * another institute is rejected instead of linked.
+     */
+    private function assertUserInInstitute(int $userId, int $instituteId): void
+    {
+        if (! \App\Support\MedicalScope::isDoctorInInstitute($userId, $instituteId)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'user_id' => 'The selected account does not belong to this institute.',
+            ]);
+        }
+    }
+
+    /**
+     * Normalize experience years before validation: "07" → 7, "7.5" → 7.
+     * Anything non-numeric is left untouched for the validator to reject.
+     */
+    private function normalizeExperience(Request $request): void
+    {
+        if ($request->filled('experience_years') && is_numeric($request->input('experience_years'))) {
+            $request->merge(['experience_years' => (int) floor((float) $request->input('experience_years'))]);
+        }
     }
 
     /**

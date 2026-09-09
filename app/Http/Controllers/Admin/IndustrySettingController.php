@@ -12,44 +12,16 @@ use Illuminate\View\View;
 
 class IndustrySettingController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request)
     {
-        $industries = IndustryRules::industries(null);
+        // Abolished as a standalone page — served as a pane inside
+        // Configuration Center. Query params are carried over.
+        $url = route('admin.platform-settings.index', array_filter(
+            $request->only(['industry', 'country', 'sub_industry']),
+            fn ($v) => $v !== null && $v !== ''
+        )).'#pane-industry';
 
-        $selectedKey = $request->query('industry');
-        if ($selectedKey === null || $selectedKey === '' || ! array_key_exists($selectedKey, $industries)) {
-            $selectedKey = 'all';
-        }
-
-        $selectedLabel = $selectedKey === 'all'
-            ? 'All Industries'
-            : $industries[$selectedKey];
-
-        $country = $request->query('country');
-        $country = is_string($country) && array_key_exists($country, config('countries', [])) ? $country : null;
-
-        $subIndustries = $selectedKey === 'all'
-            ? []
-            : IndustryRules::subIndustries($country ?? '', $selectedKey);
-
-        $subIndustry = $request->query('sub_industry');
-        $subIndustry = is_string($subIndustry)
-            && $selectedKey !== 'all'
-            && array_key_exists($subIndustry, $subIndustries)
-            ? $subIndustry
-            : null;
-
-        return view('admin.industry-settings.index', [
-            'industries' => $industries,
-            'selectedKey' => $selectedKey,
-            'selectedLabel' => $selectedLabel,
-            'country' => $country,
-            'subIndustry' => $subIndustry,
-            'subIndustries' => $subIndustries,
-            'themes' => Theme::query()->where('status', 'active')->orderByDesc('is_default')->orderBy('name')->get(),
-            'allThemes' => Theme::query()->orderByDesc('is_default')->orderBy('name')->get(),
-            'setting' => IndustrySetting::query()->where('industry_key', $selectedKey)->first(),
-        ]);
+        abort(redirect($url, 301));
     }
 
     public function updateTheme(Request $request): RedirectResponse
@@ -75,9 +47,9 @@ class IndustrySettingController extends Controller
             ['theme_slug' => $theme->slug]
         );
 
-        $url = $data['industry_key'] === 'all'
-            ? route('admin.industry-settings')
-            : route('admin.industry-settings', ['industry' => $data['industry_key']]);
+        $url = route('admin.platform-settings.index', $data['industry_key'] === 'all'
+            ? []
+            : ['industry' => $data['industry_key']]).'#pane-industry';
 
         return redirect($url)->with('status', "Default theme set for {$data['industry_key']}.");
     }

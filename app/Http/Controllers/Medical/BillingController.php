@@ -32,22 +32,26 @@ class BillingController extends MedicalController implements HasMiddleware
     public function index()
     {
         $instituteId = $this->instituteId();
+        $fence = $this->doctorFenceId();
 
-        $revenue = $this->billingService->getRevenueSummary($instituteId, 'month');
+        $revenue = $this->billingService->getRevenueSummary($instituteId, 'month', $fence);
 
         $recentInvoices = Invoice::where('institute_id', $instituteId)
+            ->visibleToDoctor($instituteId, $fence)
             ->with(['patient'])
             ->orderBy('invoice_date', 'desc')
             ->limit(10)
             ->get();
 
         $dueInvoices = Invoice::where('institute_id', $instituteId)
+            ->visibleToDoctor($instituteId, $fence)
             ->whereIn('status', ['pending', 'partial'])
             ->orderBy('due_date')
             ->limit(10)
             ->get();
 
         $outstanding = Invoice::where('institute_id', $instituteId)
+            ->visibleToDoctor($instituteId, $fence)
             ->whereIn('status', ['pending', 'partial'])
             ->sum('due_amount');
 

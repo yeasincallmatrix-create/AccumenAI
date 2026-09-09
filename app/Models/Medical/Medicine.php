@@ -26,6 +26,11 @@ class Medicine extends Model
         'reorder_quantity',
         'requires_prescription',
         'is_controlled',
+        'dgda_code',
+        'dgda_dar_number',
+        'dgda_concept_id',
+        'dgda_synced_at',
+        'dgda_status',
         'side_effects',
         'contraindications',
         'storage_conditions',
@@ -42,6 +47,7 @@ class Medicine extends Model
         'requires_prescription' => 'boolean',
         'is_controlled' => 'boolean',
         'is_active' => 'boolean',
+        'dgda_synced_at' => 'datetime',
     ];
 
     public function institute()
@@ -59,11 +65,19 @@ class Medicine extends Model
         return $query->where('is_active', true);
     }
 
+    /**
+     * Phase 02: keyword alternatives are grouped so a chained
+     * where('institute_id', ...) can never be escaped by the ORs.
+     */
     public function scopeSearch($query, $search)
     {
-        return $query->where('generic_name', 'LIKE', "%{$search}%")
-            ->orWhere('brand_name', 'LIKE', "%{$search}%")
-            ->orWhere('code', 'LIKE', "%{$search}%");
+        return $query->where(function ($q) use ($search) {
+            $q->where('generic_name', 'LIKE', "%{$search}%")
+                ->orWhere('brand_name', 'LIKE', "%{$search}%")
+                ->orWhere('code', 'LIKE', "%{$search}%")
+                ->orWhere('dgda_code', 'LIKE', "%{$search}%")
+                ->orWhere('dgda_dar_number', 'LIKE', "%{$search}%");
+        });
     }
 
     public function getTotalStockAttribute()

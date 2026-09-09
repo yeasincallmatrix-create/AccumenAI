@@ -4,6 +4,7 @@ namespace App\Services\Medical;
 
 use App\Models\Medical\Medicine;
 use App\Models\Medical\Patient;
+use App\Models\Medical\PatientAllergy;
 use App\Support\MedicalScope;
 use Illuminate\Support\Collection;
 
@@ -33,6 +34,10 @@ class DrugSafetyService
 
     /**
      * Check for drug allergies in a patient.
+     *
+     * Structured patient_allergies rows win when they match; the legacy
+     * free-text allergies column remains as fallback. Any match blocks,
+     * exactly like the legacy path.
      */
     public function checkAllergies(Patient $patient, int $medicineId): array
     {
@@ -40,6 +45,11 @@ class DrugSafetyService
 
         if (! $medicine) {
             return ['has_allergy' => false, 'message' => null, 'severity' => null];
+        }
+
+        $structured = $this->matchStructuredAllergy($patient, $medicine);
+        if ($structured !== null) {
+            return $structured;
         }
 
         $patientAllergies = $patient->allergies ?? '';
@@ -74,8 +84,65 @@ class DrugSafetyService
     }
 
     /**
-     * Check drug-drug interaction between two medicines.
+     * Match the structured patient_allergies rows against a medicine:
+     * direct medicine link, or allergen name vs generic/brand/category.
+     * Returns the match result or null when nothing matches.
      */
+    private function matchStructuredAllergy(Patient $patient, Medicine $medicine): ?array
+    {
+        try {
+            $rows = PatientAllergy::where('institute_id', $patient->institute_id)
+                ->where('patient_id', $patient->id)
+                ->get();
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if ($rows->isEmpty()) {
+            return null;
+        }
+
+        $generic = strtolower(trim((string) $medicine->generic_name));
+        $brand = strtolower(trim((string) ($medicine->brand_name ?? '')));
+        $category = strtolower(trim((string) ($medicine->category ?? '')));
+
+        // Most severe first so the headline match is the critical one.
+        $rank = ['severe' => 0, 'moderate' => 1, 'mild' => 2];
+        $best = null;
+        $bestRank = 99;
+
+        foreach ($rows as $row) {
+            $name = strtolower(trim((string) $row->allergen_name));
+            $matched = ((int) ($row->medicine_id ?? 0) === (int) $medicine->id && (int) $medicine->id > 0)
+                || ($name !== '' && (
+                    ($generic !== '' && $name === $generic)
+                    || ($brand !== '' && $name === $brand)
+                    || ($category !== '' && $name === $category)
+                ));
+            if (! $matched) {
+                continue;
+            }
+            $r = $rank[strtolower((string) $row->severity)] ?? 1;
+            if ($r < $bestRank) {
+                $bestRank = $r;
+                $best = $row;
+            }
+        }
+
+        if ($best === null) {
+            return null;
+        }
+
+        $severity = strtolower((string) $best->severity) === 'severe'
+            ? self::SEVERITY_HIGH
+            : self::SEVERITY_MEDIUM;
+
+        $message = 'Patient has allergy to: '.$best->allergen_name
+            .($best->reaction ? ' (reaction: '.$best->reaction.')' : '')
+            .($best->is_verified ? ' [verified]' : ' [unverified]');
+
+        return ['has_allergy' => true, 'message' => $message, 'severity' => $severity];
+    }
     public function checkInteraction(int $instituteId, int $medicineId1, int $medicineId2): array
     {
         $med1 = $this->findMedicine($instituteId, $medicineId1);

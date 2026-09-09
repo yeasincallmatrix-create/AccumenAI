@@ -66,6 +66,19 @@
                         <label class="form-label" for="experience_years">Experience (yrs)</label>
                         <input type="number" id="experience_years" name="experience_years" class="form-control @error('experience_years') is-invalid @enderror" value="{{ old('experience_years', 0) }}" min="0">
                         @error('experience_years')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <script>
+                        (function () {
+                            var el = document.getElementById('experience_years');
+                            if (!el) return;
+                            el.addEventListener('change', function () {
+                                var raw = (el.value || '').trim();
+                                if (raw === '') return;
+                                var n = Number(raw);
+                                if (!isFinite(n) || n < 0) return;
+                                el.value = String(Math.floor(n));
+                            });
+                        })();
+                        </script>
                     </div>
                 </div>
                 <div class="col-md-2">
@@ -154,6 +167,32 @@
                         @error('bio')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Visit Fee Collection</label>
+                        <div class="form-check form-switch">
+                            <input type="checkbox" id="collect_fee_before_visit" name="collect_fee_before_visit" value="1" class="form-check-input" {{ old('collect_fee_before_visit', false) ? 'checked' : '' }}>
+                            <label class="form-check-label" for="collect_fee_before_visit" id="feeToggleLabel">Post-visit</label>
+                        </div>
+                        <div class="form-text" id="feeToggleHelp">Fee collected after prescription.</div>
+                        @error('collect_fee_before_visit')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+                <script>
+                (function () {
+                    var t = document.getElementById('collect_fee_before_visit');
+                    if (!t) return;
+                    function syncFeeToggle() {
+                        var on = t.checked;
+                        var label = document.getElementById('feeToggleLabel');
+                        var help = document.getElementById('feeToggleHelp');
+                        if (label) label.textContent = on ? 'Pre-visit' : 'Post-visit';
+                        if (help) help.textContent = on ? 'Fee collected before entering chamber.' : 'Fee collected after prescription.';
+                    }
+                    t.addEventListener('change', syncFeeToggle);
+                    syncFeeToggle();
+                })();
+                </script>
                 <div class="col-md-12">
                     <div class="form-check mb-3">
                         <input type="checkbox" id="is_active" name="is_active" value="1" class="form-check-input" {{ old('is_active', true) ? 'checked' : '' }}>

@@ -1,4 +1,4 @@
-﻿/* ===================== Cards (unified) ===================== */
+/* ===================== Cards (unified) ===================== */
 
 /* Bootstrap ships hardcoded #0d6efd custom properties on these classes;
    re-point them at the active theme so buttons/dropdowns/pills/pagination
@@ -147,15 +147,41 @@ vertical-align:middle;
 .drag-handle:active{cursor:grabbing;opacity:.9;}
 #assignmentTable tbody tr,
 #coursesTable tbody tr,
-#certificatesTable tbody tr{transition:background-color .12s ease, transform .28s cubic-bezier(.2,.85,.35,1);}
+#certificatesTable tbody tr,
+#institutesTable tbody tr,
+#subjectsTable tbody tr,
+#archiveTable tbody tr,
+#trainingCertificatesTable tbody tr,
+#studentsTable tbody tr,
+#requestsTable tbody tr,
+#courseMasterTable tbody tr,
+#curriculaTable tbody tr,
+#institutesBinTable tbody tr,
+#examsTable tbody tr,
+#resultsTable tbody tr,
+#appointmentsTable tbody tr,
+#queueTable tbody tr{transition:background-color .12s ease, transform .28s cubic-bezier(.2,.85,.35,1);}
 #assignmentTable tbody tr.dragging td,
 #coursesTable tbody tr.dragging td,
-#certificatesTable tbody tr.dragging td{
+#certificatesTable tbody tr.dragging td,
+#institutesTable tbody tr.dragging td,
+#subjectsTable tbody tr.dragging td,
+#archiveTable tbody tr.dragging td,
+#trainingCertificatesTable tbody tr.dragging td,
+#studentsTable tbody tr.dragging td,
+#requestsTable tbody tr.dragging td,
+#courseMasterTable tbody tr.dragging td,
+#curriculaTable tbody tr.dragging td,
+#institutesBinTable tbody tr.dragging td,
+#examsTable tbody tr.dragging td,
+#resultsTable tbody tr.dragging td,
+#appointmentsTable tbody tr.dragging td,
+#queueTable tbody tr.dragging td{
 background:#fff;
 position:relative;
 z-index:10;
 transform:translateY(-4px) scale(1.1);
-box-shadow:0 20px 35px rgba(13,110,253,.18), 0 8px 16px rgba(0,0,0,.10);
+box-shadow:0 8px 16px rgba(13,110,253,.16), 0 3px 6px rgba(0,0,0,.12);
 transition:transform .22s cubic-bezier(.2,.85,.35,1), box-shadow .22s ease;
 color:#000;
 }
@@ -164,16 +190,73 @@ color:#000;
 #coursesTable tbody tr.dragging td a,
 #coursesTable tbody tr.dragging td .text-muted,
 #certificatesTable tbody tr.dragging td a,
-#certificatesTable tbody tr.dragging td .text-muted{color:#000!important;}
+#certificatesTable tbody tr.dragging td .text-muted,
+#institutesTable tbody tr.dragging td a,
+#institutesTable tbody tr.dragging td .text-muted,
+#subjectsTable tbody tr.dragging td a,
+#subjectsTable tbody tr.dragging td .text-muted,
+#archiveTable tbody tr.dragging td a,
+#archiveTable tbody tr.dragging td .text-muted,
+#trainingCertificatesTable tbody tr.dragging td a,
+#trainingCertificatesTable tbody tr.dragging td .text-muted,
+#studentsTable tbody tr.dragging td a,
+#studentsTable tbody tr.dragging td .text-muted,
+#requestsTable tbody tr.dragging td a,
+#requestsTable tbody tr.dragging td .text-muted,
+#courseMasterTable tbody tr.dragging td a,
+#courseMasterTable tbody tr.dragging td .text-muted,
+#curriculaTable tbody tr.dragging td a,
+#curriculaTable tbody tr.dragging td .text-muted,
+#institutesBinTable tbody tr.dragging td a,
+#institutesBinTable tbody tr.dragging td .text-muted,
+#examsTable tbody tr.dragging td a,
+#examsTable tbody tr.dragging td .text-muted,
+#resultsTable tbody tr.dragging td a,
+#resultsTable tbody tr.dragging td .text-muted,
+#appointmentsTable tbody tr.dragging td a,
+#appointmentsTable tbody tr.dragging td .text-muted,
+#queueTable tbody tr.dragging td a,
+#queueTable tbody tr.dragging td .text-muted{color:#000!important;}
 #assignmentTable tbody tr.dragging td:first-child,
 #coursesTable tbody tr.dragging td:first-child,
-#certificatesTable tbody tr.dragging td:first-child{
+#certificatesTable tbody tr.dragging td:first-child,
+#institutesTable tbody tr.dragging td:first-child,
+#subjectsTable tbody tr.dragging td:first-child,
+#archiveTable tbody tr.dragging td:first-child,
+#trainingCertificatesTable tbody tr.dragging td:first-child,
+#studentsTable tbody tr.dragging td:first-child,
+#requestsTable tbody tr.dragging td:first-child,
+#courseMasterTable tbody tr.dragging td:first-child,
+#curriculaTable tbody tr.dragging td:first-child,
+#institutesBinTable tbody tr.dragging td:first-child,
+#examsTable tbody tr.dragging td:first-child,
+#resultsTable tbody tr.dragging td:first-child,
+#appointmentsTable tbody tr.dragging td:first-child,
+#queueTable tbody tr.dragging td:first-child{
 border-radius:12px 0 0 12px;
 border-left:4px solid var(--bs-primary);
 }
 #assignmentTable tbody tr.dragging td:last-child,
 #coursesTable tbody tr.dragging td:last-child,
-#certificatesTable tbody tr.dragging td:last-child{border-radius:0 12px 12px 0;}
+#certificatesTable tbody tr.dragging td:last-child,
+#institutesTable tbody tr.dragging td:last-child,
+#subjectsTable tbody tr.dragging td:last-child,
+#archiveTable tbody tr.dragging td:last-child,
+#trainingCertificatesTable tbody tr.dragging td:last-child,
+#studentsTable tbody tr.dragging td:last-child,
+#requestsTable tbody tr.dragging td:last-child,
+#courseMasterTable tbody tr.dragging td:last-child,
+#curriculaTable tbody tr.dragging td:last-child,
+#institutesBinTable tbody tr.dragging td:last-child,
+#examsTable tbody tr.dragging td:last-child,
+#resultsTable tbody tr.dragging td:last-child,
+#appointmentsTable tbody tr.dragging td:last-child,
+#queueTable tbody tr.dragging td:last-child{border-radius:0 12px 12px 0;}
+#medical-queue-list tr.dragging td{background:#fff;position:relative;z-index:10;transform:translateY(-4px) scale(1.02);box-shadow:0 28px 56px rgba(13,110,253,.24), 0 14px 28px rgba(0,0,0,.18);transition:transform .22s cubic-bezier(.2,.85,.35,1), box-shadow .22s ease;color:#000;}
+#medical-queue-list tr.dragging td a,#medical-queue-list tr.dragging td .text-muted{color:#000!important;}
+#medical-queue-list tr.dragging td:first-child{border-radius:12px 0 0 12px;border-left:4px solid var(--bs-primary);}
+#medical-queue-list tr.dragging td:last-child{border-radius:0 12px 12px 0;}
+#appointmentsTable tbody tr.dragging,#medical-queue-list tr.dragging{filter:drop-shadow(0 6px 8px rgba(13,110,253,.20)) drop-shadow(0 2px 4px rgba(0,0,0,.14));}
 
 .stat-card .num{
 font-size:28px;
@@ -742,7 +825,7 @@ border:2px solid var(--white);
 
 /* ===================== Connectivity signal at the avatar corner =====================
    Replaces the static green presence dot: pins the signal's box at the avatar's
-   bottom-right so its CENTER lands on the 44px circular image's edge — the circle
+   bottom-right so its CENTER lands on the 44px circular image's edge � the circle
    cuts through the dot's middle (was :right/bottom:-1px, floated outside it).
    Ripple rings overflow the box but stay clipped by the sidebar. */
 
@@ -1430,7 +1513,7 @@ html.monetix-dark .colhdr-pop input[type="date"] {
 }
 html.monetix-dark .colhdr-actions { border-color: #2a2f3a; }
 
-/* ===================== Global Glass Effect — Popups =====================
+/* ===================== Global Glass Effect � Popups =====================
    Non-destructive trap fix: backdrop is purely visual, never blocks clicks
    when hidden; modal always sits above backdrop even after frequent open/close
    on same page (seamless-fade / loadPage swaps). */
@@ -1458,7 +1541,7 @@ html.monetix-dark .modal-backdrop{
 html.monetix-dark .modal-backdrop.show{
     background:rgba(255,255,255,.05) !important;
 }
-/* Modal must always stack above the glass backdrop — prevents "trapped under
+/* Modal must always stack above the glass backdrop � prevents "trapped under
    effect" when Bootstrap creates a new backdrop on frequent same-page opens. */
 .modal{
     z-index:1055 !important;
@@ -1489,7 +1572,7 @@ body:not(.modal-open) .modal-backdrop{
     display:none !important;
     pointer-events:none !important;
 }
-/* Avoid double blur stacking when user spams the trigger — only the
+/* Avoid double blur stacking when user spams the trigger � only the
    topmost backdrop paints the blur. Keep underlying layers transparent. */
 .modal-backdrop ~ .modal-backdrop{
     background:transparent !important;
@@ -1500,19 +1583,19 @@ body:not(.modal-open) .modal-backdrop{
     background:transparent !important;
 }
 /* Full-page lock fix: if no modal is actually visible, ensure page remains
-   scrollable — handles orphan lock after frequent open/close without reload. */
+   scrollable � handles orphan lock after frequent open/close without reload. */
 body:not(:has(.modal.show)){
     overflow:auto !important;
 }
 
 /* ===================== Popup / Dropdown escape fix (non-destructive) =====================
    Fixes trapped dropdowns/menus that were clipped by ancestor overflow.
-   No HTML structure change — only overflow/position tweaks.
+   No HTML structure change � only overflow/position tweaks.
    Covers: .table-responsive, .card, .admin-card, .filter-card, .modal-body,
            .colhdr-pop, .inst-list, .phone-country-list, and generic dropdowns.
    --------------------------------------------------------------------------- */
 
-/* 1) Let Bootstrap dropdowns float above clipping ancestors — high z-index + solid visual */
+/* 1) Let Bootstrap dropdowns float above clipping ancestors � high z-index + solid visual */
 .dropdown-menu{
     z-index: 1085 !important;
     --bs-dropdown-zindex: 1085;
@@ -1541,7 +1624,7 @@ body:not(:has(.modal.show)){
 .card.popup-open .table-responsive{
     overflow: visible !important;
 }
-/* Fallback via :has() — works even before JS loads */
+/* Fallback via :has() � works even before JS loads */
 .table-responsive:has(.dropdown-menu.show),
 .table-responsive:has(.colhdr-pop:not([hidden])),
 .table-responsive:has(.inst-list.open),
@@ -1567,7 +1650,7 @@ body:not(:has(.modal.show)){
 }
 
 /* 5) Generic escape for any card-like wrapper that may have overflow hidden
-      for border-radius — keep radius but do not clip dropdowns */
+      for border-radius � keep radius but do not clip dropdowns */
 .card:has(.dropdown-menu.show),
 .admin-card:has(.dropdown-menu.show){
     overflow: visible !important;
@@ -1579,7 +1662,7 @@ th:has(.colhdr-pop:not([hidden])),
     overflow: visible !important;
 }
 
-/* 7) Visual clarity — opaque background, strong shadow, no blur bleed
+/* 7) Visual clarity � opaque background, strong shadow, no blur bleed
       Fixes "popup visual not clear" where glass backdrop / low contrast
       made menus look washed out. Purely visual, no structure change. */
 .dropdown-menu,
@@ -1676,22 +1759,22 @@ html.monetix-dark .breadcrumb-item.active{
     color:#8ba0b8;
 }
 
-/* ===================== Shallow Depth — iPhone Portrait (non-destructive) =====================
+/* ===================== Shallow Depth � iPhone Portrait (non-destructive) =====================
    Upgrade over the 6px glass: true depth-of-field like iPhone portrait background.
    - Backdrop: 18-22px bokeh blur + warm saturate + soft vignette dim
    - Foreground modal: crisp frosted glass, lifted shadow, subtle border
    - Background page (.content/.sidebar/.topbar) gently blurs/scales when modal open
-   No HTML/route change — pure CSS override, layered after existing glass rules.
+   No HTML/route change � pure CSS override, layered after existing glass rules.
    --------------------------------------------------------------------------- */
 
-/* 1) Backdrop — stronger bokeh (was blur(6px)) */
+/* 1) Backdrop � stronger bokeh (was blur(6px)) */
 .modal-backdrop{
     background:rgba(248,249,250,.34) !important;
     backdrop-filter:blur(20px) saturate(1.75) brightness(1.04) !important;
     -webkit-backdrop-filter:blur(20px) saturate(1.75) brightness(1.04) !important;
     transition:opacity .42s cubic-bezier(.22,1,.36,1), backdrop-filter .42s ease !important;
 }
-/* subtle vignette + light tint via extra layer — paints under the blur */
+/* subtle vignette + light tint via extra layer � paints under the blur */
 .modal-backdrop.show{
     background:
         radial-gradient(1200px 600px at 50% -10%, rgba(255,255,255,.55) 0%, transparent 60%),
@@ -1728,7 +1811,7 @@ body.modal-open div.topbar{
     filter:blur(1.2px) saturate(.94) brightness(.985) !important;
     transition:filter .45s cubic-bezier(.22,1,.36,1) !important;
 }
-/* release immediately when closing — no lingering blur */
+/* release immediately when closing � no lingering blur */
 body:not(.modal-open) .layout > .content,
 body:not(.modal-open) main.content,
 body:not(.modal-open) .sidebar,
@@ -1736,7 +1819,7 @@ body:not(.modal-open) div.topbar{
     transition:filter .32s ease, transform .32s ease !important;
 }
 
-/* 3) Foreground modal — crisp frosted glass lifted off the creamy background */
+/* 3) Foreground modal � crisp frosted glass lifted off the creamy background */
 .modal-content{
     background:rgba(255,255,255,.88) !important;
     backdrop-filter:blur(16px) saturate(1.5) !important;
@@ -1780,7 +1863,7 @@ html.monetix-dark .modal-footer{
     border-top-color:rgba(255,255,255,.08) !important;
 }
 
-/* 4) Entrance — gentle scale + fade like iOS sheet (replaces Bootstrap slide) */
+/* 4) Entrance � gentle scale + fade like iOS sheet (replaces Bootstrap slide) */
 .modal.fade .modal-dialog{
     transform:scale(.96) translateY(8px) !important;
     opacity:0 !important;
@@ -1791,7 +1874,7 @@ html.monetix-dark .modal-footer{
     transform:scale(1) translateY(0) !important;
     opacity:1 !important;
 }
-/* keep maximized edit modal crisp — no scale bounce */
+/* keep maximized edit modal crisp � no scale bounce */
 #editStudentModal.monetix-maximized.modal.show .modal-dialog{
     transform:none !important;
 }

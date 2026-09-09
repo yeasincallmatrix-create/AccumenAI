@@ -35,6 +35,8 @@ class QueueManager
             ->where('doctor_id', $doctorId)
             ->whereDate('appointment_date', $date)
             ->whereIn('status', ['scheduled', 'checked_in', 'in_progress'])
+            // Manual drag-and-drop order first; never-reordered rows keep serial order.
+            ->orderByRaw('queue_order IS NULL, queue_order ASC')
             ->orderBy('serial_number')
             ->get();
 
@@ -46,6 +48,7 @@ class QueueManager
             'estimated_wait_minutes' => $appointments->whereIn('status', ['scheduled', 'checked_in'])->count() * 10,
             'queue' => $appointments->map(function ($appointment) {
                 return [
+                    'id' => $appointment->id,
                     'serial' => $appointment->serial_number,
                     'patient_name' => $appointment->patient->full_name ?? 'N/A',
                     'status' => $appointment->status,

@@ -8,6 +8,7 @@ $initial = collect(old('availabilities', []))->map(function ($a) {
         'start' => $a['start_time'] ?? '',
         'end' => $a['end_time'] ?? '',
         'duration' => $a['slot_duration'] ?? 10,
+        'room' => $a['room_no'] ?? '',
     ];
 })->values()->all();
 
@@ -18,12 +19,13 @@ if (empty($initial) && isset($doctor) && $doctor->relationLoaded('availabilities
             'start' => substr((string) $a->start_time, 0, 5),
             'end' => substr((string) $a->end_time, 0, 5),
             'duration' => $a->slot_duration ?? 10,
+            'room' => $a->room_no ?? '',
         ];
     })->values()->all();
 }
 
 if (empty($initial)) {
-    $initial = [['day' => '', 'start' => '09:00', 'end' => '17:00', 'duration' => 10]];
+    $initial = [['day' => '', 'start' => '09:00', 'end' => '17:00', 'duration' => 10, 'room' => '']];
 }
 @endphp
 
@@ -31,7 +33,7 @@ if (empty($initial)) {
     <div class="card-header d-flex justify-content-between align-items-center">
         <strong><i class="bi bi-calendar-week me-1"></i>Weekly Availability</strong>
         <button type="button" class="btn btn-sm btn-outline-primary" id="availability-add-btn"
-                @click="availabilities.push({ day: '', start: '09:00', end: '17:00', duration: 10 })">
+                @click="availabilities.push({ day: '', start: '09:00', end: '17:00', duration: 10, room: '' })">
             <i class="bi bi-plus-lg me-1"></i>Add Availability
         </button>
     </div>
@@ -45,7 +47,7 @@ if (empty($initial)) {
         </template>
         <template x-for="(avail, index) in availabilities" :key="index">
             <div class="row g-2 mb-2 align-items-center" data-avail-row>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <select :name="`availabilities[${index}][day]`" x-model="avail.day" class="form-select" data-avail-day required>
                         <option value="">Select Day</option>
                         @foreach($days as $val => $label)
@@ -61,7 +63,11 @@ if (empty($initial)) {
                 </div>
                 <div class="col-md-2">
                     <input type="number" :name="`availabilities[${index}][slot_duration]`" class="form-control"
-                           x-model.number="avail.duration" min="5" max="60" placeholder="min">
+                           x-model.number="avail.duration" min="5" max="60" placeholder="min" title="Slot length (minutes)">
+                </div>
+                <div class="col-md-2">
+                    <input type="text" :name="`availabilities[${index}][room_no]`" class="form-control" data-avail-room
+                           x-model="avail.room" maxlength="50" placeholder="Room no." title="Room no.">
                 </div>
                 <div class="col-md-2">
                     <button type="button" class="btn btn-outline-danger btn-sm w-100"
@@ -179,6 +185,26 @@ if (empty($initial)) {
         }
     });
 
+    // Default each row's Room no. from the doctor-level Room field above.
+    // Only fills rows that are still empty, so per-day edits are preserved.
+    const roomSrc = document.getElementById('room_no');
+    function applyDefaultRoom() {
+        if (!roomSrc) return;
+        const def = roomSrc.value.trim();
+        if (!def) return;
+        card.querySelectorAll('[data-avail-room]').forEach(function (input) {
+            if (input.value.trim() === '') {
+                input.value = def;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        });
+    }
+    roomSrc?.addEventListener('input', applyDefaultRoom);
+    document.getElementById('availability-add-btn')?.addEventListener('click', function () {
+        setTimeout(applyDefaultRoom, 0);
+    });
+
     render();
+    applyDefaultRoom();
 })();
 </script>

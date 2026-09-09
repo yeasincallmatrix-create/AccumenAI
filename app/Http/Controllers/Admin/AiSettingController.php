@@ -107,7 +107,7 @@ class AiSettingController extends Controller
         );
 
         if ($request->input('return_to') === 'hub') {
-            return redirect(route('admin.settings.index').'#pane-ai')
+            return redirect(route('admin.platform-settings.index').'#pane-admin-ai')
                 ->with('status', 'AI settings saved.');
         }
 

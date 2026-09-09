@@ -11,6 +11,9 @@
         <button type="button" class="btn btn-primary" onclick="window.print()">
             <i class="bi bi-printer me-1"></i>Print
         </button>
+        <a class="btn btn-outline-primary" href="{{ route('medical.prescriptions.pdf', $prescription) }}">
+            <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+        </a>
         <a class="btn btn-secondary" href="{{ route('medical.prescriptions.show', $prescription) }}">
             <i class="bi bi-arrow-left me-1"></i>Back
         </a>
@@ -46,13 +49,14 @@
 
         <table class="table table-bordered align-middle">
             <thead>
-                <tr><th>#</th><th>Medicine</th><th>Dosage</th><th>Frequency</th><th>Duration</th><th>Qty</th></tr>
+                <tr><th>#</th><th>Medicine</th>@if(mawa_dgda_enabled())<th>DGDA Code</th>@endif<th>Dosage</th><th>Frequency</th><th>Duration</th><th>Qty</th></tr>
             </thead>
             <tbody>
                 @foreach($items as $i => $item)
                 <tr>
                     <td>{{ $i + 1 }}</td>
                     <td>{{ $item->medicine_name }}</td>
+                    @if(mawa_dgda_enabled())<td><code>{{ $item->dgda_code ?? '—' }}</code></td>@endif
                     <td>{{ $item->dosage }}</td>
                     <td>{{ $item->frequency }}</td>
                     <td>{{ $item->duration_days ? $item->duration_days.' days' : '—' }}</td>
@@ -69,7 +73,17 @@
         <div class="text-end mt-5">
             <p class="mb-0">______________________</p>
             <p class="text-muted">Doctor's Signature</p>
+            @if($prescription->signed_at)
+                <p class="text-muted small mb-0">Signed {{ $prescription->signed_at->format('d M Y, h:i A') }} · <code>{{ substr((string) $prescription->signature_hash, 0, 16) }}…</code></p>
+            @endif
         </div>
+
+        @if(!empty($qr))
+            <div class="mt-4 d-flex align-items-center gap-3">
+                <img src="{{ $qr }}" alt="Verification QR" width="100" height="100">
+                <small class="text-muted">Scan to verify this prescription<br><code>{{ $verifyCode ?? '' }}</code></small>
+            </div>
+        @endif
     </div>
 </div>
 

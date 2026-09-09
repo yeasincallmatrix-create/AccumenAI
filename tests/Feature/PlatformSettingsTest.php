@@ -78,7 +78,7 @@ class PlatformSettingsTest extends TestCase
         $this->assertStringNotContainsString('supersecret123', $html);
         $this->assertStringContainsString('Configured', $html);
 
-        $html2 = $this->get(route('admin.settings.index'))->assertOk()->getContent();
+        $html2 = $this->get(route('admin.platform-settings.index'))->assertOk()->getContent();
         $this->assertStringNotContainsString('supersecret123', $html2);
         // mail_payment GET view does not exist as standalone route — index pane is used; ensure password not leaked there
         $this->assertStringNotContainsString('supersecret123', $html2);

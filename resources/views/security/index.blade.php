@@ -1,6 +1,6 @@
 @extends('layouts.standalone')
 
-@php $backUrl = $securityGuard === 'platform_admin' ? route('admin.settings.index') : route('settings.index'); @endphp
+@php $backUrl = $securityGuard === 'platform_admin' ? route('admin.platform-settings.index').'#pane-admin-security' : route('settings.index'); @endphp
 
 @section('title', mawa_e('security.title') . ' — AccumenAI')
 @section('page_title', mawa_e('security.title'))

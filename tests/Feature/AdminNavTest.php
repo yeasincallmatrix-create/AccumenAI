@@ -64,7 +64,8 @@ class AdminNavTest extends TestCase
         $this->get(route('admin.students.index'))->assertOk()->assertSee('Student Registration');
         $this->get(route('admin.certificates.index'))->assertOk()->assertSee('Certificates');
         $this->get(route('admin.notifications.index'))->assertOk()->assertSee('Notifications');
-        $this->get(route('admin.settings.index'))->assertOk()->assertSee('Staff Requests');
+        $this->get(route('admin.settings.index'))->assertRedirect(route('admin.platform-settings.index').'#pane-admin-account');
+        $this->get(route('admin.platform-settings.index'))->assertOk()->assertSee('Staff Requests');
         $this->get(route('admin.settings.account'))->assertOk()->assertSee('Email');
         $this->get(route('admin.settings.password'))->assertOk()->assertSee('Current Password');
         $this->get(route('admin.settings.staff'))->assertOk()->assertSee('Approve');
@@ -165,15 +166,19 @@ class AdminNavTest extends TestCase
         TenantContext::clear();
         $this->actingAs($this->platformAdmin(), 'platform_admin');
 
+        // Abolished standalone page: redirects into Configuration Center.
         $this->get(route('admin.industry-settings'))
+            ->assertRedirect(route('admin.platform-settings.index').'#pane-industry');
+
+        $this->get(route('admin.platform-settings.index'))
             ->assertOk()
             ->assertSee('All Industries Settings');
 
-        $this->get(route('admin.industry-settings', ['industry' => 'education']))
+        $this->get(route('admin.platform-settings.index', ['industry' => 'education']))
             ->assertOk()
             ->assertSee('Education Settings');
 
-        $this->get(route('admin.industry-settings', ['industry' => 'finance']))
+        $this->get(route('admin.platform-settings.index', ['industry' => 'finance']))
             ->assertOk()
             ->assertSee('Finance &amp; Banking Settings', false);
     }
@@ -185,11 +190,11 @@ class AdminNavTest extends TestCase
 
         $this->get(route('dashboard', ['industry' => 'education']))
             ->assertOk()
-            ->assertSee(route('admin.industry-settings', ['industry' => 'education']), false);
+            ->assertSee(route('admin.platform-settings.index', ['industry' => 'education']).'#pane-industry', false);
 
         $this->get(route('dashboard'))
             ->assertOk()
-            ->assertSee(route('admin.industry-settings'), false);
+            ->assertSee(route('admin.platform-settings.index').'#pane-industry', false);
     }
 
     public function test_education_institute_sidebar_shows_classes_subjects_button(): void
