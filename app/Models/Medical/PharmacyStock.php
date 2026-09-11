@@ -11,6 +11,7 @@ class PharmacyStock extends Model
 
     protected $fillable = [
         'institute_id',
+        'branch_id',
         'medicine_id',
         'batch_number',
         'manufacturing_date',
@@ -37,6 +38,11 @@ class PharmacyStock extends Model
     public function institute()
     {
         return $this->belongsTo(Institute::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(\App\Models\Branch::class);
     }
 
     public function medicine()

@@ -2,40 +2,45 @@
 
 namespace App\Services\Medical;
 
-use App\Models\Medical\Patient;
+use App\Models\Medical\NumberSequence;
 use App\Support\MedicalScope;
 
 /**
- * Generate a unique patient ID in format: YY + 3-digit random.
- * Example: 26047 (year 2026, random 047).
- * Total: 5 digits, purely numeric, unique per tenant (institute).
+ * Phase 04 — MR numbers are database-backed sequences (MR-YYYY-III-NNNNN),
+ * allocated via NumberSequenceService. Replaces the legacy YY + 3-digit
+ * random scheme (5-digit numerics in a disjoint namespace — historical rows
+ * are untouched and can never collide with the new format).
+ *
+ * The institute id stays an optional argument (PatientController passes it
+ * explicitly; web-guard callers without one fall back to MedicalScope).
+ */
+/**
+ * Phase 04 — MR numbers are database-backed sequences (MR-YYYY-III-NNNNN),
+ * allocated via NumberSequenceService. Historical 5-digit numerics live in
+ * a disjoint namespace and can never collide with this format.
  *
  * The institute id stays an optional argument (PatientController passes it
  * explicitly; web-guard callers without one fall back to MedicalScope).
  */
 class MrNumberGenerator
 {
+    public function __construct(private readonly NumberSequenceService $sequences) {}
+
     public function generate(?int $instituteId = null): string
     {
         $instituteId ??= MedicalScope::getInstituteId();
 
-        $yy = date('y'); // Last 2 digits of year (e.g. 26)
-
-        do {
-            $random = str_pad((string) random_int(0, 999), 3, '0', STR_PAD_LEFT);
-            $number = $yy.$random;
-        } while ($this->exists($number, $instituteId));
-
-        return $number;
+        return $this->sequences->next(NumberSequence::TYPE_MR, $instituteId);
     }
 
     /**
-     * Check if the generated number already exists for this tenant.
+     * Non-consuming estimate for form previews ("next MR will likely be…").
+     * Must never be stored — concurrent allocations may land first.
      */
-    private function exists(string $number, int $instituteId): bool
+    public function peek(?int $instituteId = null): string
     {
-        return Patient::where('institute_id', $instituteId)
-            ->where('mr_number', $number)
-            ->exists();
+        $instituteId ??= MedicalScope::getInstituteId();
+
+        return $this->sequences->peek(NumberSequence::TYPE_MR, $instituteId);
     }
 }

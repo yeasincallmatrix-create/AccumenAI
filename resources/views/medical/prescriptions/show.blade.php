@@ -90,12 +90,13 @@
             <div class="table-responsive">
                 <table class="table table-sm table-hover align-middle">
                     <thead>
-                        <tr><th>Medicine</th><th>DGDA Code</th><th>Dosage</th><th>Frequency</th><th>Days</th><th>Qty</th><th>Status</th><th></th></tr>
+                        <tr><th>Medicine</th>@if(mawa_dgda_enabled())<th>DGDA Code</th>@endif<th>Dosage</th><th>Frequency</th><th>Days</th><th>Qty</th><th>Status</th><th></th></tr>
                     </thead>
                     <tbody>
                         @foreach($prescription->items as $item)
                         <tr>
                             <td>{{ $item->medicine_name }}</td>
+                            @if(mawa_dgda_enabled())
                             <td>
                                 @if($item->dgda_code)
                                     <span class="badge bg-success">DGDA: {{ $item->dgda_code }}</span>
@@ -103,6 +104,7 @@
                                     <span class="badge bg-warning text-dark" title="No DGDA code — registry sync pending">DGDA sync pending</span>
                                 @endif
                             </td>
+                            @endif
                             <td>{{ $item->dosage }}</td>
                             <td>{{ $item->frequency }}</td>
                             <td>{{ $item->duration_days ?? '—' }}</td>
@@ -165,4 +167,48 @@
         @endif
     </div>
 </div>
+
+@if($prescription->cdsFindings->isNotEmpty())
+<div class="card mt-3">
+    <div class="card-header"><h6 class="mb-0">Clinical Safety Findings ({{ $prescription->cdsFindings->count() }})</h6></div>
+    <div class="card-body">
+        @foreach($prescription->cdsFindings as $finding)
+            <div class="alert alert-{{ $finding->severity === 'CRITICAL' ? 'danger' : ($finding->severity === 'HIGH' ? 'warning' : 'info') }} mb-2">
+                <strong>[{{ $finding->severity }}] {{ $finding->status }}</strong>
+                {{ $finding->message }}
+                @if(is_array($finding->explanation))
+                    <br><small class="text-muted">
+                        {{ $finding->explanation['why'] ?? '' }}
+                        {{ $finding->explanation['evidence'] ?? '' }}
+                        {{ $finding->explanation['action'] ?? '' }}
+                    </small>
+                @endif
+                @if($finding->ruleVersion && $finding->ruleVersion->rule)
+                    <br><small class="text-muted">Rule {{ $finding->ruleVersion->rule->rule_key }} v{{ $finding->ruleVersion->version }} · {{ $finding->evaluated_at?->format('d M Y, h:i A') }}</small>
+                @endif
+                @if(in_array($finding->status, ['open', 'acknowledged'], true))
+                    <form action="{{ route('medical.prescriptions.findings.resolve', [$prescription, $finding]) }}" method="POST" class="row g-2 mt-1">
+                        @csrf
+                        <div class="col-md-3">
+                            <select name="action" class="form-select form-select-sm" required>
+                                <option value="acknowledge">Acknowledge</option>
+                                <option value="override">Override (needs reason)</option>
+                                <option value="resolve">Resolve</option>
+                            </select>
+                        </div>
+                        <div class="col-md-7">
+                            <input type="text" name="reason" class="form-control form-control-sm" maxlength="2000" placeholder="Reason (required for override)">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-sm btn-secondary w-100">Apply</button>
+                        </div>
+                    </form>
+                @elseif($finding->resolution_reason)
+                    <br><small class="text-muted">Resolution: {{ $finding->resolution_reason }}</small>
+                @endif
+            </div>
+        @endforeach
+    </div>
+</div>
+@endif
 @endsection

@@ -26,7 +26,7 @@ class LabOrderController extends MedicalController implements HasMiddleware
         return [
             new Middleware('permission:medical_lab.view', only: ['index', 'show', 'report']),
             new Middleware('permission:medical_lab.create', only: ['create', 'store']),
-            new Middleware('permission:medical_lab.edit', only: ['edit', 'update', 'collect', 'enterResult']),
+            new Middleware('permission:medical_lab.edit', only: ['edit', 'update', 'collect', 'enterResult', 'cancel']),
             new Middleware('permission:medical_lab.delete', only: ['destroy']),
         ];
     }
@@ -43,6 +43,8 @@ class LabOrderController extends MedicalController implements HasMiddleware
         $instituteId = $this->instituteId();
         $query = LabOrder::where('institute_id', $instituteId)
             ->with(['patient', 'doctor']);
+        // Phase 18: branch fence (context branch + legacy NULLs).
+        $this->scopeBranch($query);
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -80,12 +82,19 @@ class LabOrderController extends MedicalController implements HasMiddleware
         if ($fence !== null) {
             $doctors = $doctors->where('id', $fence)->values();
         }
+        // Phase 18: hide clinicians assigned exclusively to other branches.
+        if ($this->branchContextId() !== null) {
+            $allowed = $this->branchDoctorUserIds($this->branchContextId(), $instituteId);
+            $doctors = $doctors->whereIn('id', $allowed)->values();
+        }
         $tests = LabTest::where('institute_id', $instituteId)
             ->where('is_active', true)
             ->orderBy('name')
             ->get();
         $prescriptionQuery = Prescription::where('institute_id', $instituteId)
             ->where('is_finalized', true);
+        // Phase 18: prescription picker follows the branch fence.
+        $this->scopeBranch($prescriptionQuery);
         if ($fence !== null) {
             $prescriptionQuery->where('doctor_id', $fence);
         }
@@ -110,6 +119,11 @@ class LabOrderController extends MedicalController implements HasMiddleware
             if ($selectedPrescription && $fence !== null
                 && (int) $selectedPrescription->doctor_id !== $fence) {
                 abort(403, 'You do not have permission to access this prescription.');
+            }
+            // Phase 18: never pre-select a foreign-branch prescription.
+            if ($selectedPrescription
+                && ! \App\Support\BranchContext::allows($selectedPrescription->branch_id ?? null)) {
+                $selectedPrescription = null;
             }
         }
 
@@ -138,6 +152,55 @@ class LabOrderController extends MedicalController implements HasMiddleware
             }
         }
 
+        // Optional encounter link: same institute + same patient (legacy and
+        // encounter-less orders keep NULL).
+        $encounter = null;
+        if (! empty($data['encounter_id'])) {
+            $encounter = \App\Models\Medical\Encounter::where('institute_id', $this->instituteId())
+                ->findOrFail($data['encounter_id']);
+            if ((int) $encounter->patient_id !== (int) $data['patient_id']) {
+                return redirect()->back()
+                    ->with('error', 'The selected encounter belongs to a different patient.')
+                    ->withInput();
+            }
+            if (($fence ?? null) !== null && (int) $encounter->doctor_id !== (int) $fence) {
+                abort(403, 'You do not have permission to use this encounter.');
+            }
+            $this->ensureBranchAccess($encounter, 'branch_id', 'encounter');
+        }
+        // Phase 18: branch ownership inherits the linked encounter's branch
+        // (deterministic); an explicit contradicting branch is rejected.
+        $requestedBranch = $request->input('branch_id');
+        if ($encounter && $encounter->branch_id !== null) {
+            if ($requestedBranch !== null && $requestedBranch !== ''
+                && (int) $requestedBranch !== (int) $encounter->branch_id) {
+                return redirect()->back()
+                    ->with('error', 'The lab order branch must match its encounter branch.')
+                    ->withInput();
+            }
+            $data['branch_id'] = $encounter->branch_id;
+        } else {
+            $data['branch_id'] = $this->resolveBranchId($requestedBranch);
+        }
+        if (! $this->doctorBranchOk((int) $data['doctor_id'], $data['branch_id'], $this->instituteId())) {
+            return redirect()->back()
+                ->with('error', 'The selected doctor is not assigned to this branch.')
+                ->withInput();
+        }
+        // Phase 18: a linked prescription must be branch-compatible.
+        if (! empty($data['prescription_id'])) {
+            $linkedRx = Prescription::where('institute_id', $this->instituteId())->find($data['prescription_id']);
+            if ($linkedRx) {
+                $this->ensureBranchAccess($linkedRx, 'branch_id', 'prescription');
+                if ($data['branch_id'] !== null && $linkedRx->branch_id !== null
+                    && (int) $linkedRx->branch_id !== (int) $data['branch_id']) {
+                    return redirect()->back()
+                        ->with('error', 'The prescription belongs to another branch.')
+                        ->withInput();
+                }
+            }
+        }
+
         $order = $this->labService->createOrder($data, $tests);
 
         return redirect()->route('medical.lab.orders.show', $order)
@@ -148,6 +211,7 @@ class LabOrderController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($order, 'order');
         $this->ensureDoctorOwns($order, 'doctor_id', 'order');
+        $this->ensureBranchAccess($order, 'branch_id', 'order');
         $order->load(['patient', 'doctor', 'prescription', 'results.labTest', 'collectedBy', 'completedBy']);
 
         return view('medical.lab.orders.show', compact('order'));
@@ -157,6 +221,7 @@ class LabOrderController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($order, 'order');
         $this->ensureDoctorOwns($order, 'doctor_id', 'order');
+        $this->ensureBranchAccess($order, 'branch_id', 'order');
 
         if ($order->status !== 'ordered') {
             return redirect()->back()->with('error', 'Only orders with status "ordered" can be edited.');
@@ -167,6 +232,11 @@ class LabOrderController extends MedicalController implements HasMiddleware
         $doctors = $this->doctors();
         if (($fence = $this->doctorFenceId()) !== null) {
             $doctors = $doctors->where('id', $fence)->values();
+        }
+        // Phase 18: hide clinicians assigned exclusively to other branches.
+        if ($this->branchContextId() !== null) {
+            $allowed = $this->branchDoctorUserIds($this->branchContextId(), $instituteId);
+            $doctors = $doctors->whereIn('id', $allowed)->values();
         }
         $tests = LabTest::where('institute_id', $instituteId)
             ->where('is_active', true)
@@ -182,6 +252,7 @@ class LabOrderController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($order, 'order');
         $this->ensureDoctorOwns($order, 'doctor_id', 'order');
+        $this->ensureBranchAccess($order, 'branch_id', 'order');
 
         if ($order->status !== 'ordered') {
             return redirect()->back()->with('error', 'Only orders with status "ordered" can be updated.');
@@ -190,6 +261,8 @@ class LabOrderController extends MedicalController implements HasMiddleware
         $data = $request->validated();
         $tests = $data['tests'];
         unset($data['tests'], $data['doctor_id']);
+        // Phase 18: branch identity never moves between records.
+        unset($data['branch_id']);
 
         // Header update; test set replaced wholesale (results still pending
         // at this stage, so no entered values are lost).
@@ -222,6 +295,7 @@ class LabOrderController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($order, 'order');
         $this->ensureDoctorOwns($order, 'doctor_id', 'order');
+        $this->ensureBranchAccess($order, 'branch_id', 'order');
 
         if ($order->status !== 'ordered') {
             return redirect()->back()->with('error', 'Cannot delete orders that are being processed.');
@@ -239,10 +313,43 @@ class LabOrderController extends MedicalController implements HasMiddleware
             ->with('status', 'Lab order deleted successfully!');
     }
 
+    /**
+     * Phase 15 — Cancel a lab order (ordered→cancelled). Cancellation is a
+     * status with audit, never a delete: the row stays historically visible.
+     * Only untouched (ordered) rows can be cancelled; collected/processing
+     * rows keep flowing through results so lab history is never rewritten.
+     */
+    public function cancel(Request $request, LabOrder $order)
+    {
+        $this->ensureSameInstitute($order, 'order');
+        $this->ensureDoctorOwns($order, 'doctor_id', 'order');
+        $this->ensureBranchAccess($order, 'branch_id', 'order');
+
+        if ($order->status !== 'ordered') {
+            return redirect()->back()->with('error', 'Only uncollected orders can be cancelled.');
+        }
+
+        $reason = trim((string) $request->input('reason', ''));
+        if ($reason === '') {
+            return redirect()->back()->with('error', 'A cancellation reason is required.');
+        }
+
+        $order->update(['status' => 'cancelled']);
+        ClinicalAuditLog::record($order, 'cancelled', [
+            'old' => ['status' => 'ordered'],
+            'new' => ['status' => 'cancelled'],
+            'reason' => $reason,
+        ]);
+
+        return redirect()->route('medical.lab.orders.show', $order)
+            ->with('status', 'Lab order cancelled (history preserved).');
+    }
+
     public function collect(LabOrder $order)
     {
         $this->ensureSameInstitute($order, 'order');
         $this->ensureDoctorOwns($order, 'doctor_id', 'order');
+        $this->ensureBranchAccess($order, 'branch_id', 'order');
 
         if ($order->status !== 'ordered') {
             return redirect()->back()->with('error', 'This order cannot be collected.');
@@ -263,6 +370,7 @@ class LabOrderController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($order, 'order');
         $this->ensureDoctorOwns($order, 'doctor_id', 'order');
+        $this->ensureBranchAccess($order, 'branch_id', 'order');
 
         if (! $order->readyForResults()) {
             return redirect()->back()->with('error', 'This order is not ready for results.');
@@ -280,6 +388,7 @@ class LabOrderController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($order, 'order');
         $this->ensureDoctorOwns($order, 'doctor_id', 'order');
+        $this->ensureBranchAccess($order, 'branch_id', 'order');
 
         if (! $order->readyForResults()) {
             return redirect()->back()->with('error', 'This order is not ready for results.');
@@ -305,6 +414,7 @@ class LabOrderController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($order, 'order');
         $this->ensureDoctorOwns($order, 'doctor_id', 'order');
+        $this->ensureBranchAccess($order, 'branch_id', 'order');
 
         if ($order->status !== 'completed') {
             return redirect()->back()->with('error', 'Report is only available for completed orders.');

@@ -117,6 +117,24 @@ class AppServiceProvider extends ServiceProvider
             }
         } catch (\Throwable $e) {}
 
+        // Phase 09 — pin the MySQL session timezone to the application
+        // timezone. TIMESTAMP columns convert session↔UTC while DATETIME/DATE
+        // columns are wall time, so every timestamp semantic (whereDate on
+        // created_at,SoftDeletes comparisons, audit ordering) silently depends
+        // on the *server* timezone otherwise. Deriving the offset from the
+        // named app timezone keeps one predictable interpretation no matter
+        // where MySQL runs; on Dhaka-timed servers this is a verified no-op.
+        // Named zones need tz tables many hosts lack, hence the numeric offset
+        // (correct for the no-DST Asia/Dhaka default; revisit in Phase 25).
+        try {
+            if (\Illuminate\Support\Facades\DB::getDriverName() === 'mysql') {
+                \Illuminate\Support\Facades\DB::statement(
+                    'SET time_zone = ?',
+                    [now()->format('P')]
+                );
+            }
+        } catch (\Throwable $e) {}
+
         // Prevent stale module_access cache for ALL users (P0 fix for Supermarket 17 etc.)
         // Any change to institute package must invalidate the cached enabled-modules.
         Institute::created(function (Institute $institute) {

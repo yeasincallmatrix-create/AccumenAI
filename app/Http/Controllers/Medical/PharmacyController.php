@@ -51,15 +51,21 @@ class PharmacyController extends MedicalController implements HasMiddleware
     {
         $instituteId = $this->instituteId();
 
-        $pending = $this->prescriptionService->getPendingPrescriptions($instituteId);
-        $lowStock = $this->stockService->getLowStockItems($instituteId);
-        $expirySummary = $this->expiryService->getAlertSummary($instituteId);
+        // Phase 18.1: dashboard widgets are branch-filtered in SQL via the
+        // service layer (no PHP post-filtering).
+        $ctxBranch = $this->branchContextId();
+        $pending = $this->prescriptionService->getPendingPrescriptions($instituteId, $ctxBranch);
+        $lowStock = $this->stockService->getLowStockItems($instituteId, $ctxBranch);
+        $expirySummary = $this->expiryService->getAlertSummary($instituteId, $ctxBranch);
 
-        $todayDispenses = PharmacyDispense::where('institute_id', $instituteId)
+        $dispenseQuery = PharmacyDispense::where('institute_id', $instituteId);
+        // Phase 18: dispense history follows the branch fence.
+        $this->scopeBranch($dispenseQuery);
+        $todayDispenses = (clone $dispenseQuery)
             ->whereDate('dispense_date', today())
             ->count();
 
-        $recentDispenses = PharmacyDispense::where('institute_id', $instituteId)
+        $recentDispenses = $dispenseQuery
             ->with(['prescriptionItem.prescription.patient', 'stock.medicine'])
             ->orderBy('id', 'desc')
             ->limit(10)
@@ -80,8 +86,9 @@ class PharmacyController extends MedicalController implements HasMiddleware
     public function expiryAlerts()
     {
         $instituteId = $this->instituteId();
-        $alerts = $this->expiryService->checkAndAlert($instituteId);
-        $summary = $this->expiryService->getAlertSummary($instituteId);
+        $ctxBranch = $this->branchContextId();
+        $alerts = $this->expiryService->checkAndAlert($instituteId, $ctxBranch);
+        $summary = $this->expiryService->getAlertSummary($instituteId, $ctxBranch);
 
         return view('medical.pharmacy.stock.expiry', compact('alerts', 'summary'));
     }
@@ -92,13 +99,15 @@ class PharmacyController extends MedicalController implements HasMiddleware
     public function dispenseQueue()
     {
         $instituteId = $this->instituteId();
-        $prescriptions = $this->prescriptionService->getPendingPrescriptions($instituteId);
+        // Phase 18.1: queue + availability overlay branch-filtered in SQL.
+        $ctxBranch = $this->branchContextId();
+        $prescriptions = $this->prescriptionService->getPendingPrescriptions($instituteId, $ctxBranch);
 
         // Availability overlay per pending item.
         foreach ($prescriptions as $prescription) {
             foreach ($prescription->items as $item) {
                 if ($item->status === 'pending' && $item->medicine_id) {
-                    $item->available_stock = $this->stockService->getAvailableStock($instituteId, $item->medicine_id);
+                    $item->available_stock = $this->stockService->getAvailableStock($instituteId, $item->medicine_id, $ctxBranch);
                     $item->is_available = $item->available_stock >= $item->quantity;
                 }
             }
@@ -131,6 +140,8 @@ class PharmacyController extends MedicalController implements HasMiddleware
         if (! $prescriptionItem->prescription->is_finalized) {
             return redirect()->back()->with('error', 'Only finalized prescriptions can be dispensed.');
         }
+        // Phase 18: dispensing follows the prescription's branch fence.
+        $this->ensureBranchAccess($prescriptionItem->prescription, 'branch_id', 'prescription');
 
         // FEFO batches for the linked medicine (free-text items cannot be
         // dispensed from stock).
@@ -138,10 +149,12 @@ class PharmacyController extends MedicalController implements HasMiddleware
         $unmapped = ! $prescriptionItem->medicine_id;
         if (! $unmapped) {
             try {
+                // Phase 18.1: FEFO batches branch-filtered in SQL.
                 $batches = $this->stockService->getStockBatches(
                     $instituteId,
                     $prescriptionItem->medicine_id,
-                    $prescriptionItem->quantity
+                    $prescriptionItem->quantity,
+                    $this->branchContextId()
                 );
             } catch (\Throwable) {
                 $batches = [];
@@ -171,6 +184,8 @@ class PharmacyController extends MedicalController implements HasMiddleware
         if (! $item->prescription->is_finalized) {
             return redirect()->back()->with('error', 'Only finalized prescriptions can be dispensed.');
         }
+        // Phase 18: dispensing follows the prescription's branch fence.
+        $this->ensureBranchAccess($item->prescription, 'branch_id', 'prescription');
 
         if (! $item->medicine_id) {
             return redirect()->back()->with('error', 'Free-text items cannot be dispensed from stock.');
@@ -185,6 +200,13 @@ class PharmacyController extends MedicalController implements HasMiddleware
 
         if (! $stock) {
             return redirect()->back()->with('error', 'Selected batch does not match this medicine.');
+        }
+        // Phase 18: a branched prescription dispenses from its own branch
+        // (or legacy batches); cross-branch dispensing is rejected.
+        $rxBranch = $item->prescription->branch_id;
+        if ($rxBranch !== null && $stock->branch_id !== null
+            && (int) $stock->branch_id !== (int) $rxBranch) {
+            return redirect()->back()->with('error', 'Selected batch belongs to another branch.');
         }
 
         // Single-dispense semantics: the full prescribed quantity at once.
@@ -203,6 +225,11 @@ class PharmacyController extends MedicalController implements HasMiddleware
 
         PharmacyDispense::create([
             'institute_id' => $instituteId,
+            // Phase 18: dispense inherits the prescription's branch
+            // (deterministic), else the batch branch, else context.
+            'branch_id' => $item->prescription->branch_id
+                ?? $stock->branch_id
+                ?? $this->branchContextId(),
             'prescription_item_id' => $item->id,
             'stock_id' => $stock->id,
             'quantity_dispensed' => (int) $data['quantity_dispensed'],
@@ -224,6 +251,8 @@ class PharmacyController extends MedicalController implements HasMiddleware
     public function batchDispense(Request $request, Prescription $prescription)
     {
         $this->ensureSameInstitute($prescription, 'prescription');
+        // Phase 18: batch dispensing follows the prescription's branch fence.
+        $this->ensureBranchAccess($prescription, 'branch_id', 'prescription');
 
         if (! $this->prescriptionService->canDispense($prescription)) {
             return redirect()->back()->with('error', 'No pending items to dispense.');
@@ -242,12 +271,29 @@ class PharmacyController extends MedicalController implements HasMiddleware
 
             try {
                 $splits = $this->stockService->getStockBatches($instituteId, $item->medicine_id, $item->quantity);
+                // Phase 18: branched prescriptions draw own-branch + legacy
+                // batches only (FEFO allocation itself stays institute-wide;
+                // per-branch reservation is deferred inventory work).
+                if ($prescription->branch_id !== null) {
+                    $batchBranches = \App\Models\Medical\PharmacyStock::where('institute_id', $instituteId)
+                        ->whereIn('id', collect($splits)->pluck('stock_id')->all())
+                        ->pluck('branch_id', 'id');
+                    $splits = array_values(array_filter($splits, function ($split) use ($batchBranches, $prescription) {
+                        $b = $batchBranches[$split['stock_id']] ?? null;
+
+                        return $b === null || (int) $b === (int) $prescription->branch_id;
+                    }));
+                    if (array_sum(array_column($splits, 'quantity')) < $item->quantity) {
+                        throw new \RuntimeException('Insufficient stock in this branch for full quantity.');
+                    }
+                }
 
                 foreach ($splits as $split) {
                     $this->stockService->deductStock($instituteId, $split['stock_id'], $split['quantity']);
 
                     PharmacyDispense::create([
                         'institute_id' => $instituteId,
+                        'branch_id' => $prescription->branch_id,
                         'prescription_item_id' => $item->id,
                         'stock_id' => $split['stock_id'],
                         'quantity_dispensed' => $split['quantity'],

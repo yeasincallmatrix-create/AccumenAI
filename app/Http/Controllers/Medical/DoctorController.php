@@ -256,7 +256,7 @@ class DoctorController extends MedicalController implements HasMiddleware
     public function edit(Doctor $doctor)
     {
         $this->ensureSameInstitute($doctor, 'doctor');
-        $this->ensureDoctorAdmin();
+        $this->ensureDoctorAdminOrSelf($doctor);
         $instituteId = $this->instituteId();
         $departments = Department::where('institute_id', $instituteId)->active()->orderBy('name')->get();
         $specialties = Specialty::where('institute_id', $instituteId)->active()->orderBy('name')->get();
@@ -270,7 +270,7 @@ class DoctorController extends MedicalController implements HasMiddleware
     public function update(Request $request, Doctor $doctor)
     {
         $this->ensureSameInstitute($doctor, 'doctor');
-        $this->ensureDoctorAdmin();
+        $this->ensureDoctorAdminOrSelf($doctor);
 
         $this->normalizeExperience($request);
         $validated = $request->validate([
@@ -310,6 +310,10 @@ class DoctorController extends MedicalController implements HasMiddleware
         $this->assertNoDuplicateOrOverlappingAvailabilities((array) ($validated['availabilities'] ?? []));
 
         $this->assertUserInInstitute((int) $validated['user_id'], (int) $doctor->institute_id);
+        // Fenced doctors cannot reassign the profile to another account.
+        if (($fence = $this->doctorFenceId()) !== null) {
+            $validated['user_id'] = $fence;
+        }
         $validated['is_active'] = $request->boolean('is_active', true);
         $validated['collect_fee_before_visit'] = $request->boolean('collect_fee_before_visit', false);
         $availabilities = $validated['availabilities'] ?? null;
@@ -395,13 +399,29 @@ class DoctorController extends MedicalController implements HasMiddleware
     }
 
     /**
-     * Doctor profiles are managed by administrators only — a fenced doctor
-     * may neither edit/delete others' profiles nor their own.
+     * Doctor profile creation and deletion are administrators-only —
+     * blocked for every fenced doctor.
      */
     private function ensureDoctorAdmin(): void
     {
         if ($this->doctorFenceId() !== null) {
             abort(403, 'Only administrators may manage doctor profiles.');
+        }
+    }
+
+    /**
+     * A fenced doctor may edit their OWN profile info, but never another
+     * doctor's. Unfenced (admin-side) users pass through to the permission
+     * middleware as before.
+     */
+    private function ensureDoctorAdminOrSelf(Doctor $doctor): void
+    {
+        $fence = $this->doctorFenceId();
+        if ($fence === null) {
+            return;
+        }
+        if ((int) $doctor->user_id !== $fence) {
+            abort(403, 'Only administrators may manage other doctors.');
         }
     }
 

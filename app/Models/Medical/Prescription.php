@@ -12,8 +12,10 @@ class Prescription extends Model
 
     protected $fillable = [
         'institute_id',
+        'branch_id',
         'patient_id',
         'doctor_id',
+        'encounter_id',
         'prescription_number',
         'prescription_date',
         'diagnosis',
@@ -39,6 +41,11 @@ class Prescription extends Model
         return $this->belongsTo(Institute::class);
     }
 
+    public function branch()
+    {
+        return $this->belongsTo(\App\Models\Branch::class);
+    }
+
     public function patient()
     {
         return $this->belongsTo(Patient::class);
@@ -57,6 +64,15 @@ class Prescription extends Model
     public function auditLogs()
     {
         return $this->hasMany(PrescriptionAuditLog::class);
+    }
+
+    /**
+     * Phase 13 — CDS findings for this prescription (open history plus
+     * acknowledged/overridden/resolved trail; ordered newest first).
+     */
+    public function cdsFindings()
+    {
+        return $this->hasMany(CdsFinding::class, 'prescription_id')->orderByDesc('id');
     }
 
     /**

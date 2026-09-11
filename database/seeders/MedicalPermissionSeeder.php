@@ -66,6 +66,13 @@ class MedicalPermissionSeeder extends Seeder
                 'edit' => 'Edit Prescriptions',
                 'delete' => 'Delete Prescriptions',
             ],
+            'medical_encounters' => [
+                'view' => 'View Encounters',
+                'create' => 'Open Encounters',
+                'edit' => 'Document Encounters',
+                'complete' => 'Complete Encounters',
+                'amend' => 'Amend Completed Encounters',
+            ],
             'medical_pharmacy' => [
                 'view' => 'View Pharmacy',
                 'create' => 'Add Pharmacy Stock',
@@ -106,6 +113,70 @@ class MedicalPermissionSeeder extends Seeder
             }
         }
 
+        // Phase 15 — Diagnosis extras (additive): structured encounter
+        // diagnoses. firstOrCreate by slug keeps this idempotent, and all
+        // earlier slugs are left untouched. No generic order permissions:
+        // orders reuse the existing lab/prescription grants.
+        $diagnosisExtras = [
+            'medical_diagnoses' => [
+                'view' => 'View Diagnoses',
+                'create' => 'Record Diagnoses',
+                'remove' => 'Remove Diagnoses',
+            ],
+        ];
+
+        foreach ($diagnosisExtras as $module => $actions) {
+            foreach ($actions as $action => $label) {
+                Permission::firstOrCreate(
+                    ['slug' => $module.'.'.$action],
+                    ['module' => $module, 'name' => $label]
+                );
+            }
+        }
+
+        // Phase 17 — Problem + follow-up extras (additive): the minimum
+        // grants covering the longitudinal workflow (view/create/edit per
+        // module; lifecycle actions reuse edit). Idempotent firstOrCreate.
+        // Phase 18.1 — branch administration (admin-only via templates;
+        // owners bypass through the standard permission check).
+        $branchExtras = [
+            'medical_branches' => [
+                'view' => 'View Branches',
+                'manage' => 'Manage Branches',
+            ],
+        ];
+
+        foreach ($branchExtras as $module => $actions) {
+            foreach ($actions as $action => $label) {
+                Permission::firstOrCreate(
+                    ['slug' => $module.'.'.$action],
+                    ['module' => $module, 'name' => $label]
+                );
+            }
+        }
+
+        $phase17Extras = [
+            'medical_problems' => [
+                'view' => 'View Problems',
+                'create' => 'Record Problems',
+                'edit' => 'Manage Problems',
+            ],
+            'medical_followups' => [
+                'view' => 'View Follow-ups',
+                'create' => 'Plan Follow-ups',
+                'edit' => 'Manage Follow-ups',
+            ],
+        ];
+
+        foreach ($phase17Extras as $module => $actions) {
+            foreach ($actions as $action => $label) {
+                Permission::firstOrCreate(
+                    ['slug' => $module.'.'.$action],
+                    ['module' => $module, 'name' => $label]
+                );
+            }
+        }
+
         // Phase 2 — IPD extras (additive): granular actions the Phase 1 map
         // did not include. firstOrCreate by slug keeps this idempotent, and
         // existing Phase 1 slugs are left untouched.
@@ -115,6 +186,7 @@ class MedicalPermissionSeeder extends Seeder
             'medical_vitals' => [
                 'view' => 'View Vitals',
                 'create' => 'Record Vitals & Notes',
+                'update' => 'Edit Vitals',
                 'delete' => 'Delete Vitals',
             ],
         ];
@@ -215,6 +287,48 @@ class MedicalPermissionSeeder extends Seeder
         }
 
         $this->command->info('Medical permissions seeded successfully!');
+
+        // Vitals editing (additive). Granted to existing doctor and nurse
+        // roles; institute owners bypass permission checks.
+        $vitalsSlugs = [
+            'medical_vitals.view' => 'View Vitals',
+            'medical_vitals.create' => 'Record Vitals & Notes',
+            'medical_vitals.update' => 'Edit Vitals',
+            'medical_vitals.delete' => 'Delete Vitals',
+        ];
+        $vitalsPermIds = [];
+        foreach ($vitalsSlugs as $slug => $label) {
+            $vitalsPermIds[] = Permission::firstOrCreate(
+                ['slug' => $slug],
+                ['module' => 'medical_vitals', 'name' => $label]
+            )->id;
+        }
+
+        $vitalsRoleIds = Role::whereIn('slug', ['doctor', 'nurse'])
+            ->pluck('id')
+            ->toArray();
+
+        if (! empty($vitalsRoleIds)) {
+            $existing = DB::table('role_permissions')
+                ->whereIn('permission_id', $vitalsPermIds)
+                ->whereIn('role_id', $vitalsRoleIds)
+                ->get(['role_id', 'permission_id']);
+
+            $have = [];
+            foreach ($existing as $row) {
+                $have[$row->role_id.'-'.$row->permission_id] = true;
+            }
+            foreach ($vitalsRoleIds as $roleId) {
+                foreach ($vitalsPermIds as $permId) {
+                    if (! isset($have[$roleId.'-'.$permId])) {
+                        DB::table('role_permissions')->insert([
+                            'role_id' => $roleId,
+                            'permission_id' => $permId,
+                        ]);
+                    }
+                }
+            }
+        }
 
         // Create diagnostic-staff role for diagnostic center institutes
         $diagnosticInstitutes = Institute::where('industry', 'healthcare')

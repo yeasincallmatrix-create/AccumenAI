@@ -21,6 +21,12 @@ class PrescriptionRequest extends FormRequest
             'patient_id' => [
                 'required',
                 Rule::exists('patients', 'id')->where(
+                    fn ($q) => $q->where('institute_id', $instituteId)->whereNull('deleted_at')->where('is_patient', true)
+                ),
+            ],
+            'encounter_id' => [
+                'nullable',
+                Rule::exists('medical_encounters', 'id')->where(
                     fn ($q) => $q->where('institute_id', $instituteId)->whereNull('deleted_at')
                 ),
             ],

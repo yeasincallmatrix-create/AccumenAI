@@ -59,13 +59,16 @@ class ReportController extends MedicalController implements HasMiddleware
     public function daily()
     {
         $instituteId = $this->instituteId();
-        $revenue = $this->billingService->getRevenueSummary($instituteId, 'today');
+        // Phase 18: reports show the actor's branch (or the institute).
+        $branchId = $this->branchContextId();
+        $revenue = $this->billingService->getRevenueSummary($instituteId, 'today', null, $branchId);
 
-        $invoices = Invoice::where('institute_id', $instituteId)
+        $invoicesQuery = Invoice::where('institute_id', $instituteId)
             ->whereDate('invoice_date', today())
             ->with(['patient'])
-            ->orderBy('invoice_date', 'desc')
-            ->get();
+            ->orderBy('invoice_date', 'desc');
+        $this->scopeBranch($invoicesQuery);
+        $invoices = $invoicesQuery->get();
 
         return view('medical.reports.daily', compact('revenue', 'invoices'));
     }
@@ -76,10 +79,13 @@ class ReportController extends MedicalController implements HasMiddleware
     public function monthly()
     {
         $instituteId = $this->instituteId();
-        $revenue = $this->billingService->getRevenueSummary($instituteId, 'month');
+        $branchId = $this->branchContextId();
+        $revenue = $this->billingService->getRevenueSummary($instituteId, 'month', null, $branchId);
 
-        $byDay = Invoice::where('institute_id', $instituteId)
-            ->whereDate('invoice_date', '>=', now()->subDays(30))
+        $byDayQuery = Invoice::where('institute_id', $instituteId)
+            ->whereDate('invoice_date', '>=', now()->subDays(30));
+        $this->scopeBranch($byDayQuery);
+        $byDay = $byDayQuery
             ->selectRaw('DATE(invoice_date) as day, COUNT(*) as count, SUM(total) as revenue, SUM(paid_amount) as collected')
             ->groupBy('day')
             ->orderBy('day')
@@ -98,11 +104,12 @@ class ReportController extends MedicalController implements HasMiddleware
             ? $request->get('period')
             : 'month';
 
-        $revenue = $this->billingService->getRevenueSummary($instituteId, $period);
+        $revenue = $this->billingService->getRevenueSummary($instituteId, $period, null, $this->branchContextId());
 
-        $invoices = Invoice::where('institute_id', $instituteId)
-            ->whereDate('invoice_date', '>=', $this->periodStart($period))
-            ->get();
+        $revenueQuery = Invoice::where('institute_id', $instituteId)
+            ->whereDate('invoice_date', '>=', $this->periodStart($period));
+        $this->scopeBranch($revenueQuery);
+        $invoices = $revenueQuery->get();
 
         $breakdown = [
             'total' => $invoices->count(),
@@ -137,15 +144,17 @@ class ReportController extends MedicalController implements HasMiddleware
             ->whereDate('created_at', '<=', $toDate)
             ->count();
 
-        $appointments = Appointment::where('institute_id', $instituteId)
+        $appointmentsQuery = Appointment::where('institute_id', $instituteId)
             ->whereDate('appointment_date', '>=', $fromDate)
-            ->whereDate('appointment_date', '<=', $toDate)
-            ->get();
+            ->whereDate('appointment_date', '<=', $toDate);
+        $this->scopeBranch($appointmentsQuery);
+        $appointments = $appointmentsQuery->get();
 
-        $admissions = Admission::where('institute_id', $instituteId)
+        $admissionsQuery = Admission::where('institute_id', $instituteId)
             ->whereDate('admission_date', '>=', $fromDate)
-            ->whereDate('admission_date', '<=', $toDate)
-            ->get();
+            ->whereDate('admission_date', '<=', $toDate);
+        $this->scopeBranch($admissionsQuery);
+        $admissions = $admissionsQuery->get();
 
         $appointmentStats = [
             'total' => $appointments->count(),
@@ -172,12 +181,22 @@ class ReportController extends MedicalController implements HasMiddleware
     public function pharmacy()
     {
         $instituteId = $this->instituteId();
-
-        $lowStock = $this->stockService->getLowStockItems($instituteId);
-        $expiryAlerts = $this->expiryService->checkAndAlert($instituteId);
+        // Phase 18.1: pharmacy surveillance branch-filtered in SQL.
+        $ctxBranch = $this->branchContextId();
+        $lowStock = $this->stockService->getLowStockItems($instituteId, $ctxBranch);
+        $expiryAlerts = $this->expiryService->checkAndAlert($instituteId, $ctxBranch);
 
         // Top dispensed medicines via the stock batches actually deducted.
-        $topMedicines = PharmacyDispense::where('pharmacy_dispenses.institute_id', $instituteId)
+        // Phase 18: dispense history follows the branch fence.
+        $topMedicinesQuery = PharmacyDispense::where('pharmacy_dispenses.institute_id', $instituteId);
+        if ($this->branchContextId() !== null) {
+            $ctx = $this->branchContextId();
+            $topMedicinesQuery->where(function ($q) use ($ctx) {
+                $q->where('pharmacy_dispenses.branch_id', $ctx)
+                    ->orWhereNull('pharmacy_dispenses.branch_id');
+            });
+        }
+        $topMedicines = $topMedicinesQuery
             ->join('pharmacy_stock', 'pharmacy_stock.id', '=', 'pharmacy_dispenses.stock_id')
             ->join('medicines', 'medicines.id', '=', 'pharmacy_stock.medicine_id')
             ->selectRaw('medicines.id, medicines.generic_name, medicines.brand_name, SUM(pharmacy_dispenses.quantity_dispensed) as total_dispensed')
@@ -198,10 +217,11 @@ class ReportController extends MedicalController implements HasMiddleware
         $fromDate = $request->get('from_date', now()->subDays(30)->format('Y-m-d'));
         $toDate = $request->get('to_date', now()->format('Y-m-d'));
 
-        $orders = LabOrder::where('institute_id', $instituteId)
+        $ordersQuery = LabOrder::where('institute_id', $instituteId)
             ->whereDate('order_date', '>=', $fromDate)
-            ->whereDate('order_date', '<=', $toDate)
-            ->get();
+            ->whereDate('order_date', '<=', $toDate);
+        $this->scopeBranch($ordersQuery);
+        $orders = $ordersQuery->get();
 
         $stats = [
             'total_orders' => $orders->count(),
@@ -211,9 +231,11 @@ class ReportController extends MedicalController implements HasMiddleware
         ];
 
         // Most-ordered tests (scoped to this institute's orders).
+        // Phase 18: lab volumes follow the branch fence.
         $popularTests = LabResult::selectRaw('lab_test_id, count(*) as total')
             ->whereHas('labOrder', function ($q) use ($instituteId) {
                 $q->where('institute_id', $instituteId);
+                $this->scopeBranch($q);
             })
             ->groupBy('lab_test_id')
             ->orderByDesc('total')

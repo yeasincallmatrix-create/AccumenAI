@@ -46,6 +46,38 @@ const statusLabel = (status) => (status || '').replace(/_/g, ' ').replace(/^\w/,
 
 const csrfToken = () => document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
+/** Tenant date helpers (mirror x-tdate-input): ISO <-> display order. */
+const isoToDisplay = (iso, order) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    if (!m) return iso || '';
+    const [, y, mo, d] = m;
+    if (order === 'mdy') return `${mo}/${d}/${y}`;
+    if (order === 'ymd') return `${y}/${mo}/${d}`;
+    return `${d}/${mo}/${y}`;
+};
+const displayToIso = (text, order) => {
+    const s = (text || '').trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s; // ISO always accepted
+    const m = s.match(/^(\d{1,4})[/\-.](\d{1,2})[/\-.](\d{1,4})$/);
+    if (!m) return null;
+    const pad = (n) => String(n).padStart(2, '0');
+    let y; let mo; let d;
+    if (m[1].length === 4) {
+        [y, mo, d] = [m[1], m[2], m[3]];
+    } else if (m[3].length === 4) {
+        y = m[3];
+        if (order === 'mdy') [mo, d] = [m[1], m[2]];
+        else [d, mo] = [m[1], m[2]];
+    } else {
+        return null;
+    }
+    const yi = Number(y); const moi = Number(mo); const di = Number(d);
+    if (moi < 1 || moi > 12 || di < 1 || di > 31) return null;
+    const check = new Date(yi, moi - 1, di);
+    if (check.getFullYear() !== yi || check.getMonth() !== moi - 1 || check.getDate() !== di) return null;
+    return `${y}-${pad(moi)}-${pad(di)}`;
+};
+
 /** Full-page POST (same UX + flash messages as the Blade list). */
 const submitForm = (url, method = 'POST') => {
     const form = document.createElement('form');
@@ -68,12 +100,13 @@ const submitForm = (url, method = 'POST') => {
     form.submit();
 };
 
-const AppointmentList = ({ initialAppointments, doctors, filters: initialFilters, dataUrl, indexUrl, canDeleteFinalized }) => {
+const AppointmentList = ({ initialAppointments, doctors, filters: initialFilters, dataUrl, indexUrl, canDeleteFinalized, dateOrder = 'dmy', datePlaceholder = 'DD/MM/YYYY' }) => {
     const [appointments, setAppointments] = useState(initialAppointments || []);
     const [filters, setFilters] = useState({
         date: initialFilters?.date || '',
         doctor_id: initialFilters?.doctor_id || '',
         status: initialFilters?.status || '',
+        search: initialFilters?.search || '',
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -101,6 +134,7 @@ const AppointmentList = ({ initialAppointments, doctors, filters: initialFilters
         if (activeFilters.date) params.set('date', activeFilters.date);
         if (activeFilters.doctor_id) params.set('doctor_id', activeFilters.doctor_id);
         if (activeFilters.status) params.set('status', activeFilters.status);
+        if (activeFilters.search && activeFilters.search.trim() !== '') params.set('search', activeFilters.search.trim());
         const url = params.toString() ? `${dataUrl}?${params}` : dataUrl;
         return fetch(url, {
             headers: { Accept: 'application/json' },
@@ -137,6 +171,54 @@ const AppointmentList = ({ initialAppointments, doctors, filters: initialFilters
         const next = { ...filtersRef.current, [name]: value };
         setFilters(next);
         fetchRows(next);
+    };
+
+    // Patient name / phone search (debounced so every keystroke is not a request).
+    const searchTimer = useRef(null);
+    useEffect(() => () => clearTimeout(searchTimer.current), []);
+    const onSearchChange = (value) => {
+        const next = { ...filtersRef.current, search: value };
+        setFilters(next);
+        clearTimeout(searchTimer.current);
+        searchTimer.current = setTimeout(() => fetchRows(next), 400);
+    };
+    const onSearchKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            clearTimeout(searchTimer.current);
+            fetchRows(filtersRef.current);
+        }
+    };
+
+    // Tenant-aware date filter (mirrors x-tdate-input): visible text follows
+    // Settings → General → Date Format, ISO goes to the server.
+    const [dateText, setDateText] = useState(() => isoToDisplay(initialFilters?.date || '', dateOrder));
+    const pickerRef = useRef(null);
+    const onDateTextChange = (value) => {
+        setDateText(value);
+        const iso = displayToIso(value, dateOrder);
+        if (iso) onFilterChange('date', iso);
+    };
+    const onDateBlur = () => {
+        if (!displayToIso(dateText, dateOrder)) {
+            setDateText(isoToDisplay(filtersRef.current.date, dateOrder));
+        }
+    };
+    const openPicker = () => {
+        const el = pickerRef.current;
+        if (!el) return;
+        if (typeof el.showPicker === 'function') {
+            try {
+                el.showPicker();
+                return;
+            } catch (_) {}
+        }
+        el.focus();
+    };
+    const onPickerChange = (iso) => {
+        if (!iso) return;
+        setDateText(isoToDisplay(iso, dateOrder));
+        onFilterChange('date', iso);
     };
 
     const onCancel = (row) => {
@@ -215,15 +297,39 @@ const AppointmentList = ({ initialAppointments, doctors, filters: initialFilters
         <div>
             <div className="row g-2 mb-3">
                 <div className="col-md-3">
-                    <input
-                        type="date"
-                        className="form-control"
-                        value={filters.date}
-                        onChange={(e) => onFilterChange('date', e.target.value)}
-                        aria-label="Filter by date"
-                    />
+                    <div className="input-group">
+                        <span className="input-group-text"><i className="bi bi-search"></i></span>
+                        <input
+                            type="search"
+                            className="form-control"
+                            placeholder="Search patient name or phone…"
+                            value={filters.search}
+                            onChange={(e) => onSearchChange(e.target.value)}
+                            onKeyDown={onSearchKeyDown}
+                            aria-label="Search patient by name or phone"
+                        />
+                    </div>
                 </div>
-                <div className="col-md-3">
+                <div className="col-md-2">
+                    <div className="input-group">
+                        <input
+                            type="text"
+                            className="form-control"
+                            placeholder={datePlaceholder}
+                            inputMode="numeric"
+                            autoComplete="off"
+                            value={dateText}
+                            onChange={(e) => onDateTextChange(e.target.value)}
+                            onBlur={onDateBlur}
+                            aria-label="Filter by date"
+                        />
+                        <button type="button" className="btn btn-outline-secondary" onClick={openPicker} title={`Pick a date (${datePlaceholder})`} aria-label="Pick a date">
+                            <i className="bi bi-calendar3"></i>
+                        </button>
+                    </div>
+                    <input ref={pickerRef} type="date" value={filters.date} onChange={(e) => onPickerChange(e.target.value)} tabIndex={-1} aria-hidden="true" style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }} />
+                </div>
+                <div className="col-md-2">
                     <select
                         className="form-select"
                         value={filters.doctor_id}
@@ -236,7 +342,7 @@ const AppointmentList = ({ initialAppointments, doctors, filters: initialFilters
                         ))}
                     </select>
                 </div>
-                <div className="col-md-3">
+                <div className="col-md-2">
                     <select
                         className="form-select"
                         value={filters.status}
@@ -264,7 +370,9 @@ const AppointmentList = ({ initialAppointments, doctors, filters: initialFilters
             {appointments.length === 0 ? (
                 <div className="empty-fill text-muted">
                     <i className="bi bi-calendar-x fs-2 d-block mb-2"></i>
-                    No appointments found for this date.
+                    {filters.search.trim() !== ''
+                        ? 'No appointments match your search.'
+                        : 'No appointments found for this date.'}
                 </div>
             ) : (
             <div className="table-responsive">

@@ -34,4 +34,44 @@ final class BranchContext
     {
         self::$branchId = null;
     }
+
+    /**
+     * Phase 18 (additive) — whether the current actor is restricted to one
+     * branch (false = institute-wide: owner/admin, platform, CLI, or no
+     * branch assignment).
+     */
+    public static function isBranchScoped(): bool
+    {
+        return self::$branchId !== null;
+    }
+
+    /**
+     * Phase 18 (additive) — branch ids the current actor may access.
+     * Returns null for institute-wide actors (no constraint), otherwise
+     * the single assigned branch. Single-element by construction: one
+     * membership per user+institute carries at most one branch_id.
+     *
+     * @return int[]|null
+     */
+    public static function accessibleBranchIds(): ?array
+    {
+        return self::$branchId !== null ? [(int) self::$branchId] : null;
+    }
+
+    /**
+     * Phase 18 (additive) — whether a branch id is accessible here.
+     * Null branch = legacy/pre-branch record, always passable at this
+     * layer (callers decide legacy visibility explicitly).
+     */
+    public static function allows(?int $branchId): bool
+    {
+        if ($branchId === null) {
+            return true;
+        }
+        if (self::$branchId === null) {
+            return true;
+        }
+
+        return (int) $branchId === (int) self::$branchId;
+    }
 }

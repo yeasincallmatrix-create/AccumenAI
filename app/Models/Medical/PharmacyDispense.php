@@ -12,6 +12,7 @@ class PharmacyDispense extends Model
 
     protected $fillable = [
         'institute_id',
+        'branch_id',
         'prescription_item_id',
         'stock_id',
         'quantity_dispensed',
@@ -28,6 +29,11 @@ class PharmacyDispense extends Model
     public function institute()
     {
         return $this->belongsTo(Institute::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(\App\Models\Branch::class);
     }
 
     public function prescriptionItem()

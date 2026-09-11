@@ -50,7 +50,10 @@ return [
     |
     */
 
-    'expiration' => null,
+    // Phase 07: previously null (tokens never expired). 30 days bounds a
+    // leaked token's lifetime; clients already handle 401 re-login (logout
+    // path). Per-token expires_at, when set, still takes precedence.
+    'expiration' => 43200,
 
     /*
     |--------------------------------------------------------------------------

@@ -95,11 +95,18 @@
                 </div>
                 <div class="col-md-4">
                     <div class="mb-3">
-                        <label class="form-label" for="height">Height (cm)</label>
-                        <input type="number" id="height" name="height" step="0.1" min="30" max="250"
-                               class="form-control @error('height') is-invalid @enderror"
-                               value="{{ old('height') }}" placeholder="e.g. 170">
-                        @error('height')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <label class="form-label" for="height">Height</label>
+                        <div class="input-group">
+                            <input type="number" id="height" name="height" step="0.1" min="30" max="250"
+                                   class="form-control @error('height') is-invalid @enderror"
+                                   value="{{ old('height') }}" placeholder="e.g. 170">
+                            <select id="height_unit" class="form-select" style="max-width:5.5rem;flex:0 0 auto;" aria-label="Height unit">
+                                <option value="cm" selected>cm</option>
+                                <option value="ft">ft</option>
+                            </select>
+                        </div>
+                        @error('height')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                        <div class="form-text" id="height_hint"></div>
                     </div>
                 </div>
                 <div class="col-md-12">
@@ -120,3 +127,51 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+// Height cm/ft toggle: the server stores centimetres, so feet are
+// converted back to cm on submit. The hint shows the converted value live.
+function bindHeightUnit(inputId, unitId, hintId) {
+    var input = document.getElementById(inputId);
+    var unit = document.getElementById(unitId);
+    var hint = hintId ? document.getElementById(hintId) : null;
+    if (!input || !unit) return;
+    var FT = 30.48;
+    function round(n, d) { var p = Math.pow(10, d); return (Math.round(n * p) / p).toString(); }
+    function refreshHint() {
+        if (!hint) return;
+        var v = parseFloat(input.value);
+        if (isNaN(v)) { hint.textContent = ''; return; }
+        hint.textContent = unit.value === 'ft' ? '≈ ' + round(v * FT, 1) + ' cm' : '≈ ' + round(v / FT, 2) + ' ft';
+    }
+    function applyUnit() {
+        var v = parseFloat(input.value);
+        if (unit.value === 'ft') {
+            if (!isNaN(v)) input.value = round(v / FT, 2);
+            input.min = '1'; input.max = '9'; input.step = '0.01';
+            input.placeholder = 'e.g. 5.58';
+        } else {
+            if (!isNaN(v)) input.value = round(v * FT, 1);
+            input.min = '30'; input.max = '250'; input.step = '0.1';
+            input.placeholder = 'e.g. 170';
+        }
+        refreshHint();
+    }
+    unit.addEventListener('change', applyUnit);
+    input.addEventListener('input', refreshHint);
+    var form = input.closest('form');
+    if (form && !form.dataset.heightBound) {
+        form.dataset.heightBound = '1';
+        form.addEventListener('submit', function () {
+            if (unit.value === 'ft') {
+                var v = parseFloat(input.value);
+                if (!isNaN(v)) input.value = round(v * FT, 1);
+            }
+        });
+    }
+    refreshHint();
+}
+bindHeightUnit('height', 'height_unit', 'height_hint');
+</script>
+@endpush

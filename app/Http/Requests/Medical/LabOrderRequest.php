@@ -24,6 +24,12 @@ class LabOrderRequest extends FormRequest
                     fn ($q) => $q->where('institute_id', $instituteId)->whereNull('deleted_at')
                 ),
             ],
+            'encounter_id' => [
+                'nullable',
+                Rule::exists('medical_encounters', 'id')->where(
+                    fn ($q) => $q->where('institute_id', $instituteId)->whereNull('deleted_at')
+                ),
+            ],
             'doctor_id' => [
                 'required',
                 Rule::exists('users', 'id')->where(fn ($q) => $q->where('status', 'active')),

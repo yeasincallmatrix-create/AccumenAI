@@ -4,7 +4,7 @@
      plus a calendar button that opens a native picker and converts the picked
      date back into the tenant display format.
      Extra attributes (class, required, min, max…) land on the visible input. --}}
-@props(['name', 'value' => null, 'id' => null])
+@props(['name', 'value' => null, 'id' => null, 'form' => null])
 @php
     $id = $id ?? $name;
     $iso = $value !== null && $value !== '' ? (mawa_parse_date($value) ?? '') : '';
@@ -12,7 +12,7 @@
     $placeholder = mawa_date_placeholder();
     $isSm = str_contains((string) ($attributes->get('class') ?? ''), 'form-control-sm');
 @endphp
-<input type="hidden" id="{{ $id }}" name="{{ $name }}" value="{{ $iso }}" data-tdate-hidden>
+<input type="hidden" id="{{ $id }}" name="{{ $name }}" @if($form)form="{{ $form }}"@endif value="{{ $iso }}" data-tdate-hidden>
 <div class="input-group position-relative{{ $isSm ? ' input-group-sm' : '' }}">
     <input type="text" id="{{ $id }}_display" data-tdate-display="{{ $id }}" data-date-order="{{ $order }}"
            value="{{ $iso !== '' ? mawa_format_date($iso) : '' }}"

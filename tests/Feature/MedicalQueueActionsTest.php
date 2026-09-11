@@ -80,16 +80,16 @@ class MedicalQueueActionsTest extends TestCase
         $this->date = today()->format('Y-m-d');
     }
 
-    private function checkedInAppointment(): Appointment
+    private function checkedInAppointment(int $serial = 1): Appointment
     {
         $patient = Patient::create([
             'institute_id' => $this->institute->id,
-            'mr_number' => 'MR-'.uniqid(),
+            'mr_number' => 'MR-'.uniqid().'-'.$serial,
             'first_name' => 'Queue',
             'last_name' => 'Patient',
             'date_of_birth' => '1990-01-01',
             'gender' => 'male',
-            'phone' => '01'.str_pad((string) random_int(0, 999999999), 9, '0', STR_PAD_LEFT),
+            'phone' => '01'.str_pad((string) random_int(100000000, 999999999), 9, '0', STR_PAD_LEFT),
         ]);
 
         return Appointment::create([
@@ -97,8 +97,8 @@ class MedicalQueueActionsTest extends TestCase
             'patient_id' => $patient->id,
             'doctor_id' => $this->doctor->id,
             'appointment_date' => $this->date,
-            'appointment_time' => '09:00',
-            'serial_number' => 1,
+            'appointment_time' => '09:0'.($serial % 10),
+            'serial_number' => $serial,
             'status' => 'checked_in',
         ]);
     }
@@ -377,14 +377,14 @@ class MedicalQueueActionsTest extends TestCase
         $this->actingAs($staff, 'web');
         Workspace::set($this->institute->id);
 
-        $completed = $this->checkedInAppointment();
+        $completed = $this->checkedInAppointment(1);
         $completed->update(['status' => 'completed']);
 
         $this->delete(route('medical.appointments.destroy', $completed))
             ->assertSessionHasErrors('appointment');
         $this->assertSame('completed', $completed->fresh()->status);
 
-        $paid = $this->checkedInAppointment();
+        $paid = $this->checkedInAppointment(2);
         $paid->update([
             'fee_collected_amount' => 500,
             'fee_collected_by_name' => 'Counter Staff',
@@ -442,6 +442,64 @@ class MedicalQueueActionsTest extends TestCase
         $this->assertSame('checked_in', $paid->fresh()->status);
     }
 
+    public function test_update_queue_order_persists_and_audits(): void
+    {
+        $ids = [];
+        for ($i = 0; $i < 3; $i++) {
+            $patient = Patient::create([
+                'institute_id' => $this->institute->id,
+                'mr_number' => 'MR-R-'.uniqid().$i,
+                'first_name' => 'Reorder'.$i,
+                'last_name' => 'Patient',
+                'date_of_birth' => '1990-01-01',
+                'gender' => 'male',
+                'phone' => '01'.str_pad((string) random_int(0, 999999999), 9, '0', STR_PAD_LEFT),
+            ]);
+            $ids[] = Appointment::create([
+                'institute_id' => $this->institute->id,
+                'patient_id' => $patient->id,
+                'doctor_id' => $this->doctor->id,
+                'appointment_date' => $this->date,
+                'appointment_time' => '09:0'.$i,
+                'serial_number' => $i + 1,
+                'status' => 'checked_in',
+            ])->id;
+        }
+
+        $reversed = array_reverse($ids);
+
+        $this->queue()
+            ->call('updateQueueOrder', $reversed)
+            ->assertSet('statusMessage', 'Queue reordered — 3 position(s) updated and audited.');
+
+        $orders = Appointment::whereIn('id', $ids)->pluck('queue_order', 'id')->all();
+        $this->assertSame(1, (int) $orders[$reversed[0]]);
+        $this->assertSame(2, (int) $orders[$reversed[1]]);
+        $this->assertSame(3, (int) $orders[$reversed[2]]);
+
+        $this->assertSame(3, \App\Models\Medical\QueueAuditLog::whereIn('appointment_id', $ids)->count());
+    }
+
+    public function test_queue_tab_shows_working_refresh_button(): void    {
+        $appointment = $this->checkedInAppointment();
+
+        $response = $this->get(route('medical.appointments.index', [
+            'tab' => 'queue',
+            'q_doctor' => $this->doctor->id,
+            'q_date' => $this->date,
+        ]));
+
+        $response->assertOk();
+        // The button itself (with full-page fallback).
+        $response->assertSee('Refresh queue', false);
+        // Livewire fast-path: defined by the queue widget script when the
+        // user may reorder; the button falls back to location.reload().
+        $response->assertSee('window.refreshQueueWidget', false);
+        $response->assertSee('medical-queue-list', false);
+        // The queued patient row is rendered inside the widget.
+        $response->assertSee('Queue Patient', false);
+    }
+
     public function test_load_queue_uses_constant_query_count(): void
     {
         // Pre-visit fee collection so every card takes the fee path (the
@@ -490,5 +548,35 @@ class MedicalQueueActionsTest extends TestCase
         // patient eager load + doctor profile + batched last-visit lookup.
         // (Layout/middleware noise such as notifications is excluded.)
         $this->assertCount(4, $queueQueries, 'loadQueue data queries: '.count($queueQueries));
+    }
+
+    public function test_queue_actions_have_no_view_or_edit_buttons(): void    {
+        // Regression guard: the View (eye) and Edit (pencil) icon buttons
+        // were removed from the Live Queue actions. If they ever reappear
+        // in the widget markup, this test fails loudly.
+        $this->checkedInAppointment();
+
+        $html = $this->queue()->html();
+
+        $this->assertStringNotContainsString('bi-eye', $html);
+        $this->assertStringNotContainsString('bi-pencil-square', $html);
+        $this->assertStringNotContainsString('title="View"', $html);
+        $this->assertStringNotContainsString('appointments.edit', $html);
+    }
+
+    public function test_token_page_prints_serial_room_and_hospital(): void
+    {
+        \App\Models\Medical\Doctor::where('institute_id', $this->institute->id)
+            ->where('user_id', $this->doctor->id)
+            ->update(['room_no' => 'Room 12']);
+
+        $appointment = $this->checkedInAppointment();
+
+        $this->get(route('medical.appointments.token', $appointment))
+            ->assertOk()
+            ->assertSee($this->institute->name, false)
+            ->assertSee('#'.$appointment->serial_number, false)
+            ->assertSee('Room No: Room 12', false)
+            ->assertSee('window.print()', false);
     }
 }

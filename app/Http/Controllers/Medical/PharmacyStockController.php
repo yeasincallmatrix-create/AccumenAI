@@ -47,6 +47,8 @@ class PharmacyStockController extends MedicalController implements HasMiddleware
     {
         $instituteId = $this->instituteId();
         $query = PharmacyStock::where('institute_id', $instituteId)->with('medicine');
+        // Phase 18: branch fence (context branch + legacy NULLs).
+        $this->scopeBranch($query);
 
         if ($request->filled('medicine_id')) {
             $query->where('medicine_id', $request->medicine_id);
@@ -96,8 +98,13 @@ class PharmacyStockController extends MedicalController implements HasMiddleware
      */
     public function store(PharmacyStockRequest $request)
     {
+        // Phase 18.1: branch ownership resolved BEFORE the service try/catch
+        // so a foreign-branch abort (403) is never masked as a 302 error.
+        $branchId = $this->resolveBranchId($request->input('branch_id'));
         try {
-            $this->stockService->addStock($request->validated());
+            $this->stockService->addStock(array_merge($request->validated(), [
+                'branch_id' => $branchId,
+            ]));
 
             return redirect()->route('medical.pharmacy.stock.index')
                 ->with('status', 'Stock added successfully!');
@@ -112,6 +119,7 @@ class PharmacyStockController extends MedicalController implements HasMiddleware
     public function show(PharmacyStock $stock)
     {
         $this->ensureSameInstitute($stock, 'stock');
+        $this->ensureBranchAccess($stock, 'branch_id', 'stock');
         $stock->load('medicine');
 
         return view('medical.pharmacy.stock.show', compact('stock'));
@@ -123,6 +131,7 @@ class PharmacyStockController extends MedicalController implements HasMiddleware
     public function edit(PharmacyStock $stock)
     {
         $this->ensureSameInstitute($stock, 'stock');
+        $this->ensureBranchAccess($stock, 'branch_id', 'stock');
         $medicines = Medicine::where('institute_id', $stock->institute_id)
             ->where('is_active', true)
             ->orderBy('generic_name')
@@ -137,7 +146,11 @@ class PharmacyStockController extends MedicalController implements HasMiddleware
     public function update(PharmacyStockRequest $request, PharmacyStock $stock)
     {
         $this->ensureSameInstitute($stock, 'stock');
-        $stock->update($request->validated());
+        $this->ensureBranchAccess($stock, 'branch_id', 'stock');
+        $data = $request->validated();
+        // Phase 18: branch identity never moves between records.
+        unset($data['branch_id']);
+        $stock->update($data);
 
         return redirect()->route('medical.pharmacy.stock.show', $stock)
             ->with('status', 'Stock updated successfully!');
@@ -149,6 +162,7 @@ class PharmacyStockController extends MedicalController implements HasMiddleware
     public function destroy(PharmacyStock $stock)
     {
         $this->ensureSameInstitute($stock, 'stock');
+        $this->ensureBranchAccess($stock, 'branch_id', 'stock');
 
         if ($stock->current_quantity > 0) {
             return redirect()->back()->with('error', 'Cannot delete stock with remaining quantity.');
@@ -173,8 +187,10 @@ class PharmacyStockController extends MedicalController implements HasMiddleware
     public function expiry()
     {
         $instituteId = $this->instituteId();
-        $alerts = $this->expiryService->checkAndAlert($instituteId);
-        $summary = $this->expiryService->getAlertSummary($instituteId);
+        // Phase 18.1: expiry surveillance branch-filtered in SQL.
+        $ctxBranch = $this->branchContextId();
+        $alerts = $this->expiryService->checkAndAlert($instituteId, $ctxBranch);
+        $summary = $this->expiryService->getAlertSummary($instituteId, $ctxBranch);
 
         return view('medical.pharmacy.stock.expiry', compact('alerts', 'summary'));
     }
@@ -185,6 +201,7 @@ class PharmacyStockController extends MedicalController implements HasMiddleware
     public function adjust(StockAdjustmentRequest $request, PharmacyStock $stock)
     {
         $this->ensureSameInstitute($stock, 'stock');
+        $this->ensureBranchAccess($stock, 'branch_id', 'stock');
 
         try {
             $this->stockService->adjustStock(

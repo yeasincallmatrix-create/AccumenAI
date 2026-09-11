@@ -43,6 +43,182 @@ abstract class MedicalController extends Controller
         return MedicalScope::ownDoctorUserId($this->instituteId());
     }
 
+    // ------------------------------------------------------------------
+    // Phase 18 — branch fence layer (augments, never replaces, the
+    // institute + doctor fences above). BranchContext is request-static
+    // and synced from the actor's membership; null context means
+    // institute-wide (owner/admin/platform/CLI) with zero constraints.
+    // Legacy rule: branch_id NULL is a legitimate pre-branch state and
+    // stays visible to branch-scoped readers (no backfilled guesses).
+    // ------------------------------------------------------------------
+
+    /**
+     * Validated context branch id, or null when institute-wide. A context
+     * branch outside the current institute fails closed (403).
+     */
+    protected function branchContextId(): ?int
+    {
+        $branchId = \App\Support\BranchContext::id();
+        if ($branchId === null) {
+            return null;
+        }
+        $belongs = \App\Models\Branch::where('id', $branchId)
+            ->where('institute_id', $this->instituteId())
+            ->exists();
+        if (! $belongs) {
+            abort(403, 'You do not have permission to access this branch.');
+        }
+
+        return (int) $branchId;
+    }
+
+    /**
+     * Branch ids the actor may access, or null when institute-wide.
+     *
+     * @return int[]|null
+     */
+    protected function accessibleBranchIds(): ?array
+    {
+        $branchId = $this->branchContextId();
+
+        return $branchId !== null ? [$branchId] : null;
+    }
+
+    /**
+     * Constrain a branch-carrying query: context branch plus legacy NULLs,
+     * grouped so tenant/branch predicates stay outside any OR group
+     * (Phase 02 rule, repeated at branch level). No-op institute-wide.
+     */
+    protected function scopeBranch($query, string $column = 'branch_id')
+    {
+        $branchId = $this->branchContextId();
+        if ($branchId === null) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($query, $column, $branchId) {
+            // Qualify only for Eloquent builders so joins stay unambiguous;
+            // plain query builders keep the bare column.
+            $col = (is_object($query) && method_exists($query, 'getModel'))
+                ? $query->getModel()->qualifyColumn($column)
+                : $column;
+            $q->where($col, $branchId)->orWhereNull($col);
+        });
+    }
+
+    /**
+     * Abort 403 unless a branch-carrying record is visible in this branch
+     * context (exact match, or legacy NULL). No-op institute-wide.
+     */
+    protected function ensureBranchAccess(object $record, string $column = 'branch_id', string $what = 'record'): void
+    {
+        $branchId = $this->branchContextId();
+        if ($branchId === null) {
+            return;
+        }
+        $recordBranch = $record->{$column} ?? null;
+        if ($recordBranch !== null && (int) $recordBranch !== (int) $branchId) {
+            abort(403, "You do not have permission to access this {$what}.");
+        }
+    }
+
+    /**
+     * Resolve the branch for a new record: an explicit request value must
+     * exist, belong to this institute and be accessible (never trusted
+     * blindly); otherwise the actor's context branch, or legacy NULL for
+     * institute-wide actors. Branch identity itself is never editable
+     * afterwards (update paths must unset branch_id).
+     */
+    protected function resolveBranchId($requested): ?int
+    {
+        $instituteId = $this->instituteId();
+        if ($requested !== null && $requested !== '') {
+            $branch = \App\Models\Branch::where('id', (int) $requested)->first();
+            if (! $branch || (int) $branch->institute_id !== (int) $instituteId) {
+                abort(403, 'The selected branch is not available.');
+            }
+            // Phase 18.1: inactive (or trashed) branches accept no new
+            // clinical records; history already on them stays intact.
+            if (($branch->status ?? 'active') !== 'active') {
+                abort(403, 'The selected branch is not active.');
+            }
+            $this->ensureBranchAccess($branch, 'id', 'branch');
+
+            return (int) $branch->id;
+        }
+
+        return $this->branchContextId();
+    }
+
+    /**
+     * Whether a clinician (users.id) may own records in the branch: doctors
+     * with NO active assignments in this institute are legacy-compatible
+     * (institute-wide); assigned doctors are restricted to their branches.
+     * Null branch (legacy record) imposes no rule.
+     */
+    protected function doctorBranchOk(int $doctorUserId, ?int $branchId, ?int $instituteId = null): bool
+    {
+        if ($branchId === null || $doctorUserId <= 0) {
+            return true;
+        }
+        $instituteId ??= $this->instituteId();
+
+        $doctorIds = \App\Models\Medical\Doctor::where('institute_id', $instituteId)
+            ->where('user_id', $doctorUserId)
+            ->pluck('id');
+        if ($doctorIds->isEmpty()) {
+            return false;
+        }
+        $hasAssignments = \Illuminate\Support\Facades\DB::table('doctor_branch')
+            ->where('institute_id', $instituteId)
+            ->whereIn('doctor_id', $doctorIds)
+            ->where('is_active', true)
+            ->exists();
+        if (! $hasAssignments) {
+            return true;
+        }
+
+        return \Illuminate\Support\Facades\DB::table('doctor_branch')
+            ->where('institute_id', $instituteId)
+            ->where('branch_id', $branchId)
+            ->whereIn('doctor_id', $doctorIds)
+            ->where('is_active', true)
+            ->exists();
+    }
+
+    /**
+     * Clinician user ids selectable in a branch picker: doctors assigned to
+     * the branch plus legacy doctors with no assignments anywhere in the
+     * institute. Doctors assigned exclusively elsewhere are hidden.
+     */
+    protected function branchDoctorUserIds(?int $branchId, ?int $instituteId = null): array
+    {
+        $instituteId ??= $this->instituteId();
+        $map = \App\Models\Medical\Doctor::where('institute_id', $instituteId)
+            ->pluck('user_id', 'id');
+        if ($map->isEmpty()) {
+            return [];
+        }
+        if ($branchId === null) {
+            return $map->values()->map(fn ($v) => (int) $v)->unique()->values()->all();
+        }
+
+        $assigned = \Illuminate\Support\Facades\DB::table('doctor_branch')
+            ->where('institute_id', $instituteId)
+            ->where('is_active', true)
+            ->get(['branch_id', 'doctor_id'])
+            ->groupBy('doctor_id');
+        $visible = [];
+        foreach ($map as $doctorId => $userId) {
+            $rows = $assigned->get($doctorId, collect());
+            if ($rows->isEmpty() || $rows->contains('branch_id', $branchId)) {
+                $visible[] = (int) $userId;
+            }
+        }
+
+        return array_values(array_unique($visible));
+    }
+
     /**
      * Abort 403 unless a doctor-keyed record belongs to the fenced doctor
      * (no-op for unfenced users). Keys: doctor_id (default) or
@@ -80,6 +256,10 @@ abstract class MedicalController extends Controller
      */
     protected function ensurePatientVisible(Patient $patient): void
     {
+        // Guardian placeholder rows carry no clinical data — linkable by all.
+        if (! $patient->is_patient) {
+            return;
+        }
         $fence = $this->doctorFenceId();
         if ($fence !== null
             && ! $patient->appointments()
@@ -99,6 +279,7 @@ abstract class MedicalController extends Controller
 
         $query = Patient::where('institute_id', $instituteId)
             ->active()
+            ->patients()
             ->orderBy('first_name');
 
         if ($fence !== null) {

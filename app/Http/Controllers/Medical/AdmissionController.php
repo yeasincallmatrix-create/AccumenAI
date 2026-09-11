@@ -51,6 +51,8 @@ class AdmissionController extends MedicalController implements HasMiddleware
 
         $query = Admission::where('institute_id', $instituteId)
             ->with(['patient', 'bed.ward', 'admittingDoctor']);
+        // Phase 18: branch fence (context branch + legacy NULLs).
+        $this->scopeBranch($query);
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -93,6 +95,7 @@ class AdmissionController extends MedicalController implements HasMiddleware
 
         $query = Admission::where('institute_id', $instituteId)
             ->where('status', 'active');
+        $this->scopeBranch($query);
         if (($fence = $this->doctorFenceId()) !== null) {
             $query->where('admitting_doctor_id', $fence);
         }
@@ -119,11 +122,18 @@ class AdmissionController extends MedicalController implements HasMiddleware
         if ($fence !== null) {
             $doctors = $doctors->where('id', $fence)->values();
         }
+        // Phase 18: hide clinicians assigned exclusively to other branches.
+        if ($this->branchContextId() !== null) {
+            $allowed = $this->branchDoctorUserIds($this->branchContextId(), $instituteId);
+            $doctors = $doctors->whereIn('id', $allowed)->values();
+        }
         $beds = Bed::where('institute_id', $instituteId)
             ->where('status', 'available')
             ->with('ward')
-            ->orderBy('bed_number')
-            ->get();
+            ->orderBy('bed_number');
+        // Phase 18: bed picker shows context-branch + legacy beds only.
+        $this->scopeBranch($beds);
+        $beds = $beds->get();
 
         $selectedPatient = null;
         if ($request->filled('patient_id')) {
@@ -150,6 +160,8 @@ class AdmissionController extends MedicalController implements HasMiddleware
         $instituteId = $this->instituteId();
         $data = $request->validated();
         $data['institute_id'] = $instituteId;
+        // Phase 18: branch ownership + clinician assignment.
+        $data['branch_id'] = $this->resolveBranchId($request->input('branch_id'));
 
         // Fenced doctors admit only under themselves, for writable patients.
         if (($fence = $this->doctorFenceId()) !== null) {
@@ -159,9 +171,20 @@ class AdmissionController extends MedicalController implements HasMiddleware
                 abort(403, 'You do not have permission to book for this patient.');
             }
         }
+        if (! $this->doctorBranchOk((int) $data['admitting_doctor_id'], $data['branch_id'], $instituteId)) {
+            return redirect()->back()
+                ->with('error', 'The selected doctor is not assigned to this branch.')
+                ->withInput();
+        }
 
         $bedId = $data['bed_id'] ?? null;
         unset($data['bed_id']);
+        // Phase 18: admission must never reference another branch's bed.
+        if (! $this->bedBranchOk($bedId !== null ? (int) $bedId : null, $data['branch_id'])) {
+            return redirect()->back()
+                ->with('error', 'The selected bed belongs to another branch.')
+                ->withInput();
+        }
 
         $admission = Admission::create($data);
 
@@ -185,6 +208,7 @@ class AdmissionController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($admission, 'admission');
         $this->ensureDoctorOwns($admission, 'admitting_doctor_id', 'admission');
+        $this->ensureBranchAccess($admission, 'branch_id', 'admission');
 
         $admission->load(['patient', 'bed.ward', 'admittingDoctor', 'dischargedBy']);
 
@@ -208,6 +232,7 @@ class AdmissionController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($admission, 'admission');
         $this->ensureDoctorOwns($admission, 'admitting_doctor_id', 'admission');
+        $this->ensureBranchAccess($admission, 'branch_id', 'admission');
         $instituteId = $this->instituteId();
 
         $patients = $this->ownPatientOptions($instituteId);
@@ -215,11 +240,17 @@ class AdmissionController extends MedicalController implements HasMiddleware
         if (($fence = $this->doctorFenceId()) !== null) {
             $doctors = $doctors->where('id', $fence)->values();
         }
+        // Phase 18: hide clinicians assigned exclusively to other branches.
+        if ($this->branchContextId() !== null) {
+            $allowed = $this->branchDoctorUserIds($this->branchContextId(), $instituteId);
+            $doctors = $doctors->whereIn('id', $allowed)->values();
+        }
         $beds = Bed::where('institute_id', $instituteId)
             ->where('status', 'available')
             ->with('ward')
-            ->orderBy('bed_number')
-            ->get();
+            ->orderBy('bed_number');
+        $this->scopeBranch($beds);
+        $beds = $beds->get();
 
         return view('medical.admissions.edit', compact('admission', 'patients', 'doctors', 'beds'));
     }
@@ -231,11 +262,19 @@ class AdmissionController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($admission, 'admission');
         $this->ensureDoctorOwns($admission, 'admitting_doctor_id', 'admission');
+        $this->ensureBranchAccess($admission, 'branch_id', 'admission');
         $instituteId = $this->instituteId();
 
         $data = $request->validated();
         $newBedId = $data['bed_id'] ?? null ? (int) $data['bed_id'] : null;
         unset($data['bed_id']);
+        // Phase 18: branch identity never moves between records.
+        unset($data['branch_id']);
+        if (! $this->bedBranchOk($newBedId, $admission->branch_id)) {
+            return redirect()->back()
+                ->with('error', 'The selected bed belongs to another branch.')
+                ->withInput();
+        }
 
         // Fenced doctors keep ownership and writable patients on update.
         if (($fence = $this->doctorFenceId()) !== null) {
@@ -285,6 +324,7 @@ class AdmissionController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($admission, 'admission');
         $this->ensureDoctorOwns($admission, 'admitting_doctor_id', 'admission');
+        $this->ensureBranchAccess($admission, 'branch_id', 'admission');
 
         if ($admission->status !== 'active') {
             return redirect()->back()->with('error', 'This admission is already discharged.');
@@ -302,6 +342,7 @@ class AdmissionController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($admission, 'admission');
         $this->ensureDoctorOwns($admission, 'admitting_doctor_id', 'admission');
+        $this->ensureBranchAccess($admission, 'branch_id', 'admission');
 
         if ($admission->status !== 'active') {
             return redirect()->back()->with('error', 'This admission is already discharged.');
@@ -348,6 +389,7 @@ class AdmissionController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($admission, 'admission');
         $this->ensureDoctorOwns($admission, 'admitting_doctor_id', 'admission');
+        $this->ensureBranchAccess($admission, 'branch_id', 'admission');
 
         if ($admission->status !== 'active') {
             return redirect()->back()->with('error', 'Cannot transfer a discharged patient.');
@@ -375,6 +417,7 @@ class AdmissionController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($admission, 'admission');
         $this->ensureDoctorOwns($admission, 'admitting_doctor_id', 'admission');
+        $this->ensureBranchAccess($admission, 'branch_id', 'admission');
 
         if ($admission->status !== 'active' || ! $admission->bed_id) {
             return redirect()->back()->with('error', 'Only active admissions with a bed can be transferred.');
@@ -392,6 +435,14 @@ class AdmissionController extends MedicalController implements HasMiddleware
         ], [
             'bed_id.not_in' => 'Please choose a different bed.',
         ]);
+
+        // Phase 18: no cross-branch bed movement (no cross-branch transfer
+        // workflow exists; transfers stay within the admission's branch).
+        if (! $this->bedBranchOk((int) $request->bed_id, $admission->branch_id)) {
+            return redirect()->back()
+                ->with('error', 'The selected bed belongs to another branch.')
+                ->withInput();
+        }
 
         try {
             // Phase 01: snapshot the occupied bed for the transfer audit.
@@ -411,12 +462,35 @@ class AdmissionController extends MedicalController implements HasMiddleware
     }
 
     /**
+     * A bed is selectable for a branched admission only when it is a
+     * legacy (branch-less) bed or belongs to the same branch. Branched
+     * admissions never reference another branch's physical beds.
+     */
+    private function bedBranchOk(?int $bedId, $admissionBranch): bool
+    {
+        if ($bedId === null) {
+            return true;
+        }
+        $bed = Bed::where('institute_id', $this->instituteId())->find($bedId);
+        if (! $bed) {
+            return false;
+        }
+        if ($admissionBranch === null) {
+            return true;
+        }
+        $bedBranch = $bed->branch_id;
+
+        return $bedBranch === null || (int) $bedBranch === (int) $admissionBranch;
+    }
+
+    /**
      * Delete admission (discharged records only).
      */
     public function destroy(Request $request, Admission $admission)
     {
         $this->ensureSameInstitute($admission, 'admission');
         $this->ensureDoctorOwns($admission, 'admitting_doctor_id', 'admission');
+        $this->ensureBranchAccess($admission, 'branch_id', 'admission');
 
         if ($admission->status === 'active') {
             return redirect()->back()->with('error', 'Cannot delete an active admission. Please discharge first.');
@@ -462,6 +536,7 @@ class AdmissionController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($admission, 'admission');
         $this->ensureDoctorOwns($admission, 'admitting_doctor_id', 'admission');
+        $this->ensureBranchAccess($admission, 'branch_id', 'admission');
 
         if ($admission->status !== 'discharged') {
             return redirect()->back()->with('error', 'Discharge summary is only available for discharged patients.');

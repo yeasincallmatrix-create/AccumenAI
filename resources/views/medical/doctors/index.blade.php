@@ -76,6 +76,7 @@
                     </tr>
                 </thead>
                 <tbody>
+                    @php $fenceId = mawa_fenced_doctor_id(); @endphp
                     @forelse($doctors as $doctor)
                     <tr>
                         <td>{{ $doctor->registration_number }}</td>
@@ -93,10 +94,12 @@
                             <a href="{{ route('medical.doctors.show', $doctor) }}" class="btn btn-sm btn-info" title="View">
                                 <i class="bi bi-eye"></i>
                             </a>
-                            @if(! mawa_fenced_doctor_id())
+                            @if(! $fenceId || (int) $doctor->user_id === $fenceId)
                             <a href="{{ route('medical.doctors.edit', $doctor) }}" class="btn btn-sm btn-warning" title="Edit / availability">
                                 <i class="bi bi-pencil"></i>
                             </a>
+                            @endif
+                            @if(! $fenceId)
                             <button class="btn btn-sm btn-danger" title="Remove" onclick="confirmDelete({{ $doctor->id }})">
                                 <i class="bi bi-trash"></i>
                             </button>

@@ -111,4 +111,10 @@
         </div>
     </div>
 </div>
+
+<div class="row mt-3">
+    <div class="col-12">
+        @livewire('medical.vitals-recorder', ['appointmentId' => $appointment->id])
+    </div>
+</div>
 @endsection

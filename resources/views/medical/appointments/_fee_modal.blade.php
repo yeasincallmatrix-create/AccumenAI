@@ -44,9 +44,9 @@ function openFeeModal(btn) {
     var amount = btn.getAttribute('data-fee-amount') || '0';
     document.getElementById('fee_amount').textContent = '৳' + amount;
     var isStart = action === 'start';
-    document.getElementById('fee_step').textContent = isStart ? 'Start consultation (In Progress)' : 'Complete visit (Completed)';
+    document.getElementById('fee_step').textContent = isStart ? 'Record fee (stay Checked In)' : 'Complete visit (Completed)';
     document.getElementById('fee_note').textContent = isStart
-        ? 'This doctor collects the fee before the visit. Confirm collection to start the consultation.'
+        ? 'This doctor collects the fee before the visit. Confirm to record it — the Start Consultation button appears after.'
         : 'This doctor collects the fee after the visit. Confirm collection to complete the visit.';
     var modalEl = document.getElementById('feeCollectModal');
     if (modalEl && window.bootstrap) { window.bootstrap.Modal.getOrCreateInstance(modalEl).show(); }

@@ -21,7 +21,7 @@ class AppointmentRequest extends FormRequest
             'patient_id' => [
                 'required',
                 Rule::exists('patients', 'id')->where(
-                    fn ($q) => $q->where('institute_id', $instituteId)->whereNull('deleted_at')
+                    fn ($q) => $q->where('institute_id', $instituteId)->whereNull('deleted_at')->where('is_patient', true)
                 ),
             ],
             'doctor_id' => [

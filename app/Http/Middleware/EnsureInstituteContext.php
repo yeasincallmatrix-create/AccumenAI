@@ -22,6 +22,13 @@ class EnsureInstituteContext
         }
 
         if ($user instanceof InstituteUser) {
+            // Phase 07: deactivated accounts lose API access even with a
+            // still-valid token (mirrors the web login status checks).
+            if ($user->status !== 'active') {
+                return $request->expectsJson()
+                    ? response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401)
+                    : redirect()->route('admin.login');
+            }
             TenantContext::set($user->institute_id);
             BranchContext::set($user->branch_id);
 

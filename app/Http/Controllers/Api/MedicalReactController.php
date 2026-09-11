@@ -37,7 +37,8 @@ class MedicalReactController extends Controller
 
         $date = (string) $request->query('date', today()->format('Y-m-d'));
 
-        $status = $queues->getQueueStatus($instituteId, $doctorId, $date);
+        // Phase 18.1: token branch scope applies when present (null-safe).
+        $status = $queues->getQueueStatus($instituteId, $doctorId, $date, \App\Support\BranchContext::id());
         $queue = $status['queue'] instanceof \Illuminate\Support\Collection
             ? $status['queue']->values()->all()
             : array_values((array) ($status['queue'] ?? []));
@@ -55,6 +56,12 @@ class MedicalReactController extends Controller
 
         $query = \App\Models\Medical\Appointment::where('institute_id', $instituteId)
             ->with(['patient', 'doctor']);
+        // Phase 18.1: token branch scope applies when present (null-safe).
+        if (($apiBranch = \App\Support\BranchContext::id()) !== null) {
+            $query->where(function ($q) use ($apiBranch) {
+                $q->where('branch_id', $apiBranch)->orWhereNull('branch_id');
+            });
+        }
         if ($fence !== null) {
             $query->where('doctor_id', $fence);
         }
@@ -68,6 +75,15 @@ class MedicalReactController extends Controller
         }
         if ($request->filled('doctor_id')) {
             $query->where('doctor_id', (int) $request->doctor_id);
+        }
+        if (is_string($request->input('search')) && trim((string) $request->input('search')) !== '') {
+            $search = trim((string) $request->input('search'));
+            $query->whereHas('patient', function ($q) use ($search) {
+                $q->where('first_name', 'LIKE', "%{$search}%")
+                    ->orWhere('last_name', 'LIKE', "%{$search}%")
+                    ->orWhere('phone', 'LIKE', "%{$search}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
+            });
         }
 
         return response()->json($query->orderBy('appointment_time')->get()
@@ -125,6 +141,12 @@ class MedicalReactController extends Controller
         $query = Prescription::where('institute_id', $instituteId)
             ->with(['patient', 'doctor'])
             ->withCount('items');
+        // Phase 18.1: token branch scope applies when present (null-safe).
+        if (($apiBranch = \App\Support\BranchContext::id()) !== null) {
+            $query->where(function ($q) use ($apiBranch) {
+                $q->where('branch_id', $apiBranch)->orWhereNull('branch_id');
+            });
+        }
         if ($fence !== null) {
             $query->where('doctor_id', $fence);
         }

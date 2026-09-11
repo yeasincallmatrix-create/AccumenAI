@@ -58,6 +58,27 @@
                 </a>
             </div>
         </div>
+
+        <div class="card mt-3">
+            <div class="card-header"><h6 class="mb-0"><i class="bi bi-people me-1"></i>Family Members</h6></div>
+            <div class="card-body small">
+                @if($familyPrimary)
+                    <p class="mb-1 text-muted">Primary contact</p>
+                    <p><a href="{{ route('medical.patients.show', $familyPrimary) }}">{{ $familyPrimary->full_name }}</a>
+                    <span class="text-muted">({{ $familyPrimary->mr_number }})</span></p>
+                @endif
+                @if($patient->relation_to_primary)
+                    <p class="mb-1"><strong>Relation:</strong> {{ $patient->relation_to_primary }}</p>
+                @endif
+                @forelse($familyDependents as $dependent)
+                    @if($loop->first)<p class="mb-1 text-muted">Dependents</p>@endif
+                    <p class="mb-1"><a href="{{ route('medical.patients.show', $dependent) }}">{{ $dependent->family_label }}</a>
+                    <span class="text-muted">({{ $dependent->mr_number }})</span></p>
+                @empty
+                    @if(! $familyPrimary)<p class="text-muted mb-0">No linked family members.</p>@endif
+                @endforelse
+            </div>
+        </div>
     </div>
 
     <div class="col-md-8 d-flex">
@@ -243,6 +264,114 @@
                 @endif
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h6 class="mb-0">Clinical Problems ({{ $patient->problems->count() }})</h6></div>
+            <div class="card-body">
+                @if($patient->problems->count() > 0)
+                    <ul class="mb-3">
+                        @foreach($patient->problems as $problem)
+                            <li>
+                                <strong>{{ $problem->label }}</strong>
+                                <span class="badge bg-{{ $problem->status === 'active' ? 'danger' : ($problem->status === 'resolved' ? 'success' : 'secondary') }}">{{ ucfirst($problem->status) }}</span>
+                                <span class="badge bg-info">{{ ucfirst($problem->problem_type) }}</span>
+                                @if($problem->status === 'active')
+                                    <form action="{{ route('medical.problems.inactivate', $problem) }}" method="POST" class="d-inline">
+                                        @csrf @method('PATCH')
+                                        <button type="submit" class="btn btn-sm btn-link p-0">inactivate</button>
+                                    </form>
+                                    <form action="{{ route('medical.problems.resolve', $problem) }}" method="POST" class="d-inline"
+                                          onsubmit="return confirm('Mark this problem resolved? The record is preserved.')">
+                                        @csrf @method('PATCH')
+                                        <button type="submit" class="btn btn-sm btn-link p-0">resolve</button>
+                                    </form>
+                                @elseif($problem->status === 'inactive')
+                                    <form action="{{ route('medical.problems.reactivate', $problem) }}" method="POST" class="d-inline">
+                                        @csrf @method('PATCH')
+                                        <button type="submit" class="btn btn-sm btn-link p-0">reactivate</button>
+                                    </form>
+                                    <form action="{{ route('medical.problems.resolve', $problem) }}" method="POST" class="d-inline"
+                                          onsubmit="return confirm('Mark this problem resolved? The record is preserved.')">
+                                        @csrf @method('PATCH')
+                                        <button type="submit" class="btn btn-sm btn-link p-0">resolve</button>
+                                    </form>
+                                @endif
+                            </li>
+                        @endforeach
+                    </ul>
+                @else
+                    <p class="text-muted">No longitudinal problems recorded.</p>
+                @endif
+                <form action="{{ route('medical.patients.problems.store', $patient) }}" method="POST" class="row g-2">
+                    @csrf
+                    <div class="col-md-6">
+                        <input type="text" name="label" maxlength="255" required class="form-control" placeholder="Problem (clinician-entered)">
+                    </div>
+                    <div class="col-md-4">
+                        <select name="problem_type" class="form-select" required>
+                            <option value="chronic">Chronic</option>
+                            <option value="acute">Acute</option>
+                            <option value="historical">Historical</option>
+                            <option value="symptom">Symptom</option>
+                            <option value="condition">Condition</option>
+                            <option value="other" selected>Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">Add</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h6 class="mb-0">Follow-up Plan ({{ $patient->followUps->count() }})</h6></div>
+            <div class="card-body">
+                @if($patient->followUps->count() > 0)
+                    <ul class="mb-3">
+                        @foreach($patient->followUps as $followup)
+                            <li>
+                                <strong><x-tdate :value="$followup->planned_date" fallback="d M Y" /></strong>
+                                <span class="badge bg-{{ $followup->status === 'planned' ? 'primary' : ($followup->status === 'completed' ? 'success' : 'secondary') }}">{{ ucfirst($followup->status) }}</span>
+                                <span class="text-muted">— {{ \Illuminate\Support\Str::limit($followup->reason, 60) }}</span>
+                                @if($followup->status === 'planned')
+                                    <form action="{{ route('medical.followups.complete', $followup) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-link p-0">complete</button>
+                                    </form>
+                                    <form action="{{ route('medical.followups.cancel', $followup) }}" method="POST" class="d-inline"
+                                          onsubmit="var r = prompt('Cancellation reason (required):'); if (r === null || r.trim() === '') { return false; } this.querySelector('input[name=reason]').value = r; return true;">
+                                        @csrf
+                                        <input type="hidden" name="reason" value="">
+                                        <button type="submit" class="btn btn-sm btn-link text-danger p-0">cancel</button>
+                                    </form>
+                                @endif
+                            </li>
+                        @endforeach
+                    </ul>
+                @else
+                    <p class="text-muted">No follow-up planned.</p>
+                @endif
+                <form action="{{ route('medical.patients.followups.store', $patient) }}" method="POST" class="row g-2">
+                    @csrf
+                    <div class="col-md-4">
+                        <input type="date" name="planned_date" required class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" name="reason" maxlength="2000" required class="form-control" placeholder="Why follow-up is needed">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">Plan</button>
+                    </div>
+                </form>
+                <p class="text-muted small mt-2 mb-0">Planning record only — it never books an appointment.</p>
             </div>
         </div>
     </div>

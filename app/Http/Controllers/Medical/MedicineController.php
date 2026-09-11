@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Medical;
 use App\Http\Requests\Medical\MedicineRequest;
 use App\Models\Medical\ClinicalAuditLog;
 use App\Models\Medical\Medicine;
+use App\Services\Medical\DgdaService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -16,7 +17,7 @@ class MedicineController extends MedicalController implements HasMiddleware
         return [
             new Middleware('permission:medical_medicines.view', only: ['index', 'show']),
             new Middleware('permission:medical_medicines.create', only: ['create', 'store']),
-            new Middleware('permission:medical_medicines.edit', only: ['edit', 'update']),
+            new Middleware('permission:medical_medicines.edit', only: ['edit', 'update', 'syncDgda']),
             new Middleware('permission:medical_medicines.delete', only: ['destroy']),
         ];
     }
@@ -86,6 +87,15 @@ class MedicineController extends MedicalController implements HasMiddleware
 
         $medicine = Medicine::create($data);
 
+        // Phase 10: best-effort terminology mapping for the new catalog row.
+        // Non-blocking by design — catalog creation must never fail because
+        // terminology mapping is ambiguous; the backfill command reconciles.
+        try {
+            app(\App\Services\Medical\MedicineTerminologyService::class)->mapMedicine($medicine->fresh());
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         return redirect()->route('medical.pharmacy.medicines.show', $medicine)
             ->with('status', 'Medicine created successfully!');
     }
@@ -122,8 +132,46 @@ class MedicineController extends MedicalController implements HasMiddleware
         $this->ensureSameInstitute($medicine, 'medicine');
         $medicine->update($request->validated());
 
+        // Phase 10: re-map on edit (same best-effort contract as store).
+        try {
+            app(\App\Services\Medical\MedicineTerminologyService::class)->mapMedicine($medicine->fresh());
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         return redirect()->route('medical.pharmacy.medicines.show', $medicine)
             ->with('status', 'Medicine updated successfully!');
+    }
+
+    /**
+     * Validate this row's DGDA code against the registry and stamp the
+     * result (synced / failed). Remote calls fail soft inside the service.
+     */
+    public function syncDgda(Medicine $medicine, DgdaService $dgda)
+    {
+        $this->ensureSameInstitute($medicine, 'medicine');
+
+        if (! DgdaService::isEnabledForInstitute($medicine->institute_id)) {
+            return redirect()->back()->with('error', 'DGDA sync is not enabled for this institute.');
+        }
+
+        $code = trim((string) ($medicine->dgda_code ?? ''));
+        if ($code === '') {
+            return redirect()->back()->with('error', 'Enter a DGDA code first, then sync.');
+        }
+
+        $result = $dgda->validateCode($code);
+        if (! ($result['ok'] ?? false)) {
+            return redirect()->back()->with('error', 'DGDA sync failed: '.($result['error'] ?? 'unknown error.'));
+        }
+        if (($result['valid'] ?? null) === false) {
+            $dgda->markFailed($medicine);
+
+            return redirect()->back()->with('error', 'Registry reports this DGDA code as invalid.');
+        }
+        $dgda->markSynced($medicine);
+
+        return redirect()->back()->with('status', 'DGDA code validated and marked synced.');
     }
 
     /**

@@ -4,9 +4,13 @@ use App\Http\Controllers\Medical\AdmissionController;
 use App\Http\Controllers\Medical\AppointmentController;
 use App\Http\Controllers\Medical\BedController;
 use App\Http\Controllers\Medical\BillingController;
+use App\Http\Controllers\Medical\BranchController;
 use App\Http\Controllers\Medical\CategoryController;
 use App\Http\Controllers\Medical\DepartmentController;
+use App\Http\Controllers\Medical\DiagnosisController;
 use App\Http\Controllers\Medical\DoctorController;
+use App\Http\Controllers\Medical\EncounterController;
+use App\Http\Controllers\Medical\FollowUpController;
 use App\Http\Controllers\Medical\InvoiceController;
 use App\Http\Controllers\Medical\LabController;
 use App\Http\Controllers\Medical\LabOrderController;
@@ -16,6 +20,7 @@ use App\Http\Controllers\Medical\PatientController;
 use App\Http\Controllers\Medical\PharmacyController;
 use App\Http\Controllers\Medical\PharmacyStockController;
 use App\Http\Controllers\Medical\PrescriptionController;
+use App\Http\Controllers\Medical\ProblemController;
 use App\Http\Controllers\Medical\ReportController;
 use App\Http\Controllers\Medical\TpaClaimController;
 use App\Http\Controllers\Medical\TpaController;
@@ -57,18 +62,34 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     // swallowed by the {patient} wildcard.
     Route::get('patients/lookup', [PatientController::class, 'lookup'])->name('patients.lookup');
     Route::post('patients/quick-store', [PatientController::class, 'quickStore'])->name('patients.quick-store');
+    Route::post('patients/{patient}/convert', [PatientController::class, 'convert'])->name('patients.convert');
     Route::resource('patients', PatientController::class);
     Route::get('patients/{patient}/history', [PatientController::class, 'history'])->name('patients.history');
 
+    // Longitudinal problems + follow-ups (Phase 17) — documentation only.
+    // No delete paths: problems persist via lifecycle, follow-ups via
+    // terminal states; everything is audit-logged.
+    Route::post('patients/{patient}/problems', [ProblemController::class, 'store'])->name('patients.problems.store');
+    Route::patch('problems/{problem}/inactivate', [ProblemController::class, 'inactivate'])->name('problems.inactivate');
+    Route::patch('problems/{problem}/reactivate', [ProblemController::class, 'reactivate'])->name('problems.reactivate');
+    Route::patch('problems/{problem}/resolve', [ProblemController::class, 'resolve'])->name('problems.resolve');
+    Route::patch('problems/{problem}/link', [ProblemController::class, 'link'])->name('problems.link');
+    Route::patch('problems/{problem}/unlink', [ProblemController::class, 'unlink'])->name('problems.unlink');
+    Route::post('patients/{patient}/followups', [FollowUpController::class, 'store'])->name('patients.followups.store');
+    Route::post('followups/{followup}/complete', [FollowUpController::class, 'complete'])->name('followups.complete');
+    Route::post('followups/{followup}/cancel', [FollowUpController::class, 'cancel'])->name('followups.cancel');
+
     // Appointments (OPD) — the React list feed sits before the resource
     // so it is never swallowed by the {appointment} wildcard.
-    Route::get('appointments-react/data', [AppointmentController::class, 'reactAppointmentsData'])->name('appointments.react.data');
-    Route::get('appointments/queue/{doctor?}', [AppointmentController::class, 'queue'])->name('appointments.queue');
+    Route::get('appointments-react/data', [AppointmentController::class, 'reactAppointmentsData'])->name('appointments.react.data');    Route::get('appointments/queue/{doctor?}', [AppointmentController::class, 'queue'])->name('appointments.queue');
+    Route::get('appointments/{appointment}/token', [AppointmentController::class, 'token'])->name('appointments.token');
     Route::resource('appointments', AppointmentController::class);
     Route::post('appointments/{appointment}/checkin', [AppointmentController::class, 'checkin'])->name('appointments.checkin');
     Route::post('appointments/{appointment}/complete', [AppointmentController::class, 'complete'])->name('appointments.complete');
     Route::post('appointments/{appointment}/transfer', [AppointmentController::class, 'transfer'])->name('appointments.transfer');
     Route::post('appointments/{appointment}/collect-fee', [AppointmentController::class, 'collectFee'])->name('appointments.collect-fee');
+    Route::post('appointments/{appointment}/start', [AppointmentController::class, 'start'])->name('appointments.start');
+    Route::post('appointments/{appointment}/cancel', [AppointmentController::class, 'cancel'])->name('appointments.cancel');
 
     // Admissions (IPD) — explicit GETs before the resource so they are not
     // swallowed by the {admission} wildcard.
@@ -76,15 +97,40 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     Route::resource('admissions', AdmissionController::class);
     Route::post('admissions/{admission}/discharge', [AdmissionController::class, 'discharge'])->name('admissions.discharge');
 
+    // Encounters (Phase 14) — lifecycle actions beside the resource. There
+    // is deliberately no destroy route (cancellation + archival instead).
+    Route::resource('encounters', EncounterController::class)->except(['destroy']);
+    Route::post('encounters/{encounter}/start', [EncounterController::class, 'start'])->name('encounters.start');
+    Route::post('encounters/{encounter}/complete', [EncounterController::class, 'complete'])->name('encounters.complete');
+    Route::post('encounters/{encounter}/cancel', [EncounterController::class, 'cancel'])->name('encounters.cancel');
+    Route::post('encounters/{encounter}/amend', [EncounterController::class, 'amend'])->name('encounters.amend');
+
+    // Encounter diagnoses (Phase 15) — documentation only, no delete path;
+    // removal is a status change. Closed encounters need an amend reason.
+    Route::get('encounters/{encounter}/diagnoses', [DiagnosisController::class, 'index'])->name('encounters.diagnoses.index');
+    Route::post('encounters/{encounter}/diagnoses', [DiagnosisController::class, 'store'])->name('encounters.diagnoses.store');
+    Route::patch('diagnoses/{diagnosis}/remove', [DiagnosisController::class, 'remove'])->name('diagnoses.remove');
+
+    // Branches (Phase 18.1) — minimal administration + doctor assignment.
+    // No destroy route: lifecycle is active/inactive; clinical rows keep
+    // their branch_id untouched by deactivation.
+    Route::resource('branches', BranchController::class)->except(['destroy']);
+    Route::post('branches/{branch}/toggle-status', [BranchController::class, 'toggleStatus'])->name('branches.toggle-status');
+    Route::post('branches/{branch}/doctors', [BranchController::class, 'assignDoctor'])->name('branches.doctors.assign');
+    Route::delete('branches/{branch}/doctors/{doctor}', [BranchController::class, 'removeDoctor'])->name('branches.doctors.remove');
+
     // Wards & Beds — explicit GETs before the resource for the same reason.
     Route::get('beds/available', [BedController::class, 'available'])->name('beds.available');
     Route::resource('wards', WardController::class);
     Route::resource('beds', BedController::class);
     Route::post('beds/{bed}/allocate', [BedController::class, 'allocate'])->name('beds.allocate');
 
-    // Prescriptions
+    // Prescriptions — the patient-info JSON feed sits before the resource
+    // so it is never swallowed by the {prescription} wildcard.
+    Route::get('prescriptions/patient-info/{patient}', [PrescriptionController::class, 'patientInfo'])->name('prescriptions.patient-info');
     Route::resource('prescriptions', PrescriptionController::class);
     Route::post('prescriptions/{prescription}/finalize', [PrescriptionController::class, 'finalize'])->name('prescriptions.finalize');
+    Route::post('prescriptions/{prescription}/findings/{finding}/resolve', [PrescriptionController::class, 'resolveFinding'])->name('prescriptions.findings.resolve');
     Route::get('prescriptions/{prescription}/print', [PrescriptionController::class, 'print'])->name('prescriptions.print');
     Route::get('prescriptions/{prescription}/pdf', [PrescriptionController::class, 'downloadPdf'])->name('prescriptions.pdf');
 
@@ -92,12 +138,14 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     Route::get('pharmacy/expiry-alerts', [PharmacyController::class, 'expiryAlerts'])->name('pharmacy.expiry-alerts');
     Route::post('pharmacy/dispense/{prescription_item}', [PharmacyController::class, 'dispense'])->name('pharmacy.dispense');
     Route::resource('pharmacy/medicines', MedicineController::class)->names('pharmacy.medicines');
+    Route::post('pharmacy/medicines/{medicine}/sync-dgda', [MedicineController::class, 'syncDgda'])->name('pharmacy.medicines.sync-dgda');
     Route::resource('pharmacy/stock', PharmacyStockController::class)->names('pharmacy.stock');
 
     // Lab
     Route::resource('lab/tests', LabTestController::class)->names('lab.tests');
     Route::resource('lab/orders', LabOrderController::class)->names('lab.orders');
     Route::post('lab/orders/{order}/collect', [LabOrderController::class, 'collect'])->name('lab.orders.collect');
+    Route::post('lab/orders/{order}/cancel', [LabOrderController::class, 'cancel'])->name('lab.orders.cancel');
     Route::post('lab/orders/{order}/result', [LabOrderController::class, 'enterResult'])->name('lab.orders.result');
     Route::get('lab/orders/{order}/report', [LabOrderController::class, 'report'])->name('lab.orders.report');
 
@@ -161,7 +209,11 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     // `vitals/create` is never swallowed by the {vital} wildcard.
     Route::get('vitals/create', [VitalSignController::class, 'create'])->name('vitals.create');
     Route::post('vitals', [VitalSignController::class, 'store'])->name('vitals.store');
+    Route::post('vitals/quick', [VitalSignController::class, 'quickStore'])->name('vitals.quickStore');
     Route::get('vitals', [VitalSignController::class, 'index'])->name('vitals.index');
+    Route::get('vitals/opd', [VitalSignController::class, 'opdIndex'])->name('vitals.opd');
+    Route::get('vitals/{vital}/edit', [VitalSignController::class, 'edit'])->name('vitals.edit');
+    Route::put('vitals/{vital}', [VitalSignController::class, 'update'])->name('vitals.update');
     Route::get('vitals/{vital}', [VitalSignController::class, 'show'])->name('vitals.show');
     Route::delete('vitals/{vital}', [VitalSignController::class, 'destroy'])->name('vitals.destroy');
     Route::post('admissions/{admission}/notes', [VitalSignController::class, 'storeNote'])

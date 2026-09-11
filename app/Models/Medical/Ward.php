@@ -11,6 +11,7 @@ class Ward extends Model
 
     protected $fillable = [
         'institute_id',
+        'branch_id',
         'name',
         'type',
         'total_beds',
@@ -30,6 +31,11 @@ class Ward extends Model
     public function institute()
     {
         return $this->belongsTo(Institute::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(\App\Models\Branch::class);
     }
 
     public function beds()

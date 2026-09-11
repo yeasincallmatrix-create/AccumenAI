@@ -106,6 +106,8 @@ class MedicalPhase1Test extends TestCase
     {
         $patient = $this->createPatient();
 
+        // Phase 04 intended contract: MR-YYYY-III-NNNNN (year, zero-padded
+        // institute id, database-backed per-institute yearly sequence).
         $this->assertMatchesRegularExpression(
             '/^MR-\d{4}-'.str_pad((string) $this->institute->id, 3, '0', STR_PAD_LEFT).'-\d{5}$/',
             $patient->mr_number
@@ -119,9 +121,16 @@ class MedicalPhase1Test extends TestCase
         $second = $this->createPatient();
 
         $this->assertNotSame($first->mr_number, $second->mr_number);
-        $this->assertSame(
-            ((int) substr($first->mr_number, -5)) + 1,
-            (int) substr($second->mr_number, -5)
+
+        // Same institute + year: contiguous allocation, no gaps in clean flow.
+        $firstSeq = (int) substr($first->mr_number, -5);
+        $secondSeq = (int) substr($second->mr_number, -5);
+        $this->assertSame($firstSeq + 1, $secondSeq);
+
+        // Institute segment binds each number to its tenant.
+        $this->assertStringContainsString(
+            '-'.str_pad((string) $this->institute->id, 3, '0', STR_PAD_LEFT).'-',
+            $second->mr_number
         );
     }
 

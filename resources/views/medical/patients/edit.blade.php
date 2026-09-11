@@ -122,6 +122,34 @@
                 </div>
             </div>
 
+            <h6 class="mb-3 mt-3">Family</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label" for="relation_to_primary">Relation</label>
+                        <select id="relation_to_primary" name="relation_to_primary" class="form-select @error('relation_to_primary') is-invalid @enderror">
+                            @foreach(['Self', 'Son', 'Daughter', 'Wife', 'Husband', 'Father', 'Mother', 'Brother', 'Sister', 'Other'] as $rel)
+                                <option value="{{ $rel }}" @selected(old('relation_to_primary', $patient->relation_to_primary ?? 'Self') === $rel)>{{ $rel }}</option>
+                            @endforeach
+                        </select>
+                        @error('relation_to_primary')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label class="form-label">Primary Contact</label>
+                        <div class="form-control-plaintext">
+                            @if($patient->primaryContact)
+                                <a href="{{ route('medical.patients.show', $patient->primaryContact) }}">{{ $patient->primaryContact->full_name }}</a>
+                                <span class="text-muted">({{ $patient->primaryContact->mr_number }})</span>
+                            @else
+                                <span class="text-muted">—</span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <h6 class="mb-3 mt-3">Present Address</h6>
             <x-address :prefix="'present_'"
                        :country-id="old('present_country_id', $patient->present_country_id)"

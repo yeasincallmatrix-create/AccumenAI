@@ -121,8 +121,15 @@ Route::middleware(['auth:sanctum', 'ensure.institute.context', 'throttle:60,1'])
     // Medical React feeds (token auth; sibling session-auth web feeds live
     // on the medical.*.react.data routes and are what the Blade-mounted
     // React components poll every 10 seconds).
-    Route::get('medical/queue/{doctorId}', [MedicalReactController::class, 'queue']);
-    Route::get('medical/appointments', [MedicalReactController::class, 'appointments']);
-    Route::get('medical/patients', [MedicalReactController::class, 'patients']);
-    Route::get('medical/prescriptions', [MedicalReactController::class, 'prescriptions']);
+    // Phase 07: these serve clinical data (patients, prescriptions, queue
+    // with names/phones), so they carry the same view permissions as their
+    // web siblings — auth alone is not sufficient.
+    Route::get('medical/queue/{doctorId}', [MedicalReactController::class, 'queue'])
+        ->middleware('permission:medical_appointments.view');
+    Route::get('medical/appointments', [MedicalReactController::class, 'appointments'])
+        ->middleware('permission:medical_appointments.view');
+    Route::get('medical/patients', [MedicalReactController::class, 'patients'])
+        ->middleware('permission:medical_patients.view');
+    Route::get('medical/prescriptions', [MedicalReactController::class, 'prescriptions'])
+        ->middleware('permission:medical_prescriptions.view');
 });

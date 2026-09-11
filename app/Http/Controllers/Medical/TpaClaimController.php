@@ -43,6 +43,13 @@ class TpaClaimController extends MedicalController implements HasMiddleware
         $instituteId = $this->instituteId();
         $query = TpaClaim::where('institute_id', $instituteId)
             ->with(['patient', 'invoice']);
+        // Phase 18: claims follow their invoice's branch (derived).
+        if ($this->branchContextId() !== null) {
+            $ctx = $this->branchContextId();
+            $query->whereHas('invoice', function ($q) use ($ctx) {
+                $q->where('branch_id', $ctx)->orWhereNull('branch_id');
+            });
+        }
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -75,6 +82,8 @@ class TpaClaimController extends MedicalController implements HasMiddleware
         $invoiceQuery = Invoice::where('institute_id', $instituteId)
             ->whereIn('status', ['pending', 'partial'])
             ->visibleToDoctor($instituteId, $fence);
+        // Phase 18: invoice picker follows the branch fence.
+        $this->scopeBranch($invoiceQuery);
         $invoices = $invoiceQuery
             ->with(['patient'])
             ->orderBy('invoice_date', 'desc')
@@ -95,6 +104,7 @@ class TpaClaimController extends MedicalController implements HasMiddleware
                 ->find($request->invoice_id);
             if ($selectedInvoice) {
                 $this->ensureInvoiceVisible($selectedInvoice);
+                $this->ensureBranchAccess($selectedInvoice, 'branch_id', 'invoice');
             }
         }
 
@@ -106,13 +116,17 @@ class TpaClaimController extends MedicalController implements HasMiddleware
     public function store(TpaClaimRequest $request)
     {
         $data = $request->validated();
-        if (($fence = $this->doctorFenceId()) !== null && ! empty($data['invoice_id'])) {
+        if (! empty($data['invoice_id'])) {
+            // Phase 18: claims follow their invoice's branch (derived).
             $invoice = \App\Models\Medical\Invoice::where('institute_id', $this->instituteId())
                 ->find($data['invoice_id']);
             if (! $invoice) {
                 abort(404);
             }
-            $this->ensureInvoiceVisible($invoice);
+            $this->ensureBranchAccess($invoice, 'branch_id', 'invoice');
+            if (($fence = $this->doctorFenceId()) !== null) {
+                $this->ensureInvoiceVisible($invoice);
+            }
         }
         try {
             $claim = $this->tpaService->createClaim($request->validated());
@@ -128,6 +142,13 @@ class TpaClaimController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($claim, 'claim');
         $this->ensureClaimVisible($claim);
+        // Phase 18: claims follow their invoice's branch (derived).
+        if ($claim->relationLoaded('invoice') || $claim->invoice_id) {
+            $invoice = $claim->relationLoaded('invoice') ? $claim->invoice : $claim->invoice()->first();
+            if ($invoice) {
+                $this->ensureBranchAccess($invoice, 'branch_id', 'invoice');
+            }
+        }
         $claim->load(['patient', 'invoice']);
 
         return view('medical.tpa.claims.show', compact('claim'));
@@ -137,6 +158,13 @@ class TpaClaimController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($claim, 'claim');
         $this->ensureClaimVisible($claim);
+        // Phase 18: claims follow their invoice's branch (derived).
+        if ($claim->relationLoaded('invoice') || $claim->invoice_id) {
+            $invoice = $claim->relationLoaded('invoice') ? $claim->invoice : $claim->invoice()->first();
+            if ($invoice) {
+                $this->ensureBranchAccess($invoice, 'branch_id', 'invoice');
+            }
+        }
 
         if ($claim->status !== 'pending') {
             return redirect()->back()->with('error', 'Only pending claims can be edited.');
@@ -159,6 +187,13 @@ class TpaClaimController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($claim, 'claim');
         $this->ensureClaimVisible($claim);
+        // Phase 18: claims follow their invoice's branch (derived).
+        if ($claim->relationLoaded('invoice') || $claim->invoice_id) {
+            $invoice = $claim->relationLoaded('invoice') ? $claim->invoice : $claim->invoice()->first();
+            if ($invoice) {
+                $this->ensureBranchAccess($invoice, 'branch_id', 'invoice');
+            }
+        }
 
         if ($claim->status !== 'pending') {
             return redirect()->back()->with('error', 'Only pending claims can be updated.');
@@ -193,6 +228,13 @@ class TpaClaimController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($claim, 'claim');
         $this->ensureClaimVisible($claim);
+        // Phase 18: claims follow their invoice's branch (derived).
+        if ($claim->relationLoaded('invoice') || $claim->invoice_id) {
+            $invoice = $claim->relationLoaded('invoice') ? $claim->invoice : $claim->invoice()->first();
+            if ($invoice) {
+                $this->ensureBranchAccess($invoice, 'branch_id', 'invoice');
+            }
+        }
 
         if ($claim->status !== 'pending') {
             return redirect()->back()->with('error', 'Only pending claims can be approved.');
@@ -216,6 +258,13 @@ class TpaClaimController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($claim, 'claim');
         $this->ensureClaimVisible($claim);
+        // Phase 18: claims follow their invoice's branch (derived).
+        if ($claim->relationLoaded('invoice') || $claim->invoice_id) {
+            $invoice = $claim->relationLoaded('invoice') ? $claim->invoice : $claim->invoice()->first();
+            if ($invoice) {
+                $this->ensureBranchAccess($invoice, 'branch_id', 'invoice');
+            }
+        }
 
         if ($claim->status !== 'pending') {
             return redirect()->back()->with('error', 'Only pending claims can be rejected.');
@@ -235,6 +284,13 @@ class TpaClaimController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($claim, 'claim');
         $this->ensureClaimVisible($claim);
+        // Phase 18: claims follow their invoice's branch (derived).
+        if ($claim->relationLoaded('invoice') || $claim->invoice_id) {
+            $invoice = $claim->relationLoaded('invoice') ? $claim->invoice : $claim->invoice()->first();
+            if ($invoice) {
+                $this->ensureBranchAccess($invoice, 'branch_id', 'invoice');
+            }
+        }
 
         try {
             $this->tpaService->settleClaim($claim);
@@ -250,6 +306,13 @@ class TpaClaimController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($claim, 'claim');
         $this->ensureClaimVisible($claim);
+        // Phase 18: claims follow their invoice's branch (derived).
+        if ($claim->relationLoaded('invoice') || $claim->invoice_id) {
+            $invoice = $claim->relationLoaded('invoice') ? $claim->invoice : $claim->invoice()->first();
+            if ($invoice) {
+                $this->ensureBranchAccess($invoice, 'branch_id', 'invoice');
+            }
+        }
 
         if ($claim->status !== 'pending') {
             return redirect()->back()->with('error', 'Only pending claims can be deleted.');

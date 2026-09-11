@@ -181,6 +181,43 @@
                         @error('storage_conditions')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
+                @if(mawa_dgda_enabled())
+                <div class="col-12">
+                    <hr class="my-2">
+                    <h6 class="text-muted">DGDA Registry (optional)
+                        @if($medicine->dgda_status)
+                            <span class="badge bg-secondary ms-1">{{ ucfirst($medicine->dgda_status) }}</span>
+                        @endif
+                    </h6>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label" for="dgda_code">DGDA Code</label>
+                        <input type="text" id="dgda_code" name="dgda_code" maxlength="100"
+                               class="form-control @error('dgda_code') is-invalid @enderror"
+                               value="{{ old('dgda_code', $medicine->dgda_code) }}" placeholder="e.g. DGDA-DR-000123">
+                        @error('dgda_code')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label" for="dgda_dar_number">DAR Number</label>
+                        <input type="text" id="dgda_dar_number" name="dgda_dar_number" maxlength="100"
+                               class="form-control @error('dgda_dar_number') is-invalid @enderror"
+                               value="{{ old('dgda_dar_number', $medicine->dgda_dar_number) }}" placeholder="e.g. DAR-45678">
+                        @error('dgda_dar_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label" for="dgda_concept_id">Concept ID</label>
+                        <input type="text" id="dgda_concept_id" name="dgda_concept_id" maxlength="100"
+                               class="form-control @error('dgda_concept_id') is-invalid @enderror"
+                               value="{{ old('dgda_concept_id', $medicine->dgda_concept_id) }}">
+                        @error('dgda_concept_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+                @endif
                 <div class="col-md-6">
                     <div class="form-check mb-3">
                         <input type="checkbox" id="is_active" name="is_active" value="1"

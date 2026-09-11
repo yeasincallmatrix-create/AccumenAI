@@ -5,6 +5,7 @@ namespace App\Services\Medical;
 use App\Models\Institute;
 use App\Models\Medical\Admission;
 use App\Models\Medical\Invoice;
+use App\Models\Medical\NumberSequence;
 use App\Models\Medical\Patient;
 use App\Support\MedicalScope;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -18,99 +19,100 @@ use Illuminate\Support\Facades\DB;
 class BillingService
 {
     /**
-     * Generate a unique invoice number (INV-YYYY-III-XXXXX).
+     * Phase 08 — single authoritative tax rule for medical billing.
+     * Bangladesh default 5%, applied server-side everywhere (creation and
+     * pending-invoice edits share computeTotals()); never client-submitted.
+     * Multi-jurisdiction VAT/GST is explicitly Phase 25 territory.
+     */
+    public const TAX_RATE = 0.05;
+
+    /**
+     * Phase 08 — authoritative totals from line items. Math is identical to
+     * the historical implementation (raw subtotal sum; tax/discount/total
+     * rounded to 2dp to match DECIMAL(15,2) storage); it is centralized here
+     * so creation, edits, PDFs and receipts can never diverge.
+     * Items: [{amount, quantity, discount}].
+     */
+    public static function computeTotals(array $items): array
+    {
+        $subtotal = collect($items)->sum(fn ($i) => ((float) ($i['amount'] ?? 0)) * ((int) ($i['quantity'] ?? 1)));
+        $tax = round($subtotal * self::TAX_RATE, 2);
+        $discount = round((float) collect($items)->sum('discount'), 2);
+
+        return [
+            'subtotal' => $subtotal,
+            'tax' => $tax,
+            'discount' => $discount,
+            'total' => round($subtotal + $tax - $discount, 2),
+        ];
+    }
+    /**
+     * Generate a unique invoice number (INV-YYYY-III-XXXXX) via the
+     * database-backed sequence (Phase 04). Format unchanged.
      */
     public function generateInvoiceNumber(int $instituteId): string
     {
-        $year = date('Y');
-        $prefix = 'INV-'.$year.'-'.str_pad((string) $instituteId, 3, '0', STR_PAD_LEFT).'-';
-
-        return DB::transaction(function () use ($instituteId, $year, $prefix) {
-            $last = Invoice::where('institute_id', $instituteId)
-                ->whereYear('created_at', $year)
-                ->orderBy('id', 'desc')
-                ->lockForUpdate()
-                ->first();
-
-            $nextNumber = 1;
-            if ($last && preg_match('/(\d{5})$/', (string) $last->invoice_number, $m)) {
-                $nextNumber = ((int) $m[1]) + 1;
-            } elseif ($last) {
-                $nextNumber = Invoice::where('institute_id', $instituteId)
-                    ->whereYear('created_at', $year)
-                    ->count() + 1;
-            }
-
-            $candidate = $prefix.str_pad((string) $nextNumber, 5, '0', STR_PAD_LEFT);
-
-            while (Invoice::where('invoice_number', $candidate)->exists()) {
-                $nextNumber++;
-                $candidate = $prefix.str_pad((string) $nextNumber, 5, '0', STR_PAD_LEFT);
-            }
-
-            return $candidate;
-        });
+        return app(NumberSequenceService::class)->next(NumberSequence::TYPE_INVOICE, $instituteId);
     }
 
     /**
      * Generate OPD invoice.
      */
-    public function generateOpdInvoice(Patient $patient, array $items): Invoice
+    public function generateOpdInvoice(Patient $patient, array $items, ?int $branchId = null): Invoice
     {
-        return $this->createInvoice($patient, 'opd', $items);
+        return $this->createInvoice($patient, 'opd', $items, null, $branchId);
     }
 
     /**
      * Generate IPD invoice.
      */
-    public function generateIpdInvoice(Admission $admission, array $items): Invoice
+    public function generateIpdInvoice(Admission $admission, array $items, ?int $branchId = null): Invoice
     {
-        return $this->createInvoice($admission->patient, 'ipd', $items, $admission->id);
+        return $this->createInvoice($admission->patient, 'ipd', $items, $admission->id, $branchId);
     }
 
     /**
      * Generate pharmacy invoice.
      */
-    public function generatePharmacyInvoice(Patient $patient, array $items): Invoice
+    public function generatePharmacyInvoice(Patient $patient, array $items, ?int $branchId = null): Invoice
     {
-        return $this->createInvoice($patient, 'pharmacy', $items);
+        return $this->createInvoice($patient, 'pharmacy', $items, null, $branchId);
     }
 
     /**
      * Generate lab invoice.
      */
-    public function generateLabInvoice(Patient $patient, array $items): Invoice
+    public function generateLabInvoice(Patient $patient, array $items, ?int $branchId = null): Invoice
     {
-        return $this->createInvoice($patient, 'lab', $items);
+        return $this->createInvoice($patient, 'lab', $items, null, $branchId);
     }
 
     /**
      * Create an invoice. Items: [{description, amount, quantity, discount}].
+     * Phase 18 adds an optional branch owner (no calculation change).
      */
-    public function createInvoice(Patient $patient, string $type, array $items, ?int $admissionId = null): Invoice
+    public function createInvoice(Patient $patient, string $type, array $items, ?int $admissionId = null, ?int $branchId = null): Invoice
     {
-        return DB::transaction(function () use ($patient, $type, $items, $admissionId) {
+        return DB::transaction(function () use ($patient, $type, $items, $admissionId, $branchId) {
             $instituteId = (int) $patient->institute_id;
 
-            $subtotal = collect($items)->sum(fn ($i) => ((float) ($i['amount'] ?? 0)) * ((int) ($i['quantity'] ?? 1)));
-            $tax = round($subtotal * 0.05, 2); // 5% tax
-            $discount = round((float) collect($items)->sum('discount'), 2);
-            $total = round($subtotal + $tax - $discount, 2);
+            $totals = self::computeTotals($items);
 
             return Invoice::create([
                 'institute_id' => $instituteId,
                 'patient_id' => $patient->id,
                 'admission_id' => $admissionId,
+                'branch_id' => $branchId,
                 'invoice_number' => $this->generateInvoiceNumber($instituteId),
                 'invoice_date' => now()->format('Y-m-d'),
                 'due_date' => now()->addDays(15)->format('Y-m-d'),
                 'type' => $type,
-                'subtotal' => $subtotal,
-                'tax' => $tax,
-                'discount' => $discount,
-                'total' => $total,
+                'subtotal' => $totals['subtotal'],
+                'tax' => $totals['tax'],
+                'discount' => $totals['discount'],
+                'total' => $totals['total'],
                 'paid_amount' => 0,
-                'due_amount' => $total,
+                'due_amount' => $totals['total'],
                 'status' => 'pending',
                 'items_data' => json_encode(array_values($items)),
             ]);
@@ -123,7 +125,9 @@ class BillingService
     public function processPayment(Invoice $invoice, float $amount, string $method, ?string $reference = null): array
     {
         return DB::transaction(function () use ($invoice, $amount, $method, $reference) {
-            $invoice->refresh();
+            // Phase 08: row-lock the invoice so two concurrent payments both
+            // validate against the same due and cannot jointly overpay.
+            $invoice = Invoice::whereKey($invoice->getKey())->lockForUpdate()->firstOrFail();
 
             if ($invoice->status === 'paid') {
                 return ['success' => false, 'message' => 'Invoice already paid.'];
@@ -185,10 +189,16 @@ class BillingService
      * Get revenue summary for a period of paid invoices. Optional doctor
      * fence restricts to that doctor's own billing (null = institute-wide).
      */
-    public function getRevenueSummary(int $instituteId, string $period = 'today', ?int $doctorUserId = null): array
+    public function getRevenueSummary(int $instituteId, string $period = 'today', ?int $doctorUserId = null, ?int $branchId = null): array
     {
         $query = Invoice::where('institute_id', $instituteId)->where('status', 'paid');
         $query->visibleToDoctor($instituteId, $doctorUserId);
+        // Phase 18: optional branch limitation (context branch + legacy).
+        if ($branchId !== null) {
+            $query->where(function ($q) use ($branchId) {
+                $q->where('branch_id', $branchId)->orWhereNull('branch_id');
+            });
+        }
 
         if ($period === 'today') {
             $query->whereDate('invoice_date', today());

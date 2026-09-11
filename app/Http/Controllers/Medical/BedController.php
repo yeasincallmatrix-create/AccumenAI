@@ -38,6 +38,8 @@ class BedController extends MedicalController implements HasMiddleware
     {
         $instituteId = $this->instituteId();
         $query = Bed::where('institute_id', $instituteId)->with('ward');
+        // Phase 18: branch fence (context branch + legacy NULLs).
+        $this->scopeBranch($query);
 
         if ($request->filled('ward_id')) {
             $query->where('ward_id', $request->ward_id);
@@ -48,7 +50,10 @@ class BedController extends MedicalController implements HasMiddleware
         }
 
         $beds = $query->orderBy('bed_number')->paginate(50)->withQueryString();
-        $wards = Ward::where('institute_id', $instituteId)->orderBy('name')->get();
+        $wardsQuery = Ward::where('institute_id', $instituteId)->orderBy('name');
+        // Phase 18: ward picker follows the branch fence.
+        $this->scopeBranch($wardsQuery);
+        $wards = $wardsQuery->get();
 
         return view('medical.beds.index', compact('beds', 'wards'));
     }
@@ -58,10 +63,11 @@ class BedController extends MedicalController implements HasMiddleware
      */
     public function create()
     {
-        $wards = Ward::where('institute_id', $this->instituteId())
+        $wardsQuery = Ward::where('institute_id', $this->instituteId())
             ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
+            ->orderBy('name');
+        $this->scopeBranch($wardsQuery);
+        $wards = $wardsQuery->get();
 
         return view('medical.beds.create', compact('wards'));
     }
@@ -73,6 +79,11 @@ class BedController extends MedicalController implements HasMiddleware
     {
         $data = $request->validated();
         $data['institute_id'] = $this->instituteId();
+        // Phase 18: a bed physically lives in its ward — branch derives
+        // from the ward (deterministic, never client-supplied).
+        $ward = Ward::where('institute_id', $data['institute_id'])->findOrFail($data['ward_id']);
+        $this->ensureBranchAccess($ward, 'branch_id', 'ward');
+        $data['branch_id'] = $ward->branch_id;
 
         $bed = Bed::create($data);
 
@@ -93,6 +104,7 @@ class BedController extends MedicalController implements HasMiddleware
     public function show(Bed $bed)
     {
         $this->ensureSameInstitute($bed, 'bed');
+        $this->ensureBranchAccess($bed, 'branch_id', 'bed');
         $bed->load('ward');
 
         $activeAdmission = Admission::where('institute_id', $bed->institute_id)
@@ -110,10 +122,12 @@ class BedController extends MedicalController implements HasMiddleware
     public function edit(Bed $bed)
     {
         $this->ensureSameInstitute($bed, 'bed');
-        $wards = Ward::where('institute_id', $bed->institute_id)
+        $this->ensureBranchAccess($bed, 'branch_id', 'bed');
+        $wardsQuery = Ward::where('institute_id', $bed->institute_id)
             ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
+            ->orderBy('name');
+        $this->scopeBranch($wardsQuery);
+        $wards = $wardsQuery->get();
 
         return view('medical.beds.edit', compact('bed', 'wards'));
     }
@@ -124,11 +138,20 @@ class BedController extends MedicalController implements HasMiddleware
     public function update(BedRequest $request, Bed $bed)
     {
         $this->ensureSameInstitute($bed, 'bed');
+        $this->ensureBranchAccess($bed, 'branch_id', 'bed');
 
         $oldWardId = $bed->ward_id;
         $oldStatus = $bed->status;
 
-        $bed->update($request->validated());
+        $data = $request->validated();
+        // Phase 18: branch follows the ward; never client-supplied.
+        unset($data['branch_id']);
+        if ((int) ($data['ward_id'] ?? $oldWardId) !== (int) $oldWardId) {
+            $newWard = Ward::where('institute_id', $bed->institute_id)->findOrFail($data['ward_id']);
+            $this->ensureBranchAccess($newWard, 'branch_id', 'ward');
+            $data['branch_id'] = $newWard->branch_id;
+        }
+        $bed->update($data);
 
         // Moving a bed between wards shifts both wards' counters.
         if ((int) $request->ward_id !== (int) $oldWardId) {
@@ -146,6 +169,7 @@ class BedController extends MedicalController implements HasMiddleware
     public function destroy(Bed $bed)
     {
         $this->ensureSameInstitute($bed, 'bed');
+        $this->ensureBranchAccess($bed, 'branch_id', 'bed');
 
         if ($bed->status === 'occupied') {
             return redirect()->back()->with('error', 'Cannot delete an occupied bed.');
@@ -178,11 +202,12 @@ class BedController extends MedicalController implements HasMiddleware
     {
         $instituteId = $this->instituteId();
 
-        $availableBeds = Bed::where('institute_id', $instituteId)
+        $availableBedsQuery = Bed::where('institute_id', $instituteId)
             ->where('status', 'available')
             ->with('ward')
-            ->orderBy('bed_number')
-            ->get();
+            ->orderBy('bed_number');
+        $this->scopeBranch($availableBedsQuery);
+        $availableBeds = $availableBedsQuery->get();
 
         $summary = $this->bedAllocation->getOccupancySummary($instituteId);
 
@@ -195,6 +220,7 @@ class BedController extends MedicalController implements HasMiddleware
     public function allocate(Request $request, Bed $bed)
     {
         $this->ensureSameInstitute($bed, 'bed');
+        $this->ensureBranchAccess($bed, 'branch_id', 'bed');
 
         $request->validate([
             'admission_id' => 'required|integer|exists:admissions,id',
@@ -205,6 +231,12 @@ class BedController extends MedicalController implements HasMiddleware
 
         if ($admission->status !== 'active') {
             return redirect()->back()->with('error', 'Beds can only be allocated to active admissions.');
+        }
+        $this->ensureBranchAccess($admission, 'branch_id', 'admission');
+        // Phase 18: a bed serves its own branch (or legacy beds anywhere).
+        if ($bed->branch_id !== null && $admission->branch_id !== null
+            && (int) $bed->branch_id !== (int) $admission->branch_id) {
+            return redirect()->back()->with('error', 'This bed belongs to another branch.');
         }
 
         // Free the admission's previous bed first so counts stay exact.
@@ -231,6 +263,7 @@ class BedController extends MedicalController implements HasMiddleware
     public function release(Bed $bed)
     {
         $this->ensureSameInstitute($bed, 'bed');
+        $this->ensureBranchAccess($bed, 'branch_id', 'bed');
 
         // Detach any active admission still pointing at this bed so no
         // dangling bed_id survives the release.

@@ -26,6 +26,8 @@ class WardController extends MedicalController implements HasMiddleware
     public function index(Request $request)
     {
         $query = Ward::where('institute_id', $this->instituteId());
+        // Phase 18: branch fence (context branch + legacy NULLs).
+        $this->scopeBranch($query);
 
         if ($request->filled('type')) {
             $query->where('type', $request->type);
@@ -55,6 +57,8 @@ class WardController extends MedicalController implements HasMiddleware
     {
         $data = $request->validated();
         $data['institute_id'] = $this->instituteId();
+        // Phase 18: branch ownership (validated; legacy NULL allowed).
+        $data['branch_id'] = $this->resolveBranchId($request->input('branch_id'));
         $data['available_beds'] = $data['total_beds'];
 
         $ward = Ward::create($data);
@@ -69,6 +73,7 @@ class WardController extends MedicalController implements HasMiddleware
     public function show(Ward $ward)
     {
         $this->ensureSameInstitute($ward, 'ward');
+        $this->ensureBranchAccess($ward, 'branch_id', 'ward');
 
         $ward->load(['beds' => function ($q) {
             $q->orderBy('bed_number');
@@ -83,6 +88,7 @@ class WardController extends MedicalController implements HasMiddleware
     public function edit(Ward $ward)
     {
         $this->ensureSameInstitute($ward, 'ward');
+        $this->ensureBranchAccess($ward, 'branch_id', 'ward');
 
         return view('medical.wards.edit', compact('ward'));
     }
@@ -93,8 +99,11 @@ class WardController extends MedicalController implements HasMiddleware
     public function update(WardRequest $request, Ward $ward)
     {
         $this->ensureSameInstitute($ward, 'ward');
+        $this->ensureBranchAccess($ward, 'branch_id', 'ward');
 
         $data = $request->validated();
+        // Phase 18: branch identity never moves between records.
+        unset($data['branch_id']);
 
         // If total beds changed, shift available_beds by the same delta so
         // the occupied count stays truthful.
@@ -119,6 +128,7 @@ class WardController extends MedicalController implements HasMiddleware
     public function destroy(Ward $ward)
     {
         $this->ensureSameInstitute($ward, 'ward');
+        $this->ensureBranchAccess($ward, 'branch_id', 'ward');
 
         if ($ward->beds()->where('status', 'occupied')->exists()) {
             return redirect()->back()->with('error', 'Cannot delete ward with occupied beds.');

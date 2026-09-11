@@ -21,7 +21,7 @@
                 <div class="col-md-4">
                     <div class="input-group">
                         <input type="text" name="search" class="form-control"
-                               placeholder="Search generic, brand, code or DGDA..."
+                               placeholder="{{ mawa_dgda_enabled() ? 'Search generic, brand, code or DGDA...' : 'Search generic, brand or code...' }}"
                                value="{{ request('search') }}">
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-search"></i> Search
@@ -43,6 +43,7 @@
                         <option value="inactive" @selected(request('status') === 'inactive')>Inactive</option>
                     </select>
                 </div>
+                @if(mawa_dgda_enabled())
                 <div class="col-md-2">
                     <select name="dgda" class="form-select" onchange="this.form.submit()" title="Filter by DGDA registry code">
                         <option value="">All DGDA</option>
@@ -50,6 +51,7 @@
                         <option value="pending" @selected(request('dgda') === 'pending')>DGDA sync pending</option>
                     </select>
                 </div>
+                @endif
                 <div class="col-md-2 text-end">
                     <a href="{{ route('medical.pharmacy.medicines.index') }}" class="btn btn-secondary">Reset</a>
                 </div>
@@ -62,7 +64,7 @@
                     <tr>
                         <th>Code</th>
                         <th>Medicine</th>
-                        <th>DGDA Code</th>
+                        @if(mawa_dgda_enabled())<th>DGDA Code</th>@endif
                         <th>Form / Strength</th>
                         <th>Price</th>
                         <th>Stock</th>
@@ -82,6 +84,7 @@
                                 <span class="badge bg-info text-dark ms-1">OTC</span>
                             @endif
                         </td>
+                        @if(mawa_dgda_enabled())
                         <td>
                             @if($medicine->dgda_code)
                                 <code>{{ $medicine->dgda_code }}</code>
@@ -92,6 +95,7 @@
                                 <span class="badge bg-warning text-dark" title="No DGDA code — registry sync pending">DGDA sync pending</span>
                             @endif
                         </td>
+                        @endif
                         <td>{{ $medicine->dosage_form }}{{ $medicine->strength ? ' '.$medicine->strength : '' }}</td>
                         <td>৳{{ number_format($medicine->selling_price, 2) }}</td>
                         <td>
@@ -111,6 +115,12 @@
                                 <a href="{{ route('medical.pharmacy.medicines.edit', $medicine) }}" class="btn btn-warning" title="Edit">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+                                @if(mawa_dgda_enabled())
+                                <button type="button" class="btn btn-success" title="Validate against DGDA registry"
+                                        onclick="document.getElementById('medicine-sync-{{ $medicine->id }}').submit();">
+                                    <i class="bi bi-arrow-repeat"></i>
+                                </button>
+                                @endif
                                 <button type="button" class="btn btn-danger" title="Delete"
                                         onclick="if(confirm('Delete this medicine? Medicines with stock cannot be deleted.')){document.getElementById('medicine-delete-{{ $medicine->id }}').submit();}">
                                     <i class="bi bi-trash"></i>
@@ -122,11 +132,18 @@
                                 @csrf
                                 @method('DELETE')
                             </form>
+                            @if(mawa_dgda_enabled())
+                            <form id="medicine-sync-{{ $medicine->id }}"
+                                  action="{{ route('medical.pharmacy.medicines.sync-dgda', $medicine) }}"
+                                  method="POST" style="display:none;">
+                                @csrf
+                            </form>
+                            @endif
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="text-center text-muted py-4">
+                        <td colspan="{{ mawa_dgda_enabled() ? 7 : 6 }}" class="text-center text-muted py-4">
                             <i class="bi bi-capsule fs-2 d-block mb-2"></i>
                             No medicines found.
                         </td>

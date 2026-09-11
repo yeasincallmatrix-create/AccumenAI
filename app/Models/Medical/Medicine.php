@@ -11,6 +11,7 @@ class Medicine extends Model
 
     protected $fillable = [
         'institute_id',
+        'medicine_product_id',
         'code',
         'generic_name',
         'brand_name',
@@ -53,6 +54,15 @@ class Medicine extends Model
     public function institute()
     {
         return $this->belongsTo(Institute::class);
+    }
+
+    /**
+     * Phase 10 — compatibility link to the normalized product. Nullable
+     * until mapped; all operational reads/writes keep using this row.
+     */
+    public function product()
+    {
+        return $this->belongsTo(MedicineProduct::class, 'medicine_product_id');
     }
 
     public function stocks()

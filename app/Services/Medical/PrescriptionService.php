@@ -2,6 +2,8 @@
 
 namespace App\Services\Medical;
 
+use App\Models\Medical\Medicine;
+use App\Models\Medical\NumberSequence;
 use App\Models\Medical\Prescription;
 use App\Models\Medical\PrescriptionAuditLog;
 use App\Models\Medical\PrescriptionItem;
@@ -14,39 +16,15 @@ use Illuminate\Support\Facades\DB;
  */
 class PrescriptionService
 {
+    public function __construct(private readonly MedicineTerminologyService $terminology) {}
+
     /**
-     * Generate a unique prescription number (RX-YYYY-III-XXXXX).
+     * Generate a unique prescription number (RX-YYYY-III-XXXXX) via the
+     * database-backed sequence (Phase 04). Format unchanged.
      */
     public function generateNumber(int $instituteId): string
     {
-        $year = date('Y');
-        $prefix = 'RX-'.$year.'-'.str_pad((string) $instituteId, 3, '0', STR_PAD_LEFT).'-';
-
-        return DB::transaction(function () use ($instituteId, $year, $prefix) {
-            $last = Prescription::where('institute_id', $instituteId)
-                ->whereYear('created_at', $year)
-                ->orderBy('id', 'desc')
-                ->lockForUpdate()
-                ->first();
-
-            $nextNumber = 1;
-            if ($last && preg_match('/(\d{5})$/', (string) $last->prescription_number, $m)) {
-                $nextNumber = ((int) $m[1]) + 1;
-            } elseif ($last) {
-                $nextNumber = Prescription::where('institute_id', $instituteId)
-                    ->whereYear('created_at', $year)
-                    ->count() + 1;
-            }
-
-            $candidate = $prefix.str_pad((string) $nextNumber, 5, '0', STR_PAD_LEFT);
-
-            while (Prescription::where('prescription_number', $candidate)->exists()) {
-                $nextNumber++;
-                $candidate = $prefix.str_pad((string) $nextNumber, 5, '0', STR_PAD_LEFT);
-            }
-
-            return $candidate;
-        });
+        return app(NumberSequenceService::class)->next(NumberSequence::TYPE_PRESCRIPTION, $instituteId);
     }
 
     /**
@@ -63,9 +41,29 @@ class PrescriptionService
 
             $prescription = Prescription::create($data);
 
+            // Snapshot each linked catalog row's DGDA code (batch, one
+            // query) so downstream reads see the code as prescribed.
+            $catalog = Medicine::whereIn(
+                'id',
+                collect($items)->pluck('medicine_id')->filter()->unique()->values()->all()
+            )->with(['product.concept', 'product.form', 'product.route', 'product.identifiers'])
+                ->get()->keyBy('id');
+
             // Create items.
             foreach ($items as $item) {
                 $item['prescription_id'] = $prescription->id;
+                if (empty($item['dgda_code']) && isset($item['medicine_id'])) {
+                    $item['dgda_code'] = $catalog->get($item['medicine_id'])?->dgda_code;
+                }
+                // Phase 10: immutable medicine-identity snapshot (never
+                // overwritten when explicitly supplied, e.g. by tests).
+                if (isset($item['medicine_id']) && ($medicine = $catalog->get($item['medicine_id']))) {
+                    foreach ($this->terminology->snapshotFor($medicine) as $key => $value) {
+                        if (empty($item[$key])) {
+                            $item[$key] = $value;
+                        }
+                    }
+                }
                 PrescriptionItem::create($item);
             }
 
@@ -83,8 +81,24 @@ class PrescriptionService
     {
         DB::transaction(function () use ($prescription, $items) {
             $prescription->items()->delete();
+            $catalog = Medicine::whereIn(
+                'id',
+                collect($items)->pluck('medicine_id')->filter()->unique()->values()->all()
+            )->with(['product.concept', 'product.form', 'product.route', 'product.identifiers'])
+                ->get()->keyBy('id');
             foreach ($items as $item) {
                 $item['prescription_id'] = $prescription->id;
+                if (empty($item['dgda_code']) && isset($item['medicine_id'])) {
+                    $item['dgda_code'] = $catalog->get($item['medicine_id'])?->dgda_code;
+                }
+                // Phase 10: immutable medicine-identity snapshot (see create).
+                if (isset($item['medicine_id']) && ($medicine = $catalog->get($item['medicine_id']))) {
+                    foreach ($this->terminology->snapshotFor($medicine) as $key => $value) {
+                        if (empty($item[$key])) {
+                            $item[$key] = $value;
+                        }
+                    }
+                }
                 PrescriptionItem::create($item);
             }
         });
@@ -195,11 +209,15 @@ class PrescriptionService
 
     /**
      * Get pending (finalized, undispensed) prescriptions for pharmacy.
+     * Phase 18.1: optional branch limitation applied in SQL.
      */
-    public function getPendingPrescriptions(int $instituteId): Collection
+    public function getPendingPrescriptions(int $instituteId, ?int $branchId = null): Collection
     {
         return Prescription::where('institute_id', $instituteId)
             ->where('is_finalized', true)
+            ->when($branchId !== null, fn ($q) => $q->where(function ($qq) use ($branchId) {
+                $qq->where('branch_id', $branchId)->orWhereNull('branch_id');
+            }))
             ->whereHas('items', function ($q) {
                 $q->where('status', 'pending');
             })

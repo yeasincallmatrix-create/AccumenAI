@@ -24,6 +24,7 @@ class ClinicalAuditLog extends Model
 {
     protected $fillable = [
         'institute_id',
+        'branch_id',
         'patient_id',
         'user_id',
         'user_type',
@@ -73,6 +74,9 @@ class ClinicalAuditLog extends Model
         return static::create([
             'institute_id' => $instituteId,
             'patient_id' => $patientId,
+            // Phase 18: branch context when the auditable carries (or
+            // derives) one; historical rows without branch stay NULL.
+            'branch_id' => static::resolveBranch($auditable),
             'user_id' => $userId,
             'user_type' => $userType,
             'actor_name' => $actorName,
@@ -129,18 +133,89 @@ class ClinicalAuditLog extends Model
             $auditable instanceof Patient => [$auditable->institute_id, $auditable->getKey()],
             $auditable instanceof Admission,
             $auditable instanceof LabOrder,
-            $auditable instanceof Prescription => [$auditable->institute_id, $auditable->patient_id],
-            $auditable instanceof VitalSign,
-            $auditable instanceof NursingNote => [
-                $auditable->admission->institute_id,
-                $auditable->admission->patient_id,
+            $auditable instanceof Prescription,
+            $auditable instanceof Encounter => [$auditable->institute_id, $auditable->patient_id],
+            // Diagnoses carry no patient_id by design (§28); the patient
+            // always resolves through the encounter.
+            $auditable instanceof EncounterDiagnosis => [
+                $auditable->institute_id,
+                $auditable->encounter?->patient_id,
             ],
+            $auditable instanceof VitalSign,
+            $auditable instanceof NursingNote => static::resolveParentScope($auditable),
             $auditable instanceof LabResult => [
                 $auditable->labOrder->institute_id,
                 $auditable->labOrder->patient_id,
             ],
             default => [$auditable->institute_id ?? null, $auditable->patient_id ?? null],
         };
+    }
+
+    /**
+     * Phase 18 — branch attribution for audit rows. Direct branch_id wins;
+     * child rows without their own column derive through their parent
+     * (diagnosis→encounter, vitals/notes→admission/appointment,
+     * result→order). Anything else stays NULL (legacy-valid).
+     */
+    protected static function resolveBranch(Model $auditable): ?int
+    {
+        try {
+            if ($auditable instanceof EncounterDiagnosis) {
+                return $auditable->encounter?->branch_id !== null
+                    ? (int) $auditable->encounter->branch_id : null;
+            }
+            if ($auditable instanceof VitalSign || $auditable instanceof NursingNote) {
+                $parent = $auditable->admission ?? $auditable->appointment ?? null;
+                if ($auditable instanceof VitalSign && ! $auditable->admission_id && $auditable->appointment_id) {
+                    $parent = $auditable->appointment;
+                }
+                $branch = $parent?->branch_id ?? null;
+
+                return $branch !== null ? (int) $branch : null;
+            }
+            if ($auditable instanceof LabResult) {
+                $branch = $auditable->labOrder?->branch_id ?? null;
+
+                return $branch !== null ? (int) $branch : null;
+            }
+            $branch = $auditable->branch_id ?? null;
+
+            return $branch !== null ? (int) $branch : null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Scope for admission-linked rows (vitals/notes): OPD vitals resolve
+     * through their appointment instead — admission is null for those.
+     */
+    protected static function resolveParentScope(Model $auditable): array
+    {
+        if ($auditable instanceof VitalSign && ! $auditable->admission_id && $auditable->appointment_id) {
+            $appointment = $auditable->appointment;
+
+            return [
+                $appointment?->institute_id,
+                $appointment?->patient_id ?? $auditable->patient_id,
+            ];
+        }
+
+        if ($auditable instanceof VitalSign && ! $auditable->admission_id && ! $auditable->appointment_id) {
+            // Patient-direct vitals (prescription page flow): neither parent
+            // exists, so resolve the tenant through the patient instead.
+            $patient = $auditable->patient;
+
+            return [
+                $patient?->institute_id,
+                $patient?->getKey() ?? $auditable->patient_id,
+            ];
+        }
+
+        return [
+            $auditable->admission->institute_id,
+            $auditable->admission->patient_id,
+        ];
     }
 
     /**

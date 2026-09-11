@@ -65,31 +65,56 @@ class PharmacyStockService
     }
 
     /**
-     * Get available (unexpired, positive) stock for a medicine.
+     * Constrain a stock query to a branch (own branch + legacy NULLs).
+     * Null branch = institute-wide (existing behavior preserved).
      */
-    public function getAvailableStock(int $instituteId, int $medicineId): int
+    private function scopeBranch($query, ?int $branchId)
     {
-        return (int) PharmacyStock::where('institute_id', $instituteId)
-            ->where('medicine_id', $medicineId)
-            ->where('current_quantity', '>', 0)
-            ->where('expiry_date', '>', now())
-            ->sum('current_quantity');
+        if ($branchId === null) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($branchId) {
+            $q->where('branch_id', $branchId)->orWhereNull('branch_id');
+        });
+    }
+
+    /**
+     * Get available (unexpired, positive) stock for a medicine.
+     * Phase 18.1: optional branch limitation applied in SQL.
+     */
+    public function getAvailableStock(int $instituteId, int $medicineId, ?int $branchId = null): int
+    {
+        return (int) $this->scopeBranch(
+            PharmacyStock::where('institute_id', $instituteId)
+                ->where('medicine_id', $medicineId)
+                ->where('current_quantity', '>', 0)
+                ->where('expiry_date', '>', now()),
+            $branchId
+        )->sum('current_quantity');
     }
 
     /**
      * Split a dispense quantity across FEFO batches.
      *
+     * Phase 18.1: optional branch limitation applied in SQL (FEFO expiry
+     * ordering preserved). No reservation table exists in this
+     * architecture; the row-locked decrement in deductStock remains the
+     * concurrency primitive (documented limitation).
+     *
      * @return array{stock_id:int,batch_number:string,quantity:int,expiry_date:mixed}[]
      */
-    public function getStockBatches(int $instituteId, int $medicineId, int $quantity): array
+    public function getStockBatches(int $instituteId, int $medicineId, int $quantity, ?int $branchId = null): array
     {
-        $batches = PharmacyStock::where('institute_id', $instituteId)
-            ->where('medicine_id', $medicineId)
-            ->where('current_quantity', '>', 0)
-            ->where('expiry_date', '>', now())
-            ->orderBy('expiry_date')
-            ->lockForUpdate()
-            ->get();
+        $batches = $this->scopeBranch(
+            PharmacyStock::where('institute_id', $instituteId)
+                ->where('medicine_id', $medicineId)
+                ->where('current_quantity', '>', 0)
+                ->where('expiry_date', '>', now())
+                ->orderBy('expiry_date')
+                ->lockForUpdate(),
+            $branchId
+        )->get();
 
         $result = [];
         $remaining = $quantity;
@@ -117,30 +142,35 @@ class PharmacyStockService
     }
 
     /**
-     * Get near-expiry stock.
+     * Get near-expiry stock. Phase 18.1: optional branch limitation in SQL.
      */
-    public function getNearExpiryStock(int $instituteId, int $days = 30): Collection
+    public function getNearExpiryStock(int $instituteId, int $days = 30, ?int $branchId = null): Collection
     {
-        return PharmacyStock::where('institute_id', $instituteId)
-            ->where('current_quantity', '>', 0)
-            ->where('expiry_date', '>', now())
-            ->where('expiry_date', '<=', now()->addDays($days))
-            ->with('medicine')
-            ->orderBy('expiry_date')
-            ->get();
+        return $this->scopeBranch(
+            PharmacyStock::where('institute_id', $instituteId)
+                ->where('current_quantity', '>', 0)
+                ->where('expiry_date', '>', now())
+                ->where('expiry_date', '<=', now()->addDays($days))
+                ->with('medicine')
+                ->orderBy('expiry_date'),
+            $branchId
+        )->get();
     }
 
     /**
      * Get expired stock (still holding quantity).
+     * Phase 18.1: optional branch limitation in SQL.
      */
-    public function getExpiredStock(int $instituteId): Collection
+    public function getExpiredStock(int $instituteId, ?int $branchId = null): Collection
     {
-        return PharmacyStock::where('institute_id', $instituteId)
-            ->where('current_quantity', '>', 0)
-            ->where('expiry_date', '<=', now())
-            ->with('medicine')
-            ->orderBy('expiry_date')
-            ->get();
+        return $this->scopeBranch(
+            PharmacyStock::where('institute_id', $instituteId)
+                ->where('current_quantity', '>', 0)
+                ->where('expiry_date', '<=', now())
+                ->with('medicine')
+                ->orderBy('expiry_date'),
+            $branchId
+        )->get();
     }
 
     /**
@@ -149,7 +179,7 @@ class PharmacyStockService
      * Returns a base Support collection of stdClass rows (medicine,
      * available_stock, reorder_level, needs_reorder) — not Eloquent models.
      */
-    public function getLowStockItems(int $instituteId): \Illuminate\Support\Collection
+    public function getLowStockItems(int $instituteId, ?int $branchId = null): \Illuminate\Support\Collection
     {
         $medicines = Medicine::where('institute_id', $instituteId)
             ->where('is_active', true)
@@ -158,7 +188,7 @@ class PharmacyStockService
         $lowStock = [];
 
         foreach ($medicines as $medicine) {
-            $available = $this->getAvailableStock($instituteId, $medicine->id);
+            $available = $this->getAvailableStock($instituteId, $medicine->id, $branchId);
             if ($available <= $medicine->reorder_level) {
                 $lowStock[] = (object) [
                     'medicine' => $medicine,

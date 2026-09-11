@@ -41,6 +41,26 @@ class InvoiceRequest extends FormRequest
         ];
     }
 
+    /**
+     * Phase 08 — a per-line discount larger than its line total would drive
+     * the invoice total negative (stuck, unpayable invoice). Rejected here
+     * for both creation and pending-invoice edits (both use this request).
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            foreach ((array) $this->input('items', []) as $i => $item) {
+                $line = (float) ($item['amount'] ?? 0) * (int) ($item['quantity'] ?? 0);
+                if ((float) ($item['discount'] ?? 0) > $line) {
+                    $validator->errors()->add(
+                        "items.$i.discount",
+                        'Discount cannot exceed the line total.'
+                    );
+                }
+            }
+        });
+    }
+
     public function messages(): array
     {
         return [

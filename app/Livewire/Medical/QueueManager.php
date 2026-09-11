@@ -2,10 +2,13 @@
 
 namespace App\Livewire\Medical;
 
+use App\Models\Branch;
 use App\Models\InstituteUser;
 use App\Models\Medical\Appointment;
 use App\Models\Medical\Doctor;
 use App\Models\Medical\QueueAuditLog;
+use App\Models\Medical\VitalSign;
+use App\Support\BranchContext;
 use App\Support\MedicalScope;
 use App\Support\Workspace;
 use Carbon\Carbon;
@@ -71,6 +74,13 @@ class QueueManager extends Component
         abort_if($fence !== null && (int) $fence !== (int) $this->doctorUserId,
             403, 'You may only view your own queue.');
 
+        // Phase 18.1: branch-scoped actors may only open queues of doctors
+        // visible in their branch (legacy unassigned doctors included).
+        if (($branchId = $this->branchId()) !== null) {
+            abort_unless($this->doctorVisibleInBranch($this->doctorUserId, $branchId),
+                403, 'You do not have permission to access this queue.');
+        }
+
         $this->canReorder = $this->resolveCanReorder($reason);
         $this->readonlyReason = $reason;
         $this->canManage = $this->resolveCanManage();
@@ -82,11 +92,15 @@ class QueueManager extends Component
     {
         // Lean columns only (payload + serialization stay small on 1.5GB
         // shared hosting); patient carries just what the cards render.
-        $appointments = Appointment::where('institute_id', $this->instituteId)
+        $queueQuery = Appointment::where('institute_id', $this->instituteId)
             ->where('doctor_id', $this->doctorUserId)
             ->whereDate('appointment_date', $this->date)
-            ->inQueue()
-            ->select(['id', 'patient_id', 'serial_number', 'status', 'appointment_time', 'queue_order'])
+            ->inQueue();
+        // Phase 18.1: queue rows follow the branch fence (legacy NULLs stay
+        // visible, exactly like the appointments list).
+        $this->scopeBranch($queueQuery);
+        $appointments = $queueQuery
+            ->select(['id', 'patient_id', 'serial_number', 'status', 'appointment_time', 'queue_order', 'fee_collected_at'])
             ->with('patient:id,first_name,last_name,phone')
             ->get()
             ->values();
@@ -100,18 +114,38 @@ class QueueManager extends Component
         $lastVisitDates = collect();
         $patientIds = $appointments->pluck('patient_id')->filter()->unique()->values();
         if ($profile && $patientIds->isNotEmpty()) {
-            $lastVisitDates = Appointment::where('institute_id', $this->instituteId)
+            $lastVisitQuery = Appointment::where('institute_id', $this->instituteId)
                 ->where('doctor_id', $this->doctorUserId)
                 ->whereIn('patient_id', $patientIds)
-                ->where('status', 'completed')
+                ->where('status', 'completed');
+            $this->scopeBranch($lastVisitQuery);
+            $lastVisitDates = $lastVisitQuery
                 ->selectRaw('patient_id, MAX(appointment_date) as last_date')
                 ->groupBy('patient_id')
                 ->pluck('last_date', 'patient_id');
         }
         $followUpWindow = $profile ? max(1, (int) ($profile->follow_up_days ?? 30)) : 30;
 
+        // Fee timing for the whole (single-doctor) queue: drives the
+        // Prescription shortcut — right after payment (pre) or once the
+        // visit is in progress (post).
+        $feeTiming = ! $profile ? 'none' : ((bool) $profile->collect_fee_before_visit ? 'pre' : 'post');
+
+        // Batch the latest vitals per queued appointment in ONE query so
+        // the Record Vitals popup opens pre-filled from the server.
+        $latestVitals = VitalSign::whereIn('appointment_id', $appointments->pluck('id')->all())
+            ->orderByDesc('recorded_at')
+            ->orderByDesc('id')
+            ->get()
+            ->groupBy('appointment_id')
+            ->map(fn ($rows) => $rows->first()->only([
+                'temperature', 'blood_pressure_systolic', 'blood_pressure_diastolic',
+                'pulse', 'heart_rate', 'respiratory_rate', 'spo2', 'pain_score',
+                'blood_sugar', 'weight', 'height', 'notes',
+            ]));
+
         $this->items = $appointments
-            ->map(function (Appointment $a, int $i) use ($profile, $lastVisitDates, $followUpWindow) {
+            ->map(function (Appointment $a, int $i) use ($profile, $lastVisitDates, $followUpWindow, $latestVitals, $feeTiming) {
                 $feeRequired = false;
                 $feeAmount = 0.0;
                 $feeType = '';
@@ -139,6 +173,7 @@ class QueueManager extends Component
                     'id' => $a->id,
                     'position' => $i + 1,
                     'serial' => $a->serial_number,
+                    'patient_id' => $a->patient_id,
                     'patient_name' => $a->patient->full_name ?? 'N/A',
                     'patient_phone' => $a->patient->phone ?? null,
                     'status' => $a->status,
@@ -147,6 +182,9 @@ class QueueManager extends Component
                         : '',
                     'queue_order' => $a->queue_order,
                     'fee_required' => $feeRequired,
+                    'fee_collected' => $a->fee_collected_at !== null,
+                    'fee_timing' => $feeTiming,
+                    'latest_vitals' => $latestVitals->get($a->id),
                     'fee_amount' => $feeAmount,
                     'fee_type' => $feeType,
                 ];
@@ -177,10 +215,13 @@ class QueueManager extends Component
 
         $orderedIds = array_values(array_unique(array_map('intval', $orderedIds)));
 
-        $current = Appointment::where('institute_id', $this->instituteId)
+        $reorderQuery = Appointment::where('institute_id', $this->instituteId)
             ->where('doctor_id', $this->doctorUserId)
             ->whereDate('appointment_date', $this->date)
-            ->inQueue()
+            ->inQueue();
+        // Foreign-branch ids stay ignored (existing stale-id behavior).
+        $this->scopeBranch($reorderQuery);
+        $current = $reorderQuery
             ->get()
             ->keyBy('id');
 
@@ -270,6 +311,8 @@ class QueueManager extends Component
         if (! $appointment) {
             return;
         }
+        // Phase 18.1: cross-branch queue mutation is refused server-side.
+        $this->assertBranchVisible($appointment);
 
         if (in_array($appointment->status, ['checked_in', 'in_progress'], true)) {
             $appointment->update(['status' => 'completed']);
@@ -294,14 +337,84 @@ class QueueManager extends Component
         if (! $appointment) {
             return;
         }
+        $this->assertBranchVisible($appointment);
 
         if ($appointment->status === 'checked_in') {
+            // Pre-visit doctors: consultation cannot start before the fee
+            // is on record (Collect Visit Fee button first).
+            if ($this->isPreVisitUnpaid($appointment)) {
+                $this->errorMessage = 'Collect the visit fee first — consultation cannot start before payment.';
+                $this->loadQueue();
+
+                return;
+            }
             $appointment->update(['status' => 'in_progress']);
             $this->errorMessage = '';
             $this->statusMessage = 'Consultation started!';
         }
 
         $this->loadQueue();
+
+        // Treating doctor starting the consultation continues straight
+        // into writing the prescription (both fee timings — the pre-visit
+        // fee step already happened via the Collect gate above). Saving it
+        // brings up the fee popup; confirming completes the visit.
+        if ($appointment->wasChanged('status')
+            && $this->isTreatingDoctorClick($appointment)) {
+            $this->redirect(route('medical.prescriptions.create', [
+                'patient_id' => $appointment->patient_id,
+                'fee_appointment_id' => $appointment->id,
+            ]));
+        }
+    }
+
+    /**
+     * Pre-visit doctor whose fee is not yet on record: consultation must
+     * wait for the Collect Visit Fee step.
+     */
+    private function isPreVisitUnpaid(Appointment $appointment): bool
+    {
+        $profile = Doctor::resolveForUser((int) $appointment->doctor_id, (int) $appointment->institute_id);
+        if ($profile === null || ! (bool) $profile->collect_fee_before_visit) {
+            return false;
+        }
+
+        return $appointment->fee_collected_at === null;
+    }
+
+    /**
+     * Whether the appointment's doctor collects post-visit (fee due at
+     * completion, not at start). No billing profile = no fee flow.
+     */    private function isPostVisitDoctor(Appointment $appointment): bool
+    {
+        $profile = Doctor::resolveForUser((int) $appointment->doctor_id, (int) $appointment->institute_id);
+
+        return $profile !== null && ! (bool) $profile->collect_fee_before_visit;
+    }
+
+    /**
+     * Whether the click came from the treating doctor themselves (web user
+     * id match, or staff linked to the doctor's user). Owners/managers
+     * acting on someone else's queue count as non-doctor clicks.
+     */
+    private function isTreatingDoctorClick(Appointment $appointment): bool
+    {
+        $doctorId = (int) $appointment->doctor_id;
+
+        try {
+            $webUser = auth('web')->user();
+            if ($webUser && (int) $webUser->getKey() === $doctorId) {
+                return true;
+            }
+        } catch (\Throwable) {
+            // fall through to profile resolution
+        }
+
+        try {
+            return MedicalScope::ownDoctorUserId((int) $appointment->institute_id) === $doctorId;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     /** Cancel a queue item (confirm dialog in the view guards accidents). */
@@ -318,6 +431,7 @@ class QueueManager extends Component
         if (! $appointment) {
             return;
         }
+        $this->assertBranchVisible($appointment);
 
         // Paid appointments are finalized records — the queue's own doctor
         // or an admin may cancel (payment reversed + audit entry).
@@ -427,6 +541,82 @@ class QueueManager extends Component
         }
 
         return false;
+    }
+
+    /**
+     * Phase 18.1 — validated context branch (null when institute-wide). A
+     * context branch outside this component's institute fails closed.
+     */
+    private function branchId(): ?int
+    {
+        $branchId = BranchContext::id();
+        if ($branchId === null) {
+            return null;
+        }
+        $belongs = Branch::whereKey($branchId)
+            ->where('institute_id', $this->instituteId)
+            ->exists();
+        abort_unless($belongs, 403, 'You do not have permission to access this branch.');
+
+        return (int) $branchId;
+    }
+
+    /**
+     * Phase 18.1 — constrain a queue query to the context branch plus
+     * legacy NULLs (grouped; no-op institute-wide). Mirrors the
+     * MedicalController::scopeBranch fence for Livewire context.
+     */
+    private function scopeBranch($query)
+    {
+        if (($branchId = $this->branchId()) === null) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($branchId) {
+            $q->where('branch_id', $branchId)->orWhereNull('branch_id');
+        });
+    }
+
+    /**
+     * Phase 18.1 — refuse cross-branch queue rows server-side (legacy
+     * NULLs pass; every direct action calls this after loading).
+     */
+    private function assertBranchVisible(Appointment $appointment): void
+    {
+        if (($branchId = $this->branchId()) === null) {
+            return;
+        }
+        abort_if($appointment->branch_id !== null && (int) $appointment->branch_id !== $branchId,
+            403, 'You do not have permission to access this queue item.');
+    }
+
+    /**
+     * Phase 18.1 — whether a clinician may appear in this branch's queue
+     * scope: legacy doctors (no assignments) plus assigned ones.
+     */
+    private function doctorVisibleInBranch(int $doctorUserId, int $branchId): bool
+    {
+        $doctorIds = Doctor::where('institute_id', $this->instituteId)
+            ->where('user_id', $doctorUserId)
+            ->pluck('id');
+        if ($doctorIds->isEmpty()) {
+            return false;
+        }
+        $hasAssignments = DB::table('doctor_branch')
+            ->where('institute_id', $this->instituteId)
+            ->whereIn('doctor_id', $doctorIds)
+            ->where('is_active', true)
+            ->exists();
+        if (! $hasAssignments) {
+            return true;
+        }
+
+        return DB::table('doctor_branch')
+            ->where('institute_id', $this->instituteId)
+            ->where('branch_id', $branchId)
+            ->whereIn('doctor_id', $doctorIds)
+            ->where('is_active', true)
+            ->exists();
     }
 
     /**

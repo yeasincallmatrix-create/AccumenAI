@@ -13,6 +13,7 @@ class Invoice extends Model
 
     protected $fillable = [
         'institute_id',
+        'branch_id',
         'patient_id',
         'admission_id',
         'invoice_number',
@@ -46,6 +47,11 @@ class Invoice extends Model
     public function institute()
     {
         return $this->belongsTo(Institute::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(\App\Models\Branch::class);
     }
 
     public function patient()

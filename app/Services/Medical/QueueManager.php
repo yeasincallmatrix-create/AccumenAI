@@ -27,14 +27,19 @@ class QueueManager
     }
 
     /**
-     * Get the current queue status for a doctor.
+     * Get the current queue status for a doctor. Phase 18.1 adds an
+     * optional branch limitation (context branch + legacy NULLs); serial
+     * generation and ordering are untouched.
      */
-    public function getQueueStatus(int $instituteId, int $doctorId, string $date): array
+    public function getQueueStatus(int $instituteId, int $doctorId, string $date, ?int $branchId = null): array
     {
         $appointments = Appointment::where('institute_id', $instituteId)
             ->where('doctor_id', $doctorId)
             ->whereDate('appointment_date', $date)
             ->whereIn('status', ['scheduled', 'checked_in', 'in_progress'])
+            ->when($branchId !== null, fn ($q) => $q->where(function ($qq) use ($branchId) {
+                $qq->where('branch_id', $branchId)->orWhereNull('branch_id');
+            }))
             // Manual drag-and-drop order first; never-reordered rows keep serial order.
             ->orderByRaw('queue_order IS NULL, queue_order ASC')
             ->orderBy('serial_number')

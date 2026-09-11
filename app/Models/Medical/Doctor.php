@@ -53,6 +53,19 @@ class Doctor extends Model
         return $this->hasMany(DoctorAvailability::class);
     }
 
+    /**
+     * Phase 18 — branches this clinician is assigned to (doctor_branch
+     * pivot). A doctor with NO assignments is legacy-compatible and treated
+     * as institute-wide by the branch helpers; the relation itself only
+     * reflects explicit rows.
+     */
+    public function branches()
+    {
+        return $this->belongsToMany(\App\Models\Branch::class, 'doctor_branch', 'doctor_id', 'branch_id')
+            ->withPivot('is_active')
+            ->withTimestamps();
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);

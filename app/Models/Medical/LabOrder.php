@@ -15,8 +15,10 @@ class LabOrder extends Model
 
     protected $fillable = [
         'institute_id',
+        'branch_id',
         'patient_id',
         'doctor_id',
+        'encounter_id',
         'prescription_id',
         'order_number',
         'order_date',
@@ -39,6 +41,11 @@ class LabOrder extends Model
     public function institute()
     {
         return $this->belongsTo(Institute::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(\App\Models\Branch::class);
     }
 
     public function patient()

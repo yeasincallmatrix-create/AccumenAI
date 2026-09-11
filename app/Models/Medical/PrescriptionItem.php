@@ -12,6 +12,16 @@ class PrescriptionItem extends Model
         'prescription_id',
         'medicine_id',
         'medicine_name',
+        'dgda_code',
+        // Phase 10 — immutable medicine-identity snapshots (written once at
+        // item creation by PrescriptionService; never updated afterwards).
+        'medicine_concept_id',
+        'medicine_product_id',
+        'display_name_snapshot',
+        'strength_snapshot',
+        'dosage_form_snapshot',
+        'route_snapshot',
+        'rxnorm_code_snapshot',
         'dosage',
         'frequency',
         'duration_days',
@@ -28,20 +38,6 @@ class PrescriptionItem extends Model
     public function prescription()
     {
         return $this->belongsTo(Prescription::class);
-    }
-
-    /**
-     * DGDA registry code / concept of the linked catalog medicine (null for
-     * free-text items or uncoded catalog rows).
-     */
-    public function getDgdaCodeAttribute(): ?string
-    {
-        return $this->medicine?->dgda_code;
-    }
-
-    public function getDgdaConceptIdAttribute(): ?string
-    {
-        return $this->medicine?->dgda_concept_id;
     }
 
     public function medicine()

@@ -1,11 +1,4 @@
 <div>
-    <div class="d-flex flex-wrap align-items-center justify-content-end gap-2 mb-3">
-        <small id="queue-save-state" class="text-muted"></small>
-        <small class="text-muted" wire:loading wire:target="startProgress,complete,cancel,updateQueueOrder,loadQueue">
-            <span class="spinner-border spinner-border-sm me-1"></span>Updating…
-        </small>
-    </div>
-
     @if($statusMessage !== '')
         <div class="alert alert-success py-2" data-auto-dismiss>{{ $statusMessage }}</div>
     @endif
@@ -37,14 +30,14 @@
                         <th>Serial</th>
                         <th>Time</th>
                         <th>Status</th>
+                        <th>Payment</th>
                         <th class="text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="medical-queue-list" data-queue-list>
                     @foreach($items as $item)
                         <tr data-queue-id="{{ $item['id'] }}"
-                            wire:key="queue-{{ $item['id'] }}"
-                            class="{{ $item['status'] === 'in_progress' ? 'table-success' : '' }}">
+                            wire:key="queue-{{ $item['id'] }}">
                             <td class="col-handle text-center">
                                 @if($canReorder)
                                     <i class="bi bi-grip-vertical drag-handle" draggable="true" title="Drag to reorder"></i>
@@ -56,31 +49,53 @@
                             <td>#{{ $item['serial'] }}</td>
                             <td>{{ $item['time'] !== '' ? $item['time'] : 'N/A' }}</td>
                             <td>
-                                <span class="badge bg-{{ $item['status'] === 'in_progress' ? 'success' : 'info' }}">
+                                <span class="badge bg-{{ $item['status'] === 'completed' ? 'success' : ($item['status'] === 'scheduled' ? 'primary' : ($item['status'] === 'in_progress' ? 'warning' : ($item['status'] === 'cancelled' ? 'danger' : 'secondary'))) }}">
                                     {{ ucfirst(str_replace('_', ' ', $item['status'])) }}
                                 </span>
                             </td>
+                            <td>
+                                @if(!empty($item['fee_collected']))
+                                    <span class="badge bg-success">Paid</span>
+                                @elseif(!empty($item['fee_required']))
+                                    <span class="badge bg-danger">Unpaid</span>
+                                @else
+                                    <span class="text-muted">—</span>
+                                @endif
+                            </td>
                             <td class="text-end text-nowrap col-action">
-                                <a href="{{ route('medical.appointments.edit', $item['id']) }}" class="btn btn-sm btn-outline-secondary" title="Edit">
-                                    <i class="bi bi-pencil-square"></i>
+                                <a href="{{ route('medical.appointments.token', $item['id']) }}" target="_blank" class="btn btn-sm btn-outline-dark" title="Print serial token">
+                                    <i class="bi bi-printer"></i>
                                 </a>
                                 @if($canManage)
+                                    <button type="button" class="btn btn-sm btn-outline-primary"
+                                            title="Record vitals"
+                                            data-vital-id="{{ $item['id'] }}"
+                                            data-vital-patient="{{ $item['patient_name'] }}"
+                                            data-vital-serial="{{ $item['serial'] }}"
+                                            data-vitals-latest='@json($item['latest_vitals'])'
+                                            onclick="openVitalsModalFrom(this)">
+                                        <i class="bi bi-heart-pulse"></i>
+                                    </button>
                                     @if($item['status'] === 'checked_in')
-                                        @if($item['fee_required'])
-                                            <button type="button" class="btn btn-sm btn-outline-info" title="Start consultation — fee due"
+                                        @if($item['fee_required'] && empty($item['fee_collected']))
+                                            <button type="button" class="btn btn-sm btn-success" title="Collect Visit Fee"
                                                     data-fee-url="{{ route('medical.appointments.collect-fee', $item['id']) }}"
                                                     data-fee-action="start"
                                                     data-fee-patient="{{ $item['patient_name'] }}"
                                                     data-fee-amount="{{ number_format((float) $item['fee_amount'], 2, '.', '') }}"
                                                     data-fee-type="{{ $item['fee_type'] }}"
                                                     onclick="openFeeModal(this)">
-                                                <i class="bi bi-play-circle"></i>
+                                                <i class="bi bi-cash-coin"></i>
                                             </button>
                                         @else
-                                            <button type="button" class="btn btn-sm btn-outline-info"
-                                                     wire:click="startProgress({{ $item['id'] }})" wire:loading.attr="disabled" title="Start consultation">
-                                                <i class="bi bi-play-circle"></i>
-                                            </button>
+                                            <form action="{{ route('medical.appointments.start', $item['id']) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-outline-info" title="Start consultation">
+                                                <i class="bi bi-play-circle{{ ($item['fee_required'] && !empty($item['fee_collected'])) ? ' me-1' : '' }}"></i>@if($item['fee_required'] && !empty($item['fee_collected']))
+Start Consultation
+@endif
+                                                </button>
+                                            </form>
                                         @endif
                                     @else
                                         @if($item['fee_required'])
@@ -94,17 +109,32 @@
                                                 <i class="bi bi-check-circle"></i>
                                             </button>
                                         @else
-                                            <button type="button" class="btn btn-sm btn-outline-success"
-                                                     wire:click="complete({{ $item['id'] }})" wire:loading.attr="disabled" title="Complete">
-                                                <i class="bi bi-check-circle"></i>
-                                            </button>
+                                            <form action="{{ route('medical.appointments.complete', $item['id']) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Complete">
+                                                    <i class="bi bi-check-circle"></i>
+                                                </button>
+                                            </form>
                                         @endif
                                     @endif
-                                    <button type="button" class="btn btn-sm btn-outline-danger"
-                                            wire:click="cancel({{ $item['id'] }})" wire:loading.attr="disabled"
-                                            wire:confirm="Cancel this appointment? It will leave the queue." title="Cancel">
-                                        <i class="bi bi-x-lg"></i>
-                                    </button>
+                                    @if(($item['fee_timing'] ?? 'none') === 'pre' && !empty($item['fee_collected']))
+                                        <a href="{{ route('medical.prescriptions.create', array_filter(['patient_id' => $item['patient_id'], 'fee_appointment_id' => $item['status'] === 'in_progress' ? $item['id'] : null])) }}"
+                                           class="btn btn-sm btn-outline-primary" title="Write prescription">
+                                            <i class="bi bi-file-earmark-medical"></i>
+                                        </a>
+                                    @elseif(($item['fee_timing'] ?? 'none') === 'post' && $item['status'] === 'in_progress')
+                                        <a href="{{ route('medical.prescriptions.create', ['patient_id' => $item['patient_id'], 'fee_appointment_id' => $item['id']]) }}"
+                                           class="btn btn-sm btn-outline-primary" title="Write prescription">
+                                            <i class="bi bi-file-earmark-medical"></i>
+                                        </a>
+                                    @endif
+                                    <form action="{{ route('medical.appointments.cancel', $item['id']) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Cancel"
+                                                onclick="return confirm('Cancel this appointment? It will leave the queue.')">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </form>
                                 @endif
                             </td>
                         </tr>
@@ -131,10 +161,11 @@
             catch (_) { window.location.reload(); }
         };
         let draggedId = null;
+        let startOrder = null; // DOM order when the drag began
+        let lastSaved = null;  // last order string sent to the server
         let saveTimer = null;
-        let saving = false;
-        let pendingOrder = null;
-        let lastSent = null;
+        let inFlight = false;
+        let waitCycles = 0;
 
         function queueList() {
             return document.getElementById('medical-queue-list');
@@ -164,74 +195,76 @@
             const el = document.getElementById('queue-save-state');
             if (el) el.innerHTML = html || '';
         }
-        function escHtml(s) {
-            return String(s).replace(/[&<>"']/g, function (c) {
-                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-            });
+        function orderKey(order) {
+            return order.join(',');
         }
-        function failSave(err) {
-            try { console.error('[queue-save] failed', err); } catch (_) {}
-            let msg = 'Save failed — drag again';
-            try {
-                const m = err && (err.message || (err.response && err.response.status));
-                if (m) msg = 'Save failed (' + escHtml(m) + ') — drag again';
-            } catch (_) {}
-            setSaveState('<i class="bi bi-exclamation-triangle me-1"></i>' + msg);
-        }
-        function persist(order) {
-            const key = order.join(',');
-            if (key === lastSent) return; // server already holds this order
-            lastSent = key;
-            saving = true;
-            setSaveState('<span class="spinner-border spinner-border-sm me-1"></span>Saving…');
-            let request;
-            try {
-                request = $wire.updateQueueOrder(order);
-            } catch (err) {
-                saving = false;
-                lastSent = null;
-                failSave(err);
-                return;
-            }
-            // Failsafe: the spinner must never spin forever — if the
-            // roundtrip neither resolves nor rejects, reset and offer retry.
-            const watchdog = setTimeout(function () {
-                if (!saving) return;
-                saving = false;
-                lastSent = null;
-                setSaveState('<i class="bi bi-exclamation-triangle me-1"></i>Taking too long — drag again to retry');
-            }, 15000);
-            Promise.resolve(request).then(function () {
-                clearTimeout(watchdog);
-                saving = false;
-                setSaveState('<i class="bi bi-check-lg me-1"></i>Saved');
-                if (pendingOrder) { // a newer drop landed mid-flight
-                    const next = pendingOrder;
-                    pendingOrder = null;
-                    persist(next);
-                }
-            }).catch(function (err) {
-                clearTimeout(watchdog);
-                saving = false;
-                lastSent = null; // allow retry of the same order
-                failSave(err);
-            });
-        }
-        // Debounced persist: rapid successive drops collapse into one
-        // roundtrip instead of one overlapping request per drop.
+        // Debounced save: rapid successive drops collapse into one request.
         function scheduleSave() {
             clearTimeout(saveTimer);
-            if (saving) { pendingOrder = currentOrder(); return; }
-            saveTimer = setTimeout(function () {
-                if (saving) { pendingOrder = currentOrder(); return; }
-                persist(currentOrder());
-            }, 700);
+            waitCycles = 0;
+            saveTimer = setTimeout(saveNow, 500);
+        }
+        // Single-flight save with a bounded wait (never spins or loops
+        // forever): if a request is in flight we retry briefly, then give
+        // up with a retry hint. Any DOM move that lands mid-flight gets
+        // one catch-up save afterwards.
+        function saveNow() {
+            const order = currentOrder();
+            if (order.length === 0) return;
+            const key = orderKey(order);
+            if (key === lastSaved) { setSaveState(''); return; } // already stored
+            if (inFlight) {
+                if (++waitCycles > 40) { // ~20s without a response: stop waiting
+                    inFlight = false;
+                    waitCycles = 0;
+                    setSaveState('<i class="bi bi-exclamation-triangle me-1"></i>Taking too long — drag again to retry');
+                    return;
+                }
+                saveTimer = setTimeout(saveNow, 500);
+                return;
+            }
+            waitCycles = 0;
+            inFlight = true;
+            lastSaved = key;
+            setSaveState('<span class="spinner-border spinner-border-sm me-1"></span>Saving…');
+            let settled = false;
+            const done = function (ok) {
+                if (settled) return;
+                settled = true;
+                inFlight = false;
+                if (ok) {
+                    setSaveState('<i class="bi bi-check-lg me-1"></i>Saved');
+                    if (orderKey(currentOrder()) !== lastSaved) scheduleSave(); // moved mid-flight
+                } else {
+                    lastSaved = null; // allow retry of the same order
+                    setSaveState('<i class="bi bi-exclamation-triangle me-1"></i>Save failed — drag again to retry');
+                }
+            };
+            // Watchdog: the spinner must never spin forever.
+            setTimeout(function () {
+                if (!settled && inFlight) {
+                    inFlight = false;
+                    lastSaved = null;
+                    settled = true;
+                    setSaveState('<i class="bi bi-exclamation-triangle me-1"></i>Taking too long — drag again to retry');
+                }
+            }, 20000);
+            try {
+                Promise.resolve($wire.updateQueueOrder(order)).then(
+                    function () { done(true); },
+                    function (err) { try { console.error('[queue-save] failed', err); } catch (_) {} done(false); }
+                );
+            } catch (err) {
+                try { console.error('[queue-save] failed', err); } catch (_) {}
+                done(false);
+            }
         }
 
         document.addEventListener('dragstart', function (e) {
             const card = queueRowFromEvent(e);
             if (!card) return;
             draggedId = card.getAttribute('data-queue-id');
+            startOrder = orderKey(currentOrder());
             e.dataTransfer.effectAllowed = 'move';
             try { e.dataTransfer.setData('text/plain', draggedId); } catch (_) {}
             card.classList.add('dragging');
@@ -242,7 +275,15 @@
             if (list) list.querySelectorAll('[data-queue-id]').forEach(function (c) {
                 c.classList.remove('dragging', 'border-primary');
             });
+            // A drop outside any row fires dragend without drop: the DOM may
+            // still have moved (dragover shuffling), so save when the order
+            // differs from dragstart. This is what makes every drag real.
+            if (startOrder !== null && orderKey(currentOrder()) !== startOrder) {
+                renumberBadges();
+                scheduleSave();
+            }
             draggedId = null;
+            startOrder = null;
         });
 
         document.addEventListener('dragover', function (e) {

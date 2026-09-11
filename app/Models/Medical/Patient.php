@@ -21,6 +21,11 @@ class Patient extends Model
         'last_name',
         'date_of_birth',
         'gender',
+        'relation_to_primary',
+        'primary_contact_id',
+        'is_dependent',
+        'is_patient',
+        'guardian_name',
         'phone',
         'email',
         'present_address',
@@ -40,7 +45,75 @@ class Patient extends Model
     protected $casts = [
         'date_of_birth' => 'date',
         'is_active' => 'boolean',
+        'is_dependent' => 'boolean',
+        'is_patient' => 'boolean',
     ];
+
+    /** Real patients (excludes guardian placeholder rows). */
+    public function scopePatients($query)
+    {
+        return $query->where('is_patient', true);
+    }
+
+    /** Guardian placeholder rows (phone holders, not yet patients). */
+    public function scopeGuardians($query)
+    {
+        return $query->where('is_patient', false);
+    }
+
+    public function primaryContact()
+    {
+        return $this->belongsTo(self::class, 'primary_contact_id');
+    }
+
+    public function dependents()
+    {
+        return $this->hasMany(self::class, 'primary_contact_id');
+    }
+
+    /**
+     * Compact age for family lists: "3y", "8mo", "5d", or null.
+     */
+    public function getShortAgeAttribute(): ?string
+    {
+        if (! $this->date_of_birth) {
+            return null;
+        }
+        $days = $this->date_of_birth->diffInDays(now());
+        if ($days < 30) {
+            return $days.'d';
+        }
+        if ($days < 365) {
+            return (int) floor($days / 30).'mo';
+        }
+
+        return $this->date_of_birth->age.'y';
+    }
+
+    /**
+     * "Rahim (Son, 3y M)" — relation + age + gender initial.
+     */
+    public function getFamilyLabelAttribute(): string
+    {
+        $parts = [];
+        if ($this->relation_to_primary && $this->relation_to_primary !== 'Self') {
+            $parts[] = $this->relation_to_primary;
+        } else {
+            $parts[] = 'Self';
+        }
+        $bits = [];
+        if ($this->short_age) {
+            $bits[] = $this->short_age;
+        }
+        $bits[] = match ($this->gender) {
+            'male' => 'M',
+            'female' => 'F',
+            default => 'O',
+        };
+        $parts[] = implode(' ', $bits);
+
+        return $this->full_name.' ('.implode(', ', $parts).')';
+    }
 
     public function institute()
     {
@@ -70,6 +143,16 @@ class Patient extends Model
     public function invoices()
     {
         return $this->hasMany(Invoice::class);
+    }
+
+    public function problems()
+    {
+        return $this->hasMany(PatientProblem::class);
+    }
+
+    public function followUps()
+    {
+        return $this->hasMany(FollowUp::class);
     }
 
     public function structuredAllergies()

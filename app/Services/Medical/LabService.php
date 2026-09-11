@@ -5,6 +5,7 @@ namespace App\Services\Medical;
 use App\Models\Institute;
 use App\Models\Medical\LabOrder;
 use App\Models\Medical\LabResult;
+use App\Models\Medical\NumberSequence;
 use App\Support\MedicalScope;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
@@ -16,38 +17,12 @@ use Illuminate\Support\Facades\DB;
 class LabService
 {
     /**
-     * Generate a unique order number (LAB-YYYY-III-XXXXX).
+     * Generate a unique order number (LAB-YYYY-III-XXXXX) via the
+     * database-backed sequence (Phase 04). Format unchanged.
      */
     public function generateOrderNumber(int $instituteId): string
     {
-        $year = date('Y');
-        $prefix = 'LAB-'.$year.'-'.str_pad((string) $instituteId, 3, '0', STR_PAD_LEFT).'-';
-
-        return DB::transaction(function () use ($instituteId, $year, $prefix) {
-            $last = LabOrder::where('institute_id', $instituteId)
-                ->whereYear('created_at', $year)
-                ->orderBy('id', 'desc')
-                ->lockForUpdate()
-                ->first();
-
-            $nextNumber = 1;
-            if ($last && preg_match('/(\d{5})$/', (string) $last->order_number, $m)) {
-                $nextNumber = ((int) $m[1]) + 1;
-            } elseif ($last) {
-                $nextNumber = LabOrder::where('institute_id', $instituteId)
-                    ->whereYear('created_at', $year)
-                    ->count() + 1;
-            }
-
-            $candidate = $prefix.str_pad((string) $nextNumber, 5, '0', STR_PAD_LEFT);
-
-            while (LabOrder::where('order_number', $candidate)->exists()) {
-                $nextNumber++;
-                $candidate = $prefix.str_pad((string) $nextNumber, 5, '0', STR_PAD_LEFT);
-            }
-
-            return $candidate;
-        });
+        return app(NumberSequenceService::class)->next(NumberSequence::TYPE_LAB_ORDER, $instituteId);
     }
 
     /**

@@ -93,14 +93,28 @@ class PatientRequest extends FormRequest
             'date_of_birth' => 'required_without:age|nullable|date|before:today',
             'gender' => ['nullable', Rule::in(['male', 'female', 'other'])],
             'phone' => [
+                // Shared family phones allowed (parent + child on one
+                // number) — identity is mr_number, never the phone.
                 'nullable',
                 'string',
                 'max:20',
                 new PhoneRule($country),
-                Rule::unique('patients', 'phone')
-                    ->ignore($patientId)
-                    ->where(fn ($q) => $q->where('institute_id', $instituteId)->whereNull('deleted_at')),
             ],
+            'relation_to_primary' => [
+                'nullable',
+                Rule::in(['Self', 'Son', 'Daughter', 'Wife', 'Husband', 'Father', 'Mother', 'Brother', 'Sister', 'Other']),
+            ],
+            'primary_contact_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('patients', 'id')->where(
+                    fn ($q) => $q->where('institute_id', $instituteId)->whereNull('deleted_at')
+                ),
+            ],
+            // "Whose phone is this?" — someone else's triggers guardian
+            // resolution in the controller (find-or-create, never duplicate).
+            'phone_owner' => 'nullable|in:self,other',
+            'guardian_name' => 'required_if:phone_owner,other|nullable|string|max:100',
             'email' => 'nullable|email|max:100',
             'present_address' => 'nullable|string',
             'present_country_id' => 'nullable|exists:countries,id',
@@ -124,7 +138,6 @@ class PatientRequest extends FormRequest
             'age.required_without' => 'Age is required (or give Date of birth).',
             'date_of_birth.required_without' => 'Date of birth is required (or give Age).',
             'date_of_birth.before' => 'Date of birth must be in the past.',
-            'phone.unique' => 'A patient with this phone number already exists.',
             'blood_group.in' => 'Invalid blood group selected.',
         ];
     }

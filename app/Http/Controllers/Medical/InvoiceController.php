@@ -37,6 +37,8 @@ class InvoiceController extends MedicalController implements HasMiddleware
         $instituteId = $this->instituteId();
         $query = Invoice::where('institute_id', $instituteId)
             ->with(['patient', 'admission']);
+        // Phase 18: branch fence (context branch + legacy NULLs).
+        $this->scopeBranch($query);
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -73,6 +75,8 @@ class InvoiceController extends MedicalController implements HasMiddleware
         $patients = $this->ownPatientOptions($instituteId, $fence);
         $admissionQuery = Admission::where('institute_id', $instituteId)
             ->where('status', 'active');
+        // Phase 18: admission picker follows the branch fence.
+        $this->scopeBranch($admissionQuery);
         if ($fence !== null) {
             $admissionQuery->where('admitting_doctor_id', $fence);
         }
@@ -141,14 +145,30 @@ class InvoiceController extends MedicalController implements HasMiddleware
                 && (int) $admission->admitting_doctor_id !== $fence) {
                 abort(403, 'You do not have permission to access this admission.');
             }
+            $this->ensureBranchAccess($admission, 'branch_id', 'admission');
 
-            $invoice = $this->billingService->generateIpdInvoice($admission, $items);
+            // Phase 18: IPD invoices inherit the admission's branch
+            // (deterministic); other types use validated context.
+            $requestedBranch = $request->input('branch_id');
+            if ($admission->branch_id !== null) {
+                if ($requestedBranch !== null && $requestedBranch !== ''
+                    && (int) $requestedBranch !== (int) $admission->branch_id) {
+                    return redirect()->back()
+                        ->with('error', 'The invoice branch must match its admission branch.')
+                        ->withInput();
+                }
+                $branchId = $admission->branch_id;
+            } else {
+                $branchId = $this->resolveBranchId($requestedBranch);
+            }
+            $invoice = $this->billingService->generateIpdInvoice($admission, $items, $branchId);
         } else {
+            $branchId = $this->resolveBranchId($request->input('branch_id'));
             $invoice = match ($data['type']) {
-                'opd' => $this->billingService->generateOpdInvoice($patient, $items),
-                'pharmacy' => $this->billingService->generatePharmacyInvoice($patient, $items),
-                'lab' => $this->billingService->generateLabInvoice($patient, $items),
-                default => $this->billingService->generateOpdInvoice($patient, $items),
+                'opd' => $this->billingService->generateOpdInvoice($patient, $items, $branchId),
+                'pharmacy' => $this->billingService->generatePharmacyInvoice($patient, $items, $branchId),
+                'lab' => $this->billingService->generateLabInvoice($patient, $items, $branchId),
+                default => $this->billingService->generateOpdInvoice($patient, $items, $branchId),
             };
             // 'surgery' has no dedicated generator yet — booked as OPD-type
             // line items with the surgery label preserved below.
@@ -165,6 +185,8 @@ class InvoiceController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($invoice, 'invoice');
         $this->ensureInvoiceVisible($invoice);
+        // Phase 18: invoices are branch-owned transactions.
+        $this->ensureBranchAccess($invoice, 'branch_id', 'invoice');
         $invoice->load(['patient', 'admission', 'tpaClaims']);
         $items = json_decode($invoice->items_data ?? '[]', true);
 
@@ -175,6 +197,8 @@ class InvoiceController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($invoice, 'invoice');
         $this->ensureInvoiceVisible($invoice);
+        // Phase 18: invoices are branch-owned transactions.
+        $this->ensureBranchAccess($invoice, 'branch_id', 'invoice');
 
         if ($invoice->status !== 'pending') {
             return redirect()->back()->with('error', 'Only pending invoices can be edited.');
@@ -184,6 +208,7 @@ class InvoiceController extends MedicalController implements HasMiddleware
         $patients = $this->ownPatientOptions($instituteId);
         $admissionQuery = Admission::where('institute_id', $instituteId)
             ->where('status', 'active');
+        $this->scopeBranch($admissionQuery);
         if (($fence = $this->doctorFenceId()) !== null) {
             $admissionQuery->where('admitting_doctor_id', $fence);
         }
@@ -199,6 +224,8 @@ class InvoiceController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($invoice, 'invoice');
         $this->ensureInvoiceVisible($invoice);
+        // Phase 18: invoices are branch-owned transactions.
+        $this->ensureBranchAccess($invoice, 'branch_id', 'invoice');
 
         if ($invoice->status !== 'pending') {
             return redirect()->back()->with('error', 'Only pending invoices can be updated.');
@@ -222,10 +249,34 @@ class InvoiceController extends MedicalController implements HasMiddleware
             }
         }
 
-        $subtotal = collect($items)->sum(fn ($i) => $i['amount'] * $i['quantity']);
-        $tax = round($subtotal * 0.05, 2);
-        $discount = round((float) collect($items)->sum('discount'), 2);
-        $total = round($subtotal + $tax - $discount, 2);
+        // Phase 18: branch identity never moves; a linked admission must be
+        // branch-compatible with the invoice.
+        if (array_key_exists('admission_id', $data)
+            && (int) ($data['admission_id'] ?? 0) !== (int) ($invoice->admission_id ?? 0)) {
+            $linked = $data['admission_id']
+                ? Admission::where('institute_id', $invoice->institute_id)->find($data['admission_id'])
+                : null;
+            if ($data['admission_id'] && ! $linked) {
+                abort(404);
+            }
+            if ($linked) {
+                $this->ensureBranchAccess($linked, 'branch_id', 'admission');
+                if ($invoice->branch_id !== null && $linked->branch_id !== null
+                    && (int) $linked->branch_id !== (int) $invoice->branch_id) {
+                    return redirect()->back()
+                        ->with('error', 'The admission belongs to another branch.')
+                        ->withInput();
+                }
+            }
+        }
+
+        // Phase 08: totals come from the single authoritative rule so edits
+        // can never diverge from creation/PDF/receipt math.
+        $totals = \App\Services\Medical\BillingService::computeTotals($items);
+        $subtotal = $totals['subtotal'];
+        $tax = $totals['tax'];
+        $discount = $totals['discount'];
+        $total = $totals['total'];
 
         $invoice->update([
             'patient_id' => $data['patient_id'],
@@ -248,6 +299,8 @@ class InvoiceController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($invoice, 'invoice');
         $this->ensureInvoiceVisible($invoice);
+        // Phase 18: invoices are branch-owned transactions.
+        $this->ensureBranchAccess($invoice, 'branch_id', 'invoice');
 
         if (in_array($invoice->status, ['paid', 'partial'], true)) {
             return redirect()->back()->with('error', 'Cannot delete an invoice with recorded payments.');
@@ -274,6 +327,8 @@ class InvoiceController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($invoice, 'invoice');
         $this->ensureInvoiceVisible($invoice);
+        // Phase 18: invoices are branch-owned transactions.
+        $this->ensureBranchAccess($invoice, 'branch_id', 'invoice');
 
         $result = $this->billingService->processPayment(
             $invoice,
@@ -300,6 +355,8 @@ class InvoiceController extends MedicalController implements HasMiddleware
             ->where('paid_amount', '>', 0)
             ->with(['patient']);
         $query = $this->scopeOwnInvoices($query);
+        // Phase 18: payment history follows the branch fence.
+        $this->scopeBranch($query);
 
         if ($request->filled('method')) {
             $query->where('payment_method', $request->method);
@@ -322,6 +379,8 @@ class InvoiceController extends MedicalController implements HasMiddleware
     {
         $this->ensureSameInstitute($invoice, 'invoice');
         $this->ensureInvoiceVisible($invoice);
+        // Phase 18: invoices are branch-owned transactions.
+        $this->ensureBranchAccess($invoice, 'branch_id', 'invoice');
 
         if ($invoice->status === 'draft') {
             return redirect()->back()->with('error', 'Cannot print a draft invoice.');

@@ -22,6 +22,7 @@ class MedicalDatabaseSeeder extends Seeder
         $this->call([
             MedicalDepartmentSpecialtySeeder::class,
             MedicalMedicineSeeder::class,
+            CdsRuleSeeder::class,
             // Future medical seeders go here, e.g.:
             // MedicalPharmacySeeder::class,
             // MedicalLabSeeder::class,

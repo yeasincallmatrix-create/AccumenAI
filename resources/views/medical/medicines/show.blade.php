@@ -33,6 +33,7 @@
                 <p><strong>Unit / Pack:</strong> {{ $medicine->unit }} × {{ $medicine->pack_size }}</p>
                 <p><strong>Buy / Sell:</strong> ৳{{ number_format($medicine->purchase_price, 2) }} / ৳{{ number_format($medicine->selling_price, 2) }}</p>
                 <p class="mb-0"><strong>Reorder Level / Qty:</strong> {{ $medicine->reorder_level }} / {{ $medicine->reorder_quantity }}</p>
+                @if(mawa_dgda_enabled())
                 <hr>
                 <p class="mb-1"><strong>DGDA Code:</strong>
                     @if($medicine->dgda_code)
@@ -54,6 +55,7 @@
                             <small class="text-muted">· {{ $medicine->dgda_synced_at->format('d M Y, h:i A') }}</small>
                         @endif
                     </p>
+                @endif
                 @endif
             </div>
         </div>

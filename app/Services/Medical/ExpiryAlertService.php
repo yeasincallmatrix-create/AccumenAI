@@ -12,9 +12,26 @@ use App\Models\Medical\PharmacyStock;
 class ExpiryAlertService
 {
     /**
-     * Buckets of batches needing attention for an institute.
+     * Constrain a stock query to a branch (own branch + legacy NULLs).
+     * Null branch = institute-wide (existing behavior preserved).
      */
-    public function checkAndAlert(int $instituteId): array
+    private function scopeBranch($query, ?int $branchId)
+    {
+        if ($branchId === null) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($branchId) {
+            $q->where('branch_id', $branchId)->orWhereNull('branch_id');
+        });
+    }
+
+    /**
+     * Buckets of batches needing attention for an institute.
+     * Phase 18.1: optional branch limitation applied in SQL (bucket
+     * calculations unchanged).
+     */
+    public function checkAndAlert(int $instituteId, ?int $branchId = null): array
     {
         $alerts = [
             'critical' => [],
@@ -23,13 +40,15 @@ class ExpiryAlertService
         ];
 
         // Critical: expiring within 7 days.
-        $critical = PharmacyStock::where('institute_id', $instituteId)
-            ->where('current_quantity', '>', 0)
-            ->where('expiry_date', '>', now())
-            ->where('expiry_date', '<=', now()->addDays(7))
-            ->with('medicine')
-            ->orderBy('expiry_date')
-            ->get();
+        $critical = $this->scopeBranch(
+            PharmacyStock::where('institute_id', $instituteId)
+                ->where('current_quantity', '>', 0)
+                ->where('expiry_date', '>', now())
+                ->where('expiry_date', '<=', now()->addDays(7))
+                ->with('medicine')
+                ->orderBy('expiry_date'),
+            $branchId
+        )->get();
 
         foreach ($critical as $item) {
             $alerts['critical'][] = [
@@ -42,13 +61,15 @@ class ExpiryAlertService
         }
 
         // Warning: expiring within 8–30 days.
-        $warning = PharmacyStock::where('institute_id', $instituteId)
-            ->where('current_quantity', '>', 0)
-            ->where('expiry_date', '>', now()->addDays(7))
-            ->where('expiry_date', '<=', now()->addDays(30))
-            ->with('medicine')
-            ->orderBy('expiry_date')
-            ->get();
+        $warning = $this->scopeBranch(
+            PharmacyStock::where('institute_id', $instituteId)
+                ->where('current_quantity', '>', 0)
+                ->where('expiry_date', '>', now()->addDays(7))
+                ->where('expiry_date', '<=', now()->addDays(30))
+                ->with('medicine')
+                ->orderBy('expiry_date'),
+            $branchId
+        )->get();
 
         foreach ($warning as $item) {
             $alerts['warning'][] = [
@@ -61,12 +82,14 @@ class ExpiryAlertService
         }
 
         // Info: already expired but still holding quantity.
-        $expired = PharmacyStock::where('institute_id', $instituteId)
-            ->where('current_quantity', '>', 0)
-            ->where('expiry_date', '<=', now())
-            ->with('medicine')
-            ->orderBy('expiry_date')
-            ->get();
+        $expired = $this->scopeBranch(
+            PharmacyStock::where('institute_id', $instituteId)
+                ->where('current_quantity', '>', 0)
+                ->where('expiry_date', '<=', now())
+                ->with('medicine')
+                ->orderBy('expiry_date'),
+            $branchId
+        )->get();
 
         foreach ($expired as $item) {
             $alerts['info'][] = [
@@ -84,9 +107,9 @@ class ExpiryAlertService
     /**
      * Alert summary counts for dashboards.
      */
-    public function getAlertSummary(int $instituteId): array
+    public function getAlertSummary(int $instituteId, ?int $branchId = null): array
     {
-        $alerts = $this->checkAndAlert($instituteId);
+        $alerts = $this->checkAndAlert($instituteId, $branchId);
 
         return [
             'critical_count' => count($alerts['critical']),

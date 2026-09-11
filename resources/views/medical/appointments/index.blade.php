@@ -57,7 +57,7 @@
                         <select id="queue_doctor" name="q_doctor" class="form-select" onchange="guardTdateSubmit(this)">
                             @forelse($doctors as $doctor)
                                 <option value="{{ $doctor->id }}" @selected((string) ($queue['doctorId'] ?? '') === (string) $doctor->id)>
-                                    {{ $doctor->name }}
+                                    {{ $doctor->name }} ({{ $queue['doctorTotals'][$doctor->id] ?? 0 }})
                                 </option>
                             @empty
                                 <option value="">No doctors available</option>
@@ -105,6 +105,33 @@
                 <h6 class="mb-0"><i class="bi bi-clock-history me-1"></i>Audit Log</h6>
             </div>
             <div class="card-body">
+                <form method="GET" action="{{ route('medical.appointments.index') }}" class="row g-2 mb-3">
+                    <input type="hidden" name="tab" value="audit">
+                    <input type="hidden" name="q_doctor" value="{{ $queue['doctorId'] }}">
+                    <input type="hidden" name="q_date" value="{{ $queue['date'] }}">
+                    <div class="col-md-3">
+                        <select name="q_audit_doctor" class="form-select" onchange="this.form.submit()" title="Filter audit log by doctor">
+                            @foreach(($queue['auditDoctors'] ?? []) as $auditDoctor)
+                                <option value="{{ $auditDoctor->id }}" @selected((int) ($queue['auditDoctorId'] ?? 0) === (int) $auditDoctor->id)>{{ $auditDoctor->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="q_action" class="form-select" onchange="this.form.submit()">
+                            <option value="">All actions</option>
+                            @foreach(($queue['auditActions'] ?? []) as $value => $label)
+                                <option value="{{ $value }}" @selected(($queue['auditAction'] ?? '') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" name="q_actor" class="form-control" placeholder="Search by user..." value="{{ $queue['auditActor'] ?? '' }}">
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <button class="btn btn-primary" type="submit">Filter</button>
+                        <a href="{{ route('medical.appointments.index', ['tab' => 'audit', 'q_doctor' => $queue['doctorId'], 'q_date' => $queue['date']]) }}" class="btn btn-secondary">Reset</a>
+                    </div>
+                </form>
                 @if(empty($queue['auditLogs']))
                     <p class="text-muted text-center py-4 mb-0">No audit actions logged yet.</p>
                 @else
@@ -132,6 +159,10 @@
                                                 <span class="badge text-bg-danger">Fee Reversed</span>
                                             @elseif(($log['action'] ?? '') === 'deleted')
                                                 <span class="badge text-bg-dark">Deleted</span>
+                                            @elseif(($log['action'] ?? '') === 'rollover')
+                                                <span class="badge text-bg-info">Carried Forward</span>
+                                            @elseif(($log['action'] ?? '') === 'auto_cancelled')
+                                                <span class="badge text-bg-secondary">Auto-cancelled</span>
                                             @else
                                                 <span class="badge text-bg-primary">Reorder</span>
                                             @endif
@@ -139,8 +170,16 @@
                                         <td>
                                             @if(in_array($log['action'] ?? '', ['fee_collected', 'fee_reversed'], true))
                                                 <span class="fw-semibold">৳{{ number_format((float) ($log['amount'] ?? 0), 2) }}</span>
+                                                @if(($log['action'] ?? '') === 'fee_collected' && !empty($log['needs_verification']))
+                                                    <span class="text-warning small d-block">(payment needs to be verified)</span>
+                                                @endif
                                             @elseif(($log['action'] ?? '') === 'deleted')
                                                 <span class="text-muted small">Record removed</span>
+                                            @elseif(($log['action'] ?? '') === 'rollover')
+                                                <span class="badge text-bg-light border">#{{ $log['old'] ?? '—' }} → #{{ $log['new'] }}</span>
+                                                <span class="text-muted small">next working day</span>
+                                            @elseif(($log['action'] ?? '') === 'auto_cancelled')
+                                                <span class="text-muted small">Never checked in</span>
                                             @else
                                                 <span class="badge text-bg-light border">#{{ $log['old'] ?? '—' }} → #{{ $log['new'] }}</span>
                                             @endif
@@ -152,7 +191,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <p class="text-muted small mt-2 mb-0">Showing latest {{ count($queue['auditLogs']) }} audit actions.</p>
+                    <p class="text-muted small mt-2 mb-0">Showing latest {{ count($queue['auditLogs']) }} audit actions{{ ($queue['auditAction'] ?? '') !== '' || ($queue['auditActor'] ?? '') !== '' ? ' (filtered)' : '' }}.</p>
                 @endif
             </div>
         </div>
@@ -163,6 +202,7 @@
 @include('medical.appointments._book_modal')
 @include('medical.appointments._transfer_modal')
 @include('medical.appointments._fee_modal')
+@include('medical.appointments._vitals_modal')
 @endsection
 
 @push('styles')
@@ -274,5 +314,16 @@ html.monetix-dark #react-appointments-container tr.dragging td {
     });
 })();
 
+@if(!empty($autoFee))
+<script>
+// Post-visit doctor flow landing: prescription just saved — open the fee
+// popup automatically; confirming completes the visit. The collect endpoint
+// re-validates everything server-side.
+document.addEventListener('DOMContentLoaded', function () {
+    if (typeof openFeeModal !== 'function') return;
+    var data = @json($autoFee);
+    openFeeModal({ getAttribute: function (k) { return data[k] || ''; } });
+});
 </script>
+@endif
 @endpush

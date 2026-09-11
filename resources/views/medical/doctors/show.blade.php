@@ -41,9 +41,12 @@
                     <p class="text-start small text-muted">{{ $doctor->bio }}</p>
                 @endif
                 <div class="d-flex gap-2 justify-content-center mt-3 flex-wrap">
-                    @if(! mawa_fenced_doctor_id())
+                    @php $fenceId = mawa_fenced_doctor_id(); @endphp
+                    @if(! $fenceId || (int) $doctor->user_id === $fenceId)
                     <a href="{{ route('medical.doctors.edit', $doctor) }}" class="btn btn-sm btn-warning"><i class="bi bi-pencil me-1"></i>Edit</a>
                     <a href="{{ route('medical.doctors.edit', $doctor) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-calendar-week me-1"></i>Availability</a>
+                    @endif
+                    @if(! $fenceId)
                     <form action="{{ route('medical.doctors.destroy', $doctor) }}" method="POST" onsubmit="return confirm('Remove this doctor?')">
                         @csrf @method('DELETE')
                         <button class="btn btn-sm btn-danger"><i class="bi bi-trash me-1"></i>Remove</button>

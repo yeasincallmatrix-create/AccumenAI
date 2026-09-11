@@ -23,10 +23,16 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-info d-none align-items-center gap-2" id="q_existing_alert" role="alert">
-                        <i class="bi bi-person-check"></i>
-                        <span>Existing patient <strong id="q_existing_name"></strong> (<span id="q_existing_mr"></span>) found — details auto-filled.</span>
-                        <a href="#" id="q_existing_link" class="alert-link ms-auto" target="_blank">View</a>
+                    <div class="alert alert-info d-none" id="q_existing_alert" role="alert">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-person-check"></i>
+                            <span>Existing patient <strong id="q_existing_name"></strong> (<span id="q_existing_mr"></span>) found — details auto-filled.</span>
+                            <a href="#" id="q_existing_link" class="alert-link ms-auto" target="_blank">View</a>
+                        </div>
+                        <div id="q_matches_list" class="small mt-1"></div>
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="q_family_btn" style="display:none;">
+                            <i class="bi bi-people me-1"></i>Add Family Member to This Phone
+                        </button>
                     </div>
                     <div class="row">
                         <div class="col-md-8">
@@ -110,6 +116,17 @@
                         </div>
                         <div class="col-md-4">
                             <div class="mb-3">
+                                <label class="form-label" for="q_relation">Relation</label>
+                                <select id="q_relation" name="relation_to_primary" class="form-select">
+                                    @foreach(['Self', 'Son', 'Daughter', 'Wife', 'Husband', 'Father', 'Mother', 'Brother', 'Sister', 'Other'] as $rel)
+                                        <option value="{{ $rel }}" @selected($rel === 'Self')>{{ $rel }}</option>
+                                    @endforeach
+                                </select>
+                                <div class="form-text">Same phone? Choose the relation, or use “Add Family Member” above.</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
                                 <label class="form-label" for="q_blood_group">Blood Group</label>
                                 <select id="q_blood_group" name="blood_group" class="form-select">
                                     <option value="">Select</option>
@@ -121,6 +138,7 @@
                         </div>
                     </div>
                     <input type="hidden" name="present_country_id" value="{{ $defaultCountryId }}">
+                    <input type="hidden" id="q_primary_contact_id" name="primary_contact_id" value="">
                     <p class="text-muted small mb-0">Only Name and Age are mandatory.</p>
                 </div>
                 <div class="modal-footer">
@@ -340,6 +358,38 @@
     var submitBtn = document.getElementById('q_submit_btn');
     var lookupTimer = null;
     var lastLookup = '';
+    var familyMode = false;
+    var familyBtn = document.getElementById('q_family_btn');
+    var matchesBox = document.getElementById('q_matches_list');
+    var relationSel = document.getElementById('q_relation');
+    var primaryInput = document.getElementById('q_primary_contact_id');
+
+    function escHtml(s) {
+        return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    // Family mode: same phone, new person. Never blocks submit — the
+    // server warns softly on true duplicates (same name + DOB).
+    function setFamilyMode(primaryId, primaryLabel) {
+        familyMode = true;
+        if (primaryInput) primaryInput.value = primaryId || '';
+        ['q_first_name', 'q_last_name'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        if (dob) { dob.value = ''; if (window.tdateSync) window.tdateSync('q_date_of_birth'); }
+        if (age) age.value = '';
+        setGender(null);
+        if (relationSel && relationSel.value === 'Self') relationSel.value = 'Other';
+        if (submitBtn) submitBtn.disabled = false;
+        var txt = document.getElementById('q_existing_name');
+        if (txt && primaryLabel) txt.textContent = primaryLabel + ' — registering a family member below (details cleared).';
+    }
+    if (familyBtn) familyBtn.addEventListener('click', function () {
+        setFamilyMode(familyBtn.getAttribute('data-primary-id') || '', familyBtn.getAttribute('data-primary-label') || '');
+    });
 
     function setGender(v) {
         ['male', 'female', 'other'].forEach(function (g) {
@@ -350,8 +400,13 @@
 
     function resetLookupState() {
         lastLookup = '';
+        familyMode = false;
+        if (primaryInput) primaryInput.value = '';
+        if (relationSel) relationSel.value = 'Self';
+        if (familyBtn) { familyBtn.style.display = 'none'; familyBtn.removeAttribute('data-primary-id'); }
+        if (matchesBox) matchesBox.innerHTML = '';
         if (mrInput) mrInput.value = previewMr;
-        if (alertBox) alertBox.classList.add('d-none');
+        if (alertBox) { alertBox.classList.add('d-none'); alertBox.classList.remove('d-flex'); }
         // No existing patient — restore button state from realtime phone check
         // (keeps "Too long" disabled, re-enables otherwise).
         if (typeof updatePhoneLive === 'function') { updatePhoneLive(); }
@@ -373,7 +428,23 @@
             .then(function (r) { return r.ok ? r.json() : { found: false }; })
             .then(function (data) {
                 if (!data || !data.found) { resetLookupState(); lastLookup = v; return; }
-                var p = data.patient;
+                var list = data.patients || (data.patient ? [data.patient] : []);
+                if (matchesBox) {
+                    matchesBox.innerHTML = list.map(function (m) {
+                        return '<div>' + escHtml(m.label || ((m.first_name || '') + ' ' + (m.last_name || '')).trim()) +
+                            ' · ' + escHtml(m.mr_number || '') + (m.phone ? ' · ' + escHtml(m.phone) : '') + '</div>';
+                    }).join('');
+                }
+                var primary = list.find(function (m) { return !m.is_dependent; }) || list[0] || data.patient || null;
+                if (familyBtn) {
+                    familyBtn.style.display = '';
+                    familyBtn.setAttribute('data-primary-id', primary ? primary.id : '');
+                    familyBtn.setAttribute('data-primary-label', primary ? (primary.label || '') : '');
+                }
+                // Family mode: keep what the user typed, just refresh the list.
+                if (familyMode) { lastLookup = v; return; }
+                var p = list[0] || data.patient;
+                if (!p) { resetLookupState(); lastLookup = v; return; }
                 document.getElementById('q_first_name').value = p.first_name || '';
                 document.getElementById('q_last_name').value = p.last_name || '';
                 if (p.date_of_birth) { dob.value = p.date_of_birth; if (window.tdateSync) window.tdateSync('q_date_of_birth'); qAgeFromDob(); }
@@ -385,8 +456,10 @@
                 document.getElementById('q_existing_mr').textContent = p.mr_number || '';
                 var link = document.getElementById('q_existing_link');
                 if (link && p.url) link.href = p.url;
-                if (alertBox) { alertBox.classList.remove('d-none'); alertBox.classList.add('d-flex'); }
-                if (submitBtn) submitBtn.disabled = true;
+                if (alertBox) { alertBox.classList.remove('d-none'); }
+                // Never lock submit on a shared phone — true duplicates get
+                // a soft server-side warning (same name + date of birth).
+                if (submitBtn) submitBtn.disabled = false;
             })
             .catch(function () { /* keep manual entry on lookup failure */ });
     }

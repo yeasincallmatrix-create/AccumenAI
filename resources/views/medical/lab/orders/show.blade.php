@@ -22,6 +22,12 @@
             <a class="btn btn-warning" href="{{ route('medical.lab.orders.edit', $order) }}">
                 <i class="bi bi-pencil me-1"></i>Edit
             </a>
+            <form action="{{ route('medical.lab.orders.cancel', $order) }}" method="POST" class="d-inline"
+                  onsubmit="var r = prompt('Cancellation reason (required):'); if (r === null || r.trim() === '') { return false; } this.querySelector('input[name=reason]').value = r; return confirm('Cancel this order? It stays preserved in history.');">
+                @csrf
+                <input type="hidden" name="reason" value="">
+                <button type="submit" class="btn btn-outline-danger">Cancel Order</button>
+            </form>
         @endif
         @if($order->readyForResults())
             <a class="btn btn-primary" href="{{ route('medical.lab.orders.result.form', $order) }}">

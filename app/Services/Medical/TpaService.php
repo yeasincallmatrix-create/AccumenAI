@@ -3,6 +3,7 @@
 namespace App\Services\Medical;
 
 use App\Models\Medical\Invoice;
+use App\Models\Medical\NumberSequence;
 use App\Models\Medical\TpaClaim;
 use App\Support\MedicalScope;
 use Illuminate\Support\Facades\DB;
@@ -14,38 +15,12 @@ use Illuminate\Support\Facades\DB;
 class TpaService
 {
     /**
-     * Generate a unique claim number (TPA-YYYY-III-XXXXX).
+     * Generate a unique claim number (TPA-YYYY-III-XXXXX) via the
+     * database-backed sequence (Phase 04). Format unchanged.
      */
     public function generateClaimNumber(int $instituteId): string
     {
-        $year = date('Y');
-        $prefix = 'TPA-'.$year.'-'.str_pad((string) $instituteId, 3, '0', STR_PAD_LEFT).'-';
-
-        return DB::transaction(function () use ($instituteId, $year, $prefix) {
-            $last = TpaClaim::where('institute_id', $instituteId)
-                ->whereYear('created_at', $year)
-                ->orderBy('id', 'desc')
-                ->lockForUpdate()
-                ->first();
-
-            $nextNumber = 1;
-            if ($last && preg_match('/(\d{5})$/', (string) $last->claim_number, $m)) {
-                $nextNumber = ((int) $m[1]) + 1;
-            } elseif ($last) {
-                $nextNumber = TpaClaim::where('institute_id', $instituteId)
-                    ->whereYear('created_at', $year)
-                    ->count() + 1;
-            }
-
-            $candidate = $prefix.str_pad((string) $nextNumber, 5, '0', STR_PAD_LEFT);
-
-            while (TpaClaim::where('claim_number', $candidate)->exists()) {
-                $nextNumber++;
-                $candidate = $prefix.str_pad((string) $nextNumber, 5, '0', STR_PAD_LEFT);
-            }
-
-            return $candidate;
-        });
+        return app(NumberSequenceService::class)->next(NumberSequence::TYPE_TPA_CLAIM, $instituteId);
     }
 
     /**
@@ -63,6 +38,16 @@ class TpaService
             throw new \RuntimeException('Invoice does not belong to the selected patient.');
         }
 
+        // Phase 08: a claim reimburses the invoice — it can never exceed what
+        // is still outstanding, otherwise approval would overpay the invoice
+        // (paid > total breaks the paid/due invariant).
+        $outstanding = round((float) $invoice->total - (float) $invoice->paid_amount, 2);
+        if (round((float) $data['claim_amount'], 2) > $outstanding) {
+            throw new \RuntimeException(
+                'Claim amount cannot exceed the invoice outstanding due (৳'.number_format($outstanding, 2).').'
+            );
+        }
+
         $data['institute_id'] = $instituteId;
         $data['claim_number'] = $this->generateClaimNumber($instituteId);
         $data['claim_date'] = $data['claim_date'] ?? now()->format('Y-m-d');
@@ -77,6 +62,14 @@ class TpaService
     public function approveClaim(TpaClaim $claim, float $approvedAmount): bool
     {
         return DB::transaction(function () use ($claim, $approvedAmount) {
+            // Phase 08: re-read under lock — a concurrent approval or payment
+            // must not double-credit the invoice or push paid past total.
+            $claim = TpaClaim::whereKey($claim->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($claim->status !== 'pending') {
+                throw new \RuntimeException('Only pending claims can be approved.');
+            }
+
             if ($approvedAmount <= 0 || $approvedAmount > (float) $claim->claim_amount) {
                 throw new \RuntimeException('Approved amount must be between 0.01 and the claimed amount.');
             }
@@ -88,8 +81,16 @@ class TpaService
             ]);
 
             // Mark the associated invoice as paid (if fully approved).
-            if ($claim->invoice) {
-                $invoice = $claim->invoice;
+            // Locked re-read + due cap: a concurrent cash payment after the
+            // claim was filed must not let approval push paid past total.
+            if ($claim->invoice_id) {
+                $invoice = Invoice::whereKey($claim->invoice_id)->lockForUpdate()->firstOrFail();
+                $due = round((float) $invoice->total - (float) $invoice->paid_amount, 2);
+                if (round($approvedAmount, 2) > $due) {
+                    throw new \RuntimeException(
+                        'Approved amount exceeds the invoice outstanding due (৳'.number_format($due, 2).').'
+                    );
+                }
                 $newPaid = round((float) $invoice->paid_amount + $approvedAmount, 2);
                 $newDue = round((float) $invoice->total - $newPaid, 2);
 

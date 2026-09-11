@@ -57,34 +57,45 @@
                         @error('prescription_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-12">
+                <div class="col-md-4">
                     <div class="mb-3">
-                        <label class="form-label" for="diagnosis">Diagnosis</label>
-                        <input type="text" id="diagnosis" name="diagnosis"
-                               class="form-control @error('diagnosis') is-invalid @enderror"
-                               value="{{ old('diagnosis', $prescription->diagnosis) }}">
-                        @error('diagnosis')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label class="form-label" for="chief_complaints">Chief Complaints</label>
-                        <textarea id="chief_complaints" name="chief_complaints" rows="2"
+                        <label class="form-label d-flex align-items-center justify-content-between" for="chief_complaints">Chief Complaints<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></label>
+                        <textarea id="chief_complaints" name="chief_complaints" rows="2" data-autogrow
+                                  style="overflow-y:auto;max-height:600px;"
                                   class="form-control @error('chief_complaints') is-invalid @enderror">{{ old('chief_complaints', $prescription->chief_complaints) }}</textarea>
                         @error('chief_complaints')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <div class="mb-3">
-                        <label class="form-label" for="examination_findings">Examination Findings</label>
-                        <textarea id="examination_findings" name="examination_findings" rows="2"
+                        <label class="form-label d-flex align-items-center justify-content-between" for="diagnosis">Diagnosis<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></label>
+                        <textarea id="diagnosis" name="diagnosis" rows="2" data-autogrow
+                                  style="overflow-y:auto;max-height:600px;"
+                                  class="form-control @error('diagnosis') is-invalid @enderror">{{ old('diagnosis', $prescription->diagnosis) }}</textarea>
+                        @error('diagnosis')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label d-flex align-items-center justify-content-between" for="examination_findings">Examination Findings<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></label>
+                        <textarea id="examination_findings" name="examination_findings" rows="2" data-autogrow
+                                  style="overflow-y:auto;max-height:600px;"
                                   class="form-control @error('examination_findings') is-invalid @enderror">{{ old('examination_findings', $prescription->examination_findings) }}</textarea>
                         @error('examination_findings')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
+                <div class="col-md-12">
+                    <div class="mb-3">
+                        <label class="form-label d-flex align-items-center justify-content-between" for="advice">Advice<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></label>
+                        <textarea id="advice" name="advice" rows="2" data-autogrow
+                                  style="overflow-y:auto;max-height:600px;"
+                                  class="form-control @error('advice') is-invalid @enderror">{{ old('advice', $prescription->advice) }}</textarea>
+                        @error('advice')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div>
             </div>
 
-            <h6 class="mt-3 mb-2">Medicines <span class="text-danger">*</span></h6>
+            <h6 class="mt-3 mb-2" title="Medicines"><span class="fs-5">℞</span> <span class="text-danger">*</span></h6>
             @error('items')<div class="alert alert-danger">{{ $message }}</div>@enderror
             <div class="table-responsive">
                 <table class="table table-sm align-middle" id="rx-items-table">
@@ -124,14 +135,6 @@
             <div class="row mt-3">
                 <div class="col-md-6">
                     <div class="mb-3">
-                        <label class="form-label" for="advice">Advice</label>
-                        <textarea id="advice" name="advice" rows="2"
-                                  class="form-control @error('advice') is-invalid @enderror">{{ old('advice', $prescription->advice) }}</textarea>
-                        @error('advice')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="mb-3">
                         <label class="form-label" for="follow_up_date">Follow-up Date</label>
                         <x-tdate-input name="follow_up_date" :value="old('follow_up_date', $prescription->follow_up_date?->format('Y-m-d'))" id="follow_up_date" :class="'form-control'.($errors->has('follow_up_date') ? ' is-invalid' : '')" />
                         @error('follow_up_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -150,8 +153,9 @@
 </div>
 
 <datalist id="rx-medicine-list">
+    @php($rxDgda = mawa_dgda_enabled())
     @foreach($medicines as $medicine)
-        <option data-id="{{ $medicine->id }}" data-dgda="{{ $medicine->dgda_code ?? '' }}" value="{{ $medicine->display_name }}" label="{{ $medicine->dgda_code ? 'DGDA: '.$medicine->dgda_code : 'No DGDA code' }}">{{ $medicine->display_name }} — {{ $medicine->dgda_code ? 'DGDA: '.$medicine->dgda_code : 'No DGDA code' }}</option>
+        <option data-id="{{ $medicine->id }}" data-dgda="{{ $rxDgda ? ($medicine->dgda_code ?? '') : '' }}" value="{{ $medicine->display_name }}" label="{{ $rxDgda ? ($medicine->dgda_code ? 'DGDA: '.$medicine->dgda_code : 'No DGDA code') : $medicine->display_name }}">{{ $rxDgda ? $medicine->display_name.' — '.($medicine->dgda_code ? 'DGDA: '.$medicine->dgda_code : 'No DGDA code') : $medicine->display_name }}</option>
     @endforeach
 </datalist>
 @endsection
@@ -231,6 +235,16 @@
             e.preventDefault();
             alert('Please keep at least one medicine.');
         }
+    });
+
+    // Textareas with content stretch (capped with a scrollbar).
+    document.querySelectorAll('textarea[data-autogrow]').forEach(function (ta) {
+        function grow() {
+            ta.style.height = 'auto';
+            ta.style.height = Math.min(ta.scrollHeight, 600) + 'px';
+        }
+        ta.addEventListener('input', grow);
+        grow();
     });
 })();
 </script>

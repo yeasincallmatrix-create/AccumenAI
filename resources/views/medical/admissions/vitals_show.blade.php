@@ -5,11 +5,20 @@
 @section('content')
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2">
     <div class="page-header-text">
-        <h4 class="page-header-title">Vitals Entry — {{ $admission->patient->full_name ?? 'N/A' }}</h4>
+        <h4 class="page-header-title">Vitals Entry — {{ ($admission->patient->full_name ?? ($appointment->patient->full_name ?? 'N/A')) }}</h4>
     </div>
     <div class="page-header-actions">
+        @if(!empty($admission))
         <a class="btn btn-secondary" href="{{ route('medical.vitals.index', ['admission_id' => $admission->id]) }}">
             <i class="bi bi-arrow-left me-1"></i>History
+        </a>
+        @else
+        <a class="btn btn-secondary" href="{{ route('medical.appointments.show', $appointment) }}">
+            <i class="bi bi-arrow-left me-1"></i>Visit
+        </a>
+        @endif
+        <a class="btn btn-warning" href="{{ route('medical.vitals.edit', $vital) }}">
+            <i class="bi bi-pencil me-1"></i>Edit
         </a>
     </div>
 </div>
@@ -22,8 +31,10 @@
                 'Temperature (°C)' => $vital->temperature,
                 'Blood Pressure' => $vital->blood_pressure,
                 'Pulse (bpm)' => $vital->pulse,
+                'Heart Rate (bpm)' => $vital->heart_rate,
                 'Respiratory Rate (/min)' => $vital->respiratory_rate,
                 'SpO2 (%)' => $vital->spo2,
+                'Pain Score (0–10)' => $vital->pain_score,
                 'Blood Sugar (mg/dL)' => $vital->blood_sugar,
                 'Weight (kg)' => $vital->weight,
                 'Height (cm)' => $vital->height,
