@@ -107,6 +107,12 @@ box-shadow:0 2px 12px rgba(0,0,0,.05);
 .stat-box .lab{ font-size:12.5px; color:#666; }
 .filter-card{ padding:18px; margin-bottom:18px; }
 
+@media(max-width:768px){
+.admin-card{ padding:16px; border-radius:12px; }
+.dash-card{ padding:16px; border-radius:12px; }
+.info-card{ padding:16px; border-radius:12px; }
+}
+
 /* Definition list rows inside profile cards */
 .profile-dl dt{ font-size:13px; color:#666; font-weight:500; }
 .profile-dl dd{ font-size:13.5px; color:#222; margin-bottom:6px; }
@@ -118,6 +124,25 @@ border-radius:14px;
 padding:22px;
 box-shadow:0 2px 12px rgba(0,0,0,.05);
 height:100%;
+}
+
+@media(max-width:768px){
+.stat-card{
+    padding:16px;
+    border-radius:12px;
+}
+.stat-card .icon{
+    width:38px;
+    height:38px;
+    font-size:17px;
+    margin-bottom:10px;
+}
+.stat-card .num{
+    font-size:22px;
+}
+.stat-card .label{
+    font-size:12.5px;
+}
 }
 
 .stat-card .icon{
@@ -349,12 +374,47 @@ gap:8px;
 align-items:center;
 }
 
+@media(max-width:768px){
+.page-header{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:12px;
+}
+.page-header .page-header-title{
+    font-size:17px;
+}
+.page-header > .d-flex:last-child{
+    flex-wrap:wrap;
+    gap:8px;
+    width:100%;
+}
+.page-header > .d-flex:last-child > .dropdown{
+    flex:1 1 auto;
+    min-width:0;
+}
+.page-header > .d-flex:last-child > .dropdown > .btn{
+    width:100%;
+    justify-content:flex-start;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+}
+
 .industry-filter .industry-filter-label,
 .country-filter .country-filter-label{
 max-width:180px;
 overflow:hidden;
 text-overflow:ellipsis;
 white-space:nowrap;
+}
+
+@media(max-width:768px){
+.industry-filter .industry-filter-label,
+.country-filter .country-filter-label,
+.sub-industry-filter .sub-industry-filter-label{
+    max-width:120px;
+}
 }
 
 .country-flag{
@@ -519,9 +579,19 @@ color:#fff;
 }
 
 .filter-search{
-    position:relative;
-    flex:1 1 260px;
-    min-width:220px;
+position:relative;
+flex:1 1 260px;
+min-width:220px;
+}
+
+@media(max-width:768px){
+.filter-search{
+    flex:1 1 100%;
+    min-width:0;
+}
+.filter-actions{
+    flex-wrap:wrap;
+}
 }
 
 .filter-search > i{
@@ -585,6 +655,17 @@ display:flex;
 flex-wrap:wrap;
 gap:8px;
 align-items:center;
+}
+
+@media(max-width:768px){
+.table-toolbar{
+    flex-direction:column;
+    align-items:flex-start;
+    gap:10px;
+}
+.table-toolbar .toolbar-info{
+    font-size:12.5px;
+}
 }
 
 /* ===================== Tables ===================== */
@@ -1071,6 +1152,28 @@ margin:.5rem auto;
 }
 html.monetix-dark .scope-pill,
 html.monetix-dark .filter-pill{ border-color:#2a2f3a; color:#cfd6e0; background:#1a1d27; }
+
+/* ===================== Dashboard nav-tabs responsive ===================== */
+@media(max-width:768px){
+.nav-tabs{
+    flex-wrap:nowrap;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+    gap:0;
+}
+.nav-tabs::-webkit-scrollbar{
+    display:none;
+}
+.nav-tabs .nav-item{
+    flex:0 0 auto;
+}
+.nav-tabs .nav-link{
+    font-size:13px;
+    padding:8px 14px;
+    white-space:nowrap;
+}
+}
 
 /* ===================== Notification bell + dropdown ===================== */
 

@@ -552,6 +552,9 @@ html.monetix-dark .sidebar .sidebar-section-label{
 }
 
 @media(max-width:768px){
+.layout{
+    overflow-x:hidden;
+}
 .sidebar-backdrop{
     display:block;
     position:fixed;
@@ -591,14 +594,17 @@ div.topbar{
     top:54px;
     bottom:0;
     left:0;
-    width:240px;
+    width:0;
+    min-width:0;
     height:auto;
     z-index:1045;
+    flex:none;
     transform:translateX(-100%);
     box-shadow:0 0 30px rgba(0,0,0,.15);
     transition:transform .35s cubic-bezier(.22,1,.36,1);
 }
 .sidebar-open .sidebar{
+    width:240px;
     transform:translateX(0);
 }
 /* Force full labels inside the mobile drawer regardless of desktop collapse state. */
@@ -650,6 +656,10 @@ div.topbar{
 }
 .content{
     padding:70px 18px 18px;
+    width:100%;
+    margin:0;
+    min-width:0;
+    flex:1 1 auto;
 }
 }
 
