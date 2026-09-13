@@ -620,6 +620,18 @@ class AppServiceProvider extends ServiceProvider
             }
         }
 
+        // Training Center: also seed permissions and assign to admin role
+        if (($institute->industry ?? '') === 'training_center') {
+            try {
+                app(\App\Services\TrainingCenterModuleActivator::class)->activateForTrainingCenter($institute);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('TrainingCenterModuleActivator failed', [
+                    'institute_id' => $institute->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         app(\App\Services\ModuleAccessService::class)->flushCache($institute->id);
     }
 }

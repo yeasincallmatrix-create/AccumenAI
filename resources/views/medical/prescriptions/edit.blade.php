@@ -177,27 +177,6 @@
                             @else
                                 <div class="mb-1"><span class="text-muted">Serial: </span><strong>N/A</strong></div>
                             @endif
-                            @if(!empty($infoPatient['fee']['url']) && !empty($infoPatient['fee']['collectable']))
-                                <a href="{{ $infoPatient['fee']['url'] }}" class="btn btn-sm btn-success mt-1"><i class="bi bi-cash-coin me-1"></i>Accept Fee</a>
-                            @elseif(!empty($infoPatient['fee']))
-                                <span class="d-inline-block mt-1" title="Fee already paid">
-                                    <button type="button" class="btn btn-sm btn-success" disabled><i class="bi bi-cash-coin me-1"></i>Accept Fee</button>
-                                </span>
-                                <div class="text-muted mt-1" style="font-size:.72em;">Fee already paid</div>
-                            @elseif(!empty($selectedPatient) && !empty($cardDoctor))
-                                <form action="{{ route('medical.prescriptions.walk-in') }}" method="POST" class="d-inline">
-                                    @csrf
-                                    <input type="hidden" name="patient_id" value="{{ $selectedPatient->id }}">
-                                    <input type="hidden" name="doctor_id" value="{{ $cardDoctor }}">
-                                    <button type="submit" class="btn btn-sm btn-success mt-1" title="No visit yet — adds a walk-in visit and opens fee collection"><i class="bi bi-cash-coin me-1"></i>Accept Fee</button>
-                                </form>
-                                <div class="text-muted mt-1" style="font-size:.72em;">No visit yet — creates walk-in</div>
-                            @else
-                                <span class="d-inline-block mt-1" title="Select patient and doctor first">
-                                    <button type="button" class="btn btn-sm btn-success" disabled><i class="bi bi-cash-coin me-1"></i>Accept Fee</button>
-                                </span>
-                                <div class="text-muted mt-1" style="font-size:.72em;">Select patient and doctor first</div>
-                            @endif
                         </div>
                     </div>
                 @else
@@ -217,7 +196,7 @@
                     <div class="d-flex flex-column gap-3 w-100 h-100">
                         <div class="card flex-fill" data-rx-panel="complaints">
                             <div class="card-header py-2">
-                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Chief Complaints<span class="d-inline-flex align-items-center gap-1"><button type="button" class="btn btn-link btn-sm p-0 text-secondary" data-rx-panel-toggle="complaints" title="Hide panel" aria-pressed="true" style="text-decoration:none;"><i class="bi bi-eye"></i></button><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
+                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Chief Complaints<span class="d-inline-flex align-items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
                             </div>
                             <div class="card-body py-2 d-flex flex-column">
                                 <textarea id="chief_complaints" name="chief_complaints" aria-label="Chief Complaints" data-autogrow rows="3"
@@ -228,7 +207,7 @@
                         </div>
                         <div class="card flex-fill" data-rx-panel="findings">
                             <div class="card-header py-2">
-                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Examination Findings<span class="d-inline-flex align-items-center gap-1"><button type="button" class="btn btn-link btn-sm p-0 text-secondary" data-rx-panel-toggle="findings" title="Hide panel" aria-pressed="true" style="text-decoration:none;"><i class="bi bi-eye"></i></button><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
+                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Examination Findings<span class="d-inline-flex align-items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
                             </div>
                             <div class="card-body py-2 d-flex flex-column">
                                 <textarea id="examination_findings" name="examination_findings" aria-label="Examination Findings" data-autogrow rows="3"
@@ -239,7 +218,7 @@
                         </div>
                         <div class="card flex-fill" data-rx-panel="diagnosis">
                             <div class="card-header py-2">
-                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Diagnosis<span class="d-inline-flex align-items-center gap-1"><button type="button" class="btn btn-link btn-sm p-0 text-secondary" data-rx-panel-toggle="diagnosis" title="Hide panel" aria-pressed="true" style="text-decoration:none;"><i class="bi bi-eye"></i></button><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
+                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Diagnosis<span class="d-inline-flex align-items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
                             </div>
                             <div class="card-body py-2 d-flex flex-column">
                                 <textarea id="diagnosis" name="diagnosis" aria-label="Diagnosis" data-autogrow rows="3"
@@ -250,7 +229,7 @@
                         </div>
                         <div class="card flex-fill" data-rx-panel="investigations">
                             <div class="card-header py-2">
-                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Investigations<span class="d-inline-flex align-items-center gap-1"><button type="button" class="btn btn-link btn-sm p-0 text-secondary" data-rx-panel-toggle="investigations" title="Hide panel" aria-pressed="true" style="text-decoration:none;"><i class="bi bi-eye"></i></button><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
+                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Investigations<span class="d-inline-flex align-items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
                             </div>
                             <div class="card-body py-2 d-flex flex-column">
                                 <textarea id="investigations" name="investigations" aria-label="Investigations" data-autogrow rows="3"
@@ -261,7 +240,7 @@
                         </div>
                         <div class="card flex-fill" data-rx-panel="advice">
                             <div class="card-header py-2">
-                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Advice<span class="d-inline-flex align-items-center gap-1"><button type="button" class="btn btn-link btn-sm p-0 text-secondary" data-rx-panel-toggle="advice" title="Hide panel" aria-pressed="true" style="text-decoration:none;"><i class="bi bi-eye"></i></button><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
+                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Advice<span class="d-inline-flex align-items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
                             </div>
                             <div class="card-body py-2 d-flex flex-column">
                                 <textarea id="advice" name="advice" aria-label="Advice" data-autogrow rows="3"
@@ -322,10 +301,34 @@
                         @error('follow_up_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 align-items-center">
+                    @if(!empty($infoPatient['fee']['collectable']))
+                        <button type="button" class="btn btn-success"
+                            data-fee-url="{{ $infoPatient['fee']['collect_url'] }}"
+                            data-fee-action="{{ $infoPatient['fee']['action'] }}"
+                            data-fee-patient="{{ $infoPatient['fee']['patient'] ?? $selectedPatient->full_name ?? '—' }}"
+                            data-fee-type="{{ $infoPatient['fee']['fee_type'] }}"
+                            data-fee-amount="{{ $infoPatient['fee']['amount'] }}"
+                            data-fee-redirect="{{ url()->current() }}"
+                            onclick="openFeeModal(this)">
+                            <i class="bi bi-cash-coin me-1"></i>Accept Fee
+                        </button>
+                    @elseif(!empty($infoPatient['fee']))
+                        <button type="button" class="btn btn-success" disabled><i class="bi bi-check-circle me-1"></i>Paid</button>
+                    @elseif(!empty($selectedPatient) && !empty($cardDoctor))
+                        <button type="button" class="btn btn-success" id="rx-walkin-fee-btn"
+                            data-patient-id="{{ $selectedPatient->id }}"
+                            data-doctor-id="{{ $cardDoctor }}"
+                            data-url="{{ route('medical.prescriptions.walk-in') }}"
+                            data-fee-redirect="{{ url()->current() }}">
+                            <i class="bi bi-cash-coin me-1"></i>Accept Fee
+                        </button>
+                    @else
+                        <button type="button" class="btn btn-success" disabled><i class="bi bi-cash-coin me-1"></i>Accept Fee</button>
+                    @endif
                     <div class="btn-group" role="group" aria-label="Save options">
                         <button type="submit" name="save_action" value="print" class="btn btn-primary">
-                            <i class="bi bi-save me-1"></i>Update and Print
+                            <i class="bi bi-save me-1"></i>Update & Print
                         </button>
                         <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
                             <span class="visually-hidden">More save options</span>
@@ -405,6 +408,7 @@
 })();
 </script>
 @endpush
+@include('medical.appointments._fee_modal')
 @endsection
 
 @push('scripts')
@@ -610,32 +614,11 @@
             var cls = String(p.payment).indexOf('Paid') === 0 ? 'success' : 'danger';
             payRow = '<div class="mb-1"><span class="text-muted">Payment: </span><span class="badge bg-' + cls + '">' + esc(p.payment) + '</span></div>';
         }
-        var feeBtn = '';
-        if (p.fee && p.fee.url && p.fee.collectable) {
-            feeBtn = '<a href="' + esc(p.fee.url) + '" class="btn btn-sm btn-success mt-1"><i class="bi bi-cash-coin me-1"></i>Accept Fee</a>';
-        } else if (p.fee) {
-            feeBtn = '<span class="d-inline-block mt-1" title="Fee already paid">'
-                + '<button type="button" class="btn btn-sm btn-success" disabled><i class="bi bi-cash-coin me-1"></i>Accept Fee</button></span>'
-                + '<div class="text-muted mt-1" style="font-size:.72em;">Fee already paid</div>';
-        } else if (doctorId) {
-            var token = document.querySelector('meta[name="csrf-token"]');
-            var walkInUrl = patientSelect.getAttribute('data-walk-in-url') || '';
-            feeBtn = '<form action="' + esc(walkInUrl) + '" method="POST" class="d-inline">'
-                + '<input type="hidden" name="_token" value="' + esc(token ? token.getAttribute('content') : '') + '">'
-                + '<input type="hidden" name="patient_id" value="' + esc(id) + '">'
-                + '<input type="hidden" name="doctor_id" value="' + esc(doctorId) + '">'
-                + '<button type="submit" class="btn btn-sm btn-success mt-1" title="No visit yet — adds a walk-in visit and opens fee collection"><i class="bi bi-cash-coin me-1"></i>Accept Fee</button></form>'
-                + '<div class="text-muted mt-1" style="font-size:.72em;">No visit yet — creates walk-in</div>';
-        } else {
-            feeBtn = '<span class="d-inline-block mt-1" title="Select patient and doctor first">'
-                + '<button type="button" class="btn btn-sm btn-success" disabled><i class="bi bi-cash-coin me-1"></i>Accept Fee</button></span>'
-                + '<div class="text-muted mt-1" style="font-size:.72em;">Select patient and doctor first</div>';
-        }
         patientCard.innerHTML = '<div class="row mb-0 small">' +
             '<div class="col-sm-3">' + cell('MR Number', p.mr_number) + cell('Name', p.name, true) + '</div>' +
             '<div class="col-sm-3">' + cell('Phone', p.phone) + cell('Age / Gender', p.age_gender) + '</div>' +
             '<div class="col-sm-3">' + cell('Blood Group', p.blood_group) + payRow + '</div>' +
-            '<div class="col-sm-3">' + cell('Serial', p.serial || 'N/A', true) + feeBtn + '</div>' +
+            '<div class="col-sm-3">' + cell('Serial', p.serial || 'N/A', true) + '</div>' +
             '</div>';
     }
     function renderVitals(v) {
@@ -1084,5 +1067,33 @@
                     alert('Could not save vitals (HTTP ' + httpStatus + '). Please try again.');
                 });
     }, true);
+
+    var walkinBtn = document.getElementById('rx-walkin-fee-btn');
+    if (walkinBtn) {
+        walkinBtn.addEventListener('click', function () {
+            var token = document.querySelector('meta[name="csrf-token"]');
+            walkinBtn.disabled = true;
+            walkinBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Creating visit...';
+            fetch(walkinBtn.getAttribute('data-url'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token ? token.content : '', 'Accept': 'application/json' },
+                body: JSON.stringify({ patient_id: walkinBtn.getAttribute('data-patient-id'), doctor_id: walkinBtn.getAttribute('data-doctor-id') })
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.collect_url) {
+                    var map = { 'data-fee-url': data.collect_url, 'data-fee-action': data.action, 'data-fee-patient': data.patient, 'data-fee-type': data.fee_type, 'data-fee-amount': data.amount, 'data-fee-redirect': walkinBtn.getAttribute('data-fee-redirect') || '' };
+                    openFeeModal({ getAttribute: function (k) { return map[k] || ''; } });
+                }
+                walkinBtn.disabled = false;
+                walkinBtn.innerHTML = '<i class="bi bi-cash-coin me-1"></i>Accept Fee';
+            })
+            .catch(function () {
+                walkinBtn.disabled = false;
+                walkinBtn.innerHTML = '<i class="bi bi-cash-coin me-1"></i>Accept Fee';
+                alert('Could not create walk-in visit. Please try again.');
+            });
+        });
+    }
 </script>
 @endpush

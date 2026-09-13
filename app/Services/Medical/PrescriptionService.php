@@ -182,11 +182,23 @@ class PrescriptionService
     {
         $prescription->load(['patient', 'doctor', 'items.medicine']);
 
+        $doctorProfile = \App\Models\Medical\Doctor::where('user_id', $prescription->doctor_id)
+            ->where('institute_id', $prescription->institute_id)
+            ->with(['specialty', 'department'])
+            ->first();
+
+        $latestVitals = \App\Models\Medical\VitalSign::where('patient_id', $prescription->patient_id)
+            ->orderByDesc('recorded_at')
+            ->orderByDesc('id')
+            ->first();
+
         return [
             'prescription' => $prescription,
             'patient' => $prescription->patient,
             'doctor' => $prescription->doctor,
+            'doctorProfile' => $doctorProfile,
             'items' => $prescription->items,
+            'latestVitals' => $latestVitals,
             'qr' => $prescription->is_finalized ? $this->verificationQr($prescription) : '',
             'verifyCode' => $prescription->is_finalized
                 ? $this->verificationPayload($prescription)

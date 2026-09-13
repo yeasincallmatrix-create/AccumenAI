@@ -32,7 +32,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:medical_prescriptions.view', only: ['index', 'show', 'print', 'downloadPdf', 'reactIndex', 'reactData', 'patientInfo', 'queueNumbers', 'patientOptions']),
+            new Middleware('permission:medical_prescriptions.view', only: ['index', 'show', 'print', 'downloadPdf', 'reactIndex', 'reactData', 'patientInfo', 'queueNumbers', 'patientOptions', 'checkExisting']),
             new Middleware('permission:medical_prescriptions.create', only: ['create', 'store', 'addItem', 'walkIn']),
             new Middleware('permission:medical_prescriptions.edit', only: ['edit', 'update', 'finalize', 'removeItem', 'resolveFinding']),
             new Middleware('permission:medical_prescriptions.delete', only: ['destroy']),
@@ -172,6 +172,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
         if ($request->filled('fee_appointment_id')) {
             $feeAppointment = Appointment::where('institute_id', $instituteId)
                 ->where('status', 'in_progress')
+                ->with('patient')
                 ->find($request->input('fee_appointment_id'));
             if ($feeAppointment) {
                 $this->ensureDoctorOwns($feeAppointment, 'doctor_id', 'appointment');
@@ -322,8 +323,8 @@ class PrescriptionController extends MedicalController implements HasMiddleware
 
         // Text search reaches the whole accessible pool (not just the
         // scoped day-list): name, MR number or phone. Fenced doctors stay
-        // fenced (own + brand-new + own-admitted); the default list below
-        // remains strictly scoped.
+        // fenced (own + admitted); the default list below remains strictly
+        // scoped.
         if ($request->filled('search')) {
             $search = trim((string) $request->input('search'));
             if ($fence !== null) {
@@ -331,8 +332,6 @@ class PrescriptionController extends MedicalController implements HasMiddleware
                     $q->whereHas('appointments', fn ($qq) => $qq
                             ->where('institute_id', $instituteId)
                             ->where('doctor_id', $fence))
-                        ->orWhereDoesntHave('appointments', fn ($qq) => $qq
-                            ->where('institute_id', $instituteId))
                         ->orWhereHas('admissions', fn ($qq) => $qq
                             ->where('institute_id', $instituteId)
                             ->where('status', 'active')
@@ -378,28 +377,20 @@ class PrescriptionController extends MedicalController implements HasMiddleware
     }
 
     /**
-     * Dropdown rows for patient pickers: display label (age, [IPD] tag,
-     * [Emergency] tag when the patient holds no appointment at all — the
-     * quick-add/walk-in kind) plus a lowercase search haystack
-     * (name / MR / phone / regular|emergency).
+     * Dropdown rows for patient pickers: display label (age, [IPD] tag)
+     * plus a lowercase search haystack (name / MR / phone).
      */
     private function mapPatientOptions($patients, int $instituteId): array
     {
         $ids = $patients->pluck('id');
         $ipdPatientIds = $this->activeAdmissionPatientIds($instituteId, $ids);
-        $bookedPatientIds = Appointment::where('institute_id', $instituteId)
-            ->whereIn('patient_id', $ids->filter()->unique()->values()->all())
-            ->pluck('patient_id')
-            ->flip()
-            ->all();
 
         return $patients->map(fn (Patient $patient) => [
             'id' => $patient->id,
             'label' => $patient->full_name.' ('.clinical_no($patient->mr_number).')'
                 .($patient->age !== null ? ', '.$patient->age.'y' : '')
-                .(isset($ipdPatientIds[$patient->id]) ? ' [IPD]' : '')
-                .(isset($bookedPatientIds[$patient->id]) ? '' : ' [Emergency]'),
-            'search' => strtolower($patient->full_name.' '.$patient->mr_number.' '.clinical_no($patient->mr_number).' '.($patient->phone ?? '').' '.(isset($bookedPatientIds[$patient->id]) ? 'regular' : 'emergency')),
+                .(isset($ipdPatientIds[$patient->id]) ? ' [IPD]' : ''),
+            'search' => strtolower($patient->full_name.' '.$patient->mr_number.' '.clinical_no($patient->mr_number).' '.($patient->phone ?? '')),
         ])->all();
     }
 
@@ -426,6 +417,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
         $visit = null;
         if ($request->filled('fee_appointment_id')) {
             $feeAppointment = Appointment::where('institute_id', $this->instituteId())
+                ->with('patient')
                 ->find($request->input('fee_appointment_id'));
             if ($feeAppointment) {
                 $this->ensureDoctorOwns($feeAppointment, 'doctor_id', 'appointment');
@@ -442,6 +434,42 @@ class PrescriptionController extends MedicalController implements HasMiddleware
         return response()->json([
             'patient' => array_merge($this->formatPatientForCard($patient), ['payment' => $payment, 'serial' => $serial, 'fee' => $fee]),
             'vitals' => $this->formatVitalsForCard($this->latestVitalsFor($patient)),
+        ]);
+    }
+
+    /**
+     * Check if a prescription already exists for a patient on a given date.
+     * Returns JSON with existing prescription info so the frontend can
+     * prompt the user to edit it instead of creating a duplicate.
+     */
+    public function checkExisting(Request $request)
+    {
+        $instituteId = $this->instituteId();
+
+        $data = $request->validate([
+            'patient_id' => ['required', 'integer'],
+            'date' => ['required', 'date'],
+        ]);
+
+        $existing = Prescription::where('institute_id', $instituteId)
+            ->where('patient_id', $data['patient_id'])
+            ->whereDate('prescription_date', $data['date'])
+            ->with(['doctor:id,name', 'items'])
+            ->first();
+
+        if (! $existing) {
+            return response()->json(['exists' => false]);
+        }
+
+        return response()->json([
+            'exists' => true,
+            'id' => $existing->id,
+            'prescription_number' => $existing->prescription_number,
+            'doctor_name' => $existing->doctor->name ?? 'N/A',
+            'date' => $existing->prescription_date->format('Y-m-d'),
+            'status' => $existing->is_finalized ? 'Finalized' : 'Draft',
+            'items_count' => $existing->items->count(),
+            'edit_url' => route('medical.prescriptions.edit', $existing),
         ]);
     }
 
@@ -499,6 +527,19 @@ class PrescriptionController extends MedicalController implements HasMiddleware
             'fee_applied' => $quote['fee'],
         ]);
 
+        if ($request->expectsJson()) {
+            $amount = ($profile && $patient) ? $profile->getApplicableFee($patient) : 0.0;
+            $action = $preVisit ? 'start' : 'complete';
+            return response()->json([
+                'collect_url' => route('medical.appointments.collect-fee', $appointment),
+                'patient' => $patient->full_name ?? '—',
+                'amount' => $amount,
+                'action' => $action,
+                'fee_type' => $action === 'start' ? 'Pre-visit Fee' : 'Post-visit Fee',
+                'serial' => $serial,
+            ]);
+        }
+
         return redirect()->route('medical.appointments.index', [
             'tab' => 'queue',
             'q_doctor' => $doctorId,
@@ -547,7 +588,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
             $query->where('doctor_id', $doctorId);
         }
 
-        return $query->orderByDesc('appointment_date')->orderByDesc('id')->first();
+        return $query->with('patient')->orderByDesc('appointment_date')->orderByDesc('id')->first();
     }
 
     /**
@@ -592,6 +633,13 @@ class PrescriptionController extends MedicalController implements HasMiddleware
             return null;
         }
 
+        $profile = Doctor::resolveForUser($visit->doctor_id, $visit->institute_id);
+        $amount = ($profile && $visit->patient)
+            ? $profile->getApplicableFee($visit->patient)
+            : 0.0;
+
+        $action = $visit->status === 'checked_in' ? 'start' : 'complete';
+
         return [
             'url' => route('medical.appointments.index', [
                 'tab' => 'queue',
@@ -600,6 +648,11 @@ class PrescriptionController extends MedicalController implements HasMiddleware
                 'fee_collect' => $visit->id,
             ]),
             'collectable' => $visit->fee_collected_at === null,
+            'collect_url' => route('medical.appointments.collect-fee', $visit),
+            'patient' => $visit->patient->full_name ?? '—',
+            'amount' => $amount,
+            'action' => $action,
+            'fee_type' => $action === 'start' ? 'Pre-visit Fee' : 'Post-visit Fee',
         ];
     }
 
@@ -729,6 +782,18 @@ class PrescriptionController extends MedicalController implements HasMiddleware
             $data['doctor_id'] = $fence;
         }
 
+        // One-prescription-per-patient-per-day rule: block duplicates.
+        $existingRx = Prescription::where('institute_id', $instituteId)
+            ->where('patient_id', $data['patient_id'])
+            ->whereDate('prescription_date', $data['prescription_date'] ?? today())
+            ->first();
+        if ($existingRx) {
+            return redirect()->route('medical.prescriptions.edit', $existingRx)
+                ->with('warning', 'A prescription already exists for this patient on '
+                    .\Carbon\Carbon::parse($data['prescription_date'] ?? today())->format('d M Y')
+                    .' ('.clinical_no($existingRx->prescription_number).'). You are being redirected to edit it.');
+        }
+
         // Optional encounter link: same institute + same patient, visible to
         // the prescriber. History rows keep NULL (legacy behavior).
         $encounter = null;
@@ -821,7 +886,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
                 $status .= ' OPD visit completed.';
             }
 
-            return redirect()->route('medical.prescriptions.print', $prescription)
+            return redirect()->route('medical.prescriptions.print', ['prescription' => $prescription, 'auto_print' => 1])
                 ->with('status', $status);
         }
 
@@ -1099,7 +1164,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
                 $status .= ' OPD visit completed.';
             }
 
-            return redirect()->route('medical.prescriptions.print', $prescription)
+            return redirect()->route('medical.prescriptions.print', ['prescription' => $prescription, 'auto_print' => 1])
                 ->with('status', $status);
         }
 

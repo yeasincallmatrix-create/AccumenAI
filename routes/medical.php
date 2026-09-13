@@ -130,6 +130,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     Route::get('prescriptions/patient-info/{patient}', [PrescriptionController::class, 'patientInfo'])->name('prescriptions.patient-info');
     Route::get('prescriptions/patient-options', [PrescriptionController::class, 'patientOptions'])->name('prescriptions.patient-options');
     Route::get('prescriptions/queue-numbers', [PrescriptionController::class, 'queueNumbers'])->name('prescriptions.queue-numbers');
+    Route::get('prescriptions/check-existing', [PrescriptionController::class, 'checkExisting'])->name('prescriptions.check-existing');
     Route::post('prescriptions/walk-in', [PrescriptionController::class, 'walkIn'])->name('prescriptions.walk-in');
     Route::resource('prescriptions', PrescriptionController::class);
     Route::post('prescriptions/{prescription}/finalize', [PrescriptionController::class, 'finalize'])->name('prescriptions.finalize');

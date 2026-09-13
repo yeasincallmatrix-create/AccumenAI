@@ -990,6 +990,12 @@ class AppointmentController extends MedicalController implements HasMiddleware
 
         // Land back on the Live Queue tab for the same doctor (date left
         // blank so the queue defaults to today) — no manual refresh needed.
+        $redirectTo = $request->input('redirect_to');
+        if ($redirectTo && str_starts_with($redirectTo, url('/'))) {
+            $separator = str_contains($redirectTo, '?') ? '&' : '?';
+            $redirectTo .= $separator . 'patient_id=' . $appointment->patient_id . '&doctor_id=' . $appointment->doctor_id;
+            return redirect($redirectTo)->with('status', $message);
+        }
         return redirect()->route('medical.appointments.index', [
             'tab' => 'queue',
             'q_doctor' => $appointment->doctor_id,

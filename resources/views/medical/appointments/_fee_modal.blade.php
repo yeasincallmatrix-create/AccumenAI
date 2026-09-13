@@ -8,13 +8,20 @@
             <form action="" method="POST" id="fee-collect-form">
                 @csrf
                 <input type="hidden" name="action" id="fee_action" value="">
+                <input type="hidden" name="redirect_to" id="fee_redirect_to" value="">
                 <div class="modal-header">
                     <h5 class="modal-title"><i class="bi bi-cash-coin me-1"></i>Collect Visit Fee</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
+                    <div class="alert alert-primary py-2 mb-3 d-flex align-items-center gap-2">
+                        <i class="bi bi-person-circle fs-4"></i>
+                        <div>
+                            <div class="text-muted small">Patient</div>
+                            <div class="fw-bold fs-5" id="fee_patient">—</div>
+                        </div>
+                    </div>
                     <dl class="row mb-3">
-                        <dt class="col-sm-4">Patient</dt><dd class="col-sm-8" id="fee_patient">—</dd>
                         <dt class="col-sm-4">Fee Type</dt><dd class="col-sm-8" id="fee_type">—</dd>
                         <dt class="col-sm-4">Amount</dt><dd class="col-sm-8 fw-semibold" id="fee_amount">—</dd>
                         <dt class="col-sm-4">Next Step</dt><dd class="col-sm-8" id="fee_step">—</dd>
@@ -39,6 +46,7 @@ function openFeeModal(btn) {
     form.action = btn.getAttribute('data-fee-url') || '';
     var action = btn.getAttribute('data-fee-action') || 'start';
     document.getElementById('fee_action').value = action;
+    document.getElementById('fee_redirect_to').value = btn.getAttribute('data-fee-redirect') || '';
     document.getElementById('fee_patient').textContent = btn.getAttribute('data-fee-patient') || '—';
     document.getElementById('fee_type').textContent = btn.getAttribute('data-fee-type') || '—';
     var amount = btn.getAttribute('data-fee-amount') || '0';

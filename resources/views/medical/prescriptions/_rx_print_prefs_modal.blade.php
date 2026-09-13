@@ -14,6 +14,13 @@
                     <input class="form-check-input" type="checkbox" id="rxpp-letterhead" checked>
                     <label class="form-check-label" for="rxpp-letterhead">Clinic letterhead (name, address, phone)</label>
                 </div>
+                <div class="mb-3 ms-4" id="rxpp-margin-group">
+                    <label class="form-check-label small" for="rxpp-margin">Top space (inch)</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="range" class="form-range" id="rxpp-margin" min="10" max="30" step="1" value="12" style="width:180px;" disabled>
+                        <span id="rxpp-margin-val" class="text-muted small" style="min-width:36px;">1.2"</span>
+                    </div>
+                </div>
                 <div class="form-check form-switch mb-2">
                     <input class="form-check-input" type="checkbox" id="rxpp-qr" checked>
                     <label class="form-check-label" for="rxpp-qr">Verification QR code</label>
@@ -55,6 +62,11 @@
                                 <td class="text-center"><div class="form-check form-switch d-inline-block"><input class="form-check-input" type="checkbox" id="rxpp-advice" checked></div></td>
                                 <td class="text-center"><div class="form-check form-switch d-inline-block"><input class="form-check-input" type="checkbox" id="rxvw-advice" checked></div></td>
                             </tr>
+                            <tr>
+                                <td><label class="form-check-label" for="rxpp-vitals">Latest Vital Signs</label></td>
+                                <td class="text-center"><div class="form-check form-switch d-inline-block"><input class="form-check-input" type="checkbox" id="rxpp-vitals" checked></div></td>
+                                <td class="text-center">—</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -72,7 +84,7 @@
 (function () {
     var KEY = 'rxPrintPrefs';
     var VIEW_KEY = 'rxViewPrefs';
-    var FIELDS = ['letterhead', 'qr', 'signed', 'complaints', 'findings', 'diagnosis', 'investigations', 'advice'];
+    var FIELDS = ['letterhead', 'qr', 'signed', 'complaints', 'findings', 'diagnosis', 'investigations', 'advice', 'vitals'];
     var VIEW_FIELDS = ['complaints', 'findings', 'diagnosis', 'investigations', 'advice'];
     function load(key) {
         try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { return {}; }
@@ -147,6 +159,11 @@
             });
             var m = document.getElementById('rxPrintPrefsModal');
             if (m && window.bootstrap) window.bootstrap.Modal.getOrCreateInstance(m).show();
+            if (marginSlider) {
+                marginSlider.value = prefs['margin'] !== undefined ? prefs['margin'] : 12;
+                if (marginVal) marginVal.textContent = (marginSlider.value / 10).toFixed(1) + '"';
+            }
+            syncMarginLock();
             return;
         }
         var eye = e.target && e.target.closest ? e.target.closest('[data-rx-panel-toggle]') : null;
@@ -162,12 +179,26 @@
         }
     });
     var save = document.getElementById('rxpp-save');
+    var lhToggle = document.getElementById('rxpp-letterhead');
+    var marginSlider = document.getElementById('rxpp-margin');
+    var marginVal = document.getElementById('rxpp-margin-val');
+    function syncMarginLock() {
+        if (!marginSlider) return;
+        var locked = lhToggle ? lhToggle.checked : true;
+        marginSlider.disabled = locked;
+        marginSlider.style.opacity = locked ? 0.5 : 1;
+    }
+    if (lhToggle) lhToggle.addEventListener('change', syncMarginLock);
+    if (marginSlider) marginSlider.addEventListener('input', function () {
+        if (marginVal) marginVal.textContent = (this.value / 10).toFixed(1) + '"';
+    });
     if (save) save.addEventListener('click', function () {
         var prefs = {};
         FIELDS.forEach(function (f) {
             var el = document.getElementById('rxpp-' + f);
             prefs[f] = el ? !!el.checked : true;
         });
+        prefs['margin'] = marginSlider ? parseInt(marginSlider.value, 10) : 12;
         try { localStorage.setItem(KEY, JSON.stringify(prefs)); } catch (e) {}
         var vprefs = {};
         VIEW_FIELDS.forEach(function (f) {

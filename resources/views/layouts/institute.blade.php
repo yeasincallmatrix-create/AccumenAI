@@ -826,6 +826,12 @@
             </div>
         @endif
 
+        @if (session('warning'))
+            <div class="alert alert-warning" data-auto-dismiss>
+                <i class="bi bi-exclamation-triangle-fill"></i> {{ session('warning') }}
+            </div>
+        @endif
+
             @yield('content')
 
     </main>

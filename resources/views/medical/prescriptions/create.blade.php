@@ -102,7 +102,7 @@
     <div class="col-md-2" data-rx-panel="complaints">
         <div class="card h-100">
             <div class="card-header py-2">
-                <h6 class="mb-0 d-flex align-items-center justify-content-between">Chief Complaints<span class="d-inline-flex align-items-center gap-1"><button type="button" class="btn btn-link btn-sm p-0 text-secondary" data-rx-panel-toggle="complaints" title="Hide panel" aria-pressed="true" style="text-decoration:none;"><i class="bi bi-eye"></i></button><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
+                <h6 class="mb-0 d-flex align-items-center justify-content-between">Chief Complaints<span class="d-inline-flex align-items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
             </div>
             <div class="card-body py-2 d-flex flex-column">
                 <textarea id="chief_complaints" name="chief_complaints" form="prescription-form" aria-label="Chief Complaints" data-autogrow rows="3"
@@ -170,27 +170,6 @@
                             @else
                                 <div class="mb-1"><span class="text-muted">Serial: </span><strong>N/A</strong></div>
                             @endif
-                            @if(!empty($infoPatient['fee']['url']) && !empty($infoPatient['fee']['collectable']))
-                                <a href="{{ $infoPatient['fee']['url'] }}" class="btn btn-sm btn-success mt-1"><i class="bi bi-cash-coin me-1"></i>Accept Fee</a>
-                            @elseif(!empty($infoPatient['fee']))
-                                <span class="d-inline-block mt-1" title="Fee already paid">
-                                    <button type="button" class="btn btn-sm btn-success" disabled><i class="bi bi-cash-coin me-1"></i>Accept Fee</button>
-                                </span>
-                                <div class="text-muted mt-1" style="font-size:.72em;">Fee already paid</div>
-                            @elseif(!empty($selectedPatient) && !empty($cardDoctor))
-                                <form action="{{ route('medical.prescriptions.walk-in') }}" method="POST" class="d-inline">
-                                    @csrf
-                                    <input type="hidden" name="patient_id" value="{{ $selectedPatient->id }}">
-                                    <input type="hidden" name="doctor_id" value="{{ $cardDoctor }}">
-                                    <button type="submit" class="btn btn-sm btn-success mt-1" title="No visit yet — adds a walk-in visit and opens fee collection"><i class="bi bi-cash-coin me-1"></i>Accept Fee</button>
-                                </form>
-                                <div class="text-muted mt-1" style="font-size:.72em;">No visit yet — creates walk-in</div>
-                            @else
-                                <span class="d-inline-block mt-1" title="Select patient and doctor first">
-                                    <button type="button" class="btn btn-sm btn-success" disabled><i class="bi bi-cash-coin me-1"></i>Accept Fee</button>
-                                </span>
-                                <div class="text-muted mt-1" style="font-size:.72em;">Select patient and doctor first</div>
-                            @endif
                         </div>
                     </div>
                 @else
@@ -242,7 +221,7 @@
                         </div>
                         <div class="card flex-fill" data-rx-panel="findings">
                             <div class="card-header py-2">
-                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Examination Findings<span class="d-inline-flex align-items-center gap-1"><button type="button" class="btn btn-link btn-sm p-0 text-secondary" data-rx-panel-toggle="findings" title="Hide panel" aria-pressed="true" style="text-decoration:none;"><i class="bi bi-eye"></i></button><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
+                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Examination Findings<span class="d-inline-flex align-items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
                             </div>
                             <div class="card-body py-2 d-flex flex-column">
                                 <textarea id="examination_findings" name="examination_findings" aria-label="Examination Findings" data-autogrow rows="3"
@@ -253,7 +232,7 @@
                         </div>
                         <div class="card flex-fill" data-rx-panel="diagnosis">
                             <div class="card-header py-2">
-                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Diagnosis<span class="d-inline-flex align-items-center gap-1"><button type="button" class="btn btn-link btn-sm p-0 text-secondary" data-rx-panel-toggle="diagnosis" title="Hide panel" aria-pressed="true" style="text-decoration:none;"><i class="bi bi-eye"></i></button><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
+                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Diagnosis<span class="d-inline-flex align-items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
                             </div>
                             <div class="card-body py-2 d-flex flex-column">
                                 <textarea id="diagnosis" name="diagnosis" aria-label="Diagnosis" data-autogrow rows="3"
@@ -264,7 +243,7 @@
                         </div>
                         <div class="card flex-fill" data-rx-panel="investigations">
                             <div class="card-header py-2">
-                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Investigations<span class="d-inline-flex align-items-center gap-1"><button type="button" class="btn btn-link btn-sm p-0 text-secondary" data-rx-panel-toggle="investigations" title="Hide panel" aria-pressed="true" style="text-decoration:none;"><i class="bi bi-eye"></i></button><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
+                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Investigations<span class="d-inline-flex align-items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
                             </div>
                             <div class="card-body py-2 d-flex flex-column">
                                 <textarea id="investigations" name="investigations" aria-label="Investigations" data-autogrow rows="3"
@@ -275,7 +254,7 @@
                         </div>
                         <div class="card flex-fill" data-rx-panel="advice">
                             <div class="card-header py-2">
-                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Advice<span class="d-inline-flex align-items-center gap-1"><button type="button" class="btn btn-link btn-sm p-0 text-secondary" data-rx-panel-toggle="advice" title="Hide panel" aria-pressed="true" style="text-decoration:none;"><i class="bi bi-eye"></i></button><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
+                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Advice<span class="d-inline-flex align-items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
                             </div>
                             <div class="card-body py-2 d-flex flex-column">
                                 <textarea id="advice" name="advice" aria-label="Advice" data-autogrow rows="3"
@@ -341,10 +320,35 @@
                     <x-tdate-input name="follow_up_date" :value="old('follow_up_date', date('Y-m-d'))" id="follow_up_date" :class="'form-control'.($errors->has('follow_up_date') ? ' is-invalid' : '')" />
                     @error('follow_up_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 align-items-center">
+                    @if(!empty($infoPatient['fee']['collectable']))
+                        <button type="button" class="btn btn-success"
+                            data-fee-url="{{ $infoPatient['fee']['collect_url'] }}"
+                            data-fee-action="{{ $infoPatient['fee']['action'] }}"
+                            data-fee-patient="{{ $infoPatient['fee']['patient'] ?? $selectedPatient->full_name ?? '—' }}"
+                            data-fee-type="{{ $infoPatient['fee']['fee_type'] }}"
+                            data-fee-amount="{{ $infoPatient['fee']['amount'] }}"
+                            data-fee-redirect="{{ url()->current() }}"
+                            onclick="saveRxDraft(); openFeeModal(this)">
+                            <i class="bi bi-cash-coin me-1"></i>Accept Fee
+                        </button>
+                    @elseif(!empty($infoPatient['fee']))
+                        <button type="button" class="btn btn-success" disabled><i class="bi bi-check-circle me-1"></i>Paid</button>
+                    @elseif(!empty($selectedPatient) && !empty($cardDoctor))
+                        <button type="button" class="btn btn-success" id="rx-walkin-fee-btn"
+                            data-patient-id="{{ $selectedPatient->id }}"
+                            data-doctor-id="{{ $cardDoctor }}"
+                            data-url="{{ route('medical.prescriptions.walk-in') }}"
+                            data-fee-redirect="{{ url()->current() }}">
+                            <i class="bi bi-cash-coin me-1"></i>Accept Fee
+                        </button>
+                    @else
+                        <button type="button" class="btn btn-success" disabled><i class="bi bi-cash-coin me-1"></i>Accept Fee</button>
+                    @endif
+                    <button type="button" class="btn btn-outline-secondary" id="rx-reset-draft" title="Clear all fields"><i class="bi bi-arrow-counterclockwise"></i></button>
                     <div class="btn-group" role="group" aria-label="Save options">
                         <button type="submit" name="save_action" value="print" class="btn btn-primary">
-                            <i class="bi bi-save me-1"></i>Save and Print
+                            <i class="bi bi-save me-1"></i>Save & Print
                         </button>
                         <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
                             <span class="visually-hidden">More save options</span>
@@ -377,6 +381,37 @@
 
 {{-- Shared Quick Add Patient popup (plus button in the Patient Details header). --}}
 @include('medical.patients._quick_create_modal')
+
+{{-- Duplicate prescription warning modal --}}
+<div class="modal fade" id="rxDuplicateModal" tabindex="-1" aria-labelledby="rxDuplicateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="rxDuplicateModalLabel">
+                    <i class="bi bi-exclamation-triangle me-1"></i>Prescription Already Exists
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">A prescription already exists for this patient on the selected date:</p>
+                <ul class="list-unstyled mb-3 ps-3">
+                    <li><strong>Rx No:</strong> <span id="rx-dup-number">—</span></li>
+                    <li><strong>Doctor:</strong> <span id="rx-dup-doctor">—</span></li>
+                    <li><strong>Date:</strong> <span id="rx-dup-date">—</span></li>
+                    <li><strong>Status:</strong> <span id="rx-dup-status">—</span></li>
+                    <li><strong>Items:</strong> <span id="rx-dup-items">—</span> medicine(s)</li>
+                </ul>
+                <p class="text-muted small mb-0">Only one prescription is allowed per patient per day. Would you like to edit the existing prescription?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a id="rx-dup-edit-btn" href="#" class="btn btn-primary">
+                    <i class="bi bi-pencil-square me-1"></i>Edit Existing Prescription
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 @push('scripts')
 <script>
 (function () {
@@ -424,6 +459,7 @@
 })();
 </script>
 @endpush
+@include('medical.appointments._fee_modal')
 @endsection
 
 @push('scripts')
@@ -509,6 +545,7 @@
         nameInput.addEventListener('change', update);
         nameInput.addEventListener('input', update);
         tr.querySelector('.rx-remove').addEventListener('click', function () {
+            if (document.querySelectorAll('#rx-items-body tr').length <= 1) return;
             tr.remove();
             renumberRows();
         });
@@ -650,34 +687,11 @@
             var cls = String(p.payment).indexOf('Paid') === 0 ? 'success' : 'danger';
             payRow = '<div class="mb-1"><span class="text-muted">Payment: </span><span class="badge bg-' + cls + '">' + esc(p.payment) + '</span></div>';
         }
-        var feeBtn = '';
-        if (p.fee && p.fee.url && p.fee.collectable) {
-            feeBtn = '<a href="' + esc(p.fee.url) + '" class="btn btn-sm btn-success mt-1"><i class="bi bi-cash-coin me-1"></i>Accept Fee</a>';
-        } else if (p.fee) {
-            feeBtn = '<span class="d-inline-block mt-1" title="Fee already paid">'
-                + '<button type="button" class="btn btn-sm btn-success" disabled><i class="bi bi-cash-coin me-1"></i>Accept Fee</button></span>'
-                + '<div class="text-muted mt-1" style="font-size:.72em;">Fee already paid</div>';
-        } else if (doctorId) {
-            // Emergency / unscheduled arrival: no visit row yet — post a
-            // walk-in (adds today's visit) and chain into fee collection.
-            var token = document.querySelector('meta[name="csrf-token"]');
-            var walkInUrl = patientSelect.getAttribute('data-walk-in-url') || '';
-            feeBtn = '<form action="' + esc(walkInUrl) + '" method="POST" class="d-inline">'
-                + '<input type="hidden" name="_token" value="' + esc(token ? token.getAttribute('content') : '') + '">'
-                + '<input type="hidden" name="patient_id" value="' + esc(id) + '">'
-                + '<input type="hidden" name="doctor_id" value="' + esc(doctorId) + '">'
-                + '<button type="submit" class="btn btn-sm btn-success mt-1" title="No visit yet — adds a walk-in visit and opens fee collection"><i class="bi bi-cash-coin me-1"></i>Accept Fee</button></form>'
-                + '<div class="text-muted mt-1" style="font-size:.72em;">No visit yet — creates walk-in</div>';
-        } else {
-            feeBtn = '<span class="d-inline-block mt-1" title="Select patient and doctor first">'
-                + '<button type="button" class="btn btn-sm btn-success" disabled><i class="bi bi-cash-coin me-1"></i>Accept Fee</button></span>'
-                + '<div class="text-muted mt-1" style="font-size:.72em;">Select patient and doctor first</div>';
-        }
         patientCard.innerHTML = '<div class="row mb-0 small">' +
             '<div class="col-sm-3">' + cell('MR Number', p.mr_number) + cell('Name', p.name, true) + '</div>' +
             '<div class="col-sm-3">' + cell('Phone', p.phone) + cell('Age / Gender', p.age_gender) + '</div>' +
             '<div class="col-sm-3">' + cell('Blood Group', p.blood_group) + payRow + '</div>' +
-            '<div class="col-sm-3">' + cell('Serial', p.serial || 'N/A', true) + feeBtn + '</div>' +
+            '<div class="col-sm-3">' + cell('Serial', p.serial || 'N/A', true) + '</div>' +
             '</div>';
     }
     function renderVitals(v) {
@@ -1208,6 +1222,190 @@
         ta.addEventListener('input', grow);
         grow();
     });
+    var walkinBtn = document.getElementById('rx-walkin-fee-btn');
+    if (walkinBtn) {
+        walkinBtn.addEventListener('click', function () {
+            var token = document.querySelector('meta[name="csrf-token"]');
+            walkinBtn.disabled = true;
+            walkinBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Creating visit...';
+            fetch(walkinBtn.getAttribute('data-url'), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token ? token.content : '', 'Accept': 'application/json' },
+                body: JSON.stringify({ patient_id: walkinBtn.getAttribute('data-patient-id'), doctor_id: walkinBtn.getAttribute('data-doctor-id') })
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.collect_url) {
+                    saveRxDraft();
+                    var map = { 'data-fee-url': data.collect_url, 'data-fee-action': data.action, 'data-fee-patient': data.patient, 'data-fee-type': data.fee_type, 'data-fee-amount': data.amount, 'data-fee-redirect': walkinBtn.getAttribute('data-fee-redirect') || '' };
+                    openFeeModal({ getAttribute: function (k) { return map[k] || ''; } });
+                }
+                walkinBtn.disabled = false;
+                walkinBtn.innerHTML = '<i class="bi bi-cash-coin me-1"></i>Accept Fee';
+            })
+            .catch(function () {
+                walkinBtn.disabled = false;
+                walkinBtn.innerHTML = '<i class="bi bi-cash-coin me-1"></i>Accept Fee';
+                alert('Could not create walk-in visit. Please try again.');
+            });
+        });
+    }
+
+    function rxDraftKey() { return 'rxDraft_create'; }
+    function saveRxDraft() {
+        var draft = {};
+        ['chief_complaints','examination_findings','diagnosis','investigations','advice','follow_up_date','doctor_id','notes'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) draft[id] = el.value;
+        });
+        var rows = [];
+        document.querySelectorAll('#rx-items-body tr').forEach(function (tr) {
+            var med = tr.querySelector('[name$="[medicine_id]"]');
+            var qty = tr.querySelector('[name$="[quantity]"]');
+            var freq = tr.querySelector('[name$="[frequency]"]');
+            var dur = tr.querySelector('[name$="[duration]"]');
+            var instr = tr.querySelector('[name$="[instructions]"]');
+            if (med) rows.push({
+                medicine_id: med.value,
+                quantity: qty ? qty.value : '',
+                frequency: freq ? freq.value : '',
+                duration: dur ? dur.value : '',
+                instructions: instr ? instr.value : ''
+            });
+        });
+        draft.items = rows;
+        try { localStorage.setItem(rxDraftKey(), JSON.stringify(draft)); } catch (e) {}
+    }
+    window.saveRxDraft = saveRxDraft;
+    document.getElementById('rx-reset-draft').addEventListener('click', function () {
+        if (!confirm('Clear all fields?')) return;
+        ['chief_complaints','examination_findings','diagnosis','investigations','advice','follow_up_date','notes'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) { el.value = ''; el.dispatchEvent(new Event('input')); }
+        });
+        var rows = document.querySelectorAll('#rx-items-body tr');
+        for (var i = rows.length - 1; i > 0; i--) rows[i].remove();
+        var last = document.querySelector('#rx-items-body tr');
+        if (last) last.querySelectorAll('input, select, textarea').forEach(function (el) { el.value = ''; });
+        renumberRows();
+        try { localStorage.removeItem(rxDraftKey()); } catch (e) {}
+    });
+    function restoreRxDraft() {
+        var raw;
+        try { raw = localStorage.getItem(rxDraftKey()); } catch (e) { return; }
+        if (!raw) return;
+        try { var draft = JSON.parse(raw); } catch (e) { return; }
+        localStorage.removeItem(rxDraftKey());
+        ['chief_complaints','examination_findings','diagnosis','investigations','advice','follow_up_date','doctor_id','notes'].forEach(function (id) {
+            if (draft[id] !== undefined) {
+                var el = document.getElementById(id);
+                if (el) { el.value = draft[id]; el.dispatchEvent(new Event('input')); }
+            }
+        });
+        if (draft.doctor_id) {
+            var sel = document.getElementById('doctor_id');
+            if (sel) sel.value = draft.doctor_id;
+        }
+        if (draft.items && draft.items.length) {
+            draft.items.forEach(function (item) {
+                var addBtn = document.getElementById('rx-add-item');
+                if (addBtn) addBtn.click();
+                var lastRow = document.querySelector('#rx-items-body tr:last-child');
+                if (!lastRow) return;
+                var med = lastRow.querySelector('[name$="[medicine_id]"]');
+                var qty = lastRow.querySelector('[name$="[quantity]"]');
+                var freq = lastRow.querySelector('[name$="[frequency]"]');
+                var dur = lastRow.querySelector('[name$="[duration]"]');
+                var instr = lastRow.querySelector('[name$="[instructions]"]');
+                if (med) med.value = item.medicine_id || '';
+                if (qty) qty.value = item.quantity || '';
+                if (freq) freq.value = item.frequency || '';
+                if (dur) dur.value = item.duration || '';
+                if (instr) instr.value = item.instructions || '';
+            });
+        }
+    }
+    restoreRxDraft();
+    document.querySelectorAll('#rx-items-body, [data-rx-panel] textarea, #doctor_id, #follow_up_date').forEach(function (el) {
+        el.addEventListener('input', saveRxDraft);
+        el.addEventListener('change', saveRxDraft);
+    });
+    var observer = new MutationObserver(function () { saveRxDraft(); });
+    observer.observe(document.getElementById('rx-items-body') || document.body, { childList: true, subtree: true });
+})();
+</script>
+@endpush
+
+@push('scripts')
+<script>
+(function () {
+    var patientSelect = document.getElementById('patient_id');
+    var dateInput = document.getElementById('prescription_date');
+    var checkBase = '{{ route("medical.prescriptions.check-existing") }}';
+    if (!patientSelect || !dateInput) return;
+
+    var checkTimer = null;
+
+    function checkExistingPrescription() {
+        var patientId = patientSelect.value;
+        var dateVal = dateInput.value;
+        if (!patientId || !dateVal) return;
+
+        clearTimeout(checkTimer);
+        checkTimer = setTimeout(function () {
+            var url = checkBase + '?patient_id=' + encodeURIComponent(patientId) + '&date=' + encodeURIComponent(dateVal);
+            fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+                .then(function (res) { return res.ok ? res.json() : null; })
+                .then(function (data) {
+                    if (!data || !data.exists) return;
+                    document.getElementById('rx-dup-number').textContent = data.prescription_number || '—';
+                    document.getElementById('rx-dup-doctor').textContent = data.doctor_name || '—';
+                    document.getElementById('rx-dup-date').textContent = data.date || '—';
+                    document.getElementById('rx-dup-status').textContent = data.status || '—';
+                    document.getElementById('rx-dup-items').textContent = data.items_count || '0';
+                    var editBtn = document.getElementById('rx-dup-edit-btn');
+                    if (editBtn) editBtn.href = data.edit_url;
+                    var modal = document.getElementById('rxDuplicateModal');
+                    if (modal && window.bootstrap) {
+                        window.bootstrap.Modal.getOrCreateInstance(modal).show();
+                    }
+                })
+                .catch(function () {});
+        }, 400);
+    }
+
+    patientSelect.addEventListener('change', checkExistingPrescription);
+    dateInput.addEventListener('change', checkExistingPrescription);
+    if (dateInput.form) {
+        dateInput.form.addEventListener('submit', function (e) {
+            if (patientSelect.value && dateInput.value) {
+                var url = checkBase + '?patient_id=' + encodeURIComponent(patientSelect.value) + '&date=' + encodeURIComponent(dateInput.value);
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url, false);
+                xhr.setRequestHeader('Accept', 'application/json');
+                try { xhr.send(); } catch (ex) {}
+                if (xhr.status === 200) {
+                    try {
+                        var data = JSON.parse(xhr.responseText);
+                        if (data.exists) {
+                            e.preventDefault();
+                            document.getElementById('rx-dup-number').textContent = data.prescription_number || '—';
+                            document.getElementById('rx-dup-doctor').textContent = data.doctor_name || '—';
+                            document.getElementById('rx-dup-date').textContent = data.date || '—';
+                            document.getElementById('rx-dup-status').textContent = data.status || '—';
+                            document.getElementById('rx-dup-items').textContent = data.items_count || '0';
+                            var editBtn = document.getElementById('rx-dup-edit-btn');
+                            if (editBtn) editBtn.href = data.edit_url;
+                            var modal = document.getElementById('rxDuplicateModal');
+                            if (modal && window.bootstrap) {
+                                window.bootstrap.Modal.getOrCreateInstance(modal).show();
+                            }
+                        }
+                    } catch (ex) {}
+                }
+            }
+        });
+    }
 })();
 </script>
 @endpush
