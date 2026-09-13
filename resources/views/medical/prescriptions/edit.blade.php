@@ -88,7 +88,13 @@
 </script>
 @endpush
 
-<div class="row g-3 mb-3">
+<div class="row g-3 mb-3" id="rx-top-row">
+    <div id="rx-hidden-panels" class="col-12" style="display:none;">
+        <div class="alert alert-light border d-flex flex-wrap align-items-center gap-2 py-2 mb-0 small">
+            <span class="text-muted"><i class="bi bi-eye-slash me-1"></i>Hidden sections:</span>
+            <span id="rx-hidden-panels-list" class="d-inline-flex flex-wrap gap-2"></span>
+        </div>
+    </div>
     <div class="col-md-2">
         <div class="card h-100">
             <div class="card-header py-2 d-flex align-items-center justify-content-between">
@@ -211,12 +217,12 @@
         <form action="{{ route('medical.prescriptions.update', $prescription) }}" method="POST" id="prescription-edit-form">
             @csrf
             @method('PUT')
-            <div class="row g-3">
-                <div class="col-md-2">
+            <div class="row g-3" id="rx-main-row">
+                <div class="col-md-2" id="rx-soap-col">
                     <div class="d-flex flex-column gap-3 w-100 h-100">
-                        <div class="card flex-fill">
+                        <div class="card flex-fill" data-rx-panel="complaints">
                             <div class="card-header py-2">
-                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Chief Complaints<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></h6>
+                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Chief Complaints<span class="d-inline-flex align-items-center gap-1"><button type="button" class="btn btn-link btn-sm p-0 text-secondary" data-rx-panel-toggle="complaints" title="Hide panel" aria-pressed="true" style="text-decoration:none;"><i class="bi bi-eye"></i></button><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
                             </div>
                             <div class="card-body py-2 d-flex flex-column">
                                 <textarea id="chief_complaints" name="chief_complaints" aria-label="Chief Complaints" data-autogrow rows="3"
@@ -225,9 +231,9 @@
                                 @error('chief_complaints')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         </div>
-                        <div class="card flex-fill">
+                        <div class="card flex-fill" data-rx-panel="findings">
                             <div class="card-header py-2">
-                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Examination Findings<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></h6>
+                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Examination Findings<span class="d-inline-flex align-items-center gap-1"><button type="button" class="btn btn-link btn-sm p-0 text-secondary" data-rx-panel-toggle="findings" title="Hide panel" aria-pressed="true" style="text-decoration:none;"><i class="bi bi-eye"></i></button><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
                             </div>
                             <div class="card-body py-2 d-flex flex-column">
                                 <textarea id="examination_findings" name="examination_findings" aria-label="Examination Findings" data-autogrow rows="3"
@@ -236,9 +242,9 @@
                                 @error('examination_findings')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         </div>
-                        <div class="card flex-fill">
+                        <div class="card flex-fill" data-rx-panel="diagnosis">
                             <div class="card-header py-2">
-                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Diagnosis<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></h6>
+                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Diagnosis<span class="d-inline-flex align-items-center gap-1"><button type="button" class="btn btn-link btn-sm p-0 text-secondary" data-rx-panel-toggle="diagnosis" title="Hide panel" aria-pressed="true" style="text-decoration:none;"><i class="bi bi-eye"></i></button><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
                             </div>
                             <div class="card-body py-2 d-flex flex-column">
                                 <textarea id="diagnosis" name="diagnosis" aria-label="Diagnosis" data-autogrow rows="3"
@@ -247,9 +253,9 @@
                                 @error('diagnosis')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         </div>
-                        <div class="card flex-fill">
+                        <div class="card flex-fill" data-rx-panel="investigations">
                             <div class="card-header py-2">
-                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Investigations<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></h6>
+                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Investigations<span class="d-inline-flex align-items-center gap-1"><button type="button" class="btn btn-link btn-sm p-0 text-secondary" data-rx-panel-toggle="investigations" title="Hide panel" aria-pressed="true" style="text-decoration:none;"><i class="bi bi-eye"></i></button><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
                             </div>
                             <div class="card-body py-2 d-flex flex-column">
                                 <textarea id="investigations" name="investigations" aria-label="Investigations" data-autogrow rows="3"
@@ -258,9 +264,9 @@
                                 @error('investigations')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         </div>
-                        <div class="card flex-fill">
+                        <div class="card flex-fill" data-rx-panel="advice">
                             <div class="card-header py-2">
-                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Advice<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></h6>
+                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Advice<span class="d-inline-flex align-items-center gap-1"><button type="button" class="btn btn-link btn-sm p-0 text-secondary" data-rx-panel-toggle="advice" title="Hide panel" aria-pressed="true" style="text-decoration:none;"><i class="bi bi-eye"></i></button><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
                             </div>
                             <div class="card-body py-2 d-flex flex-column">
                                 <textarea id="advice" name="advice" aria-label="Advice" data-autogrow rows="3"
@@ -271,7 +277,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-10">
+                <div class="col-md-10" id="rx-main-col">
                     <div class="card h-100">
                         <div class="card-body d-flex flex-column">
 
