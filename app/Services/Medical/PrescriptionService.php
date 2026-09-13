@@ -19,8 +19,8 @@ class PrescriptionService
     public function __construct(private readonly MedicineTerminologyService $terminology) {}
 
     /**
-     * Generate a unique prescription number (RX-YYYY-III-XXXXX) via the
-     * database-backed sequence (Phase 04). Format unchanged.
+     * Generate a unique prescription number (stored RX-YYYY-NNNNN,
+     * displayed RX-YY-NNNNN) via the database-backed sequence (Phase 04).
      */
     public function generateNumber(int $instituteId): string
     {
@@ -142,7 +142,7 @@ class PrescriptionService
     public function verificationPayload(Prescription $prescription): string
     {
         return implode('|', [
-            'RX:'.$prescription->prescription_number,
+            'RX:'.clinical_no($prescription->prescription_number),
             'INST:'.$prescription->institute_id,
             'SIG:'.substr((string) $prescription->signature_hash, 0, 12),
         ]);

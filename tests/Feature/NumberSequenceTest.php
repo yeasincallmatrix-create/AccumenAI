@@ -84,22 +84,17 @@ class NumberSequenceTest extends TestCase
         return now()->format('Y');
     }
 
-    private function instituteSegment(Institute $institute): string
-    {
-        return str_pad((string) $institute->id, 3, '0', STR_PAD_LEFT);
-    }
-
-    // Format contract per type.
+    // Format contract per type (stored shape: PREFIX-YYYY-NNNNN, no
+    // tenant segment — uniqueness is per tenant via composite DB keys).
     public function test_format_contract_per_type(): void
     {
         $y = $this->year();
-        $iii = $this->instituteSegment($this->a);
 
-        $this->assertSame("MR-{$y}-{$iii}-00001", $this->sequences()->next(NumberSequence::TYPE_MR, $this->a->id));
-        $this->assertSame("RX-{$y}-{$iii}-00001", $this->sequences()->next(NumberSequence::TYPE_PRESCRIPTION, $this->a->id));
-        $this->assertSame("LAB-{$y}-{$iii}-00001", $this->sequences()->next(NumberSequence::TYPE_LAB_ORDER, $this->a->id));
-        $this->assertSame("INV-{$y}-{$iii}-00001", $this->sequences()->next(NumberSequence::TYPE_INVOICE, $this->a->id));
-        $this->assertSame("TPA-{$y}-{$iii}-00001", $this->sequences()->next(NumberSequence::TYPE_TPA_CLAIM, $this->a->id));
+        $this->assertSame("MR-{$y}-00001", $this->sequences()->next(NumberSequence::TYPE_MR, $this->a->id));
+        $this->assertSame("RX-{$y}-00001", $this->sequences()->next(NumberSequence::TYPE_PRESCRIPTION, $this->a->id));
+        $this->assertSame("LAB-{$y}-00001", $this->sequences()->next(NumberSequence::TYPE_LAB_ORDER, $this->a->id));
+        $this->assertSame("INV-{$y}-00001", $this->sequences()->next(NumberSequence::TYPE_INVOICE, $this->a->id));
+        $this->assertSame("TPA-{$y}-00001", $this->sequences()->next(NumberSequence::TYPE_TPA_CLAIM, $this->a->id));
     }
 
     // Sequential allocation within a series.
@@ -113,24 +108,66 @@ class NumberSequenceTest extends TestCase
             ->where('sequence_type', NumberSequence::TYPE_MR)->firstOrFail()->last_number);
     }
 
-    // Tenant isolation: independent counters, institute-bound numbers.
+    // Tenant isolation: independent counters; the same stored number may
+    // exist in both tenants (composite per-tenant uniqueness) — the
+    // tenant scope, not a number segment, keeps them apart.
     public function test_sequences_isolated_per_institute(): void
     {
         $a1 = $this->sequences()->next(NumberSequence::TYPE_MR, $this->a->id);
         $a2 = $this->sequences()->next(NumberSequence::TYPE_MR, $this->a->id);
         $b1 = $this->sequences()->next(NumberSequence::TYPE_MR, $this->b->id);
 
-        // Same suffix can exist in both tenants — the institute segment
-        // is what keeps the global unique columns collision-free.
+        $this->assertSame($a1, $b1);
         $this->assertSame(substr($a1, -5), substr($b1, -5));
-        $this->assertNotSame($a1, $b1);
-        $this->assertStringContainsString('-'.$this->instituteSegment($this->b).'-', $b1);
 
         // B's allocation never touches A's counter row.
         $this->assertSame(2, (int) NumberSequence::where('institute_id', $this->a->id)
             ->where('sequence_type', NumberSequence::TYPE_MR)->firstOrFail()->last_number);
         $this->assertSame(1, (int) NumberSequence::where('institute_id', $this->b->id)
             ->where('sequence_type', NumberSequence::TYPE_MR)->firstOrFail()->last_number);
+    }
+
+    // Display/search contract: stored YYYY, human-facing YY, legacy
+    // tenant form accepted everywhere.
+    public function test_display_shortens_year_and_normalizers_round_trip(): void
+    {
+        $y = $this->year();
+        $yy = substr($y, 2);
+
+        $stored = $this->sequences()->next(NumberSequence::TYPE_MR, $this->a->id);
+        $this->assertSame("MR-{$y}-00001", $stored);
+        $this->assertSame("MR-{$yy}-00001", NumberSequenceService::display($stored));
+        $this->assertSame($stored, NumberSequenceService::toStored("MR-{$yy}-00001"));
+
+        $legacy = "MR-{$y}-189-00002";
+        $this->assertSame("MR-{$y}-00002", NumberSequenceService::toStored($legacy));
+        $this->assertSame("MR-{$yy}-00002", NumberSequenceService::display($legacy));
+
+        $this->assertSame($stored, NumberSequenceService::expandShortYears("MR-{$yy}-00001"));
+        // Four-digit years are never rewritten.
+        $this->assertSame($stored, NumberSequenceService::expandShortYears($stored));
+    }
+
+    // Same stored number may live in two tenants (per-tenant uniqueness).
+    public function test_same_number_reusable_across_tenants(): void
+    {
+        $mr = $this->sequences()->next(NumberSequence::TYPE_MR, $this->a->id);
+
+        $make = fn (Institute $institute, string $phone) => Patient::create([
+            'institute_id' => $institute->id,
+            'mr_number' => $mr,
+            'first_name' => 'Cross',
+            'last_name' => 'Tenant',
+            'date_of_birth' => '1990-01-01',
+            'gender' => 'male',
+            'phone' => $phone,
+        ]);
+
+        $make($this->a, '0100000011');
+        $make($this->b, '0100000012');
+
+        $this->assertSame(1, Patient::where('institute_id', $this->a->id)->where('mr_number', $mr)->count());
+        $this->assertSame(1, Patient::where('institute_id', $this->b->id)->where('mr_number', $mr)->count());
     }
 
     // Year rollover starts a fresh series.
@@ -206,7 +243,7 @@ class NumberSequenceTest extends TestCase
 
         $fresh = $this->sequences()->next(NumberSequence::TYPE_MR, $this->a->id);
 
-        $this->assertMatchesRegularExpression('/^MR-\d{4}-\d{3,}-\d{5}$/', $fresh);
+        $this->assertMatchesRegularExpression('/^MR-\d{4}-\d{5}$/', $fresh);
         $this->assertNotSame('26474', $fresh);
         $this->assertSame('26474', $legacy->fresh()->mr_number);
     }

@@ -255,8 +255,8 @@ class Phase18BranchIsolationTest extends TestCase
         $this->get(route('medical.encounters.show', $encA1))->assertOk();
         $this->get(route('medical.encounters.show', $encA2))->assertForbidden();
         $response = $this->get(route('medical.encounters.index'))->assertOk();
-        $response->assertSee($encA1->encounter_number);
-        $response->assertDontSee($encA2->encounter_number);
+        $response->assertSee(clinical_no($encA1->encounter_number));
+        $response->assertDontSee(clinical_no($encA2->encounter_number));
     }
 
     public function test_branch_user_store_scoped(): void
@@ -483,10 +483,10 @@ class Phase18BranchIsolationTest extends TestCase
         // Timeline shows the order in-branch and hides it cross-branch.
         $this->actAs($this->userA1, $this->instituteA);
         $this->get(route('medical.patients.history', $patient))->assertOk()
-            ->assertSee($order->order_number);
+            ->assertSee(clinical_no($order->order_number));
         $this->actAs($this->userA2, $this->instituteA);
         $this->get(route('medical.patients.history', $patient))->assertOk()
-            ->assertDontSee($order->order_number);
+            ->assertDontSee(clinical_no($order->order_number));
     }
 
     // --- Diagnoses / problems / follow-ups -------------------------------------------------------------------------------------------------------

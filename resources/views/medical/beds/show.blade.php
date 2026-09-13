@@ -51,7 +51,7 @@
                         <a href="{{ route('medical.patients.show', $activeAdmission->patient) }}">
                             {{ $activeAdmission->patient->full_name }}
                         </a>
-                        <span class="text-muted">({{ $activeAdmission->patient->mr_number }})</span>
+                        <span class="text-muted">({{ clinical_no($activeAdmission->patient->mr_number) }})</span>
                     </p>
                     <p><strong>Admitted:</strong> <x-tdate :value="$activeAdmission->admission_date" fallback="d M Y" /></p>
                     <p class="mb-0">

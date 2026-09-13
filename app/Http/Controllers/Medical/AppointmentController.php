@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Medical;
 use App\Http\Requests\Medical\AppointmentRequest;
 use App\Models\Country;
 use App\Models\Institute;
+use App\Models\Medical\Admission;
 use App\Models\Medical\Appointment;
 use App\Models\Medical\Doctor;
 use App\Models\Medical\Patient;
@@ -160,10 +161,14 @@ class AppointmentController extends MedicalController implements HasMiddleware
             'canDeleteFinalized' => $this->isMedicalAdmin($instituteId),
         ];
 
+        // IPD tag map for the Book Appointment patient dropdown.
+        $ipdPatientIds = $this->activeAdmissionPatientIds($instituteId, $patients->pluck('id'));
+
         return view('medical.appointments.index', compact(
             'appointments', 'doctors', 'patients', 'countries',
             'defaultCountryId', 'previewMr', 'canCreatePatient',
-            'activeTab', 'queue', 'instituteId', 'reactProps', 'autoFee'
+            'activeTab', 'queue', 'instituteId', 'reactProps', 'autoFee',
+            'ipdPatientIds'
         ));
     }
 
@@ -598,7 +603,13 @@ class AppointmentController extends MedicalController implements HasMiddleware
     {
         $ownDoctorId = $this->doctorFenceId();
 
-        return $appointments->map(function (Appointment $appointment) use ($ownDoctorId) {
+        // Active admissions for the listed patients in one query (IPD tag).
+        $ipdPatientIds = $this->activeAdmissionPatientIds(
+            $this->instituteId(),
+            $appointments->pluck('patient_id')
+        );
+
+        return $appointments->map(function (Appointment $appointment) use ($ownDoctorId, $ipdPatientIds) {
             $isToday = (bool) $appointment->appointment_date?->isToday();
             $isFinalized = $appointment->status === 'completed' || $appointment->fee_collected_at !== null;
 
@@ -606,6 +617,8 @@ class AppointmentController extends MedicalController implements HasMiddleware
                 'id' => $appointment->id,
                 'patient_name' => $appointment->patient->full_name ?? 'N/A',
                 'patient_phone' => $appointment->patient->phone ?? 'N/A',
+                'patient_age' => $appointment->patient?->age,
+                'is_ipd' => isset($ipdPatientIds[$appointment->patient_id]),
                 'has_patient' => $appointment->patient !== null,
                 'doctor_name' => $appointment->doctor->name ?? 'N/A',
                 'date_display' => mawa_format_date($appointment->appointment_date, null, 'd M Y'),

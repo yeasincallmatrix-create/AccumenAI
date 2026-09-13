@@ -613,7 +613,7 @@ class Phase15DiagnosisAndClinicalOrdersTest extends TestCase
         $this->post(route('medical.encounters.complete', $encounter))->assertRedirect();
 
         $response = $this->get(route('medical.encounters.show', $encounter))->assertOk();
-        foreach (['Acute viral fever', $order->order_number, 'diagnosis added', 'cancelled', 'started', 'completed'] as $needle) {
+        foreach (['Acute viral fever', clinical_no($order->order_number), 'diagnosis added', 'cancelled', 'started', 'completed'] as $needle) {
             $response->assertSee($needle);
         }
     }

@@ -235,7 +235,7 @@ class Phase16PatientLongitudinalTimelineTest extends TestCase
         $this->get(route('medical.patients.history', $patient))
             ->assertOk()
             ->assertSee('Clinical Timeline')
-            ->assertSee($encounter->encounter_number);
+            ->assertSee(clinical_no($encounter->encounter_number));
     }
 
     public function test_foreign_patient_timeline_rejected_without_leakage(): void
@@ -249,8 +249,8 @@ class Phase16PatientLongitudinalTimelineTest extends TestCase
 
         $response = $this->get(route('medical.patients.history', $patient));
         $response->assertForbidden();
-        $response->assertDontSee($patient->mr_number);
-        $response->assertDontSee($encounter->encounter_number);
+        $response->assertDontSee(clinical_no($patient->mr_number));
+        $response->assertDontSee(clinical_no($encounter->encounter_number));
         $response->assertDontSee('Secret diagnosis label');
     }
 
@@ -307,8 +307,8 @@ class Phase16PatientLongitudinalTimelineTest extends TestCase
 
         $response = $this->get(route('medical.patients.history', $patient))->assertOk();
         foreach ([
-            $encounter->encounter_number, 'Timeline fever', 'Terminology: Unresolved',
-            $order->order_number, '77', $rx->prescription_number,
+            clinical_no($encounter->encounter_number), 'Timeline fever', 'Terminology: Unresolved',
+            clinical_no($order->order_number), '77', clinical_no($rx->prescription_number),
             '101.2', 'Timeline night note', 'Discharge',
         ] as $needle) {
             $response->assertSee($needle);
@@ -360,8 +360,8 @@ class Phase16PatientLongitudinalTimelineTest extends TestCase
 
         // Newest first: today's records before the 5-day-old admission
         // (em-dash needle targets the event card, not the filter option).
-        $this->assertTrue(strpos($first, $encounter->encounter_number) < strpos($first, 'Admission —'));
-        $this->assertTrue(strpos($first, $rx->prescription_number) < strpos($first, 'Admission —'));
+        $this->assertTrue(strpos($first, clinical_no($encounter->encounter_number)) < strpos($first, 'Admission —'));
+        $this->assertTrue(strpos($first, clinical_no($rx->prescription_number)) < strpos($first, 'Admission —'));
         // Deterministic: identical order across requests.
         $this->assertSame($first, $second);
     }
@@ -376,13 +376,13 @@ class Phase16PatientLongitudinalTimelineTest extends TestCase
 
         // Date window excludes the old admission.
         $response = $this->get(route('medical.patients.history', [$patient, 'from' => now()->subDays(2)->format('Y-m-d')]))->assertOk();
-        $response->assertSee($encounter->encounter_number);
+        $response->assertSee(clinical_no($encounter->encounter_number));
         $response->assertDontSee('Timeline IPD');
 
         // Type filter isolates prescriptions.
         $response = $this->get(route('medical.patients.history', [$patient, 'type' => 'prescription']))->assertOk();
-        $response->assertSee($rx->prescription_number);
-        $response->assertDontSee($encounter->encounter_number);
+        $response->assertSee(clinical_no($rx->prescription_number));
+        $response->assertDontSee(clinical_no($encounter->encounter_number));
     }
 
     public function test_empty_state(): void
@@ -497,7 +497,7 @@ class Phase16PatientLongitudinalTimelineTest extends TestCase
 
         $response = $this->get(route('medical.patients.history', $patient))->assertOk();
         $response->assertSee('0 events');
-        $response->assertDontSee($encounter->encounter_number);
+        $response->assertDontSee(clinical_no($encounter->encounter_number));
     }
 
     public function test_event_visibility_follows_existing_grants(): void
@@ -512,8 +512,8 @@ class Phase16PatientLongitudinalTimelineTest extends TestCase
         Workspace::set($this->institute->id);
 
         $response = $this->get(route('medical.patients.history', $patient))->assertOk();
-        $response->assertSee($encounter->encounter_number);
-        $response->assertDontSee($rx->prescription_number);
+        $response->assertSee(clinical_no($encounter->encounter_number));
+        $response->assertDontSee(clinical_no($rx->prescription_number));
     }
 
     public function test_no_patient_permission_rejected(): void

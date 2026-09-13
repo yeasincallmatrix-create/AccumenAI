@@ -91,7 +91,7 @@ class PatientRequest extends FormRequest
             'age' => 'required_without:date_of_birth|nullable|integer|min:0|max:55000',
             'age_unit' => 'nullable|in:days,months,years',
             'date_of_birth' => 'required_without:age|nullable|date|before:today',
-            'gender' => ['nullable', Rule::in(['male', 'female', 'other'])],
+            'gender' => ['required', Rule::in(['male', 'female', 'other'])],
             'phone' => [
                 // Shared family phones allowed (parent + child on one
                 // number) — identity is mr_number, never the phone.

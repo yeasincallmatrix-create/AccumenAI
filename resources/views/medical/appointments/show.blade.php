@@ -27,7 +27,7 @@
                         {{ $appointment->patient->full_name ?? 'N/A' }}
                     </a>
                     @if($appointment->patient)
-                        <span class="text-muted">({{ $appointment->patient->mr_number }})</span>
+                        <span class="text-muted">({{ clinical_no($appointment->patient->mr_number) }})</span>
                     @endif
                 </p>
                 <p><strong>Doctor:</strong> {{ $appointment->doctor->name ?? 'N/A' }}</p>

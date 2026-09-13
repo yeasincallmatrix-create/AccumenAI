@@ -204,7 +204,7 @@ class LabOrderController extends MedicalController implements HasMiddleware
         $order = $this->labService->createOrder($data, $tests);
 
         return redirect()->route('medical.lab.orders.show', $order)
-            ->with('status', 'Lab order '.$order->order_number.' created successfully!');
+            ->with('status', 'Lab order '.clinical_no($order->order_number).' created successfully!');
     }
 
     public function show(LabOrder $order)

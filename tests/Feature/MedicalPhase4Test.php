@@ -180,7 +180,7 @@ class MedicalPhase4Test extends TestCase
 
         $order = $this->createOrder($patient, [$test]);
         $this->assertMatchesRegularExpression(
-            '/^LAB-\d{4}-'.str_pad((string) $this->institute->id, 3, '0', STR_PAD_LEFT).'-\d{5}$/',
+            '/^LAB-\d{4}-\d{5}$/',
             $order->order_number
         );
         $this->assertSame('ordered', $order->status);
@@ -211,7 +211,7 @@ class MedicalPhase4Test extends TestCase
         $this->assertStringContainsString('pdf', strtolower($response->headers->get('Content-Type')));
 
         // Lab dashboard renders.
-        $this->get(route('medical.lab.index'))->assertOk()->assertSee($order->order_number);
+        $this->get(route('medical.lab.index'))->assertOk()->assertSee(clinical_no($order->order_number));
     }
 
     public function test_abnormal_result_flagged(): void
@@ -248,7 +248,7 @@ class MedicalPhase4Test extends TestCase
         $invoice = $this->createInvoice($patient);
 
         $this->assertMatchesRegularExpression(
-            '/^INV-\d{4}-'.str_pad((string) $this->institute->id, 3, '0', STR_PAD_LEFT).'-\d{5}$/',
+            '/^INV-\d{4}-\d{5}$/',
             $invoice->invoice_number
         );
         // 500 + 5% tax.
@@ -296,7 +296,7 @@ class MedicalPhase4Test extends TestCase
         $this->assertStringContainsString('pdf', strtolower($response->headers->get('Content-Type')));
 
         // Payments + dashboard pages render.
-        $this->get(route('medical.billing.payments.index'))->assertOk()->assertSee($invoice->invoice_number);
+        $this->get(route('medical.billing.payments.index'))->assertOk()->assertSee(clinical_no($invoice->invoice_number));
         $this->get(route('medical.billing.index'))->assertOk();
     }
 
@@ -321,7 +321,7 @@ class MedicalPhase4Test extends TestCase
 
         $claim = TpaClaim::where('institute_id', $this->institute->id)->firstOrFail();
         $this->assertMatchesRegularExpression(
-            '/^TPA-\d{4}-'.str_pad((string) $this->institute->id, 3, '0', STR_PAD_LEFT).'-\d{5}$/',
+            '/^TPA-\d{4}-\d{5}$/',
             $claim->claim_number
         );
         $this->assertSame('pending', $claim->status);

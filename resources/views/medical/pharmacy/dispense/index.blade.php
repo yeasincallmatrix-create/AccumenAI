@@ -21,7 +21,7 @@
             <div class="card mb-3">
                 <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
                     <div>
-                        <strong>{{ $prescription->prescription_number }}</strong>
+                        <strong>{{ clinical_no($prescription->prescription_number) }}</strong>
                         <span class="text-muted">· {{ $prescription->patient->full_name ?? 'N/A' }}</span>
                         <span class="text-muted">· <x-tdate :value="$prescription->prescription_date" fallback="d M Y" /></span>
                     </div>

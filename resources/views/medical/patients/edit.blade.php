@@ -5,7 +5,7 @@
 @section('content')
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2">
     <div class="page-header-text">
-        <h4 class="page-header-title">Edit Patient — {{ $patient->full_name }} ({{ $patient->mr_number }})</h4>
+        <h4 class="page-header-title">Edit Patient — {{ $patient->full_name }} ({{ clinical_no($patient->mr_number) }})</h4>
     </div>
     <div class="page-header-actions">
         <a class="btn btn-secondary" href="{{ route('medical.patients.show', $patient) }}">
@@ -22,7 +22,7 @@
 
             <h6 class="mb-3">Personal Information</h6>
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-6 col-md-4 col-xl-2">
                     <div class="mb-3">
                         <label class="form-label" for="first_name">First Name <span class="text-danger">*</span></label>
                         <input type="text" id="first_name" name="first_name"
@@ -31,7 +31,7 @@
                         @error('first_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-6 col-md-4 col-xl-2">
                     <div class="mb-3">
                         <label class="form-label" for="last_name">Last Name</label>
                         <input type="text" id="last_name" name="last_name"
@@ -40,38 +40,34 @@
                         @error('last_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-6 col-md-4 col-xl-2">
                     <div class="mb-3">
                         <label class="form-label" for="date_of_birth">Date of Birth</label>
                         <x-tdate-input name="date_of_birth" :value="old('date_of_birth', $patient->date_of_birth?->format('Y-m-d'))" id="date_of_birth" :class="'form-control'.($errors->has('date_of_birth') ? ' is-invalid' : '')" />
                         @error('date_of_birth')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-6 col-md-4 col-xl-2">
                     <div class="mb-3">
                         <label class="form-label" for="age">Age <span class="text-danger">*</span></label>
-                        <div class="row g-1">
-                            <div class="col-6">
-                                <input type="number" id="age" name="age" min="0" max="150"
-                                       class="form-control @error('age') is-invalid @enderror"
-                                       value="{{ old('age', $patient->age) }}" required>
-                            </div>
-                            <div class="col-6">
-                                <select id="age_unit" name="age_unit" class="form-select @error('age_unit') is-invalid @enderror">
-                                    <option value="days" @selected(old('age_unit') === 'days')>Days</option>
-                                    <option value="months" @selected(old('age_unit') === 'months')>Months</option>
-                                    <option value="years" @selected(old('age_unit', 'years') === 'years')>Years</option>
-                                </select>
-                            </div>
+                        <div class="input-group">
+                            <input type="number" id="age" name="age" min="0" max="150"
+                                   class="form-control @error('age') is-invalid @enderror"
+                                   value="{{ old('age', $patient->age) }}" required>
+                            <select id="age_unit" name="age_unit" class="form-select flex-grow-0 w-auto @error('age_unit') is-invalid @enderror">
+                                <option value="days" @selected(old('age_unit') === 'days')>Days</option>
+                                <option value="months" @selected(old('age_unit') === 'months')>Months</option>
+                                <option value="years" @selected(old('age_unit', 'years') === 'years')>Years</option>
+                            </select>
                         </div>
                         @error('age')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                         @error('age_unit')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-6 col-md-4 col-xl-2">
                     <div class="mb-3">
-                        <label class="form-label" for="gender">Gender</label>
-                        <select id="gender" name="gender" class="form-select @error('gender') is-invalid @enderror">
+                        <label class="form-label" for="gender">Gender <span class="text-danger">*</span></label>
+                        <select id="gender" name="gender" class="form-select @error('gender') is-invalid @enderror" required>
                             <option value="">Select Gender</option>
                             <option value="male" @selected(old('gender', $patient->gender) === 'male')>Male</option>
                             <option value="female" @selected(old('gender', $patient->gender) === 'female')>Female</option>
@@ -80,7 +76,7 @@
                         @error('gender')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-6 col-md-4 col-xl-2">
                     <div class="mb-3">
                         <label class="form-label" for="blood_group">Blood Group</label>
                         <select id="blood_group" name="blood_group" class="form-select @error('blood_group') is-invalid @enderror">
@@ -92,7 +88,7 @@
                         @error('blood_group')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-12 col-md-4">
                     <div class="mb-3">
                         <label class="form-label" for="phone">Phone Number</label>
                         <input type="text" id="phone" name="phone"
@@ -101,7 +97,7 @@
                         @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-12 col-md-4">
                     <div class="mb-3">
                         <label class="form-label" for="email">Email</label>
                         <input type="email" id="email" name="email"
@@ -110,7 +106,7 @@
                         @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-12 col-md-4">
                     <div class="mb-3">
                         <label class="form-label" for="is_active">Status</label>
                         <select id="is_active" name="is_active" class="form-select @error('is_active') is-invalid @enderror">
@@ -124,7 +120,7 @@
 
             <h6 class="mb-3 mt-3">Family</h6>
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-12 col-md-6">
                     <div class="mb-3">
                         <label class="form-label" for="relation_to_primary">Relation</label>
                         <select id="relation_to_primary" name="relation_to_primary" class="form-select @error('relation_to_primary') is-invalid @enderror">
@@ -135,13 +131,13 @@
                         @error('relation_to_primary')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-12 col-md-6">
                     <div class="mb-3">
                         <label class="form-label">Primary Contact</label>
                         <div class="form-control-plaintext">
                             @if($patient->primaryContact)
                                 <a href="{{ route('medical.patients.show', $patient->primaryContact) }}">{{ $patient->primaryContact->full_name }}</a>
-                                <span class="text-muted">({{ $patient->primaryContact->mr_number }})</span>
+                                <span class="text-muted">({{ clinical_no($patient->primaryContact->mr_number) }})</span>
                             @else
                                 <span class="text-muted">—</span>
                             @endif
@@ -164,7 +160,7 @@
 
             <h6 class="mb-3 mt-3">Emergency Contact</h6>
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-12 col-md-6">
                     <div class="mb-3">
                         <label class="form-label" for="emergency_contact_name">Emergency Contact Name</label>
                         <input type="text" id="emergency_contact_name" name="emergency_contact_name"
@@ -173,7 +169,7 @@
                         @error('emergency_contact_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-12 col-md-6">
                     <div class="mb-3">
                         <label class="form-label" for="emergency_contact_phone">Emergency Contact Phone</label>
                         <input type="text" id="emergency_contact_phone" name="emergency_contact_phone"
@@ -186,7 +182,7 @@
 
             <h6 class="mb-3 mt-3">Medical Information</h6>
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-12 col-md-6">
                     <div class="mb-3">
                         <label class="form-label" for="allergies">Allergies</label>
                         <textarea id="allergies" name="allergies" rows="2"
@@ -194,7 +190,7 @@
                         @error('allergies')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-12 col-md-6">
                     <div class="mb-3">
                         <label class="form-label" for="chronic_conditions">Chronic Conditions</label>
                         <textarea id="chronic_conditions" name="chronic_conditions" rows="2"
@@ -202,7 +198,7 @@
                         @error('chronic_conditions')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-12">
+                <div class="col-12">
                     <div class="mb-3">
                         <label class="form-label" for="notes">Notes</label>
                         <textarea id="notes" name="notes" rows="2"

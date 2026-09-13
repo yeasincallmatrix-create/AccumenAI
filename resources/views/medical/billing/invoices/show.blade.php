@@ -6,7 +6,7 @@
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2">
     <div class="page-header-text">
         <h4 class="page-header-title">
-            {{ $invoice->invoice_number }}
+            {{ clinical_no($invoice->invoice_number) }}
             <span class="badge bg-{{ $invoice->type_class }}">{{ strtoupper($invoice->type) }}</span>
             <span class="badge bg-{{ $invoice->status === 'paid' ? 'success' : ($invoice->status === 'pending' ? 'warning text-dark' : 'secondary') }}">{{ $invoice->status_text }}</span>
         </h4>
@@ -36,7 +36,7 @@
                 <p><strong>Patient:</strong>
                     @if($invoice->patient)
                         <a href="{{ route('medical.patients.show', $invoice->patient) }}">{{ $invoice->patient->full_name }}</a>
-                        <span class="text-muted">({{ $invoice->patient->mr_number }})</span>
+                        <span class="text-muted">({{ clinical_no($invoice->patient->mr_number) }})</span>
                     @else
                         N/A
                     @endif
@@ -146,7 +146,7 @@
                 <ul class="list-unstyled mb-0">
                     @foreach($invoice->tpaClaims as $claim)
                     <li class="border-bottom py-1">
-                        <a href="{{ route('medical.tpa.claims.show', $claim) }}">{{ $claim->claim_number }}</a>
+                        <a href="{{ route('medical.tpa.claims.show', $claim) }}">{{ clinical_no($claim->claim_number) }}</a>
                         <span class="badge bg-secondary float-end">{{ ucfirst($claim->status) }}</span>
                     </li>
                     @endforeach

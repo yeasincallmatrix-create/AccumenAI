@@ -169,7 +169,7 @@ class EncounterController extends MedicalController implements HasMiddleware
         ]);
 
         return redirect()->route('medical.encounters.show', $encounter)
-            ->with('status', 'Encounter '.$encounter->encounter_number.' opened successfully!');
+            ->with('status', 'Encounter '.clinical_no($encounter->encounter_number).' opened successfully!');
     }
 
     public function show(Encounter $encounter)

@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Lab Report — {{ $order->order_number }}</title>
+    <title>Lab Report — {{ clinical_no($order->order_number) }}</title>
     <style>
         body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #222; }
         .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
@@ -29,11 +29,11 @@
     <h2>Order Information</h2>
     <table class="meta">
         <tr>
-            <td><strong>Order No:</strong> {{ $order->order_number }}</td>
+            <td><strong>Order No:</strong> {{ clinical_no($order->order_number) }}</td>
             <td><strong>Order Date:</strong> <x-tdate :value="$order->order_date" fallback="d M Y" /></td>
         </tr>
         <tr>
-            <td><strong>Patient:</strong> {{ $patient->full_name ?? 'N/A' }} ({{ $patient->mr_number ?? '' }})</td>
+            <td><strong>Patient:</strong> {{ $patient->full_name ?? 'N/A' }} ({{ clinical_no($patient->mr_number ?? '') }})</td>
             <td><strong>Age / Gender:</strong> {{ $patient->age ?? 'N/A' }} / {{ ucfirst($patient->gender ?? 'N/A') }}</td>
         </tr>
         <tr>

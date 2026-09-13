@@ -26,7 +26,7 @@
 
             <h6 class="mb-3">Personal Information</h6>
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-6 col-md-4 col-xl-2">
                     <div class="mb-3">
                         <label class="form-label" for="first_name">First Name <span class="text-danger">*</span></label>
                         <input type="text" id="first_name" name="first_name"
@@ -35,7 +35,7 @@
                         @error('first_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-6 col-md-4 col-xl-2">
                     <div class="mb-3">
                         <label class="form-label" for="last_name">Last Name</label>
                         <input type="text" id="last_name" name="last_name"
@@ -44,38 +44,34 @@
                         @error('last_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-6 col-md-4 col-xl-2">
                     <div class="mb-3">
                         <label class="form-label" for="date_of_birth">Date of Birth</label>
                         <x-tdate-input name="date_of_birth" :value="old('date_of_birth')" id="date_of_birth" :class="'form-control'.($errors->has('date_of_birth') ? ' is-invalid' : '')" />
                         @error('date_of_birth')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-6 col-md-4 col-xl-2">
                     <div class="mb-3">
                         <label class="form-label" for="age">Age <span class="text-danger">*</span></label>
-                        <div class="row g-1">
-                            <div class="col-6">
-                                <input type="number" id="age" name="age" min="0" max="150"
-                                       class="form-control @error('age') is-invalid @enderror"
-                                       value="{{ old('age') }}" required placeholder="e.g. 30">
-                            </div>
-                            <div class="col-6">
-                                <select id="age_unit" name="age_unit" class="form-select @error('age_unit') is-invalid @enderror">
-                                    <option value="days" @selected(old('age_unit') === 'days')>Days</option>
-                                    <option value="months" @selected(old('age_unit') === 'months')>Months</option>
-                                    <option value="years" @selected(old('age_unit', 'years') === 'years')>Years</option>
-                                </select>
-                            </div>
+                        <div class="input-group">
+                            <input type="number" id="age" name="age" min="0" max="150"
+                                   class="form-control @error('age') is-invalid @enderror"
+                                   value="{{ old('age') }}" required placeholder="e.g. 30">
+                            <select id="age_unit" name="age_unit" class="form-select flex-grow-0 w-auto @error('age_unit') is-invalid @enderror">
+                                <option value="days" @selected(old('age_unit') === 'days')>Days</option>
+                                <option value="months" @selected(old('age_unit') === 'months')>Months</option>
+                                <option value="years" @selected(old('age_unit', 'years') === 'years')>Years</option>
+                            </select>
                         </div>
                         @error('age')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                         @error('age_unit')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-6 col-md-4 col-xl-2">
                     <div class="mb-3">
-                        <label class="form-label" for="gender">Gender</label>
-                        <select id="gender" name="gender" class="form-select @error('gender') is-invalid @enderror">
+                        <label class="form-label" for="gender">Gender <span class="text-danger">*</span></label>
+                        <select id="gender" name="gender" class="form-select @error('gender') is-invalid @enderror" required>
                             <option value="">Select Gender</option>
                             <option value="male" @selected(old('gender') === 'male')>Male</option>
                             <option value="female" @selected(old('gender') === 'female')>Female</option>
@@ -84,7 +80,7 @@
                         @error('gender')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-6 col-md-4 col-xl-2">
                     <div class="mb-3">
                         <label class="form-label" for="blood_group">Blood Group</label>
                         <select id="blood_group" name="blood_group" class="form-select @error('blood_group') is-invalid @enderror">
@@ -96,7 +92,7 @@
                         @error('blood_group')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-12 col-md-4">
                     <div class="mb-3">
                         <label class="form-label" for="phone">Phone Number</label>
                         <div class="input-group">
@@ -111,20 +107,16 @@
                         @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-12 col-md-4">
                     <div class="mb-3">
                         <label class="form-label" for="email">Email</label>
                         <input type="email" id="email" name="email"
                                class="form-control @error('email') is-invalid @enderror"
-                               value="{{ old('email') }}" maxlength="100">
+                                value="{{ old('email') }}" maxlength="100">
                         @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-            </div>
-
-            <h6 class="mb-3 mt-3">Family</h6>
-            <div class="row">
-                <div class="col-md-6">
+                <div class="col-12 col-md-4">
                     <div class="mb-3">
                         <label class="form-label" for="relation_to_primary">Relation</label>
                         <select id="relation_to_primary" name="relation_to_primary" class="form-select @error('relation_to_primary') is-invalid @enderror">
@@ -148,11 +140,12 @@
                        :level-1-options="$presentAddress['level_options'][1]"
                        :level-2-options="$presentAddress['level_options'][2]"
                        :level-3-options="$presentAddress['level_options'][3]"
-                       :address="old('present_address', $patient->present_address)" />
+                       :address="old('present_address', $patient->present_address)"
+                       :single-row="true" />
 
             <h6 class="mb-3 mt-3">Emergency Contact</h6>
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-12 col-md-6">
                     <div class="mb-3">
                         <label class="form-label" for="emergency_contact_name">Emergency Contact Name</label>
                         <input type="text" id="emergency_contact_name" name="emergency_contact_name"
@@ -161,7 +154,7 @@
                         @error('emergency_contact_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-12 col-md-6">
                     <div class="mb-3">
                         <label class="form-label" for="emergency_contact_phone">Emergency Contact Phone</label>
                         <div class="input-group">
@@ -180,7 +173,7 @@
 
             <h6 class="mb-3 mt-3">Medical Information</h6>
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-12 col-md-6">
                     <div class="mb-3">
                         <label class="form-label" for="allergies">Allergies</label>
                         <textarea id="allergies" name="allergies" rows="2"
@@ -188,7 +181,7 @@
                         @error('allergies')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-12 col-md-6">
                     <div class="mb-3">
                         <label class="form-label" for="chronic_conditions">Chronic Conditions</label>
                         <textarea id="chronic_conditions" name="chronic_conditions" rows="2"
@@ -196,7 +189,7 @@
                         @error('chronic_conditions')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
-                <div class="col-md-12">
+                <div class="col-12">
                     <div class="mb-3">
                         <label class="form-label" for="notes">Notes</label>
                         <textarea id="notes" name="notes" rows="2"
@@ -232,7 +225,7 @@
                     <dt class="col-4">Gender</dt><dd class="col-8" id="confirm-gender">—</dd>
                     <dt class="col-4">Phone</dt><dd class="col-8" id="confirm-phone">—</dd>
                 </dl>
-                <p class="text-muted small mt-2 mb-0">Only Name and Age are mandatory.</p>
+                <p class="text-muted small mt-2 mb-0">Only Name, Age and Gender are mandatory.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Edit</button>
@@ -465,4 +458,17 @@
     });
 })();
 </script>
+@endpush
+
+@push('styles')
+<style>
+/* Register page only: all six Present Address fields in one line
+   (the component renders them in a single grid here via single-row).
+   Neutralizes the country's 2-column span so nothing wraps. */
+.address-component > .grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.address-component > .grid > .field-fill { grid-column: auto; }
+@media (max-width: 768px) {
+    .address-component > .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+</style>
 @endpush

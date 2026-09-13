@@ -48,7 +48,7 @@
                     @forelse($invoices as $invoice)
                     <tr>
                         <td>
-                            <a href="{{ route('medical.billing.invoices.show', $invoice) }}"><strong>{{ $invoice->invoice_number }}</strong></a>
+                            <a href="{{ route('medical.billing.invoices.show', $invoice) }}"><strong>{{ clinical_no($invoice->invoice_number) }}</strong></a>
                         </td>
                         <td>{{ $invoice->patient->full_name ?? 'N/A' }}</td>
                         <td>{{ $invoice->payment_method ? ucfirst(str_replace('_', ' ', $invoice->payment_method)) : '—' }}</td>

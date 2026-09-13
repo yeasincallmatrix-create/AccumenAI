@@ -5,7 +5,7 @@
 @section('content')
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2">
     <div class="page-header-text">
-        <h4 class="page-header-title">Enter Results — {{ $order->order_number }}</h4>
+        <h4 class="page-header-title">Enter Results — {{ clinical_no($order->order_number) }}</h4>
     </div>
     <div class="page-header-actions">
         <a class="btn btn-secondary" href="{{ route('medical.lab.orders.show', $order) }}">

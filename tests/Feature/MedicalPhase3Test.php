@@ -283,7 +283,7 @@ class MedicalPhase3Test extends TestCase
 
         $rx = Prescription::where('institute_id', $this->institute->id)->firstOrFail();
         $this->assertMatchesRegularExpression(
-            '/^RX-\d{4}-'.str_pad((string) $this->institute->id, 3, '0', STR_PAD_LEFT).'-\d{5}$/',
+            '/^RX-\d{4}-\d{5}$/',
             $rx->prescription_number
         );
         $this->assertFalse((bool) $rx->is_finalized);
@@ -364,7 +364,7 @@ class MedicalPhase3Test extends TestCase
 
         // Queue lists the script.
         $this->get(route('medical.pharmacy.dispense.index'))
-            ->assertOk()->assertSee($rx->prescription_number);
+            ->assertOk()->assertSee(clinical_no($rx->prescription_number));
         $this->get(route('medical.pharmacy.dispense.show', $item->id))->assertOk();
 
         // Dispense the full quantity from the batch.
@@ -514,5 +514,218 @@ class MedicalPhase3Test extends TestCase
         // Foreign batch fails the institute-scoped exists rule → refused.
         $response->assertSessionHasErrors(['stock_id']);
         $this->assertSame('pending', $item->fresh()->status);
+    }
+
+    public function test_patient_card_serial_is_doctor_scoped_and_queue_only(): void
+    {
+        $doctorB = User::factory()->create([
+            'account_type' => 'staff',
+            'email_verified_at' => now(),
+            'status' => 'active',
+        ]);
+        Doctor::create([
+            'institute_id' => $this->institute->id,
+            'user_id' => $doctorB->id,
+            'registration_number' => 'REG-'.strtoupper(uniqid()),
+        ]);
+
+        $patient = $this->createPatient();
+        $date = now()->format('Y-m-d');
+
+        // Open visit with doctor A (this doctor).
+        $this->post(route('medical.appointments.store'), [
+            'patient_id' => $patient->id,
+            'doctor_id' => $this->doctor->id,
+            'appointment_date' => $date,
+            'appointment_time' => '09:00',
+        ])->assertRedirect();
+
+        // Visit with doctor B, then closed (no longer in any queue).
+        $this->post(route('medical.appointments.store'), [
+            'patient_id' => $patient->id,
+            'doctor_id' => $doctorB->id,
+            'appointment_date' => $date,
+            'appointment_time' => '09:10',
+        ])->assertRedirect();
+        $visitB = \App\Models\Medical\Appointment::where('institute_id', $this->institute->id)
+            ->where('doctor_id', $doctorB->id)
+            ->firstOrFail();
+        $this->post(route('medical.appointments.checkin', $visitB))->assertRedirect();
+        $this->post(route('medical.appointments.complete', $visitB))->assertRedirect();
+
+        $info = fn (?int $doctorId) => $this->get(route('medical.prescriptions.patient-info', $patient)
+            .($doctorId ? '?doctor_id='.$doctorId : ''))->assertOk()->json('patient');
+
+        // Doctor A sees their own open queue serial…
+        $this->assertSame(
+            '#1 · '.now()->format('d M'),
+            $info($this->doctor->id)['serial']
+        );
+        // …with a matching Due badge (fee still open, button live)…
+        $this->assertStringStartsWith('Unpaid', $info($this->doctor->id)['payment']);
+        // …doctor B sees nothing (their visit is closed, A's number is
+        // never borrowed)…
+        $this->assertNull($info($doctorB->id)['serial']);
+        // …and an unknown doctor id degrades honestly instead of leaking.
+        $this->assertNull($info(999999999)['serial']);
+
+        // Accept-fee button: live while doctor A's visit is open + unpaid…
+        $feeA = $info($this->doctor->id)['fee'];
+        $this->assertNotNull($feeA);
+        $this->assertTrue($feeA['collectable']);
+        $this->assertStringContainsString('fee_collect', $feeA['url']);
+        // …and also live for the closed (completed, still unpaid) visit —
+        // the prescription page does not gate on visit status…
+        $feeB = $info($doctorB->id)['fee'];
+        $this->assertNotNull($feeB);
+        $this->assertTrue($feeB['collectable']);
+        // …and dead once paid.
+        $visitA = \App\Models\Medical\Appointment::where('institute_id', $this->institute->id)
+            ->where('doctor_id', $this->doctor->id)
+            ->firstOrFail();
+        $visitA->update(['fee_collected_at' => now(), 'fee_collected_amount' => 500]);
+        // Paid badge ⟺ dead button: both read the same visit.
+        $this->assertFalse($info($this->doctor->id)['fee']['collectable']);
+        $this->assertStringStartsWith('Paid', $info($this->doctor->id)['payment']);
+    }
+
+    public function test_walk_in_creates_visit_and_chains_to_fee(): void
+    {
+        // Emergency arrival: no visit rows at all for this patient.
+        $patient = $this->createPatient();
+        $this->assertSame(
+            0,
+            \App\Models\Medical\Appointment::where('institute_id', $this->institute->id)
+                ->where('patient_id', $patient->id)->count()
+        );
+        $this->assertNull(
+            $this->get(route('medical.prescriptions.patient-info', $patient)
+                .'?doctor_id='.$this->doctor->id)->assertOk()->json('patient.fee')
+        );
+
+        $response = $this->post(route('medical.prescriptions.walk-in'), [
+            'patient_id' => $patient->id,
+            'doctor_id' => $this->doctor->id,
+        ]);
+        $response->assertRedirect();
+        $this->assertStringContainsString('fee_collect', $response->headers->get('Location'));
+
+        $visit = \App\Models\Medical\Appointment::where('institute_id', $this->institute->id)
+            ->where('patient_id', $patient->id)
+            ->firstOrFail();
+        // Default (post-visit) fee timing: consulting at once, first in
+        // today's doctor queue, fee quoted like a normal booking.
+        $this->assertSame('in_progress', $visit->status);
+        $this->assertSame(1, (int) $visit->serial_number);
+        $this->assertSame(today()->format('Y-m-d'), $visit->appointment_date->format('Y-m-d'));
+
+        // …and the card button is now live for that visit.
+        $fee = $this->get(route('medical.prescriptions.patient-info', $patient)
+            .'?doctor_id='.$this->doctor->id)->assertOk()->json('patient.fee');
+        $this->assertTrue($fee['collectable']);
+    }
+
+    public function test_walk_in_rejects_unknown_doctor(): void
+    {
+        $patient = $this->createPatient();
+
+        $this->post(route('medical.prescriptions.walk-in'), [
+            'patient_id' => $patient->id,
+            'doctor_id' => 999999999,
+        ])->assertRedirect()->assertSessionHas('error', 'Select a valid doctor first.');
+    }
+
+    public function test_queue_numbers_lists_todays_serial_per_patient(): void
+    {
+        $doctorB = User::factory()->create([
+            'account_type' => 'staff',
+            'email_verified_at' => now(),
+            'status' => 'active',
+        ]);
+        Doctor::create([
+            'institute_id' => $this->institute->id,
+            'user_id' => $doctorB->id,
+            'registration_number' => 'REG-'.strtoupper(uniqid()),
+        ]);
+
+        $queued = $this->createPatient();
+        $done = $this->createPatient();
+        $otherDoctor = $this->createPatient();
+        $stale = $this->createPatient();
+        $date = now()->format('Y-m-d');
+
+        $book = fn (Patient $p, User $d, string $time) => $this->post(route('medical.appointments.store'), [
+            'patient_id' => $p->id,
+            'doctor_id' => $d->id,
+            'appointment_date' => $date,
+            'appointment_time' => $time,
+        ])->assertRedirect();
+
+        $book($queued, $this->doctor, '09:00');
+        $book($done, $this->doctor, '09:10');
+        $book($otherDoctor, $doctorB, '09:00');
+
+        // Still-open visit from an earlier day keeps its paint too.
+        \App\Models\Medical\Appointment::create([
+            'institute_id' => $this->institute->id,
+            'patient_id' => $stale->id,
+            'doctor_id' => $this->doctor->id,
+            'appointment_date' => now()->subDay()->format('Y-m-d'),
+            'appointment_time' => '09:00',
+            'serial_number' => 1,
+            'status' => 'checked_in',
+        ]);
+
+        // Closed visit leaves today's queue.
+        $closed = \App\Models\Medical\Appointment::where('institute_id', $this->institute->id)
+            ->where('patient_id', $done->id)->firstOrFail();
+        $this->post(route('medical.appointments.checkin', $closed))->assertRedirect();
+        $this->post(route('medical.appointments.complete', $closed))->assertRedirect();
+
+        $map = fn (?int $doctorId) => $this->get(
+            route('medical.prescriptions.queue-numbers').($doctorId ? '?doctor_id='.$doctorId : '')
+        )->assertOk()->json();
+
+        // Only the open visits of that doctor, keyed by their own patients…
+        $this->assertSame(1, (int) $map($this->doctor->id)[$queued->id]);
+        $this->assertSame(1, (int) $map($this->doctor->id)[$stale->id]);
+        $this->assertArrayNotHasKey((string) $done->id, $map($this->doctor->id));
+        $this->assertArrayNotHasKey((string) $otherDoctor->id, $map($this->doctor->id));
+        // …the other doctor sees only their own queue…
+        $this->assertSame(1, (int) $map($doctorB->id)[$otherDoctor->id]);
+        // …and unknown/no doctor yields an empty map, never an error.
+        $this->assertSame([], $map(999999999));
+        $this->assertSame([], $map(null));
+    }
+
+    public function test_failed_save_keeps_typed_medicines(): void
+    {
+        $patient = $this->createPatient();
+        $medicine = $this->createMedicine();
+        $payload = $this->prescriptionPayload($patient, [$this->itemPayload($medicine, 'KeepMe 250mg')]);
+        unset($payload['doctor_id']); // force a validation failure
+
+        $this->post(route('medical.prescriptions.store'), $payload)
+            ->assertSessionHasErrors(['doctor_id']);
+
+        // The re-rendered form still holds every typed row.
+        $this->get(route('medical.prescriptions.create'))
+            ->assertOk()
+            ->assertSee('KeepMe 250mg', false)
+            ->assertSee('500mg', false)
+            ->assertSee('1+0+1', false);
+    }
+
+    public function test_create_page_renders_fee_button_states(): void    {
+        // No patient picked yet: placeholder card (the fee button only
+        // renders once a patient is chosen).
+        $this->get(route('medical.prescriptions.create'))->assertOk()
+            ->assertSee('Select a patient below to view details.');
+
+        // Patient picked (no doctor yet): card renders with a dead button
+        // prompting for the doctor.
+        $patient = $this->createPatient();
+        $this->get(route('medical.prescriptions.create', ['patient_id' => $patient->id]))
+            ->assertOk()->assertSee('Accept Fee');
     }
 }

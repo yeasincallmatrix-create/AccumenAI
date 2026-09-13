@@ -57,7 +57,7 @@
                     <tbody>
                         @foreach($claims as $claim)
                         <tr>
-                            <td><a href="{{ route('medical.tpa.claims.show', $claim) }}">{{ $claim->claim_number }}</a></td>
+                            <td><a href="{{ route('medical.tpa.claims.show', $claim) }}">{{ clinical_no($claim->claim_number) }}</a></td>
                             <td>{{ $claim->patient->full_name ?? 'N/A' }}</td>
                             <td>{{ $claim->tpa_company_name }}</td>
                             <td>৳{{ number_format($claim->claim_amount, 2) }}</td>

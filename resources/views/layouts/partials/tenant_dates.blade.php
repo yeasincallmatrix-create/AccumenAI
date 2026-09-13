@@ -23,6 +23,8 @@
 .tdate-cal-grid button.day:hover{background:#e9ecef;}
 .tdate-cal-grid button.day.sel{background:#0d6efd;color:#fff;}
 .tdate-cal-grid button.day.muted{color:#adb5bd;}
+.tdate-cal-grid button.day.disabled{color:#dee2e6;text-decoration:line-through;cursor:not-allowed;}
+.tdate-cal-grid button.day.disabled:hover{background:transparent;}
 </style>
 <script>
 window.MAWA_DATE_ORDER = @json(mawa_date_format_key());
@@ -338,6 +340,11 @@ window.MAWA_DATE_ORDER = @json(mawa_date_format_key());
         var nowY = new Date().getFullYear();
         var minY = nowY - 120;
         var maxY = nowY + 10;
+        if (p.maxIso) {
+            maxY = Math.min(maxY, parseInt(p.maxIso.slice(0, 4), 10) || maxY);
+            if (p.y > maxY) { p.y = maxY; p.m = 11; }
+        }
+        // Days past the ceiling render disabled (unpickable).
         var html = '<div class="tdate-cal-head">'
             + '<button type="button" data-cal="prev" aria-label="Previous month">&lsaquo;</button>'
             + '<select data-cal-month aria-label="Month">';
@@ -354,25 +361,28 @@ window.MAWA_DATE_ORDER = @json(mawa_date_format_key());
             + '</div><div class="tdate-cal-grid">';
         var DOW = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
         for (var i = 0; i < 7; i++) html += '<span class="dow">' + DOW[i] + '</span>';
-        var k, d, iso, cls;
+        var k, d, iso, cls, dis;
         for (k = startDay - 1; k >= 0; k--) {
             d = new Date(p.y, p.m - 1, prevDays - k);
             iso = isoOfDate(d);
-            cls = 'day muted' + (iso === sel ? ' sel' : '');
-            html += '<button type="button" class="' + cls + '" data-day="' + iso + '">' + d.getDate() + '</button>';
+            dis = p.maxIso && iso > p.maxIso;
+            cls = 'day muted' + (iso === sel ? ' sel' : '') + (dis ? ' disabled' : '');
+            html += '<button type="button" class="' + cls + '" data-day="' + iso + '"' + (dis ? ' disabled' : '') + '>' + d.getDate() + '</button>';
         }
         for (var day = 1; day <= daysIn; day++) {
             d = new Date(p.y, p.m, day);
             iso = isoOfDate(d);
-            cls = 'day' + (iso === sel ? ' sel' : '');
-            html += '<button type="button" class="' + cls + '" data-day="' + iso + '">' + day + '</button>';
+            dis = p.maxIso && iso > p.maxIso;
+            cls = 'day' + (iso === sel ? ' sel' : '') + (dis ? ' disabled' : '');
+            html += '<button type="button" class="' + cls + '" data-day="' + iso + '"' + (dis ? ' disabled' : '') + '>' + day + '</button>';
         }
         var tail = (7 - ((startDay + daysIn) % 7)) % 7;
         for (var t = 1; t <= tail; t++) {
             d = new Date(p.y, p.m + 1, t);
             iso = isoOfDate(d);
-            cls = 'day muted' + (iso === sel ? ' sel' : '');
-            html += '<button type="button" class="' + cls + '" data-day="' + iso + '">' + t + '</button>';
+            dis = p.maxIso && iso > p.maxIso;
+            cls = 'day muted' + (iso === sel ? ' sel' : '') + (dis ? ' disabled' : '');
+            html += '<button type="button" class="' + cls + '" data-day="' + iso + '"' + (dis ? ' disabled' : '') + '>' + t + '</button>';
         }
         p.popup.innerHTML = html + '</div>';
     }
@@ -419,6 +429,10 @@ window.MAWA_DATE_ORDER = @json(mawa_date_format_key());
             var id = btn.getAttribute('data-tdate-picker');
             p.hidden = document.getElementById(id);
             p.disp = document.getElementById(id + '_display');
+            // Optional per-field ceiling (e.g. DOB never in the future):
+            // data-tdate-max="Y-m-d" on the display or hidden input.
+            var maxAttr = (p.disp && p.disp.getAttribute('data-tdate-max')) || (p.hidden && p.hidden.getAttribute('data-tdate-max')) || '';
+            p.maxIso = /^\d{4}-\d{2}-\d{2}$/.test(maxAttr) ? maxAttr : '';
             var curT = parseIso(p.hidden ? p.hidden.value : '') || new Date();
             p.y = curT.getFullYear();
             p.m = curT.getMonth();

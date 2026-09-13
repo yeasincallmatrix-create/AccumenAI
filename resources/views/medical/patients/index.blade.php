@@ -225,7 +225,7 @@
                 @forelse($patients as $patient)
                 <tr>
                     <td data-col="serial" class="text-muted" @if(!in_array('serial', $visibleColumns, true)) style="display:none" @endif>{{ $patients->firstItem() + $loop->index }}</td>
-                    <td data-col="mr" @if(!in_array('mr', $visibleColumns, true)) style="display:none" @endif><strong>{{ $patient->mr_number }}</strong></td>
+                    <td data-col="mr" @if(!in_array('mr', $visibleColumns, true)) style="display:none" @endif><strong>{{ clinical_no($patient->mr_number) }}</strong></td>
                     <td data-col="name" @if(!in_array('name', $visibleColumns, true)) style="display:none" @endif>{{ $patient->full_name }}</td>
                     <td data-col="age" @if(!in_array('age', $visibleColumns, true)) style="display:none" @endif>{{ $patient->age !== null ? $patient->age.' years' : 'N/A' }}</td>
                     <td data-col="age_group" @if(!in_array('age_group', $visibleColumns, true)) style="display:none" @endif>@if($patient->age_category)<span class="badge bg-secondary">{{ $patient->age_category }}</span>@else<span class="text-muted">—</span>@endif</td>
@@ -330,7 +330,7 @@
             @foreach ($allPatients as $patient)
                 <tr>
                     <td data-col="serial" @if(!in_array('serial', $visibleColumns, true)) style="display:none" @endif>{{ $loop->iteration }}</td>
-                    <td data-col="mr" @if(!in_array('mr', $visibleColumns, true)) style="display:none" @endif>{{ $patient->mr_number }}</td>
+                    <td data-col="mr" @if(!in_array('mr', $visibleColumns, true)) style="display:none" @endif>{{ clinical_no($patient->mr_number) }}</td>
                     <td data-col="name" @if(!in_array('name', $visibleColumns, true)) style="display:none" @endif>{{ $patient->full_name }}</td>
                     <td data-col="age" @if(!in_array('age', $visibleColumns, true)) style="display:none" @endif>{{ $patient->age !== null ? $patient->age.' years' : 'N/A' }}</td>
                     <td data-col="age_group" @if(!in_array('age_group', $visibleColumns, true)) style="display:none" @endif>{{ $patient->age_category ?? '—' }}</td>

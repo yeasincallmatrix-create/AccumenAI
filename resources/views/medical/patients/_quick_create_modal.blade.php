@@ -1,4 +1,4 @@
-{{-- Quick Add Patient popup — reuses medical/patients/create info. Only Name + Age mandatory.
+{{-- Quick Add Patient popup — reuses medical/patients/create info. Only Name + Age + Gender mandatory.
      Phone is validated against the institute Country parameter (server: PhoneRule, client: hint below). --}}
 @php
     $qDefaultCountry = collect($countries ?? [])->firstWhere('id', (int) ($defaultCountryId ?? 0));
@@ -14,7 +14,7 @@
     $qInputMaxlength = strlen((string) $qDefaultPhoneCode) + $qMax;
 @endphp
 <div class="modal fade" id="quickAddPatientModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
             <form action="{{ route('medical.patients.store') }}" method="POST" id="quick-add-patient-form">
                 @csrf
@@ -23,19 +23,8 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-info d-none" id="q_existing_alert" role="alert">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-person-check"></i>
-                            <span>Existing patient <strong id="q_existing_name"></strong> (<span id="q_existing_mr"></span>) found — details auto-filled.</span>
-                            <a href="#" id="q_existing_link" class="alert-link ms-auto" target="_blank">View</a>
-                        </div>
-                        <div id="q_matches_list" class="small mt-1"></div>
-                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="q_family_btn" style="display:none;">
-                            <i class="bi bi-people me-1"></i>Add Family Member to This Phone
-                        </button>
-                    </div>
                     <div class="row">
-                        <div class="col-md-8">
+                        <div class="col-6 col-md">
                             <div class="mb-3">
                                 <label class="form-label" for="q_phone">Phone Number</label>
                                 <div class="input-group">
@@ -46,86 +35,72 @@
                                         data-min="{{ $qMin }}" data-max="{{ $qMax }}"
                                         data-example="{{ $qExample }}" data-code="{{ $qDefaultPhoneCode }}"
                                         data-country="{{ $qDefaultCountryName }}"
-                                        autocomplete="tel-national" aria-describedby="q_phone_hint">
+                                        autocomplete="tel-national">
                                 </div>
-                                <div class="form-text text-muted" id="q_phone_hint">{{ $qDefaultCountryName }}: {{ $qRangeLabel }}. Example: {{ $qExample }}</div>
                                 <div class="invalid-feedback" id="q_phone_error" style="display:none;"></div>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-6 col-md">
                             <div class="mb-3">
                                 <label class="form-label" for="q_mr_number">Patient ID</label>
-                                <input type="text" id="q_mr_number" class="form-control" value="{{ $previewMr ?? '' }}" readonly>
+                                <input type="text" id="q_mr_number" class="form-control" value="{{ clinical_no($previewMr ?? '') }}" readonly>
                                 <div class="form-text">Auto preview — confirmed on save.</div>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-6 col-md">
                             <div class="mb-3">
                                 <label class="form-label" for="q_first_name">First Name <span class="text-danger">*</span></label>
                                 <input type="text" id="q_first_name" name="first_name" class="form-control" required maxlength="50">
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-6 col-md">
                             <div class="mb-3">
                                 <label class="form-label" for="q_last_name">Last Name</label>
                                 <input type="text" id="q_last_name" name="last_name" class="form-control" maxlength="50">
                             </div>
                         </div>
-                        <div class="col-md-4">
+                    </div>
+                    <div class="row">
+                        <div class="col-6 col-md">
                             <div class="mb-3">
-                                <span class="form-label d-block">Gender</span>
+                                <span class="form-label d-block">Gender <span class="text-danger">*</span></span>
                                 <div class="d-flex gap-3 pt-2">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" id="q_gender_male" name="gender" value="male">
+                                        <input class="form-check-input" type="radio" id="q_gender_male" name="gender" value="male" required>
                                         <label class="form-check-label" for="q_gender_male">Male</label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" id="q_gender_female" name="gender" value="female">
+                                        <input class="form-check-input" type="radio" id="q_gender_female" name="gender" value="female" required>
                                         <label class="form-check-label" for="q_gender_female">Female</label>
                                     </div>
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" id="q_gender_other" name="gender" value="other">
+                                        <input class="form-check-input" type="radio" id="q_gender_other" name="gender" value="other" required>
                                         <label class="form-check-label" for="q_gender_other">Other</label>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-6 col-md">
                             <div class="mb-3">
                                 <label class="form-label" for="q_date_of_birth">Date of Birth</label>
-                                <x-tdate-input name="date_of_birth" value="" id="q_date_of_birth" class="form-control" />
+                                <x-tdate-input name="date_of_birth" value="" id="q_date_of_birth" class="form-control" data-tdate-max="{{ date('Y-m-d') }}" />
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-6 col-md">
                             <div class="mb-3">
                                 <label class="form-label" for="q_age">Age <span class="text-danger">*</span></label>
-                                <div class="row g-1">
-                                    <div class="col-6">
-                                        <input type="number" id="q_age" name="age" min="0" max="150"
-                                               class="form-control" required placeholder="e.g. 30">
-                                    </div>
-                                    <div class="col-6">
-                                        <select id="q_age_unit" name="age_unit" class="form-select">
-                                            <option value="days">Days</option>
-                                            <option value="months">Months</option>
-                                            <option value="years" selected>Years</option>
-                                        </select>
-                                    </div>
+                                <div class="input-group">
+                                    <input type="number" id="q_age" name="age" min="0" max="150"
+                                           class="form-control" required placeholder="e.g. 30" aria-label="Age">
+                                    <select id="q_age_unit" name="age_unit" class="form-select" style="max-width:6.5rem;flex:0 0 auto;" aria-label="Age unit">
+                                        <option value="days">Days</option>
+                                        <option value="months">Months</option>
+                                        <option value="years" selected>Years</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label class="form-label" for="q_relation">Relation</label>
-                                <select id="q_relation" name="relation_to_primary" class="form-select">
-                                    @foreach(['Self', 'Son', 'Daughter', 'Wife', 'Husband', 'Father', 'Mother', 'Brother', 'Sister', 'Other'] as $rel)
-                                        <option value="{{ $rel }}" @selected($rel === 'Self')>{{ $rel }}</option>
-                                    @endforeach
-                                </select>
-                                <div class="form-text">Same phone? Choose the relation, or use “Add Family Member” above.</div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
+                        <div class="col-6 col-md" style="flex-grow:.5;">
                             <div class="mb-3">
                                 <label class="form-label" for="q_blood_group">Blood Group</label>
                                 <select id="q_blood_group" name="blood_group" class="form-select">
@@ -136,10 +111,35 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="col-6 col-md">
+                            <div class="mb-3">
+                                <label class="form-label" for="q_relation">Relation</label>
+                                <select id="q_relation" name="relation_to_primary" class="form-select">
+                                    @foreach(['Self', 'Son', 'Daughter', 'Wife', 'Husband', 'Father', 'Mother', 'Brother', 'Sister', 'Other'] as $rel)
+                                        <option value="{{ $rel }}" @selected($rel === 'Self')>{{ $rel }}</option>
+                                    @endforeach
+                                </select>
+                                <div class="form-text">Same phone? Choose the relation, or use “Add Family Member” above.</div>
+                            </div>
+                        </div>
                     </div>
                     <input type="hidden" name="present_country_id" value="{{ $defaultCountryId }}">
                     <input type="hidden" id="q_primary_contact_id" name="primary_contact_id" value="">
-                    <p class="text-muted small mb-0">Only Name and Age are mandatory.</p>
+                    <p class="text-muted small mb-2">Only Name, Age and Gender are mandatory.</p>
+                    <div class="alert alert-info d-none mb-0" id="q_existing_alert" role="alert">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-person-check"></i>
+                            <span>Existing patient <strong id="q_existing_name"></strong> (<span id="q_existing_mr"></span>) found — details auto-filled.</span>
+                            <a href="#" id="q_existing_link" class="alert-link ms-auto" target="_blank">View</a>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="q_family_btn" style="display:none;">
+                            <i class="bi bi-people me-1"></i>Add Family Member to This Phone
+                        </button>
+                    </div>
+                    <div id="q_family_wrap" class="mt-2" style="display:none;">
+                        <div class="small fw-semibold text-muted mb-1">Relatives on this phone number (son, daughter, others) — click a row to select</div>
+                        <div id="q_matches_list" class="list-group list-group-flush border rounded"></div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <a href="{{ route('medical.patients.create') }}" class="btn btn-link me-auto">Full registration form</a>
@@ -190,8 +190,20 @@
         else d.setFullYear(d.getFullYear() - a);
         if (!dob.value) { dob.value = d.toISOString().slice(0, 10); if (window.tdateSync) window.tdateSync('q_date_of_birth'); }
     }
+    // DOB can never be in the future: a typed advance date snaps back to
+    // today (string compare works — hidden value is always ISO Y-m-d).
+    function qClampDob() {
+        if (!dob || !dob.value) return;
+        var t = new Date();
+        var todayIso = t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+        if (dob.value > todayIso) {
+            dob.value = todayIso;
+            if (window.tdateSync) window.tdateSync('q_date_of_birth');
+            qAgeFromDob();
+        }
+    }
     if (dob && age) {
-        dob.addEventListener('change', qAgeFromDob);
+        dob.addEventListener('change', function () { qClampDob(); qAgeFromDob(); });
         dob.addEventListener('input', function () {
             if (!dob.value) age.value = '';
             else qAgeFromDob();
@@ -405,6 +417,8 @@
         if (relationSel) relationSel.value = 'Self';
         if (familyBtn) { familyBtn.style.display = 'none'; familyBtn.removeAttribute('data-primary-id'); }
         if (matchesBox) matchesBox.innerHTML = '';
+        var familyWrapReset = document.getElementById('q_family_wrap');
+        if (familyWrapReset) familyWrapReset.style.display = 'none';
         if (mrInput) mrInput.value = previewMr;
         if (alertBox) { alertBox.classList.add('d-none'); alertBox.classList.remove('d-flex'); }
         // No existing patient — restore button state from realtime phone check
@@ -431,10 +445,19 @@
                 var list = data.patients || (data.patient ? [data.patient] : []);
                 if (matchesBox) {
                     matchesBox.innerHTML = list.map(function (m) {
-                        return '<div>' + escHtml(m.label || ((m.first_name || '') + ' ' + (m.last_name || '')).trim()) +
-                            ' · ' + escHtml(m.mr_number || '') + (m.phone ? ' · ' + escHtml(m.phone) : '') + '</div>';
+                        var nm = escHtml(m.label || (((m.first_name || '') + ' ' + (m.last_name || '')).trim()));
+                        var rel = escHtml(m.relation || 'Self');
+                        var editUrl = m.url ? m.url + '/edit' : '';
+                        return '<div class="list-group-item py-1 px-2 d-flex justify-content-between align-items-center gap-2" data-pick-id="' + m.id + '" data-pick-label="' + nm + '" role="button" style="cursor:pointer;" title="Select this patient">' +
+                            '<span>' + nm + ' <span class="badge bg-secondary">' + rel + '</span></span>' +
+                            '<span class="d-flex align-items-center gap-2">' +
+                            '<span class="text-muted small text-nowrap">' + escHtml(m.mr_number || '') + (m.phone ? ' · ' + escHtml(m.phone) : '') + '</span>' +
+                            (editUrl ? '<a href="' + editUrl + '" target="_blank" data-edit class="btn btn-sm btn-outline-secondary py-0 px-1" title="Edit patient"><i class="bi bi-pencil"></i></a>' : '') +
+                            '</span></div>';
                     }).join('');
                 }
+                var familyWrap = document.getElementById('q_family_wrap');
+                if (familyWrap) familyWrap.style.display = list.length ? '' : 'none';
                 var primary = list.find(function (m) { return !m.is_dependent; }) || list[0] || data.patient || null;
                 if (familyBtn) {
                     familyBtn.style.display = '';
@@ -462,6 +485,32 @@
                 if (submitBtn) submitBtn.disabled = false;
             })
             .catch(function () { /* keep manual entry on lookup failure */ });
+    }
+    // Relatives list: click a row to place that patient into the host
+    // page (prescription picker or booking dropdown); the pencil opens
+    // the patient edit page in a new tab without losing modal state.
+    function selectRelativePatient(id, label) {
+        var sel = document.getElementById('patient_id') || document.getElementById('bk_patient_id');
+        if (!sel || !id) return;
+        var opt = sel.querySelector('option[value="' + id + '"]');
+        if (!opt) {
+            opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = label || ('Patient #' + id);
+            sel.appendChild(opt);
+        }
+        sel.value = String(id);
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+        var m = document.getElementById('quickAddPatientModal');
+        if (m && window.bootstrap) { var inst = window.bootstrap.Modal.getInstance(m); if (inst) inst.hide(); }
+    }
+    if (matchesBox && !matchesBox.dataset.pickBound) {
+        matchesBox.dataset.pickBound = '1';
+        matchesBox.addEventListener('click', function (e) {
+            if (e.target.closest('a[data-edit]')) return;
+            var row = e.target.closest('[data-pick-id]');
+            if (row) selectRelativePatient(row.getAttribute('data-pick-id'), row.getAttribute('data-pick-label'));
+        });
     }
 })();
 </script>

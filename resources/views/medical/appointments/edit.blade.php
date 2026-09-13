@@ -29,7 +29,7 @@
                             @foreach($patients as $patient)
                                 <option value="{{ $patient->id }}"
                                     @selected((string) old('patient_id', $appointment->patient_id) === (string) $patient->id)>
-                                    {{ $patient->full_name }} ({{ $patient->mr_number }})
+                                    {{ $patient->full_name }} ({{ clinical_no($patient->mr_number) }})
                                 </option>
                             @endforeach
                         </select>

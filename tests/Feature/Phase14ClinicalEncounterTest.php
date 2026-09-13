@@ -127,7 +127,7 @@ class Phase14ClinicalEncounterTest extends TestCase
         $this->assertSame('open', $encounter->status);
         $this->assertNull($encounter->appointment_id);
         $this->assertMatchesRegularExpression(
-            '/^ENC-\d{4}-'.str_pad((string) $this->institute->id, 3, '0', STR_PAD_LEFT).'-\d{5}$/',
+            '/^ENC-\d{4}-\d{5}$/',
             $encounter->encounter_number
         );
         $this->get(route('medical.encounters.show', $encounter))->assertOk();
@@ -597,7 +597,7 @@ class Phase14ClinicalEncounterTest extends TestCase
         $otherEncounter = $this->openEncounter($other);
         $this->get(route('medical.encounters.index'))->assertOk(); // drain store flash
         $response = $this->get(route('medical.encounters.index', ['patient_id' => $patient->id]))->assertOk();
-        $response->assertSee($encounter->encounter_number);
-        $response->assertDontSee($otherEncounter->encounter_number);
+        $response->assertSee(clinical_no($encounter->encounter_number));
+        $response->assertDontSee(clinical_no($otherEncounter->encounter_number));
     }
 }

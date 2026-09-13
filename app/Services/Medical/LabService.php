@@ -17,8 +17,8 @@ use Illuminate\Support\Facades\DB;
 class LabService
 {
     /**
-     * Generate a unique order number (LAB-YYYY-III-XXXXX) via the
-     * database-backed sequence (Phase 04). Format unchanged.
+     * Generate a unique order number (stored LAB-YYYY-NNNNN, displayed
+     * LAB-YY-NNNNN) via the database-backed sequence (Phase 04).
      */
     public function generateOrderNumber(int $instituteId): string
     {

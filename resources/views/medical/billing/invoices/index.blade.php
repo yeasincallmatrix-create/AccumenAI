@@ -42,7 +42,7 @@
                         <option value="">All Patients</option>
                         @foreach($patients as $patient)
                             <option value="{{ $patient->id }}" @selected((string) request('patient_id') === (string) $patient->id)>
-                                {{ $patient->full_name }} ({{ $patient->mr_number }})
+                                {{ $patient->full_name }} ({{ clinical_no($patient->mr_number) }})
                             </option>
                         @endforeach
                     </select>
@@ -64,7 +64,7 @@
                 <tbody>
                     @forelse($invoices as $invoice)
                     <tr>
-                        <td><strong>{{ $invoice->invoice_number }}</strong></td>
+                        <td><strong>{{ clinical_no($invoice->invoice_number) }}</strong></td>
                         <td>{{ $invoice->patient->full_name ?? 'N/A' }}</td>
                         <td><span class="badge bg-{{ $invoice->type_class }}">{{ strtoupper($invoice->type) }}</span></td>
                         <td><x-tdate :value="$invoice->invoice_date" fallback="d M Y" /></td>

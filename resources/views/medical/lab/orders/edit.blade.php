@@ -5,7 +5,7 @@
 @section('content')
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2">
     <div class="page-header-text">
-        <h4 class="page-header-title">Edit Order — {{ $order->order_number }}</h4>
+        <h4 class="page-header-title">Edit Order — {{ clinical_no($order->order_number) }}</h4>
     </div>
     <div class="page-header-actions">
         <a class="btn btn-secondary" href="{{ route('medical.lab.orders.show', $order) }}">
@@ -33,7 +33,7 @@
                             @foreach($patients as $patient)
                                 <option value="{{ $patient->id }}"
                                     @selected((string) old('patient_id', $order->patient_id) === (string) $patient->id)>
-                                    {{ $patient->full_name }} ({{ $patient->mr_number }})
+                                    {{ $patient->full_name }} ({{ clinical_no($patient->mr_number) }})
                                 </option>
                             @endforeach
                         </select>

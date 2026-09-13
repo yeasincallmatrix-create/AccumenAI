@@ -178,7 +178,7 @@ class InvoiceController extends MedicalController implements HasMiddleware
         }
 
         return redirect()->route('medical.billing.invoices.show', $invoice)
-            ->with('status', 'Invoice '.$invoice->invoice_number.' created successfully!');
+            ->with('status', 'Invoice '.clinical_no($invoice->invoice_number).' created successfully!');
     }
 
     public function show(Invoice $invoice)

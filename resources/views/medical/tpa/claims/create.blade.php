@@ -27,7 +27,7 @@
                             @foreach($patients as $patient)
                                 <option value="{{ $patient->id }}"
                                     @selected((string) old('patient_id', $selectedPatient->id ?? '') === (string) $patient->id)>
-                                    {{ $patient->full_name }} ({{ $patient->mr_number }})
+                                    {{ $patient->full_name }} ({{ clinical_no($patient->mr_number) }})
                                 </option>
                             @endforeach
                         </select>
@@ -42,7 +42,7 @@
                             @foreach($invoices as $invoice)
                                 <option value="{{ $invoice->id }}"
                                     @selected((string) old('invoice_id', $selectedInvoice->id ?? '') === (string) $invoice->id)>
-                                    {{ $invoice->invoice_number }} — {{ $invoice->patient->full_name ?? '' }} (due ৳{{ number_format($invoice->due_amount, 2) }})
+                                    {{ clinical_no($invoice->invoice_number) }} — {{ $invoice->patient->full_name ?? '' }} (due ৳{{ number_format($invoice->due_amount, 2) }})
                                 </option>
                             @endforeach
                         </select>

@@ -128,6 +128,9 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     // Prescriptions — the patient-info JSON feed sits before the resource
     // so it is never swallowed by the {prescription} wildcard.
     Route::get('prescriptions/patient-info/{patient}', [PrescriptionController::class, 'patientInfo'])->name('prescriptions.patient-info');
+    Route::get('prescriptions/patient-options', [PrescriptionController::class, 'patientOptions'])->name('prescriptions.patient-options');
+    Route::get('prescriptions/queue-numbers', [PrescriptionController::class, 'queueNumbers'])->name('prescriptions.queue-numbers');
+    Route::post('prescriptions/walk-in', [PrescriptionController::class, 'walkIn'])->name('prescriptions.walk-in');
     Route::resource('prescriptions', PrescriptionController::class);
     Route::post('prescriptions/{prescription}/finalize', [PrescriptionController::class, 'finalize'])->name('prescriptions.finalize');
     Route::post('prescriptions/{prescription}/findings/{finding}/resolve', [PrescriptionController::class, 'resolveFinding'])->name('prescriptions.findings.resolve');

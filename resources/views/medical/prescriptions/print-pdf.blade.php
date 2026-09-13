@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Prescription {{ $prescription->prescription_number }}</title>
+    <title>Prescription {{ clinical_no($prescription->prescription_number) }}</title>
     <style>
         body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #111; }
         .header { text-align: center; border-bottom: 2px solid #0d6efd; padding-bottom: 10px; margin-bottom: 14px; }
@@ -21,12 +21,12 @@
 <body>
     <div class="header">
         <h2>℞ Prescription</h2>
-        <div class="muted">{{ $prescription->prescription_number }} · {{ $prescription->prescription_date?->format('d M Y') }}</div>
+        <div class="muted">{{ clinical_no($prescription->prescription_number) }} · {{ $prescription->prescription_date?->format('d M Y') }}</div>
     </div>
 
     <table class="info">
         <tr>
-            <td><strong>Patient:</strong> {{ $patient->full_name ?? 'N/A' }} ({{ $patient->mr_number ?? 'N/A' }})</td>
+            <td><strong>Patient:</strong> {{ $patient->full_name ?? 'N/A' }} ({{ clinical_no($patient->mr_number ?? 'N/A') }})</td>
             <td><strong>Doctor:</strong> {{ $doctor->name ?? 'N/A' }}</td>
         </tr>
         <tr>

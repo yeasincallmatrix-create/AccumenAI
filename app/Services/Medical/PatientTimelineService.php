@@ -196,7 +196,7 @@ class PatientTimelineService
                 $events[] = $this->event(
                     self::TYPE_ENCOUNTER,
                     $this->coalesceDateTime([$encounter->started_at, $encounter->created_at]),
-                    ucfirst(str_replace('_', ' ', strtolower($encounter->encounter_type))).' Encounter — '.$encounter->encounter_number,
+                    ucfirst(str_replace('_', ' ', strtolower($encounter->encounter_type))).' Encounter — '.clinical_no($encounter->encounter_number),
                     'Status: '.str_replace('_', ' ', $encounter->status),
                     Encounter::class,
                     $encounter->id,
@@ -215,7 +215,7 @@ class PatientTimelineService
                     $this->coalesceDateTime([$diagnosis->created_at]),
                     'Diagnosis ('.$diagnosis->diagnosis_type.') — '.$diagnosis->label,
                     'Status: '.$diagnosis->status.' · Terminology: '.($unresolved ? 'Unresolved' : $diagnosis->code_system.' '.$diagnosis->code)
-                        .' · '.$diagnosis->encounter->encounter_number,
+                        .' · '.clinical_no($diagnosis->encounter->encounter_number),
                     EncounterDiagnosis::class,
                     $diagnosis->id,
                     'medical.encounters.show',
@@ -233,7 +233,7 @@ class PatientTimelineService
                     $events[] = $this->event(
                         self::TYPE_LAB_ORDER,
                         $this->coalesceDateTime([$order->order_date, $order->created_at]),
-                        'Lab Order — '.$order->order_number,
+                        'Lab Order — '.clinical_no($order->order_number),
                         'Status: '.$order->status.' · Priority: '.$order->priority,
                         LabOrder::class,
                         $order->id,
@@ -266,7 +266,7 @@ class PatientTimelineService
                 $events[] = $this->event(
                     self::TYPE_PRESCRIPTION,
                     $this->coalesceDateTime([$rx->prescription_date, $rx->created_at]),
-                    'Prescription — '.$rx->prescription_number,
+                    'Prescription — '.clinical_no($rx->prescription_number),
                     'Status: '.$rx->statusLabel(),
                     Prescription::class,
                     $rx->id,

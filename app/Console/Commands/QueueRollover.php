@@ -14,9 +14,10 @@ use Illuminate\Support\Facades\DB;
 /**
  * End-of-day queue rollover (per doctor).
  *
- * - checked_in (and in_progress, downgraded to checked_in) appointments move
- *   to the doctor's next working day with a fresh serial (status kept in
- *   queue, queue_order reset). One audit row (action=rollover) each.
+ * - checked_in (and in_progress) appointments move to the doctor's next
+ *   working day with a fresh serial, restarted as plain appointments
+ *   (status scheduled — yesterday's check-in never travels forward).
+ *   One audit row (action=rollover) each.
  * - scheduled appointments that never checked in are auto-cancelled with an
  *   audit row (action=auto_cancelled).
  * - completed / cancelled / no_show rows are never touched.
@@ -86,8 +87,10 @@ class QueueRollover extends Command
                         (int) $appointment->doctor_id,
                         $date
                     );
-                    // Downgrade a midnight in-progress visit back to waiting.
-                    $status = $appointment->status === 'in_progress' ? 'checked_in' : $appointment->status;
+                    // Carried visits restart as plain appointments — a new day
+                    // means a new check-in, so yesterday's queue state (and
+                    // any collected fee) must not travel forward.
+                    $status = 'scheduled';
                     $serial = $queues->getNextSerial(
                         (int) $appointment->institute_id,
                         (int) $appointment->doctor_id,
@@ -98,7 +101,8 @@ class QueueRollover extends Command
                         "doctor {$appointment->doctor_id} {$date} → {$target} serial #{$serial}");
 
                     if (! $dry) {
-                        DB::transaction(function () use ($appointment, $target, $serial, $status, $date) {
+                        $oldSerial = $appointment->serial_number;
+                        DB::transaction(function () use ($appointment, $target, $serial, $status, $oldSerial) {
                             // A new day means a new payment: yesterday's stamp
                             // must not travel forward (pre-visit rows paid
                             // but unseen). Clear it and audit the reversal
@@ -138,7 +142,7 @@ class QueueRollover extends Command
                                 'user_type' => 'system',
                                 'actor_name' => 'End-of-day rollover',
                                 'action' => 'rollover',
-                                'old_order' => $appointment->serial_number,
+                                'old_order' => $oldSerial,
                                 'new_order' => $serial,
                             ]);
                         });

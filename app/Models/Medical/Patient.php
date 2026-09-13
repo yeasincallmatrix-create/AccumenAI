@@ -221,9 +221,14 @@ class Patient extends Model
      */
     public function scopeSearch($query, $search)
     {
-        return $query->where(function ($q) use ($search) {
-            $q->where('mr_number', 'LIKE', "%{$search}%")
-                ->orWhere('first_name', 'LIKE', "%{$search}%")
+        $stored = \App\Services\Medical\NumberSequenceService::expandShortYears((string) $search);
+
+        return $query->where(function ($q) use ($search, $stored) {
+            $q->where('mr_number', 'LIKE', "%{$search}%");
+            if ($stored !== (string) $search) {
+                $q->orWhere('mr_number', 'LIKE', "%{$stored}%");
+            }
+            $q->orWhere('first_name', 'LIKE', "%{$search}%")
                 ->orWhere('last_name', 'LIKE', "%{$search}%")
                 ->orWhere('phone', 'LIKE', "%{$search}%");
         });

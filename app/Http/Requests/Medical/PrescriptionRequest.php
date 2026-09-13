@@ -13,6 +13,24 @@ class PrescriptionRequest extends FormRequest
         return auth()->check() && MedicalScope::instituteId() !== null;
     }
 
+    protected function prepareForValidation(): void
+    {
+        // A follow-up dated today means "no follow-up needed" (the form
+        // pre-marks today): drop it before validation so the
+        // after:prescription_date rule never trips on the default, and
+        // nothing meaningless is stored.
+        $followUp = $this->input('follow_up_date');
+        if (is_string($followUp) && trim($followUp) !== '') {
+            try {
+                if (\Carbon\Carbon::parse($followUp)->isToday()) {
+                    $this->merge(['follow_up_date' => null]);
+                }
+            } catch (\Throwable) {
+                // Leave unparseable input for the date rule to reject.
+            }
+        }
+    }
+
     public function rules(): array
     {
         $instituteId = MedicalScope::instituteId();
@@ -42,6 +60,7 @@ class PrescriptionRequest extends FormRequest
             ],
             'prescription_date' => 'required|date',
             'diagnosis' => 'nullable|string',
+            'investigations' => 'nullable|string',
             'chief_complaints' => 'nullable|string',
             'examination_findings' => 'nullable|string',
             'advice' => 'nullable|string',

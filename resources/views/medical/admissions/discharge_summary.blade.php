@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Discharge Summary — {{ $patient->mr_number ?? '' }}</title>
+    <title>Discharge Summary — {{ clinical_no($patient->mr_number ?? '') }}</title>
     <style>
         body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #222; }
         .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
@@ -28,7 +28,7 @@
     <table class="meta">
         <tr>
             <td><strong>Name:</strong> {{ $patient->full_name ?? 'N/A' }}</td>
-            <td><strong>MR Number:</strong> {{ $patient->mr_number ?? 'N/A' }}</td>
+            <td><strong>MR Number:</strong> {{ clinical_no($patient->mr_number ?? 'N/A') }}</td>
         </tr>
         <tr>
             <td><strong>Age / Gender:</strong> {{ $patient->age ?? 'N/A' }} / {{ ucfirst($patient->gender ?? 'N/A') }}</td>

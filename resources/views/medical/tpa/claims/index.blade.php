@@ -64,7 +64,7 @@
                         <option value="">All Patients</option>
                         @foreach($patients as $patient)
                             <option value="{{ $patient->id }}" @selected((string) request('patient_id') === (string) $patient->id)>
-                                {{ $patient->full_name }} ({{ $patient->mr_number }})
+                                {{ $patient->full_name }} ({{ clinical_no($patient->mr_number) }})
                             </option>
                         @endforeach
                     </select>
@@ -87,7 +87,7 @@
                 <tbody>
                     @forelse($claims as $claim)
                     <tr>
-                        <td><strong>{{ $claim->claim_number }}</strong></td>
+                        <td><strong>{{ clinical_no($claim->claim_number) }}</strong></td>
                         <td>{{ $claim->patient->full_name ?? 'N/A' }}</td>
                         <td>{{ $claim->tpa_company_name }}</td>
                         <td>৳{{ number_format($claim->claim_amount, 2) }}</td>

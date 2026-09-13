@@ -6,7 +6,7 @@
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2">
     <div class="page-header-text">
         <h4 class="page-header-title">
-            {{ $prescription->prescription_number }}
+            {{ clinical_no($prescription->prescription_number) }}
             @if($prescription->is_finalized)
                 <span class="badge bg-success">Finalized</span>
             @else
@@ -48,7 +48,7 @@
                 <p><strong>Patient:</strong>
                     @if($prescription->patient)
                         <a href="{{ route('medical.patients.show', $prescription->patient) }}">{{ $prescription->patient->full_name }}</a>
-                        <span class="text-muted">({{ $prescription->patient->mr_number }})</span>
+                        <span class="text-muted">({{ clinical_no($prescription->patient->mr_number) }})</span>
                     @else
                         N/A
                     @endif
@@ -77,6 +77,7 @@
             <div class="card-body">
                 <p><strong>Complaints:</strong> {{ $prescription->chief_complaints ?? '—' }}</p>
                 <p><strong>Findings:</strong> {{ $prescription->examination_findings ?? '—' }}</p>
+                <p><strong>Investigations:</strong> {{ $prescription->investigations ?? '—' }}</p>
                 <p class="mb-0"><strong>Advice:</strong> {{ $prescription->advice ?? '—' }}</p>
             </div>
         </div>

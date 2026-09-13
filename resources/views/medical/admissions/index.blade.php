@@ -34,7 +34,7 @@
                         <option value="">All Patients</option>
                         @foreach($patients as $patient)
                             <option value="{{ $patient->id }}" @selected((string) request('patient_id') === (string) $patient->id)>
-                                {{ $patient->full_name }} ({{ $patient->mr_number }})
+                                {{ $patient->full_name }} ({{ clinical_no($patient->mr_number) }})
                             </option>
                         @endforeach
                     </select>
@@ -70,7 +70,7 @@
                             <a href="{{ route('medical.patients.show', $admission->patient) }}">
                                 {{ $admission->patient->full_name ?? 'N/A' }}
                             </a>
-                            <span class="text-muted small">({{ $admission->patient->mr_number ?? '' }})</span>
+                            <span class="text-muted small">({{ clinical_no($admission->patient->mr_number ?? '') }})</span>
                         </td>
                         <td>
                             @if($admission->bed)

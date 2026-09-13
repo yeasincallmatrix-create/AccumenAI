@@ -135,7 +135,7 @@ class TpaClaimController extends MedicalController implements HasMiddleware
         }
 
         return redirect()->route('medical.tpa.claims.show', $claim)
-            ->with('status', 'TPA claim '.$claim->claim_number.' created successfully!');
+            ->with('status', 'TPA claim '.clinical_no($claim->claim_number).' created successfully!');
     }
 
     public function show(TpaClaim $claim)

@@ -25,9 +25,9 @@ use Tests\TestCase;
  * Phase 05 — Constraint, index & schema integrity hardening.
  *
  * Proves the database (not just application code) enforces: new FKs,
- * the appointment serial unique, surviving global uniques, sequence-row
- * isolation, and that index-sensitive lookup workflows still function.
- * Runs against the disposable monetix_test database only.
+ * the appointment serial unique, per-tenant clinical-number uniques,
+ * sequence-row isolation, and that index-sensitive lookup workflows still
+ * function. Runs against the disposable monetix_test database only.
  */
 class SchemaIntegrityTest extends TestCase
 {
@@ -244,19 +244,44 @@ class SchemaIntegrityTest extends TestCase
         $this->assertSame(3, Appointment::where('institute_id', $this->institute->id)->count());
     }
 
-    // Global uniques still enforced (documented current behavior).
-    public function test_global_mr_unique_still_enforced(): void
+    // MR uniqueness is per tenant (composite institute_id + mr_number):
+    // duplicates inside one tenant are refused, the same number in a
+    // different tenant is allowed.
+    public function test_mr_unique_per_tenant(): void
     {
         $patient = $this->createPatient('01'.str_pad((string) random_int(0, 999999999), 9, '0', STR_PAD_LEFT));
 
-        $this->expectException(QueryException::class);
-        Patient::create([
-            'institute_id' => $this->institute->id,
-            'mr_number' => $patient->mr_number,
-            'first_name' => 'Duplicate',
-            'gender' => 'male',
-            'phone' => '0100000099',
+        try {
+            Patient::create([
+                'institute_id' => $this->institute->id,
+                'mr_number' => $patient->mr_number,
+                'first_name' => 'Duplicate',
+                'gender' => 'male',
+                'phone' => '0100000099',
+            ]);
+            $this->fail('Same-tenant duplicate MR number was accepted.');
+        } catch (QueryException) {
+            // Expected: composite unique enforced.
+        }
+
+        $other = Institute::create([
+            'name' => 'Schema Integrity Hospital B',
+            'slug' => 'schema-integrity-b-'.uniqid(),
+            'industry' => 'healthcare',
+            'sub_industry' => 'hospital',
+            'country' => 'Bangladesh',
+            'status' => 'active',
         ]);
+        $cross = Patient::create([
+            'institute_id' => $other->id,
+            'mr_number' => $patient->mr_number,
+            'first_name' => 'Cross',
+            'last_name' => 'Tenant',
+            'date_of_birth' => '1990-01-01',
+            'gender' => 'male',
+            'phone' => '0100000098',
+        ]);
+        $this->assertSame($patient->mr_number, $cross->mr_number);
     }
 
     // Legacy MR format coexists with the new sequences.

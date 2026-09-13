@@ -56,7 +56,7 @@
                     <ul class="list-unstyled mb-0">
                         @foreach($recentInvoices as $invoice)
                         <li class="border-bottom py-2">
-                            <a href="{{ route('medical.billing.invoices.show', $invoice) }}"><strong>{{ $invoice->invoice_number }}</strong></a>
+                            <a href="{{ route('medical.billing.invoices.show', $invoice) }}"><strong>{{ clinical_no($invoice->invoice_number) }}</strong></a>
                             <span class="text-muted">· {{ $invoice->patient->full_name ?? 'N/A' }}</span>
                             <span class="float-end">৳{{ number_format($invoice->total, 2) }}
                                 <span class="badge bg-{{ $invoice->status === 'paid' ? 'success' : ($invoice->status === 'pending' ? 'warning text-dark' : 'secondary') }}">{{ $invoice->status_text }}</span>
@@ -78,7 +78,7 @@
                     <ul class="list-unstyled mb-0">
                         @foreach($dueInvoices as $invoice)
                         <li class="border-bottom py-2">
-                            <a href="{{ route('medical.billing.invoices.show', $invoice) }}"><strong>{{ $invoice->invoice_number }}</strong></a>
+                            <a href="{{ route('medical.billing.invoices.show', $invoice) }}"><strong>{{ clinical_no($invoice->invoice_number) }}</strong></a>
                             <span class="text-muted">· due <x-tdate :value="$invoice->due_date" fallback="d M Y" /></span>
                             <span class="float-end">৳{{ number_format($invoice->due_amount, 2) }}
                                 @if($invoice->isOverdue())

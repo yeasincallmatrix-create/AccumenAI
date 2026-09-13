@@ -106,10 +106,10 @@ class MedicalPhase1Test extends TestCase
     {
         $patient = $this->createPatient();
 
-        // Phase 04 intended contract: MR-YYYY-III-NNNNN (year, zero-padded
-        // institute id, database-backed per-institute yearly sequence).
+        // Stored contract: MR-YYYY-NNNNN (database-backed per-institute
+        // yearly sequence, no tenant segment); humans read MR-YY-NNNNN.
         $this->assertMatchesRegularExpression(
-            '/^MR-\d{4}-'.str_pad((string) $this->institute->id, 3, '0', STR_PAD_LEFT).'-\d{5}$/',
+            '/^MR-\d{4}-\d{5}$/',
             $patient->mr_number
         );
         $this->assertSame($this->institute->id, (int) $patient->institute_id);
@@ -127,10 +127,10 @@ class MedicalPhase1Test extends TestCase
         $secondSeq = (int) substr($second->mr_number, -5);
         $this->assertSame($firstSeq + 1, $secondSeq);
 
-        // Institute segment binds each number to its tenant.
-        $this->assertStringContainsString(
-            '-'.str_pad((string) $this->institute->id, 3, '0', STR_PAD_LEFT).'-',
-            $second->mr_number
+        // Display shape shortens the year (MR-2026-00002 → MR-26-00002).
+        $this->assertSame(
+            'MR-'.substr(now()->format('Y'), 2).'-'.substr($second->mr_number, -5),
+            \App\Services\Medical\NumberSequenceService::display($second->mr_number)
         );
     }
 
@@ -154,7 +154,7 @@ class MedicalPhase1Test extends TestCase
 
         $this->get(route('medical.patients.index', ['search' => 'Searchable']))
             ->assertOk()
-            ->assertSee($patient->mr_number);
+            ->assertSee(clinical_no($patient->mr_number));
 
         $this->get(route('medical.patients.show', $patient))->assertOk()->assertSee('Searchable');
         $this->get(route('medical.patients.history', $patient))->assertOk();

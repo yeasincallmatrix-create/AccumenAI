@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Invoice — {{ $invoice->invoice_number }}</title>
+    <title>Invoice — {{ clinical_no($invoice->invoice_number) }}</title>
     <style>
         body { font-family: DejaVu Sans, sans-serif; font-size: 12px; color: #222; }
         .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 15px; }
@@ -23,13 +23,13 @@
     <div class="header">
         <h1>{{ $hospital_name }}</h1>
         <p>{{ $hospital_address }}</p>
-        <h2 style="background:none; border:none; text-align:center;">{{ strtoupper($invoice->type) }} INVOICE — {{ $invoice->invoice_number }}</h2>
+        <h2 style="background:none; border:none; text-align:center;">{{ strtoupper($invoice->type) }} INVOICE — {{ clinical_no($invoice->invoice_number) }}</h2>
     </div>
 
     <h2>Bill To</h2>
     <table class="meta">
         <tr>
-            <td><strong>Patient:</strong> {{ $patient->full_name ?? 'N/A' }} ({{ $patient->mr_number ?? '' }})</td>
+            <td><strong>Patient:</strong> {{ $patient->full_name ?? 'N/A' }} ({{ clinical_no($patient->mr_number ?? '') }})</td>
             <td><strong>Invoice Date:</strong> <x-tdate :value="$invoice->invoice_date" fallback="d M Y" /></td>
         </tr>
         <tr>

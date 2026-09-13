@@ -47,8 +47,8 @@ class BillingService
         ];
     }
     /**
-     * Generate a unique invoice number (INV-YYYY-III-XXXXX) via the
-     * database-backed sequence (Phase 04). Format unchanged.
+     * Generate a unique invoice number (stored INV-YYYY-NNNNN, displayed
+     * INV-YY-NNNNN) via the database-backed sequence (Phase 04).
      */
     public function generateInvoiceNumber(int $instituteId): string
     {

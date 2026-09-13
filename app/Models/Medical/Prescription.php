@@ -19,6 +19,7 @@ class Prescription extends Model
         'prescription_number',
         'prescription_date',
         'diagnosis',
+        'investigations',
         'chief_complaints',
         'examination_findings',
         'advice',

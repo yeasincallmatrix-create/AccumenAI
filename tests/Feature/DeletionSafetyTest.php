@@ -298,7 +298,7 @@ class DeletionSafetyTest extends TestCase
                 ->where('auditable_id', $ordered->id)->where('action', 'deleted')->count()
         );
         // Hidden from the operational list, like a deleted order.
-        $this->get(route('medical.lab.orders.index'))->assertOk()->assertDontSee($ordered->order_number);
+        $this->get(route('medical.lab.orders.index'))->assertOk()->assertDontSee(clinical_no($ordered->order_number));
     }
 
     // 6+7. Admission archival preserves vitals and nursing notes.

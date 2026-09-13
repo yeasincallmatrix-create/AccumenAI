@@ -1161,3 +1161,38 @@ if (! function_exists('mawa_role_label')) {
         return preg_replace('/^Institution\b/i', mawa_org_word($institute), (string) $replaced, 1);
     }
 }
+
+if (! function_exists('clinical_no')) {
+    /**
+     * Human-facing clinical number: stored MR-2026-00002 (or legacy
+     * MR-2026-189-00002 with the old tenant segment) renders as MR-26-00002.
+     * Display only — never write the result back to the database; search
+     * input in either shape is normalized via clinical_stored_no().
+     * Blade-safe (null/empty safe, never throws).
+     */
+    function clinical_no(mixed $stored): string
+    {
+        try {
+            return \App\Services\Medical\NumberSequenceService::display(
+                is_string($stored) ? $stored : (string) ($stored ?? '')
+            );
+        } catch (\Throwable) {
+            return (string) ($stored ?? '');
+        }
+    }
+}
+
+if (! function_exists('clinical_stored_no')) {
+    /**
+     * Normalize scan/search input to the stored shape (MR-26-00002 →
+     * MR-2026-00002; MR-2026-189-00002 → MR-2026-00002). Blade-safe.
+     */
+    function clinical_stored_no(mixed $input): string
+    {
+        try {
+            return \App\Services\Medical\NumberSequenceService::toStored((string) ($input ?? ''));
+        } catch (\Throwable) {
+            return (string) ($input ?? '');
+        }
+    }
+}

@@ -25,7 +25,7 @@
                     <i class="bi bi-person-circle display-1 text-secondary"></i>
                 </div>
                 <h4>{{ $patient->full_name }}</h4>
-                <p class="text-muted">MR: <strong>{{ $patient->mr_number }}</strong></p>
+                <p class="text-muted">MR: <strong>{{ clinical_no($patient->mr_number) }}</strong></p>
                 <hr>
                 <div class="text-start">
                     <p><strong>Date of Birth:</strong> <x-tdate :value="$patient->date_of_birth" fallback="d M Y" empty="N/A" /></p>
@@ -65,7 +65,7 @@
                 @if($familyPrimary)
                     <p class="mb-1 text-muted">Primary contact</p>
                     <p><a href="{{ route('medical.patients.show', $familyPrimary) }}">{{ $familyPrimary->full_name }}</a>
-                    <span class="text-muted">({{ $familyPrimary->mr_number }})</span></p>
+                    <span class="text-muted">({{ clinical_no($familyPrimary->mr_number) }})</span></p>
                 @endif
                 @if($patient->relation_to_primary)
                     <p class="mb-1"><strong>Relation:</strong> {{ $patient->relation_to_primary }}</p>
@@ -73,7 +73,7 @@
                 @forelse($familyDependents as $dependent)
                     @if($loop->first)<p class="mb-1 text-muted">Dependents</p>@endif
                     <p class="mb-1"><a href="{{ route('medical.patients.show', $dependent) }}">{{ $dependent->family_label }}</a>
-                    <span class="text-muted">({{ $dependent->mr_number }})</span></p>
+                    <span class="text-muted">({{ clinical_no($dependent->mr_number) }})</span></p>
                 @empty
                     @if(! $familyPrimary)<p class="text-muted mb-0">No linked family members.</p>@endif
                 @endforelse
@@ -227,7 +227,7 @@
                             <tbody>
                                 @foreach($patient->labOrders->take(5) as $order)
                                 <tr>
-                                    <td>{{ $order->order_number }}</td>
+                                    <td>{{ clinical_no($order->order_number) }}</td>
                                     <td><x-tdate :value="$order->order_date" fallback="d M Y" /></td>
                                     <td><span class="badge bg-secondary">{{ ucfirst($order->status) }}</span></td>
                                 </tr>
@@ -250,7 +250,7 @@
                             <tbody>
                                 @foreach($patient->invoices->take(5) as $invoice)
                                 <tr>
-                                    <td>{{ $invoice->invoice_number }}</td>
+                                    <td>{{ clinical_no($invoice->invoice_number) }}</td>
                                     <td><x-tdate :value="$invoice->invoice_date" fallback="d M Y" /></td>
                                     <td>{{ $invoice->total }}</td>
                                     <td><span class="badge bg-secondary">{{ ucfirst($invoice->status) }}</span></td>

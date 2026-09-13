@@ -15,8 +15,8 @@ use Illuminate\Support\Facades\DB;
 class TpaService
 {
     /**
-     * Generate a unique claim number (TPA-YYYY-III-XXXXX) via the
-     * database-backed sequence (Phase 04). Format unchanged.
+     * Generate a unique claim number (stored TPA-YYYY-NNNNN, displayed
+     * TPA-YY-NNNNN) via the database-backed sequence (Phase 04).
      */
     public function generateClaimNumber(int $instituteId): string
     {

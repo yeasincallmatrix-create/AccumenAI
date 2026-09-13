@@ -43,7 +43,7 @@
                 <p><strong>Patient:</strong>
                     @if($admission->patient)
                         <a href="{{ route('medical.patients.show', $admission->patient) }}">{{ $admission->patient->full_name }}</a>
-                        <span class="text-muted">({{ $admission->patient->mr_number }})</span>
+                        <span class="text-muted">({{ clinical_no($admission->patient->mr_number) }})</span>
                     @else
                         N/A
                     @endif

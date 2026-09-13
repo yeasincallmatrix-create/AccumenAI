@@ -6,7 +6,7 @@
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2">
     <div class="page-header-text">
         <h4 class="page-header-title">
-            {{ $claim->claim_number }}
+            {{ clinical_no($claim->claim_number) }}
             <span class="badge bg-{{ $claim->status_class }}">{{ ucfirst($claim->status) }}</span>
         </h4>
     </div>
@@ -39,14 +39,14 @@
                 <p><strong>Patient:</strong>
                     @if($claim->patient)
                         <a href="{{ route('medical.patients.show', $claim->patient) }}">{{ $claim->patient->full_name }}</a>
-                        <span class="text-muted">({{ $claim->patient->mr_number }})</span>
+                        <span class="text-muted">({{ clinical_no($claim->patient->mr_number) }})</span>
                     @else
                         N/A
                     @endif
                 </p>
                 <p><strong>Invoice:</strong>
                     @if($claim->invoice)
-                        <a href="{{ route('medical.billing.invoices.show', $claim->invoice) }}">{{ $claim->invoice->invoice_number }}</a>
+                        <a href="{{ route('medical.billing.invoices.show', $claim->invoice) }}">{{ clinical_no($claim->invoice->invoice_number) }}</a>
                     @else
                         N/A
                     @endif

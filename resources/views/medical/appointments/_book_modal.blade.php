@@ -44,7 +44,7 @@
                                     <select id="bk_patient_id" name="patient_id" class="form-select" required>
                                         <option value="">Select Patient</option>
                                         @foreach(($patients ?? []) as $patient)
-                                            <option value="{{ $patient->id }}">{{ $patient->full_name }} ({{ $patient->mr_number }})</option>
+                                            <option value="{{ $patient->id }}">{{ $patient->full_name }} ({{ clinical_no($patient->mr_number) }}){{ $patient->age !== null ? ', '.$patient->age.'y' : '' }}@if(!empty($ipdPatientIds[$patient->id] ?? null)) [IPD]@endif</option>
                                         @endforeach
                                     </select>
                                     @if($canCreatePatient ?? false)

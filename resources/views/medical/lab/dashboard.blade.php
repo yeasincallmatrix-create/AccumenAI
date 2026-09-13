@@ -52,7 +52,7 @@
                     <ul class="list-unstyled mb-0">
                         @foreach($pending['list']->take(8) as $order)
                         <li class="border-bottom py-2">
-                            <a href="{{ route('medical.lab.orders.show', $order) }}"><strong>{{ $order->order_number }}</strong></a>
+                            <a href="{{ route('medical.lab.orders.show', $order) }}"><strong>{{ clinical_no($order->order_number) }}</strong></a>
                             <span class="text-muted">· {{ $order->patient->full_name ?? 'N/A' }}</span>
                             <span class="badge bg-{{ $order->status_class }} float-end">{{ ucfirst($order->status) }}</span>
                         </li>
@@ -72,7 +72,7 @@
                     <ul class="list-unstyled mb-0">
                         @foreach($recentCompleted as $order)
                         <li class="border-bottom py-2">
-                            <a href="{{ route('medical.lab.orders.show', $order) }}"><strong>{{ $order->order_number }}</strong></a>
+                            <a href="{{ route('medical.lab.orders.show', $order) }}"><strong>{{ clinical_no($order->order_number) }}</strong></a>
                             <span class="text-muted">· {{ $order->patient->full_name ?? 'N/A' }}</span>
                             <span class="text-muted small float-end"><x-tdate :value="$order->completed_at" fallback="d M H:i" :datetime="true" /></span>
                         </li>

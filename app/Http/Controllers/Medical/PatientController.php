@@ -70,12 +70,18 @@ class PatientController extends MedicalController implements HasMiddleware
         // Fenced doctors list only their own patients.
         $query = $this->scopeOwnPatients($query);
 
-        // Search by MR number, name, or phone.
+        // Search by MR number, name, or phone. Short-form numbers
+        // (MR-26-00002 as read on slips/scans) are expanded to the stored
+        // long form (MR-2026-00002) so either shape finds the row.
         if (is_string($search) && trim($search) !== '') {
             $search = trim($search);
-            $query->where(function ($q) use ($search) {
-                $q->where('mr_number', 'LIKE', "%{$search}%")
-                    ->orWhere('first_name', 'LIKE', "%{$search}%")
+            $storedSearch = \App\Services\Medical\NumberSequenceService::expandShortYears($search);
+            $query->where(function ($q) use ($search, $storedSearch) {
+                $q->where('mr_number', 'LIKE', "%{$search}%");
+                if ($storedSearch !== $search) {
+                    $q->orWhere('mr_number', 'LIKE', "%{$storedSearch}%");
+                }
+                $q->orWhere('first_name', 'LIKE', "%{$search}%")
                     ->orWhere('last_name', 'LIKE', "%{$search}%")
                     ->orWhere('phone', 'LIKE', "%{$search}%");
             });
@@ -219,7 +225,7 @@ class PatientController extends MedicalController implements HasMiddleware
             ->filter(fn (Patient $p) => $this->mayActOnPatient($p))
             ->map(fn (Patient $p) => [
                 'id' => $p->id,
-                'mr_number' => $p->mr_number,
+                'mr_number' => clinical_no($p->mr_number),
                 'label' => $p->family_label,
                 'phone' => $p->phone,
                 'relation' => $p->relation_to_primary ?? 'Self',
@@ -242,7 +248,7 @@ class PatientController extends MedicalController implements HasMiddleware
             'patients' => $matches,
             'patient' => [
                 'id' => $patient->id,
-                'mr_number' => $patient->mr_number,
+                'mr_number' => clinical_no($patient->mr_number),
                 'first_name' => $patient->first_name,
                 'last_name' => $patient->last_name,
                 'date_of_birth' => $patient->date_of_birth?->format('Y-m-d'),
@@ -300,7 +306,7 @@ class PatientController extends MedicalController implements HasMiddleware
             ->get()
             ->map(fn (Patient $patient) => [
                 'id' => $patient->id,
-                'mr_number' => $patient->mr_number,
+                'mr_number' => clinical_no($patient->mr_number),
                 'name' => $patient->full_name,
                 'age' => $patient->age,
                 'gender' => $patient->gender,
@@ -494,7 +500,7 @@ class PatientController extends MedicalController implements HasMiddleware
             'patient' => [
                 'id' => $patient->id,
                 'name' => $patient->full_name,
-                'mr_number' => $patient->mr_number,
+                'mr_number' => clinical_no($patient->mr_number),
                 'phone' => $patient->phone,
             ],
         ], 201);
@@ -544,7 +550,7 @@ class PatientController extends MedicalController implements HasMiddleware
         $patient = Patient::create($data);
         $patient->syncStructuredAllergies();
 
-        $message = 'Patient registered successfully! MR: '.$patient->mr_number;
+        $message = 'Patient registered successfully! MR: '.clinical_no($patient->mr_number);
         if (! empty($data['date_of_birth'])) {
             $dupe = Patient::where('institute_id', $instituteId)
                 ->where('first_name', $data['first_name'])

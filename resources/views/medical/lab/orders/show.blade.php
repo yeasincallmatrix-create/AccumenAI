@@ -6,7 +6,7 @@
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2">
     <div class="page-header-text">
         <h4 class="page-header-title">
-            {{ $order->order_number }}
+            {{ clinical_no($order->order_number) }}
             <span class="badge bg-{{ $order->status_class }}">{{ ucfirst($order->status) }}</span>
             <span class="badge bg-{{ $order->priority === 'emergency' ? 'danger' : ($order->priority === 'urgent' ? 'warning text-dark' : 'secondary') }}">{{ ucfirst($order->priority) }}</span>
         </h4>
@@ -53,7 +53,7 @@
                 <p><strong>Patient:</strong>
                     @if($order->patient)
                         <a href="{{ route('medical.patients.show', $order->patient) }}">{{ $order->patient->full_name }}</a>
-                        <span class="text-muted">({{ $order->patient->mr_number }})</span>
+                        <span class="text-muted">({{ clinical_no($order->patient->mr_number) }})</span>
                     @else
                         N/A
                     @endif

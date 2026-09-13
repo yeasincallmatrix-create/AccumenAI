@@ -6,21 +6,16 @@ use App\Models\Medical\NumberSequence;
 use App\Support\MedicalScope;
 
 /**
- * Phase 04 — MR numbers are database-backed sequences (MR-YYYY-III-NNNNN),
- * allocated via NumberSequenceService. Replaces the legacy YY + 3-digit
- * random scheme (5-digit numerics in a disjoint namespace — historical rows
- * are untouched and can never collide with the new format).
+ * Phase 04 — MR numbers are database-backed sequences (stored
+ * MR-YYYY-NNNNN, displayed MR-YY-NNNNN), allocated via
+ * NumberSequenceService. Replaces the legacy YY + 3-digit random scheme
+ * (5-digit numerics in a disjoint namespace — historical rows are
+ * untouched and can never collide with the new format).
  *
  * The institute id stays an optional argument (PatientController passes it
  * explicitly; web-guard callers without one fall back to MedicalScope).
- */
-/**
- * Phase 04 — MR numbers are database-backed sequences (MR-YYYY-III-NNNNN),
- * allocated via NumberSequenceService. Historical 5-digit numerics live in
- * a disjoint namespace and can never collide with this format.
- *
- * The institute id stays an optional argument (PatientController passes it
- * explicitly; web-guard callers without one fall back to MedicalScope).
+ * Uniqueness is per tenant via composite DB keys, so no tenant segment is
+ * embedded in the number itself.
  */
 class MrNumberGenerator
 {

@@ -38,7 +38,7 @@ Schedule::command('users:purge-soft-deleted')->dailyAt('04:00')->withoutOverlapp
 
 Schedule::command('files:cleanup-orphans --dry-run')->dailyAt('02:00');
 
-// Medical — end-of-day queue rollover (carry checked-in, auto-cancel no-shows).
+// Medical — end-of-day queue rollover (carry as scheduled, auto-cancel no-shows).
 Schedule::command('medical:queue-rollover')->dailyAt('23:50')->withoutOverlapping();
 
 // P1 — Automated database backups (RPO < 24h)

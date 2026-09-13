@@ -383,6 +383,7 @@ const AppointmentList = ({ initialAppointments, doctors, filters: initialFilters
                             <th>#</th>
                             <th>Patient</th>
                             <th>Phone No</th>
+                            <th>Age</th>
                             <th>Doctor</th>
                             <th>Date</th>
                             <th>Time</th>
@@ -430,8 +431,12 @@ const AppointmentList = ({ initialAppointments, doctors, filters: initialFilters
                                     ) : (
                                         <span className="text-muted">N/A</span>
                                     )}
+                                    {row.is_ipd && (
+                                        <span className="badge bg-info text-dark ms-1" title="Currently admitted (IPD)">IPD</span>
+                                    )}
                                 </td>
                                 <td className={row.has_patient ? '' : 'text-muted'}>{row.patient_phone}</td>
+                                <td>{row.patient_age ?? '—'}</td>
                                 <td>{row.doctor_name}</td>
                                 <td>{row.date_display}</td>
                                 <td>{row.time_display}</td>

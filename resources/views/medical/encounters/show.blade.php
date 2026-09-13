@@ -6,7 +6,7 @@
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2">
     <div class="page-header-text">
         <h4 class="page-header-title">
-            {{ $encounter->encounter_number }}
+            {{ clinical_no($encounter->encounter_number) }}
             <span class="badge bg-{{ $encounter->status === 'completed' ? 'success' : ($encounter->status === 'cancelled' ? 'secondary' : 'primary') }}">
                 {{ ucfirst(str_replace('_', ' ', $encounter->status)) }}
             </span>
@@ -56,7 +56,7 @@
                 <p><strong>Patient:</strong>
                     @if($encounter->patient)
                         <a href="{{ route('medical.patients.show', $encounter->patient) }}">{{ $encounter->patient->full_name }}</a>
-                        <span class="text-muted">({{ $encounter->patient->mr_number }})</span>
+                        <span class="text-muted">({{ clinical_no($encounter->patient->mr_number) }})</span>
                     @else
                         N/A
                     @endif
@@ -244,7 +244,7 @@
             <ul class="mb-3">
                 @foreach($encounter->prescriptions as $prescription)
                     <li>
-                        <a href="{{ route('medical.prescriptions.show', $prescription) }}">{{ $prescription->prescription_number }}</a>
+                        <a href="{{ route('medical.prescriptions.show', $prescription) }}">{{ clinical_no($prescription->prescription_number) }}</a>
                         <span class="text-muted">— {{ $prescription->statusLabel() }}</span>
                     </li>
                 @endforeach
@@ -255,7 +255,7 @@
             <ul class="mb-3">
                 @foreach($encounter->labOrders as $order)
                     <li>
-                        <a href="{{ route('medical.lab.orders.show', $order) }}">{{ $order->order_number }}</a>
+                        <a href="{{ route('medical.lab.orders.show', $order) }}">{{ clinical_no($order->order_number) }}</a>
                         <span class="text-muted">— {{ $order->status }}</span>
                     </li>
                 @endforeach
@@ -340,7 +340,7 @@
         <ul class="mb-0">
             @foreach($timeline as $past)
                 <li>
-                    <a href="{{ route('medical.encounters.show', $past) }}">{{ $past->encounter_number }}</a>
+                    <a href="{{ route('medical.encounters.show', $past) }}">{{ clinical_no($past->encounter_number) }}</a>
                     <span class="text-muted">— {{ $past->encounter_type }} · {{ $past->status }} ·
                     <x-tdate :value="$past->started_at" fallback="d M Y" /></span>
                 </li>

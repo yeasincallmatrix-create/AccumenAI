@@ -86,11 +86,21 @@ class MedicalReactController extends Controller
             });
         }
 
-        return response()->json($query->orderBy('appointment_time')->get()
+        $appointments = $query->orderBy('appointment_time')->get();
+        $ipdPatientIds = \App\Models\Medical\Admission::where('institute_id', $instituteId)
+            ->whereIn('patient_id', $appointments->pluck('patient_id')->filter()->unique()->all())
+            ->where('status', 'active')
+            ->pluck('patient_id')
+            ->flip()
+            ->all();
+
+        return response()->json($appointments
             ->map(fn (\App\Models\Medical\Appointment $appointment) => [
                 'id' => $appointment->id,
                 'patient_name' => $appointment->patient->full_name ?? 'N/A',
                 'patient_phone' => $appointment->patient->phone ?? 'N/A',
+                'patient_age' => $appointment->patient?->age,
+                'is_ipd' => isset($ipdPatientIds[$appointment->patient_id]),
                 'doctor_name' => $appointment->doctor->name ?? 'N/A',
                 'date_display' => mawa_format_date($appointment->appointment_date, null, 'd M Y'),
                 'time_display' => $appointment->appointment_time
@@ -120,7 +130,7 @@ class MedicalReactController extends Controller
 
         return response()->json($query->limit(200)->get()->map(fn (Patient $patient) => [
             'id' => $patient->id,
-            'mr_number' => $patient->mr_number,
+            'mr_number' => clinical_no($patient->mr_number),
             'name' => $patient->full_name,
             'age' => $patient->age,
             'gender' => $patient->gender,
@@ -154,7 +164,7 @@ class MedicalReactController extends Controller
         return response()->json($query->orderBy('prescription_date', 'desc')->limit(100)->get()
             ->map(fn (Prescription $prescription) => [
                 'id' => $prescription->id,
-                'prescription_number' => $prescription->prescription_number,
+                'prescription_number' => clinical_no($prescription->prescription_number),
                 'patient_name' => $prescription->patient->full_name ?? 'N/A',
                 'doctor_name' => $prescription->doctor->name ?? null,
                 'prescription_date' => $prescription->prescription_date?->format('Y-m-d'),

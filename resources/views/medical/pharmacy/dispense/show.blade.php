@@ -19,7 +19,7 @@
         <div class="card">
             <div class="card-header"><h6 class="mb-0">Prescription Item</h6></div>
             <div class="card-body">
-                <p><strong>Rx:</strong> {{ $prescriptionItem->prescription->prescription_number ?? '' }}</p>
+                <p><strong>Rx:</strong> {{ clinical_no($prescriptionItem->prescription->prescription_number ?? '') }}</p>
                 <p><strong>Patient:</strong> {{ $prescriptionItem->prescription->patient->full_name ?? 'N/A' }}</p>
                 <p><strong>Medicine:</strong> {{ $prescriptionItem->medicine_name }}</p>
                 <p><strong>Dosage / Frequency:</strong> {{ $prescriptionItem->dosage }} / {{ $prescriptionItem->frequency }}</p>

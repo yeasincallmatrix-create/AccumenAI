@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Medical;
 
 use App\Http\Controllers\Controller;
+use App\Models\Medical\Admission;
 use App\Models\Medical\Patient;
 use App\Support\MedicalScope;
 
@@ -271,7 +272,10 @@ abstract class MedicalController extends Controller
 
     /**
      * Patient options for booking/select dropdowns: all active patients
-     * unfenced; own patients plus brand-new ones for fenced doctors.
+     * unfenced; only own patients (with appointments) plus patients
+     * actively admitted under this doctor for fenced doctors. New walk-in
+     * patients are registered/assigned by front-desk (unfenced) staff or
+     * the quick-add popup — they do not list for other doctors.
      */
     protected function ownPatientOptions(int $instituteId, ?int $fence = null)
     {
@@ -287,8 +291,10 @@ abstract class MedicalController extends Controller
                 $q->whereHas('appointments', fn ($qq) => $qq
                         ->where('institute_id', $instituteId)
                         ->where('doctor_id', $fence))
-                    ->orWhereDoesntHave('appointments', fn ($qq) => $qq
-                        ->where('institute_id', $instituteId));
+                    ->orWhereHas('admissions', fn ($qq) => $qq
+                        ->where('institute_id', $instituteId)
+                        ->where('status', 'active')
+                        ->where('admitting_doctor_id', $fence));
             });
         }
 
@@ -400,9 +406,32 @@ abstract class MedicalController extends Controller
     }
 
     /**
-     * Whether a fenced doctor may act on a patient: own patient, or a brand
-     * new patient with no appointments yet in this institute. Always true
-     * unfenced. Used by store paths so doctors can still take new patients.
+     * Patient ids with an active admission (IPD tag for lists/dropdowns).
+     * Single batched query — pass the map to views; Blade checks
+     * `($ipdPatientIds[$patient->id] ?? null)`.
+     *
+     * @return array<int, true>
+     */
+    protected function activeAdmissionPatientIds(int $instituteId, $patientIds): array
+    {
+        $ids = collect($patientIds)->filter()->unique()->values()->all();
+        if ($ids === []) {
+            return [];
+        }
+
+        return Admission::where('institute_id', $instituteId)
+            ->whereIn('patient_id', $ids)
+            ->where('status', 'active')
+            ->pluck('patient_id')
+            ->flip()
+            ->all();
+    }
+
+    /**
+     * Whether a fenced doctor may act on a patient: own patient, a brand
+     * new patient with no appointments yet in this institute, or a patient
+     * actively admitted under this doctor. Always true unfenced. Used by
+     * store paths so doctors can still take new/admitted patients.
      */
     protected function mayActOnPatient(Patient $patient, ?int $fence = null): bool
     {
@@ -412,6 +441,9 @@ abstract class MedicalController extends Controller
         }
         $instituteId = $this->instituteId();
         if ($patient->appointments()->where('institute_id', $instituteId)->where('doctor_id', $fence)->exists()) {
+            return true;
+        }
+        if ($patient->admissions()->where('institute_id', $instituteId)->where('status', 'active')->where('admitting_doctor_id', $fence)->exists()) {
             return true;
         }
 

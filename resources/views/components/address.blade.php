@@ -42,6 +42,7 @@
     'locked' => false,
     'addressLabel' => null,
     'zipFirst' => false,
+    'singleRow' => false,
 ])
 
 @php
@@ -95,8 +96,21 @@
                 </select>
             </div>
         @endforeach
+        @if ($singleRow)
+            <div class="field">
+                <label for="{{ $p }}address">{{ $addressLabel ?? mawa_lang('geo.street') }}</label>
+                <input id="{{ $p }}address" name="{{ $p }}address" class="form-control"
+                       value="{{ $address }}" maxlength="255" placeholder="{{ mawa_lang('geo.street_hint') }}">
+            </div>
+            <div class="field">
+                <label for="{{ $p }}zip_code">{{ mawa_lang('geo.postal_code') }}</label>
+                <input id="{{ $p }}zip_code" name="{{ $p }}zip_code" class="form-control"
+                       value="{{ $postalCode }}" maxlength="20" placeholder="{{ mawa_lang('geo.postal_hint') }}">
+            </div>
+        @endif
     </div>
 
+    @if (! $singleRow)
     <div class="grid mt-2">
         @if ($zipFirst)
             <div class="field">
@@ -122,4 +136,5 @@
             </div>
         @endif
     </div>
+    @endif
 </div>

@@ -45,7 +45,7 @@
                     <tbody>
                         @foreach($invoices as $invoice)
                         <tr>
-                            <td><a href="{{ route('medical.billing.invoices.show', $invoice) }}">{{ $invoice->invoice_number }}</a></td>
+                            <td><a href="{{ route('medical.billing.invoices.show', $invoice) }}">{{ clinical_no($invoice->invoice_number) }}</a></td>
                             <td>{{ $invoice->patient->full_name ?? 'N/A' }}</td>
                             <td>{{ strtoupper($invoice->type) }}</td>
                             <td>৳{{ number_format($invoice->total, 2) }}</td>
