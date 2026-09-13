@@ -89,12 +89,7 @@
 @endpush
 
 <div class="row g-3 mb-3" id="rx-top-row">
-    <div id="rx-hidden-panels" class="col-12" style="display:none;">
-        <div class="alert alert-light border d-flex flex-wrap align-items-center gap-2 py-2 mb-0 small">
-            <span class="text-muted"><i class="bi bi-eye-slash me-1"></i>Hidden sections:</span>
-            <span id="rx-hidden-panels-list" class="d-inline-flex flex-wrap gap-2"></span>
-        </div>
-    </div>
+
     <div class="col-md-2">
         <div class="card h-100">
             <div class="card-header py-2 d-flex align-items-center justify-content-between">
@@ -320,7 +315,7 @@
             </button>
 
             <div class="mt-auto pt-3 d-flex flex-wrap align-items-end justify-content-end gap-3">
-                <div style="max-width:280px;">
+                <div style="max-width:170px;">
                     <div class="mb-0">
                         <label class="form-label" for="follow_up_date">Follow-up Date</label>
                         <x-tdate-input name="follow_up_date" :value="old('follow_up_date', $prescription->follow_up_date?->format('Y-m-d'))" id="follow_up_date" :class="'form-control'.($errors->has('follow_up_date') ? ' is-invalid' : '')" />

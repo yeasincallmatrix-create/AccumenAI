@@ -74,13 +74,6 @@
     var VIEW_KEY = 'rxViewPrefs';
     var FIELDS = ['letterhead', 'qr', 'signed', 'complaints', 'findings', 'diagnosis', 'investigations', 'advice'];
     var VIEW_FIELDS = ['complaints', 'findings', 'diagnosis', 'investigations', 'advice'];
-    var VIEW_LABELS = {
-        complaints: 'Chief Complaints',
-        findings: 'Examination Findings',
-        diagnosis: 'Diagnosis',
-        investigations: 'Investigations',
-        advice: 'Advice'
-    };
     function load(key) {
         try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { return {}; }
     }
@@ -128,23 +121,7 @@
             mainCol.classList.toggle('col-md-10', showSoapCol);
             mainCol.classList.toggle('col-md-12', !showSoapCol);
         }
-        // Hidden panels hide their own eye toggle too, so surface a
-        // one-click restore bar (per hidden section) above the form.
-        var bar = document.getElementById('rx-hidden-panels');
-        var list = document.getElementById('rx-hidden-panels-list');
-        if (bar && list) {
-            var hidden = VIEW_FIELDS.filter(function (f) { return prefs[f] === false; });
-            list.innerHTML = '';
-            hidden.forEach(function (f) {
-                var b = document.createElement('button');
-                b.type = 'button';
-                b.className = 'btn btn-sm btn-outline-primary';
-                b.setAttribute('data-rx-panel-restore', f);
-                b.textContent = 'Show ' + (VIEW_LABELS[f] || f);
-                list.appendChild(b);
-            });
-            bar.style.display = hidden.length ? '' : 'none';
-        }
+
     }
     window.rxApplyViewPrefs = applyViewPrefs;
     window.rxSetViewPref = function (field, show) {
@@ -170,13 +147,6 @@
             });
             var m = document.getElementById('rxPrintPrefsModal');
             if (m && window.bootstrap) window.bootstrap.Modal.getOrCreateInstance(m).show();
-            return;
-        }
-        // Per-card eye toggle in the writing window header, plus the
-        // restore-bar "Show <section>" buttons for hidden panels.
-        var restore = e.target && e.target.closest ? e.target.closest('[data-rx-panel-restore]') : null;
-        if (restore) {
-            window.rxSetViewPref(restore.getAttribute('data-rx-panel-restore'), true);
             return;
         }
         var eye = e.target && e.target.closest ? e.target.closest('[data-rx-panel-toggle]') : null;
