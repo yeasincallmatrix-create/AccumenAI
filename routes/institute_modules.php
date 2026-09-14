@@ -1530,140 +1530,14 @@ Route::middleware($tenant)->group(function () {
 
     Route::get('super-admin/database/certification', [$dbOps, 'certification'])->name('super-admin.database.certification');
 
-    // ─── SALES LEADS EXTRA ────────────────────────────────────────────────
-    Route::post('sales/leads/{lead}/convert', [\App\Http\Controllers\Sales\LeadController::class, 'convertToQuotation'])->middleware('module_access:sales')->name('sales.leads.convert');
-
-    // ─── SALES INVOICES EXTRA ──────────────────────────────────────────────
-    Route::post('sales/invoices/create', [\App\Http\Controllers\Sales\SalesInvoiceController::class, 'createForOrder'])->middleware('module_access:sales')->name('sales.invoices.create');
-
-    // ─── SALES QUOTATIONS EXTRA ────────────────────────────────────────────
-    Route::get('sales/quotations/{quotation}/print', [\App\Http\Controllers\Sales\QuotationController::class, 'print'])->middleware('module_access:sales')->name('sales.quotations.print');
-
-    // ─── SALES DELIVERIES EXTRA ────────────────────────────────────────────
-    Route::get('sales/deliveries/{delivery}/invoice', [\App\Http\Controllers\Sales\SalesInvoiceController::class, 'storeForDelivery'])->middleware('module_access:sales')->name('sales.deliveries.invoice');
-
-    // ─── SALES RETURNS EXTRA ───────────────────────────────────────────────
+    // ─── SALES RETURNS EXTRA (unique) ───────────────────────────────────────
     Route::post('sales/returns/{return}/invoice', [\App\Http\Controllers\Sales\SalesReturnController::class, 'invoiceLines'])->middleware('module_access:sales')->name('sales.returns.invoice');
 
-    // ─── PURCHASE QUOTATIONS EXTRA ─────────────────────────────────────────
+    // ─── PURCHASE QUOTATIONS EXTRA (unique) ─────────────────────────────────
     Route::get('purchase/quotations/{quotation}/print', [\App\Http\Controllers\Purchase\PurchaseQuotationController::class, 'print'])->middleware('module_access:purchase')->name('purchase.quotations.print');
 
-    // ─── PURCHASE RECEIPTS EXTRA ───────────────────────────────────────────
-    Route::get('purchase/receipts/{receipt}/print', [\App\Http\Controllers\Purchase\GoodsReceiptWebController::class, 'print'])->middleware('module_access:purchase')->name('purchase.receipts.print');
-
-    // ─── PURCHASE INVOICES EXTRA ───────────────────────────────────────────
-    Route::get('purchase/invoices/{invoice}/print', [\App\Http\Controllers\Purchase\PurchaseInvoiceController::class, 'print'])->middleware('module_access:purchase')->name('purchase.invoices.print');
-
-    // ─── PURCHASE REPORTS EXTRA ────────────────────────────────────────────
-    Route::get('purchase/reports/daily', [\App\Http\Controllers\Purchase\PurchaseReportController::class, 'daily'])->middleware('module_access:purchase')->name('purchase.reports.daily');
+    // ─── PURCHASE REPORTS EXTRA (unique) ────────────────────────────────────
     Route::get('purchase/reports/export', [\App\Http\Controllers\Purchase\PurchaseReportController::class, 'export'])->middleware('module_access:purchase')->name('purchase.reports.export');
-    Route::get('purchase/reports/inventory', [\App\Http\Controllers\Purchase\PurchaseReportController::class, 'inventoryReconciliation'])->middleware('module_access:purchase')->name('purchase.reports.inventory');
-    Route::get('purchase/reports/payable', [\App\Http\Controllers\Purchase\PurchaseReportController::class, 'payableReport'])->middleware('module_access:purchase')->name('purchase.reports.payable');
-    Route::get('purchase/reports/print', [\App\Http\Controllers\Purchase\PurchaseReportController::class, 'print'])->middleware('module_access:purchase')->name('purchase.reports.print');
-    Route::get('purchase/reports/product', [\App\Http\Controllers\Purchase\PurchaseReportController::class, 'productWise'])->middleware('module_access:purchase')->name('purchase.reports.product');
-    Route::get('purchase/reports/supplier', [\App\Http\Controllers\Purchase\PurchaseReportController::class, 'supplierWise'])->middleware('module_access:purchase')->name('purchase.reports.supplier');
-    Route::get('purchase/reports/supplierStatement', [\App\Http\Controllers\Purchase\PurchaseReportController::class, 'supplierStatement'])->middleware('module_access:purchase')->name('purchase.reports.supplierStatement');
-
-    // ─── PURCHASE CREDIT ───────────────────────────────────────────────────
-    Route::post('purchase/credit/adjust', [\App\Http\Controllers\Purchase\PurchaseReturnController::class, 'adjust'])->middleware('module_access:purchase')->name('purchase.credit.adjust');
-
-    // ─── PURCHASE PAYMENTS EXTRA ───────────────────────────────────────────
-    Route::post('purchase/payments/reverse', [\App\Http\Controllers\Purchase\PurchaseInvoiceController::class, 'reversePayment'])->middleware('module_access:purchase')->name('purchase.payments.reverse');
-
-    // ─── SALES LEADS (duplicate fix) ───────────────────────────────────────
-    Route::get('sales/leads/{lead}', [\App\Http\Controllers\Sales\LeadController::class, 'show'])->middleware('module_access:sales')->name('sales.leads.show');
-    Route::put('sales/leads/{lead}', [\App\Http\Controllers\Sales\LeadController::class, 'update'])->middleware('module_access:sales')->name('sales.leads.update');
-
-    // ─── SALES RETURNS EXTRA ───────────────────────────────────────────────
-    Route::get('sales/returns/create', [\App\Http\Controllers\Sales\SalesReturnController::class, 'create'])->middleware('module_access:sales')->name('sales.returns.create');
-
-    // ─── PURCHASE QUOTATIONS EXTRA (duplicate fix) ─────────────────────────
-    Route::get('purchase/quotations/{quotation}', [\App\Http\Controllers\Purchase\PurchaseQuotationController::class, 'show'])->middleware('module_access:purchase')->name('purchase.quotations.show');
-
-    // ─── PURCHASE ORDERS EXTRA ─────────────────────────────────────────────
-    Route::get('purchase/orders/{order}', [\App\Http\Controllers\PurchaseOrderController::class, 'show'])->middleware('module_access:purchase')->name('purchase.orders.show');
-    Route::post('purchase/orders/{order}/cancel', [\App\Http\Controllers\PurchaseOrderController::class, 'cancel'])->middleware('module_access:purchase')->name('purchase.orders.cancel');
-    Route::post('purchase/orders/{order}/close', [\App\Http\Controllers\PurchaseOrderController::class, 'close'])->middleware('module_access:purchase')->name('purchase.orders.close');
-
-    // ─── ACADEMIC ATTENDANCE MARK ──────────────────────────────────────────
-    Route::post('academic-attendance/mark', [\App\Http\Controllers\AcademicAttendanceController::class, 'store'])->name('academic-attendance.mark.store');
-
-    // ─── WORKFLOW TRANSITION ───────────────────────────────────────────────
-    Route::post('workflows/{workflow}/transition', [\App\Http\Controllers\WorkflowController::class, 'transition'])->name('workflows.transition');
-
-    // ─── SETTINGS NOTIFICATIONS EXTRA ──────────────────────────────────────
-    Route::get('settings/notifications/templates', [\App\Http\Controllers\NotificationTemplateController::class, 'index'])->name('settings.notifications.templates.index');
-    Route::get('settings/notifications/templates/create', [\App\Http\Controllers\NotificationTemplateController::class, 'create'])->name('settings.notifications.templates.create');
-    Route::post('settings/notifications/templates', [\App\Http\Controllers\NotificationTemplateController::class, 'store'])->name('settings.notifications.templates.store');
-    Route::get('settings/notifications/templates/{template}/edit', [\App\Http\Controllers\NotificationTemplateController::class, 'edit'])->name('settings.notifications.templates.edit');
-    Route::put('settings/notifications/templates/{template}', [\App\Http\Controllers\NotificationTemplateController::class, 'update'])->name('settings.notifications.templates.update');
-    Route::post('settings/notifications/templates/{template}/toggle', [\App\Http\Controllers\NotificationTemplateController::class, 'toggle'])->name('settings.notifications.templates.toggle');
-    Route::delete('settings/notifications/templates/{template}', [\App\Http\Controllers\NotificationTemplateController::class, 'destroy'])->name('settings.notifications.templates.destroy');
-    Route::get('settings/notifications/logs', [\App\Http\Controllers\NotificationLogController::class, 'index'])->name('settings.notifications.logs.index');
-    Route::get('settings/notifications/logs/{log}', [\App\Http\Controllers\NotificationLogController::class, 'show'])->name('settings.notifications.logs.show');
-    Route::post('settings/notifications/logs/{log}/retry', [\App\Http\Controllers\NotificationLogController::class, 'retry'])->name('settings.notifications.logs.retry');
-
-    // ─── HR REPORTS (empty route) ──────────────────────────────────────────
-    Route::get('hr/reports', [\App\Http\Controllers\Hr\HrReportController::class, 'index'])->middleware('module_access:hr')->name('hr.reports.');
-
-    // ─── SUPER-ADMIN DATABASE CERTIFICATION ────────────────────────────────
-    Route::get('super-admin/database/certification', [\App\Http\Controllers\SuperAdmin\DatabaseOperationsController::class, 'certification'])->name('super-admin.database.certification');
-
-    // ─── REGISTER ──────────────────────────────────────────────────────────
-    // NOTE: public Owner registration (GET /register) is defined in routes/web.php as owner.register
-    // Do NOT re-define here inside tenant middleware — guest must access it without auth.
-
-    // ─── ROUTE NAME ALIASES (views use different names than controllers) ──
-    // Admin Grading aliases (views reference admin.academic.grading.* not settings.academic.grading.*)
-    $adminGrading = \App\Http\Controllers\Admin\AcademicGradingAdminController::class;
-    Route::get('admin/academic/grading/create', [$adminGrading, 'create'])->name('admin.academic.grading.create');
-    Route::post('admin/academic/grading', [$adminGrading, 'store'])->name('admin.academic.grading.store');
-    Route::get('admin/academic/grading/{grading}/edit', [$adminGrading, 'edit'])->name('admin.academic.grading.edit');
-    Route::put('admin/academic/grading/{grading}', [$adminGrading, 'update'])->name('admin.academic.grading.update');
-    Route::delete('admin/academic/grading/{grading}', [$adminGrading, 'destroy'])->name('admin.academic.grading.destroy');
-
-    // Admin Courses Assignment aliases (views use dash not dot)
-    $adminCourse = \App\Http\Controllers\Admin\CourseAdminController::class;
-    Route::post('admin/courses/assignment/assign', [$adminCourse, 'assignmentAssign'])->name('admin.courses.assignment-assign');
-    Route::get('admin/courses/assignment-columns', [$adminCourse, 'saveAssignmentColumns'])->name('admin.courses.assignment-columns');
-    Route::post('admin/courses/assignment/remove', [$adminCourse, 'assignmentRemove'])->name('admin.courses.assignment-remove');
-
-    // Exams alias (views use send-to-exam not sendToExam)
-    Route::post('exams/send-to-exam/{batch}', [\App\Http\Controllers\ExamController::class, 'sendToExam'])->name('exams.send-to-exam');
-
-    // HR Reports alias (views use hr.reports.index not hr.reports.)
-    Route::get('hr/reports', [\App\Http\Controllers\Hr\HrReportController::class, 'index'])->middleware('module_access:hr')->name('hr.reports.index');
-
-    // Purchase Returns alias (views use creditNote not credit-note)
-    Route::post('purchase/returns/{return}/credit-note', [\App\Http\Controllers\Purchase\PurchaseReturnController::class, 'creditNote'])->middleware('module_access:purchase')->name('purchase.returns.creditNote');
-
-    // Learning Structure Engine — generic N-level endpoints (Phase 3)
-    $learnCtrl = \App\Http\Controllers\LearningStructureController::class;
-    Route::prefix('academic/structure')->name('academic.structure.')->group(function () use ($learnCtrl) {
-        Route::get('options', [$learnCtrl, 'options'])->name('options');
-        Route::get('nodes', [$learnCtrl, 'nodes'])->name('nodes');
-        Route::post('nodes', [$learnCtrl, 'store'])->middleware('permission:education.manage')->name('nodes.store');
-        Route::put('nodes/{node}', [$learnCtrl, 'update'])->middleware('permission:education.manage')->name('nodes.update');
-        Route::delete('nodes/{node}', [$learnCtrl, 'destroy'])->middleware('permission:education.manage')->name('nodes.destroy');
-        Route::post('nodes/{node}/move', [$learnCtrl, 'move'])->middleware('permission:education.manage')->name('nodes.move');
-        Route::post('nodes/reorder', [$learnCtrl, 'reorder'])->middleware('permission:education.manage')->name('nodes.reorder');
-    });
-    // Learning Structure Settings UI (Phase 4)
-    $learnSettings = \App\Http\Controllers\LearningStructureSettingsController::class;
-    Route::prefix('academic/structure')->name('academic.structure.')->group(function () use ($learnSettings) {
-        Route::get('settings', [$learnSettings, 'index'])->name('settings');
-        Route::post('settings/assign', [$learnSettings, 'assignTemplate'])->middleware('permission:education.manage')->name('settings.assign');
-        Route::post('settings/nodes', [$learnSettings, 'storeNode'])->middleware('permission:education.manage')->name('settings.nodes.store');
-        Route::put('settings/nodes/{node}', [$learnSettings, 'updateNode'])->middleware('permission:education.manage')->name('settings.nodes.update');
-        Route::delete('settings/nodes/{node}', [$learnSettings, 'destroyNode'])->middleware('permission:education.manage')->name('settings.nodes.destroy');
-        Route::post('settings/nodes/reorder', [$learnSettings, 'reorder'])->middleware('permission:education.manage')->name('settings.nodes.reorder');
-    });
-
-    // Settings Academic aliases for specific sub-routes
-    Route::get('settings/academic/assessments/{assessment}/marks-sheet/export', [\App\Http\Controllers\AcademicMarksController::class, 'export'])->name('settings.academic.assessments.marks-sheet.export');
-    Route::get('settings/academic/assessments/{assessment}/readiness/export', [\App\Http\Controllers\AcademicFinalResultController::class, 'readinessExport'])->name('settings.academic.assessments.readiness.export');
-    Route::get('settings/academic/final-results/{result}/readiness/export', [\App\Http\Controllers\AcademicFinalResultController::class, 'readinessExport'])->name('settings.academic.final-results.readiness.export');
-    Route::post('settings/academic/promotions/decisions/{decision}/send-to-review', [\App\Http\Controllers\AcademicPromotionController::class, 'sendBackToReview'])->name('settings.academic.promotions.decisions.send-to-review');
 
 });
 
