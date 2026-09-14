@@ -28,6 +28,11 @@ class Prescription extends Model
         'signed_at',
         'signed_by',
         'signature_hash',
+        'version',
+        'parent_prescription_id',
+        'amendment_reason',
+        'amended_by',
+        'amended_at',
     ];
 
     protected $casts = [
@@ -35,6 +40,7 @@ class Prescription extends Model
         'follow_up_date' => 'date',
         'is_finalized' => 'boolean',
         'signed_at' => 'datetime',
+        'amended_at' => 'datetime',
     ];
 
     public function institute()
@@ -65,6 +71,27 @@ class Prescription extends Model
     public function auditLogs()
     {
         return $this->hasMany(PrescriptionAuditLog::class);
+    }
+
+    public function parent()
+    {
+        return $this->belongsTo(Prescription::class, 'parent_prescription_id');
+    }
+
+    public function amendments()
+    {
+        return $this->hasMany(Prescription::class, 'parent_prescription_id');
+    }
+
+    public function amendedByUser()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'amended_by');
+    }
+
+    public function latestAmendment()
+    {
+        return $this->hasOne(Prescription::class, 'parent_prescription_id')
+            ->orderByDesc('version');
     }
 
     /**
@@ -122,5 +149,37 @@ class Prescription extends Model
     public function getDispensedItemsCountAttribute(): int
     {
         return $this->items()->where('status', 'dispensed')->count();
+    }
+
+    public function isAmendment(): bool
+    {
+        return $this->parent_prescription_id !== null;
+    }
+
+    public function isAmended(): bool
+    {
+        return $this->amendments()->exists();
+    }
+
+    public function isLatestVersion(): bool
+    {
+        return ! $this->isAmended();
+    }
+
+    /**
+     * Find today's prescription for a doctor-patient pair in an institute.
+     * Returns the LATEST version (original or amendment).
+     */
+    public static function todayForDoctorPatient(
+        int $doctorId,
+        int $patientId,
+        int $instituteId
+    ): ?self {
+        return static::where('doctor_id', $doctorId)
+            ->where('patient_id', $patientId)
+            ->where('institute_id', $instituteId)
+            ->whereDate('prescription_date', now()->toDateString())
+            ->orderByDesc('version')
+            ->first();
     }
 }

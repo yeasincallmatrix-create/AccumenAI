@@ -65,6 +65,7 @@ class MedicalPermissionSeeder extends Seeder
                 'create' => 'Create Prescriptions',
                 'edit' => 'Edit Prescriptions',
                 'delete' => 'Delete Prescriptions',
+                'amend' => 'Amend Prescriptions',
             ],
             'medical_encounters' => [
                 'view' => 'View Encounters',

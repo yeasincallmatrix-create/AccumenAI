@@ -12,6 +12,16 @@
             @else
                 <span class="badge bg-warning text-dark">Draft</span>
             @endif
+            <span class="badge bg-secondary">v{{ $prescription->version }}</span>
+            @if($prescription->isAmendment())
+                <span class="badge bg-warning text-dark">Amended</span>
+            @endif
+            @if($prescription->isAmended())
+                <a href="{{ route('medical.prescriptions.show', $prescription->latestAmendment) }}"
+                   class="badge bg-info text-dark text-decoration-none">
+                    Superseded by v{{ $prescription->latestAmendment->version }}
+                </a>
+            @endif
         </h4>
     </div>
     <div class="page-header-actions">
@@ -27,6 +37,16 @@
                 </button>
             </form>
         @else
+            @if($prescription->isAmended())
+                <a class="btn btn-outline-secondary" href="{{ route('medical.prescriptions.show', $prescription->latestAmendment) }}">
+                    <i class="bi bi-arrow-right me-1"></i>View Latest Version
+                </a>
+            @endif
+            @if(!$prescription->isAmended() && auth()->user()->hasPermission('medical_prescriptions.amend'))
+                <a class="btn btn-outline-warning" href="{{ route('medical.prescriptions.amend', $prescription) }}">
+                    <i class="bi bi-pencil-square me-1"></i>Amend
+                </a>
+            @endif
             <a class="btn btn-primary" href="{{ route('medical.prescriptions.print', $prescription) }}">
                 <i class="bi bi-printer me-1"></i>Print
             </a>

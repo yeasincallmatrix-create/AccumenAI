@@ -43,7 +43,7 @@ class RoleTemplateService
                         'medical_patients.view', 'medical_patients.create', 'medical_patients.edit',
                         'medical_appointments.view', 'medical_appointments.create', 'medical_appointments.edit',
                         'medical_queue.reorder',
-                        'medical_prescriptions.view', 'medical_prescriptions.create', 'medical_prescriptions.edit',
+                        'medical_prescriptions.view', 'medical_prescriptions.create', 'medical_prescriptions.edit', 'medical_prescriptions.amend',
                         'medical_encounters.view', 'medical_encounters.create', 'medical_encounters.edit',
                         'medical_encounters.complete', 'medical_encounters.amend',
                         'medical_diagnoses.view', 'medical_diagnoses.create', 'medical_diagnoses.remove',

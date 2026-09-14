@@ -55,6 +55,7 @@
                         <th>Patient</th>
                         <th>Doctor</th>
                         <th>Date</th>
+                        <th>Version</th>
                         <th>Items</th>
                         <th>Status</th>
                         <th class="text-end">Actions</th>
@@ -67,6 +68,12 @@
                         <td>{{ $prescription->patient->full_name ?? 'N/A' }}</td>
                         <td>{{ $prescription->doctor->name ?? 'N/A' }}</td>
                         <td><x-tdate :value="$prescription->prescription_date" fallback="d M Y" /></td>
+                        <td>
+                            <span class="badge bg-secondary">v{{ $prescription->version }}</span>
+                            @if($prescription->isAmendment())
+                                <span class="badge bg-warning text-dark">Amended</span>
+                            @endif
+                        </td>
                         <td>{{ $prescription->pending_items_count + $prescription->dispensed_items_count }}</td>
                         <td>
                             @if($prescription->is_finalized)
@@ -90,7 +97,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="text-center text-muted py-4">
+                        <td colspan="8" class="text-center text-muted py-4">
                             <i class="bi bi-file-earmark-medical fs-2 d-block mb-2"></i>
                             No prescriptions found.
                         </td>

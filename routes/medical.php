@@ -134,6 +134,8 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     Route::post('prescriptions/walk-in', [PrescriptionController::class, 'walkIn'])->name('prescriptions.walk-in');
     Route::resource('prescriptions', PrescriptionController::class);
     Route::post('prescriptions/{prescription}/finalize', [PrescriptionController::class, 'finalize'])->name('prescriptions.finalize');
+    Route::get('prescriptions/{prescription}/amend', [PrescriptionController::class, 'amendForm'])->name('prescriptions.amend');
+    Route::post('prescriptions/{prescription}/amend', [PrescriptionController::class, 'amend'])->name('prescriptions.amend.store');
     Route::post('prescriptions/{prescription}/findings/{finding}/resolve', [PrescriptionController::class, 'resolveFinding'])->name('prescriptions.findings.resolve');
     Route::get('prescriptions/{prescription}/print', [PrescriptionController::class, 'print'])->name('prescriptions.print');
     Route::get('prescriptions/{prescription}/pdf', [PrescriptionController::class, 'downloadPdf'])->name('prescriptions.pdf');

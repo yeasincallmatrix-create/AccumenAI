@@ -108,6 +108,7 @@ class MedicalModuleActivator
             'medical_prescriptions' => [
                 'view' => 'View Prescriptions', 'create' => 'Create Prescriptions',
                 'edit' => 'Edit Prescriptions', 'delete' => 'Delete Prescriptions',
+                'amend' => 'Amend Prescriptions',
             ],
             'medical_pharmacy' => [
                 'view' => 'View Pharmacy', 'create' => 'Add Pharmacy Stock',

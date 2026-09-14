@@ -139,9 +139,18 @@
             </div>
         </header>
 
+        @if($prescription->isAmendment())
+            <div style="background:#fff3cd; padding:8px 12px; border:1px solid #ffc107; margin-bottom:12px; border-radius:4px;">
+                <strong>AMENDED PRESCRIPTION (v{{ $prescription->version }})</strong><br>
+                Original Rx: {{ $prescription->parent->prescription_number ?? '—' }}
+                ({{ $prescription->parent->prescription_date?->format('d M Y') ?? '—' }})<br>
+                Reason: {{ $prescription->amendment_reason }}
+            </div>
+        @endif
+
         {{-- RX META --}}
         <div class="rx-meta">
-            <span><strong>Rx No:</strong> {{ clinical_no($prescription->prescription_number) }}</span>
+            <span><strong>Rx No:</strong> {{ clinical_no($prescription->prescription_number) }} <small>(v{{ $prescription->version }})</small></span>
             <span><strong>Date:</strong> {{ $prescription->prescription_date?->format('d M Y') ?? '—' }}</span>
         </div>
 

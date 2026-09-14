@@ -35,6 +35,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
             new Middleware('permission:medical_prescriptions.view', only: ['index', 'show', 'print', 'downloadPdf', 'reactIndex', 'reactData', 'patientInfo', 'queueNumbers', 'patientOptions', 'checkExisting']),
             new Middleware('permission:medical_prescriptions.create', only: ['create', 'store', 'addItem', 'walkIn']),
             new Middleware('permission:medical_prescriptions.edit', only: ['edit', 'update', 'finalize', 'removeItem', 'resolveFinding']),
+            new Middleware('permission:medical_prescriptions.amend', only: ['amendForm', 'amend']),
             new Middleware('permission:medical_prescriptions.delete', only: ['destroy']),
         ];
     }
@@ -449,17 +450,27 @@ class PrescriptionController extends MedicalController implements HasMiddleware
         $data = $request->validate([
             'patient_id' => ['required', 'integer'],
             'date' => ['required', 'date'],
+            'doctor_id' => ['nullable', 'integer'],
         ]);
 
-        $existing = Prescription::where('institute_id', $instituteId)
+        $query = Prescription::where('institute_id', $instituteId)
             ->where('patient_id', $data['patient_id'])
-            ->whereDate('prescription_date', $data['date'])
-            ->with(['doctor:id,name', 'items'])
+            ->whereDate('prescription_date', $data['date']);
+
+        if (! empty($data['doctor_id'])) {
+            $query->where('doctor_id', $data['doctor_id']);
+        }
+
+        $existing = $query->with(['doctor:id,name', 'items'])
+            ->orderByDesc('version')
             ->first();
 
         if (! $existing) {
             return response()->json(['exists' => false]);
         }
+
+        $canAmend = $existing->is_finalized
+            && auth()->user()->hasPermission('medical_prescriptions.amend');
 
         return response()->json([
             'exists' => true,
@@ -469,7 +480,11 @@ class PrescriptionController extends MedicalController implements HasMiddleware
             'date' => $existing->prescription_date->format('Y-m-d'),
             'status' => $existing->is_finalized ? 'Finalized' : 'Draft',
             'items_count' => $existing->items->count(),
-            'edit_url' => route('medical.prescriptions.edit', $existing),
+            'version' => $existing->version,
+            'is_amended' => $existing->isAmended(),
+            'edit_url' => $canAmend
+                ? route('medical.prescriptions.amend', $existing)
+                : route('medical.prescriptions.edit', $existing),
         ]);
     }
 
@@ -782,12 +797,21 @@ class PrescriptionController extends MedicalController implements HasMiddleware
             $data['doctor_id'] = $fence;
         }
 
-        // One-prescription-per-patient-per-day rule: block duplicates.
+        // One-prescription-per-doctor-patient-per-day rule: block duplicates.
         $existingRx = Prescription::where('institute_id', $instituteId)
+            ->where('doctor_id', $data['doctor_id'])
             ->where('patient_id', $data['patient_id'])
             ->whereDate('prescription_date', $data['prescription_date'] ?? today())
+            ->orderByDesc('version')
             ->first();
         if ($existingRx) {
+            if ($existingRx->is_finalized && auth()->user()->hasPermission('medical_prescriptions.amend')) {
+                return redirect()->route('medical.prescriptions.amend', $existingRx)
+                    ->with('warning', 'A prescription already exists for this patient on '
+                        .\Carbon\Carbon::parse($data['prescription_date'] ?? today())->format('d M Y')
+                        .' ('.clinical_no($existingRx->prescription_number).'). You are being redirected to amend it.');
+            }
+
             return redirect()->route('medical.prescriptions.edit', $existingRx)
                 ->with('warning', 'A prescription already exists for this patient on '
                     .\Carbon\Carbon::parse($data['prescription_date'] ?? today())->format('d M Y')
@@ -1325,6 +1349,183 @@ class PrescriptionController extends MedicalController implements HasMiddleware
 
         return redirect()->route('medical.prescriptions.show', $prescription)
             ->with('status', $status);
+    }
+
+    /**
+     * Show the amend form for a finalized prescription.
+     * Creates a new version (vN+1) preserving the original in history.
+     */
+    public function amendForm(Prescription $prescription)
+    {
+        $this->ensureSameInstitute($prescription, 'prescription');
+        $this->ensureDoctorOwns($prescription, 'doctor_id', 'prescription');
+        $this->ensureBranchAccess($prescription, 'branch_id', 'prescription');
+
+        abort_if(! $prescription->is_finalized, 422, 'Only finalized prescriptions can be amended.');
+        abort_if($prescription->isAmended(), 422, 'Already amended — amend the latest version instead.');
+
+        $prescription->load('items');
+
+        $instituteId = $this->instituteId();
+        $fence = $this->doctorFenceId();
+        $patients = $this->ownPatientOptions($instituteId, $fence);
+        $doctors = $this->doctors();
+        if ($fence !== null) {
+            $doctors = $doctors->where('id', $fence)->values();
+        }
+        $medicines = $this->medicineCatalog($instituteId);
+
+        $selectedPatient = $prescription->patient;
+        $selectedDoctor = $prescription->doctor_id;
+
+        $infoPatient = $selectedPatient ? $this->formatPatientForCard($selectedPatient) : null;
+        $infoVitals = $selectedPatient ? $this->formatVitalsForCard($this->latestVitalsFor($selectedPatient)) : null;
+        $cardDoctor = $this->validCardDoctor($selectedDoctor);
+        $visit = $this->latestVisit($selectedPatient, $cardDoctor);
+        if ($infoPatient && $selectedPatient) {
+            $infoPatient['payment'] = $visit ? $this->feePaymentStatus($visit, $selectedPatient) : 'Unpaid';
+            $infoPatient['serial'] = $this->queueSerial($visit);
+            $infoPatient['fee'] = $this->feeButton($visit);
+        }
+
+        $profiles = Doctor::where('institute_id', $instituteId)
+            ->whereIn('user_id', $doctors->pluck('id')->all())
+            ->with(['specialty:id,name', 'department:id,name'])
+            ->get()
+            ->keyBy('user_id');
+        $doctorCards = [];
+        foreach ($doctors as $doctorUser) {
+            $prof = $profiles->get($doctorUser->id);
+            $doctorCards[$doctorUser->id] = [
+                'name' => $doctorUser->name,
+                'qualification' => $prof?->qualification ?? null,
+                'experience' => $prof?->experience_years ?? null,
+                'registration' => $prof?->registration_number ?? null,
+                'specialty' => $prof?->specialty?->name ?? null,
+                'department' => $prof?->department?->name ?? null,
+                'chamber' => $prof?->chamber_address ?? null,
+                'room' => $prof?->room_no ?? null,
+            ];
+        }
+        $practice = \App\Models\Institute::whereKey($instituteId)
+            ->first(['name', 'address', 'phone', 'email']);
+        $practiceInfo = [
+            'clinic' => $practice->name ?? null,
+            'address' => $practice->address ?? null,
+            'phone' => $practice->phone ?? null,
+            'email' => $practice->email ?? null,
+        ];
+
+        $countries = \App\Models\Country::where('status', true)->orderBy('name')->get(['id', 'name', 'phone_code']);
+        $defaultCountryId = \App\Models\Institute::whereKey($instituteId)->value('country_id');
+        $previewMr = app(\App\Services\Medical\MrNumberGenerator::class)->peek($instituteId);
+
+        return view('medical.prescriptions.amend', compact(
+            'prescription', 'patients', 'doctors', 'medicines',
+            'selectedPatient', 'selectedDoctor', 'infoPatient', 'infoVitals',
+            'doctorCards', 'practiceInfo', 'countries', 'defaultCountryId',
+            'previewMr', 'cardDoctor'
+        ));
+    }
+
+    /**
+     * Process the amend: create a new version (vN+1) with the updated items.
+     * The original prescription is preserved as-is in the patient's history.
+     */
+    public function amend(Request $request, Prescription $prescription)
+    {
+        $this->ensureSameInstitute($prescription, 'prescription');
+        $this->ensureDoctorOwns($prescription, 'doctor_id', 'prescription');
+        $this->ensureBranchAccess($prescription, 'branch_id', 'prescription');
+
+        abort_if(! $prescription->is_finalized, 422, 'Only finalized prescriptions can be amended.');
+        abort_if($prescription->isAmended(), 422, 'Already amended — amend the latest version instead.');
+
+        $instituteId = $this->instituteId();
+
+        $data = $request->validate([
+            'amendment_reason' => 'required|string|min:5|max:500',
+            'chief_complaints' => 'nullable|string',
+            'examination_findings' => 'nullable|string',
+            'diagnosis' => 'nullable|string',
+            'investigations' => 'nullable|string',
+            'advice' => 'nullable|string',
+            'follow_up_date' => 'nullable|date|after:prescription_date',
+            'items' => 'required|array|min:1',
+            'items.*.medicine_id' => 'nullable|integer',
+            'items.*.medicine_name' => 'required|string|max:200',
+            'items.*.dosage' => 'required|string|max:50',
+            'items.*.frequency' => 'required|string|max:50',
+            'items.*.duration_days' => 'nullable|integer|min:1',
+            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.special_instructions' => 'nullable|string',
+        ]);
+
+        $reason = $data['amendment_reason'];
+        $items = $data['items'];
+        unset($data['amendment_reason'], $data['items']);
+
+        $new = \Illuminate\Support\Facades\DB::transaction(function () use ($data, $items, $prescription, $reason, $instituteId, $request) {
+            // Create v(N+1) as a draft
+            $new = $prescription->replicate([
+                'signature_hash', 'signed_at', 'signed_by',
+            ]);
+            $new->version = $prescription->version + 1;
+            $new->parent_prescription_id = $prescription->id;
+            $new->amendment_reason = $reason;
+            $new->amended_by = auth()->id();
+            $new->amended_at = now();
+            $new->prescription_number = $this->prescriptionService->generateNumber($instituteId);
+            $new->is_finalized = false;
+            $new->signature_hash = null;
+            $new->signed_at = null;
+            $new->signed_by = null;
+            $new->fill($data);
+            $new->save();
+
+            // Create items via existing service (handles snapshots + DGDA)
+            $this->prescriptionService->replaceItems($new, $items);
+
+            // Lifecycle audit
+            \App\Models\Medical\PrescriptionAuditLog::record(
+                $new,
+                'amended',
+                "Amended from Rx {$prescription->prescription_number} (v{$prescription->version})"
+            );
+
+            // Clinical diff audit (polymorphic)
+            \App\Models\Medical\ClinicalAuditLog::create([
+                'institute_id' => $prescription->institute_id,
+                'branch_id' => $prescription->branch_id,
+                'patient_id' => $prescription->patient_id,
+                'user_id' => auth()->id(),
+                'user_type' => 'institute_user',
+                'actor_name' => auth()->user()->name ?? null,
+                'auditable_type' => Prescription::class,
+                'auditable_id' => $new->id,
+                'action' => 'amended',
+                'reason' => $reason,
+                'old_values' => json_encode([
+                    'prescription_id' => $prescription->id,
+                    'prescription_number' => $prescription->prescription_number,
+                    'version' => $prescription->version,
+                    'items' => $prescription->items->toArray(),
+                ]),
+                'new_values' => json_encode([
+                    'prescription_id' => $new->id,
+                    'prescription_number' => $new->prescription_number,
+                    'version' => $new->version,
+                    'items' => $new->items()->get()->toArray(),
+                ]),
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+
+            return $new;
+        });
+
+        return redirect()->route('medical.prescriptions.show', $new)
+            ->with('status', "Prescription amended to v{$new->version}. Original Rx {$prescription->prescription_number} preserved.");
     }
 
     /**

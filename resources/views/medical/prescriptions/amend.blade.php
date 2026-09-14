@@ -1,6 +1,7 @@
 @extends('layouts.institute')
 
-@section('title', 'Write Prescription — AccumenAI')
+{{-- TODO: refactor shared form partial with create.blade.php / edit.blade.php --}}
+@section('title', 'Amend Prescription — AccumenAI')
 
 @section('content')
 @push('styles')
@@ -19,30 +20,29 @@
 @endpush
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2">
     <div class="page-header-text">
-        <h4 class="page-header-title">Write Prescription</h4>
+        <h4 class="page-header-title">Amend Prescription — {{ clinical_no($prescription->prescription_number) }} (v{{ $prescription->version }})</h4>
     </div>
     <div class="page-header-actions">
-        <a class="btn btn-secondary" href="{{ route('medical.prescriptions.index') }}">
+        <a class="btn btn-secondary" href="{{ route('medical.prescriptions.show', $prescription) }}">
             <i class="bi bi-arrow-left me-1"></i>Back
         </a>
     </div>
 </div>
 
-@if(!empty($feeAppointment))
-    <div class="alert alert-info d-flex align-items-center gap-2">
-        <i class="bi bi-arrow-left-right"></i>
-        <span>Writing for queue visit <strong>#{{ $feeAppointment->serial_number }}</strong> — saving will open fee collection to complete the visit.</span>
-    </div>
-@endif
+<div class="alert alert-warning">
+    <strong>Amending Rx {{ clinical_no($prescription->prescription_number) }} (v{{ $prescription->version }})</strong>
+    — created {{ $prescription->created_at->format('d M Y, H:i') }}<br>
+    A new version (v{{ $prescription->version + 1 }}) will be created. The original will remain in the patient's history.
+</div>
 
 <div class="card mb-3">
     <div class="card-header py-1 d-flex justify-content-end bg-transparent border-0 pb-0">
         <div class="d-flex align-items-center gap-2">
             <label class="form-label small mb-0" for="doctor_id">Doctor <span class="text-danger">*</span></label>
-            <select id="doctor_id" name="doctor_id" form="prescription-form" class="form-select form-select-sm @error('doctor_id') is-invalid @enderror" style="width:auto;min-width:200px;" required>
+            <select id="doctor_id" name="doctor_id" form="prescription-edit-form" class="form-select form-select-sm @error('doctor_id') is-invalid @enderror" style="width:auto;min-width:200px;" required>
                 <option value="">Select Doctor</option>
                     @foreach($doctors as $doctor)
-                        <option value="{{ $doctor->id }}" @selected((string) old('doctor_id', $selectedDoctor ?? '') === (string) $doctor->id)>
+                        <option value="{{ $doctor->id }}" @selected((string) old('doctor_id', $prescription->doctor_id) === (string) $doctor->id)>
                             {{ $doctor->name }}
                         </option>
                     @endforeach
@@ -70,8 +70,6 @@
         el.textContent = v;
     }
     function paintDoctorCard() {
-        // No selection yet: single-doctor lists auto-select themselves;
-        // otherwise preview the first card without touching the form.
         if (sel && !sel.value) {
             var ids = Object.keys(cards);
             if (ids.length === 1) { sel.value = ids[0]; }
@@ -99,20 +97,36 @@
 
 <div class="row g-3 mb-3" id="rx-top-row">
 
-    <div class="col-md-2" data-rx-panel="complaints">
+    <div class="col-md-2">
         <div class="card h-100">
-            <div class="card-header py-2">
-                <h6 class="mb-0 d-flex align-items-center justify-content-between">Chief Complaints<span class="d-inline-flex align-items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
+            <div class="card-header py-2 d-flex align-items-center justify-content-between">
+                <h6 class="mb-0"><i class="bi bi-heart-pulse me-1"></i>Latest Vital Signs</h6>
+                <button type="button" class="btn btn-link btn-sm p-0 text-secondary" id="rx-vitals-edit" title="Record vitals" style="text-decoration:none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg>
+                </button>
             </div>
-            <div class="card-body py-2 d-flex flex-column">
-                <textarea id="chief_complaints" name="chief_complaints" form="prescription-form" aria-label="Chief Complaints" data-autogrow rows="3"
-                          style="overflow-y:auto;max-height:600px;"
-                          class="form-control flex-fill @error('chief_complaints') is-invalid @enderror">{{ old('chief_complaints') }}</textarea>
-                @error('chief_complaints')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            <div class="card-body py-2" id="rx-vitals-card">
+                @if(!empty($infoVitals))
+                    @if(!empty($infoVitals['has_values']))
+                        <dl class="mb-0 small">
+                            @php($vitalRows = ['temperature' => 'Temp', 'bp' => 'BP', 'pulse' => 'Pulse', 'spo2' => 'SpO2', 'respiratory_rate' => 'RR', 'blood_sugar' => 'Sugar', 'weight' => 'Wt', 'height' => 'Ht', 'bmi' => 'BMI'])
+                            @foreach($vitalRows as $key => $label)
+                                @if(isset($infoVitals[$key]) && $infoVitals[$key] !== '' && $infoVitals[$key] !== null)
+                                    <div class="d-flex justify-content-between gap-2 border-bottom py-1"><dt>{{ $label }}</dt><dd class="mb-0">{{ $infoVitals[$key] }}</dd></div>
+                                @endif
+                            @endforeach
+                        </dl>
+                    @else
+                        <p class="text-muted mb-0 small">No vital values recorded yet.</p>
+                    @endif
+                    <p class="text-muted small mb-0 mt-1">{{ $infoVitals['recorded_at'] }}</p>
+                @else
+                    <p class="text-muted mb-0 small">{{ !empty($infoPatient) ? 'No vitals recorded for this patient yet.' : 'Select a patient below to view vitals.' }}</p>
+                @endif
             </div>
         </div>
     </div>
-    <div class="col-md-10" id="rx-patient-col">
+    <div class="col-md-10">
         <div class="card h-100">
             <div class="card-header py-2 d-flex align-items-center justify-content-between gap-2">
                 <h6 class="mb-0"><i class="bi bi-person me-1"></i>Patient Details</h6>
@@ -123,11 +137,11 @@
                             <input type="text" id="rx-patient-combo" class="form-select form-select-sm" style="min-width:360px;" placeholder="Select Patient" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="rx-patient-listbox">
                             <div id="rx-patient-listbox" class="list-group position-absolute w-100 shadow-sm" style="display:none;max-height:280px;overflow-y:auto;z-index:1050;"></div>
                         </div>
-                        <select id="patient_id" name="patient_id" form="prescription-form" data-info-base="{{ url('medical/prescriptions/patient-info') }}" data-options-base="{{ url('medical/prescriptions/patient-options') }}" data-queue-base="{{ url('medical/prescriptions/queue-numbers') }}" data-fee-appointment="{{ $feeAppointment->id ?? '' }}" data-walk-in-url="{{ route('medical.prescriptions.walk-in') }}" class="d-none" required>
+                        <select id="patient_id" name="patient_id" form="prescription-edit-form" data-info-base="{{ url('medical/prescriptions/patient-info') }}" data-options-base="{{ url('medical/prescriptions/patient-options') }}" data-queue-base="{{ url('medical/prescriptions/queue-numbers') }}" data-fee-appointment="" data-walk-in-url="{{ route('medical.prescriptions.walk-in') }}" class="d-none" required>
                             <option value="">Select Patient</option>
                             @foreach($patients as $patient)
                                 <option value="{{ $patient->id }}" data-search="{{ strtolower($patient->full_name.' '.$patient->mr_number.' '.clinical_no($patient->mr_number).' '.($patient->phone ?? '').' '.(!empty($bookedPatientIds[$patient->id] ?? null) ? 'regular' : 'emergency')) }}"
-                                    @selected((string) old('patient_id', $selectedPatient->id ?? '') === (string) $patient->id)>
+                                    @selected((string) old('patient_id', $prescription->patient_id) === (string) $patient->id)>
                                     {{ $patient->full_name }} ({{ clinical_no($patient->mr_number) }}){{ $patient->age !== null ? ', '.$patient->age.'y' : '' }}@if(!empty($ipdPatientIds[$patient->id] ?? null)) [IPD]@endif
                                 </option>
                             @endforeach
@@ -140,7 +154,7 @@
                     <div class="d-flex align-items-center gap-2">
                         <label class="form-label small mb-0" for="prescription_date">Date <span class="text-danger">*</span></label>
                         <div style="width:220px;">
-                            <x-tdate-input name="prescription_date" :value="old('prescription_date', date('Y-m-d'))" id="prescription_date" form="prescription-form" :class="'form-control form-control-sm'.($errors->has('prescription_date') ? ' is-invalid' : '')" required />
+                            <x-tdate-input name="prescription_date" :value="old('prescription_date', $prescription->prescription_date?->format('Y-m-d'))" id="prescription_date" form="prescription-edit-form" :class="'form-control form-control-sm'.($errors->has('prescription_date') ? ' is-invalid' : '')" required />
                         </div>
                         @error('prescription_date')<div class="invalid-feedback d-block mb-0">{{ $message }}</div>@enderror
                     </div>
@@ -181,42 +195,20 @@
     </div>
 </div>
 
-        <form action="{{ route('medical.prescriptions.store') }}" method="POST" id="prescription-form">
+        <form action="{{ route('medical.prescriptions.amend.store', $prescription) }}" method="POST" id="prescription-edit-form">
             @csrf
-            @if(!empty($feeAppointment))
-                <input type="hidden" name="fee_appointment_id" value="{{ $feeAppointment->id }}">
-            @endif
             <div class="row g-3" id="rx-main-row">
                 <div class="col-md-2" id="rx-soap-col">
                     <div class="d-flex flex-column gap-3 w-100 h-100">
-                        <div class="card flex-fill">
-                            <div class="card-header py-2 d-flex align-items-center justify-content-between">
-                                <h6 class="mb-0"><i class="bi bi-heart-pulse me-1"></i>Latest Vital Signs</h6>
-                                <button type="button" class="btn btn-link btn-sm p-0 text-secondary" id="rx-vitals-edit" title="Record vitals" style="text-decoration:none;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>
-                                        <path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/>
-                                    </svg>
-                                </button>
+                        <div class="card flex-fill" data-rx-panel="complaints">
+                            <div class="card-header py-2">
+                                <h6 class="mb-0 d-flex align-items-center justify-content-between">Chief Complaints<span class="d-inline-flex align-items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="m9.5 13.5 8.5-8.5a1.9 1.9 0 0 1 2.7 2.7l-8.5 8.5-3.7 1.2 1.2-3.7Z"/></svg></span></h6>
                             </div>
-                            <div class="card-body py-2" id="rx-vitals-card">
-                                @if(!empty($infoVitals))
-                                    @if(!empty($infoVitals['has_values']))
-                                        <dl class="mb-0 small">
-                                            @php($vitalRows = ['temperature' => 'Temp', 'bp' => 'BP', 'pulse' => 'Pulse', 'spo2' => 'SpO2', 'respiratory_rate' => 'RR', 'blood_sugar' => 'Sugar', 'weight' => 'Wt', 'height' => 'Ht', 'bmi' => 'BMI'])
-                                            @foreach($vitalRows as $key => $label)
-                                                @if(isset($infoVitals[$key]) && $infoVitals[$key] !== '' && $infoVitals[$key] !== null)
-                                                    <div class="d-flex justify-content-between gap-2 border-bottom py-1"><dt>{{ $label }}</dt><dd class="mb-0">{{ $infoVitals[$key] }}</dd></div>
-                                                @endif
-                                            @endforeach
-                                        </dl>
-                                    @else
-                                        <p class="text-muted mb-0 small">No vital values recorded yet.</p>
-                                    @endif
-                                    <p class="text-muted small mb-0 mt-1">{{ $infoVitals['recorded_at'] }}</p>
-                                @else
-                                    <p class="text-muted mb-0 small">{{ !empty($infoPatient) ? 'No vitals recorded for this patient yet.' : 'Select a patient below to view vitals.' }}</p>
-                                @endif
+                            <div class="card-body py-2 d-flex flex-column">
+                                <textarea id="chief_complaints" name="chief_complaints" aria-label="Chief Complaints" data-autogrow rows="3"
+                                          style="overflow-y:auto;max-height:600px;"
+                                          class="form-control flex-fill @error('chief_complaints') is-invalid @enderror">{{ old('chief_complaints', $prescription->chief_complaints) }}</textarea>
+                                @error('chief_complaints')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         </div>
                         <div class="card flex-fill" data-rx-panel="findings">
@@ -226,7 +218,7 @@
                             <div class="card-body py-2 d-flex flex-column">
                                 <textarea id="examination_findings" name="examination_findings" aria-label="Examination Findings" data-autogrow rows="3"
                                           style="overflow-y:auto;max-height:600px;"
-                                          class="form-control flex-fill @error('examination_findings') is-invalid @enderror">{{ old('examination_findings') }}</textarea>
+                                          class="form-control flex-fill @error('examination_findings') is-invalid @enderror">{{ old('examination_findings', $prescription->examination_findings) }}</textarea>
                                 @error('examination_findings')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         </div>
@@ -237,7 +229,7 @@
                             <div class="card-body py-2 d-flex flex-column">
                                 <textarea id="diagnosis" name="diagnosis" aria-label="Diagnosis" data-autogrow rows="3"
                                           style="overflow-y:auto;max-height:600px;"
-                                          class="form-control flex-fill @error('diagnosis') is-invalid @enderror">{{ old('diagnosis') }}</textarea>
+                                          class="form-control flex-fill @error('diagnosis') is-invalid @enderror">{{ old('diagnosis', $prescription->diagnosis) }}</textarea>
                                 @error('diagnosis')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         </div>
@@ -248,7 +240,7 @@
                             <div class="card-body py-2 d-flex flex-column">
                                 <textarea id="investigations" name="investigations" aria-label="Investigations" data-autogrow rows="3"
                                           style="overflow-y:auto;max-height:600px;"
-                                          class="form-control flex-fill @error('investigations') is-invalid @enderror">{{ old('investigations') }}</textarea>
+                                          class="form-control flex-fill @error('investigations') is-invalid @enderror">{{ old('investigations', $prescription->investigations) }}</textarea>
                                 @error('investigations')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         </div>
@@ -259,7 +251,7 @@
                             <div class="card-body py-2 d-flex flex-column">
                                 <textarea id="advice" name="advice" aria-label="Advice" data-autogrow rows="3"
                                           style="overflow-y:auto;max-height:600px;"
-                                          class="form-control flex-fill @error('advice') is-invalid @enderror">{{ old('advice') }}</textarea>
+                                          class="form-control flex-fill @error('advice') is-invalid @enderror">{{ old('advice', $prescription->advice) }}</textarea>
                                 @error('advice')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         </div>
@@ -270,33 +262,39 @@
                         <div class="card-body d-flex flex-column">
 
             <h6 class="mt-3 mb-6 d-flex align-items-center justify-content-between" title="Medicines"><span><span style="font-size:5em;line-height:1;vertical-align:middle;" title="Medicines">℞</span> <span class="text-danger">*</span></span><button type="button" class="btn btn-sm btn-outline-secondary" data-rx-print-prefs title="Print preferences"><i class="bi bi-gear"></i></button></h6>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Reason for Amendment <span class="text-danger">*</span></label>
+                <textarea name="amendment_reason" class="form-control @error('amendment_reason') is-invalid @enderror" rows="3" required minlength="5" maxlength="500"
+                          placeholder="e.g., Patient developed side effect, dose adjustment needed...">{{ old('amendment_reason') }}</textarea>
+                @error('amendment_reason')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
             @error('items')<div class="alert alert-danger">{{ $message }}</div>@enderror
             <div class="table-responsive">
                 <table class="table table-sm align-middle" id="rx-items-table">
                     <thead>
-                        <tr>
-                            <th style="width:64px;" title="Drag to reorder">#</th>
-                            <th style="min-width:220px;">Medicine</th>
-                            <th>Dosage</th>
-                            <th>Frequency</th>
-                            <th>Days</th>
-                            <th>Qty</th>
-                            <th style="width:104px;"></th>
-                        </tr>
+                        <tr><th style="width:64px;" title="Drag to reorder">#</th><th style="min-width:220px;">Medicine</th><th>Dosage</th><th>Frequency</th><th>Days</th><th>Qty</th><th style="width:104px;"></th></tr>
                     </thead>
                     <tbody id="rx-items-body">
-                        {{-- Repopulated after a failed save so typed rows never
-                             vanish: they survive until a real save or a manual
-                             refresh, exactly like the edit form. --}}
-                        @foreach(old('items', []) as $i => $item)
+                        @foreach(old('items', $prescription->items->map(fn ($i) => [
+                            'medicine_id' => $i->medicine_id,
+                            'medicine_name' => $i->medicine_name,
+                            'dosage' => $i->dosage,
+                            'frequency' => $i->frequency,
+                            'duration_days' => $i->duration_days,
+                            'quantity' => $i->quantity,
+                        ])->all()) as $i => $item)
                         <tr data-rx-row>
                             <td class="rx-drag-cell"><span class="rx-drag-handle" title="Drag to reorder" aria-label="Drag to reorder"><i class="bi bi-grip-vertical"></i><span class="rx-order">{{ $loop->iteration }}</span></span></td>
-                            <td><input type="hidden" name="items[{{ $i }}][medicine_id]" class="rx-med-id" value="{{ $item['medicine_id'] ?? '' }}">
-                                <input type="text" name="items[{{ $i }}][medicine_name]" class="form-control form-control-sm rx-med-name" list="rx-medicine-list" required maxlength="200" placeholder="Type or pick medicine" value="{{ $item['medicine_name'] ?? '' }}">
-                                <span class="badge rx-dgda mt-1 d-none"></span></td>
-                            <td><input type="text" name="items[{{ $i }}][dosage]" class="form-control form-control-sm" required maxlength="50" placeholder="e.g. 500mg" value="{{ $item['dosage'] ?? '' }}"></td>
-                            <td><input type="text" name="items[{{ $i }}][frequency]" class="form-control form-control-sm" required maxlength="50" placeholder="e.g. 1+0+1" value="{{ $item['frequency'] ?? '' }}"></td>
-                            <td><input type="number" name="items[{{ $i }}][duration_days]" class="form-control form-control-sm" min="1" placeholder="Days" value="{{ $item['duration_days'] ?? '' }}"></td>
+                            <td>
+                                <input type="hidden" name="items[{{ $i }}][medicine_id]" class="rx-med-id" value="{{ $item['medicine_id'] ?? '' }}">
+                                <input type="text" name="items[{{ $i }}][medicine_name]" class="form-control form-control-sm rx-med-name"
+                                       list="rx-medicine-list" required maxlength="200" value="{{ $item['medicine_name'] ?? '' }}">
+                                <span class="badge rx-dgda mt-1 d-none"></span>
+                            </td>
+                            <td><input type="text" name="items[{{ $i }}][dosage]" class="form-control form-control-sm" required maxlength="50" value="{{ $item['dosage'] ?? '' }}"></td>
+                            <td><input type="text" name="items[{{ $i }}][frequency]" class="form-control form-control-sm" required maxlength="50" value="{{ $item['frequency'] ?? '' }}"></td>
+                            <td><input type="number" name="items[{{ $i }}][duration_days]" class="form-control form-control-sm" min="1" value="{{ $item['duration_days'] ?? '' }}"></td>
                             <td><input type="number" name="items[{{ $i }}][quantity]" class="form-control form-control-sm" min="1" value="{{ $item['quantity'] ?? 1 }}" required></td>
                             <td><button type="button" class="btn btn-sm btn-danger rx-remove" title="Remove">×</button> <button type="button" class="btn btn-sm btn-success rx-add-below" title="Add medicine below">+</button></td>
                         </tr>
@@ -308,17 +306,13 @@
                 <i class="bi bi-plus-lg me-1"></i>Add Medicine
             </button>
 
-            <div class="alert alert-info alert-dismissible fade show mt-2" role="alert" id="rx-safety-note">
-                <i class="bi bi-shield-check me-1"></i>
-                Allergy, contraindication and duplicate-therapy checks run on save. Blocking issues refuse the prescription; milder overlaps are shown as warnings.
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-
             <div class="mt-auto pt-3 d-flex flex-wrap align-items-end justify-content-end gap-3">
                 <div style="max-width:170px;">
-                    <label class="form-label" for="follow_up_date">Follow-up Date</label>
-                    <x-tdate-input name="follow_up_date" :value="old('follow_up_date', date('Y-m-d'))" id="follow_up_date" :class="'form-control'.($errors->has('follow_up_date') ? ' is-invalid' : '')" />
-                    @error('follow_up_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    <div class="mb-0">
+                        <label class="form-label" for="follow_up_date">Follow-up Date</label>
+                        <x-tdate-input name="follow_up_date" :value="old('follow_up_date', $prescription->follow_up_date?->format('Y-m-d'))" id="follow_up_date" :class="'form-control'.($errors->has('follow_up_date') ? ' is-invalid' : '')" />
+                        @error('follow_up_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
                 </div>
                 <div class="d-flex gap-2 align-items-center">
                     @if(!empty($infoPatient['fee']['collectable']))
@@ -329,7 +323,7 @@
                             data-fee-type="{{ $infoPatient['fee']['fee_type'] }}"
                             data-fee-amount="{{ $infoPatient['fee']['amount'] }}"
                             data-fee-redirect="{{ url()->current() }}"
-                            onclick="saveRxDraft(); openFeeModal(this)">
+                            onclick="openFeeModal(this)">
                             <i class="bi bi-cash-coin me-1"></i>Accept Fee
                         </button>
                     @elseif(!empty($infoPatient['fee']))
@@ -345,19 +339,18 @@
                     @else
                         <button type="button" class="btn btn-success" disabled><i class="bi bi-cash-coin me-1"></i>Accept Fee</button>
                     @endif
-                    <button type="button" class="btn btn-outline-secondary" id="rx-reset-draft" title="Clear all fields"><i class="bi bi-arrow-counterclockwise"></i></button>
                     <div class="btn-group" role="group" aria-label="Save options">
-                        <button type="submit" name="save_action" value="print" class="btn btn-primary">
-                            <i class="bi bi-save me-1"></i>Save & Print
+                        <button type="submit" name="save_action" value="print" class="btn btn-warning">
+                            <i class="bi bi-save me-1"></i>Amend & Print
                         </button>
-                        <button type="button" class="btn btn-primary dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button type="button" class="btn btn-warning dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
                             <span class="visually-hidden">More save options</span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end p-1" style="min-width:100%;">
-                            <li><button type="submit" name="save_action" value="draft" class="dropdown-item bg-primary text-white rounded">Save in Draft</button></li>
+                            <li><button type="submit" name="save_action" value="draft" class="dropdown-item bg-warning text-dark rounded">Save as Draft</button></li>
                         </ul>
                     </div>
-                    <a href="{{ route('medical.prescriptions.index') }}" class="btn btn-secondary">Cancel</a>
+                    <a href="{{ route('medical.prescriptions.show', $prescription) }}" class="btn btn-secondary">Cancel</a>
                 </div>
             </div>
                         </div>
@@ -381,40 +374,6 @@
 
 {{-- Shared Quick Add Patient popup (plus button in the Patient Details header). --}}
 @include('medical.patients._quick_create_modal')
-
-{{-- Duplicate prescription warning modal --}}
-<div class="modal fade" id="rxDuplicateModal" tabindex="-1" aria-labelledby="rxDuplicateModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-warning text-dark">
-                <h5 class="modal-title" id="rxDuplicateModalLabel">
-                    <i class="bi bi-exclamation-triangle me-1"></i>Prescription Already Exists
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p class="mb-2">A prescription already exists for this patient on the selected date:</p>
-                <ul class="list-unstyled mb-3 ps-3">
-                    <li><strong>Rx No:</strong> <span id="rx-dup-number">—</span></li>
-                    <li><strong>Doctor:</strong> <span id="rx-dup-doctor">—</span></li>
-                    <li><strong>Date:</strong> <span id="rx-dup-date">—</span></li>
-                    <li><strong>Status:</strong> <span id="rx-dup-status">—</span></li>
-                    <li><strong>Version:</strong> v<span id="rx-dup-version">1</span>
-                        <span id="rx-dup-amended-badge" class="badge bg-info text-dark" style="display:none;">Amended</span>
-                    </li>
-                    <li><strong>Items:</strong> <span id="rx-dup-items">—</span> medicine(s)</li>
-                </ul>
-                <p class="text-muted small mb-0">Only one prescription is allowed per patient per day per doctor. Would you like to edit or amend the existing prescription?</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <a id="rx-dup-edit-btn" href="#" class="btn btn-primary">
-                    <i class="bi bi-pencil-square me-1"></i><span id="rx-dup-action-text">Edit</span> Existing Prescription
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
 @push('scripts')
 <script>
 (function () {
@@ -474,7 +433,7 @@
     document.querySelectorAll('#rx-medicine-list option').forEach(function (opt) {
         catalog[opt.value] = { id: opt.getAttribute('data-id'), dgda: opt.getAttribute('data-dgda') || '' };
     });
-    var index = 0;
+    var index = body.querySelectorAll('tr').length;
     var dgdaOn = @json(mawa_dgda_enabled());
 
     function syncDgdaTag(tr) {
@@ -498,68 +457,26 @@
         }
     }
 
-    function rowHtml(i) {
-        return '<tr data-rx-row>' +
-            '<td class="rx-drag-cell"><span class="rx-drag-handle" title="Drag to reorder" aria-label="Drag to reorder"><i class="bi bi-grip-vertical"></i>' +
-            '<span class="rx-order">1</span></span></td>' +
-            '<td><input type="hidden" name="items[' + i + '][medicine_id]" class="rx-med-id">' +
-            '<input type="text" name="items[' + i + '][medicine_name]" class="form-control form-control-sm rx-med-name" list="rx-medicine-list" required maxlength="200" placeholder="Type or pick medicine">' +
-            '<span class="badge rx-dgda mt-1 d-none"></span></td>' +
-            '<td><input type="text" name="items[' + i + '][dosage]" class="form-control form-control-sm" required maxlength="50" placeholder="e.g. 500mg"></td>' +
-            '<td><input type="text" name="items[' + i + '][frequency]" class="form-control form-control-sm" required maxlength="50" placeholder="e.g. 1+0+1"></td>' +
-            '<td><input type="number" name="items[' + i + '][duration_days]" class="form-control form-control-sm" min="1" placeholder="Days"></td>' +
-            '<td><input type="number" name="items[' + i + '][quantity]" class="form-control form-control-sm" min="1" value="1" required></td>' +
-            '<td class="rx-row-actions"><button type="button" class="btn btn-sm btn-danger rx-remove" title="Remove">×</button> <button type="button" class="btn btn-sm btn-success rx-add-below" title="Add medicine below">+</button></td>' +
-            '</tr>';
-    }
-
-    function renumberRows() {
-        var rows = body.querySelectorAll('tr[data-rx-row]');
-        rows.forEach(function (tr, idx) {
-            var badge = tr.querySelector('.rx-order');
-            if (badge) badge.textContent = String(idx + 1);
-            tr.querySelectorAll('input[name^="items["]').forEach(function (input) {
-                input.name = input.name.replace(/^items\[\d+\]/, 'items[' + idx + ']');
-            });
-        });
-        index = rows.length;
-        // Per-row + buttons cover adding; the bottom button only shows
-        // when the table is empty so a row can always be added back.
-        if (addBtn) addBtn.style.display = rows.length ? 'none' : '';
-    }
-
-    var dragSrc = null;
-
-    function clearDropHints() {
-        body.querySelectorAll('tr[data-rx-row]').forEach(function (r) {
-            r.classList.remove('rx-drop-before', 'rx-drop-after');
-        });
-    }
-
     function bindRow(tr) {
         tr.setAttribute('data-rx-row', '');
         var nameInput = tr.querySelector('.rx-med-name');
         var idInput = tr.querySelector('.rx-med-id');
-        var update = function () {
-            var entry = catalog[nameInput.value];
-            idInput.value = (entry && entry.id) || '';
+        if (nameInput && idInput) {
+            var update = function () {
+                var entry = catalog[nameInput.value];
+                idInput.value = (entry && entry.id) || '';
+                syncDgdaTag(tr);
+            };
+            nameInput.addEventListener('change', update);
+            nameInput.addEventListener('input', update);
             syncDgdaTag(tr);
-        };
-        nameInput.addEventListener('change', update);
-        nameInput.addEventListener('input', update);
-        tr.querySelector('.rx-remove').addEventListener('click', function () {
-            if (document.querySelectorAll('#rx-items-body tr').length <= 1) return;
-            tr.remove();
-            renumberRows();
-        });
+        }
+        var rm = tr.querySelector('.rx-remove');
+        if (rm) { rm.addEventListener('click', function () { tr.remove(); renumberRows(); }); }
         var addBelow = tr.querySelector('.rx-add-below');
-        if (addBelow) addBelow.addEventListener('click', function () {
-            addRow(tr);
-        });
-        syncDgdaTag(tr);
+        if (addBelow) addBelow.addEventListener('click', function () { addRow(tr); });
 
-        // Drag only via the handle: arm the row on handle press so text
-        // inputs stay selectable/draggable-safe the rest of the time.
+        // Drag only via the handle so text inputs stay usable.
         var handle = tr.querySelector('.rx-drag-handle');
         tr.draggable = false;
         if (handle) {
@@ -603,9 +520,47 @@
         });
     }
 
-    function addRow(afterTr, focus) {
+    function renumberRows() {
+        var rows = body.querySelectorAll('tr[data-rx-row]');
+        rows.forEach(function (tr, idx) {
+            var badge = tr.querySelector('.rx-order');
+            if (badge) badge.textContent = String(idx + 1);
+            tr.querySelectorAll('input[name^="items["]').forEach(function (input) {
+                input.name = input.name.replace(/^items\[\d+\]/, 'items[' + idx + ']');
+            });
+        });
+        index = rows.length;
+        // Per-row + buttons cover adding; the bottom button only shows
+        // when the table is empty so a row can always be added back.
+        if (addBtn) addBtn.style.display = rows.length ? 'none' : '';
+    }
+
+    var dragSrc = null;
+
+    function clearDropHints() {
+        body.querySelectorAll('tr[data-rx-row]').forEach(function (r) {
+            r.classList.remove('rx-drop-before', 'rx-drop-after');
+        });
+    }
+
+    body.querySelectorAll('tr').forEach(bindRow);
+    renumberRows();
+
+    function addRow(afterTr) {
         var tmp = document.createElement('tbody');
-        tmp.innerHTML = rowHtml(index++);
+        tmp.innerHTML = '<tr data-rx-row>' +
+            '<td class="rx-drag-cell"><span class="rx-drag-handle" title="Drag to reorder" aria-label="Drag to reorder"><i class="bi bi-grip-vertical"></i>' +
+            '<span class="rx-order">1</span></span></td>' +
+            '<td><input type="hidden" name="items[' + index + '][medicine_id]" class="rx-med-id">' +
+            '<input type="text" name="items[' + index + '][medicine_name]" class="form-control form-control-sm rx-med-name" list="rx-medicine-list" required maxlength="200">' +
+            '<span class="badge rx-dgda mt-1 d-none"></span></td>' +
+            '<td><input type="text" name="items[' + index + '][dosage]" class="form-control form-control-sm" required maxlength="50"></td>' +
+            '<td><input type="text" name="items[' + index + '][frequency]" class="form-control form-control-sm" required maxlength="50"></td>' +
+            '<td><input type="number" name="items[' + index + '][duration_days]" class="form-control form-control-sm" min="1"></td>' +
+            '<td><input type="number" name="items[' + index + '][quantity]" class="form-control form-control-sm" min="1" value="1" required></td>' +
+            '<td><button type="button" class="btn btn-sm btn-danger rx-remove" title="Remove">×</button> <button type="button" class="btn btn-sm btn-success rx-add-below" title="Add medicine below">+</button></td>' +
+            '</tr>';
+        index++;
         var tr = tmp.firstChild;
         bindRow(tr);
         if (afterTr && afterTr.parentNode === body) {
@@ -614,58 +569,40 @@
             body.appendChild(tr);
         }
         renumberRows();
-        if (focus !== false) {
-            var focusInput = tr.querySelector('.rx-med-name');
-            if (focusInput) focusInput.focus();
-        }
+        var focusInput = tr.querySelector('.rx-med-name');
+        if (focusInput) focusInput.focus();
     }
 
     addBtn.addEventListener('click', function () { addRow(); });
 
-    // Server-repopulated rows (failed save) are bound as-is; a blank row
-    // is added only when the table starts empty.
-    var existingRows = body.querySelectorAll('tr');
-    if (existingRows.length) {
-        existingRows.forEach(bindRow);
-        renumberRows();
-    } else {
-        addRow();
-    }
-
-    // Patient-switch reset (called from the info-cards block): drop all
-    // rows back to one blank row without stealing focus.
-    window.rxResetMedicineRows = function () {
-        body.innerHTML = '';
-        addRow(null, false);
-    };
-
-    document.getElementById('prescription-form').addEventListener('submit', function (e) {
+    document.getElementById('prescription-edit-form').addEventListener('submit', function (e) {
         renumberRows();
         if (body.querySelectorAll('tr').length === 0) {
             e.preventDefault();
-            alert('Please add at least one medicine.');
+            alert('Please keep at least one medicine.');
         }
     });
 
-    // Safety notice comes and goes: auto-dismiss after a few seconds so it
-    // never sits on the form permanently (still closable by hand).
-    setTimeout(function () {
-        var note = document.getElementById('rx-safety-note');
-        if (!note) return;
-        if (window.bootstrap && window.bootstrap.Alert) {
-            var inst = window.bootstrap.Alert.getOrCreateInstance(note);
-            if (inst) inst.close();
-        } else {
-            note.remove();
+    // Textareas with content stretch (capped with a scrollbar).
+    document.querySelectorAll('textarea[data-autogrow]').forEach(function (ta) {
+        function grow() {
+            ta.style.height = 'auto';
+            ta.style.height = Math.min(ta.scrollHeight, 600) + 'px';
         }
-    }, 8000);
+        ta.addEventListener('input', grow);
+        grow();
+    });
 })();
+</script>
+@endpush
 
+@push('scripts')
+<script>
 // Read-only info cards: patient details + latest vitals, refreshed from
 // the patient-info endpoint (same payload the server renders initially).
-// The pencil on the vitals card opens the shared Record Vitals popup for
-// the current patient; saving posts via AJAX and refreshes the card, so
-// the prescription form state is never lost.
+// Edit keeps its draft panels on patient switch (they ARE the draft being
+// edited) — only the cards reload. The pencil opens the shared Record
+// Vitals popup; saving posts via AJAX and refreshes the card.
 (function () {
     var patientSelect = document.getElementById('patient_id');
     var patientCard = document.getElementById('rx-patient-info');
@@ -702,7 +639,6 @@
             vitalsCard.innerHTML = '<p class="text-muted mb-0 small">No vitals recorded for this patient yet.</p>';
             return;
         }
-        // Only mentioned values are shown — empty ones are hidden, not dashed.
         var rows = [
             ['Temp', v.temperature],
             ['BP', v.bp],
@@ -743,8 +679,6 @@
         var infoUrl = infoBase + '/' + encodeURIComponent(id);
         var query = [];
         if (feeAppointmentId) query.push('fee_appointment_id=' + encodeURIComponent(feeAppointmentId));
-        // Serial/payment are doctor-scoped: the card always reflects the
-        // selected prescriber, never another doctor's queue number.
         if (doctorId) query.push('doctor_id=' + encodeURIComponent(doctorId));
         if (query.length) infoUrl += '?' + query.join('&');
         return fetch(infoUrl, {
@@ -772,64 +706,10 @@
     }
 
     patientSelect.addEventListener('change', function () {
-        var next = patientSelect.value;
-        // New patient's sheet: Details/Vitals reload below, but the draft
-        // panels (complaints, diagnosis, findings, advice, Rx rows) belong
-        // to the previous patient — reset them so stale text can never be
-        // saved onto the wrong person. A dirty draft asks first.
-        if (next !== lastPatientId && lastPatientId !== '' && next !== '' && prescriptionDraftDirty()) {
-            if (!window.confirm('Switching patient will clear the current draft (complaints, diagnosis, findings, advice, medicines). Continue?')) {
-                patientSelect.value = lastPatientId;
-                var comboBack = document.getElementById('rx-patient-combo');
-                var optBack = patientSelect.querySelector('option[value="' + lastPatientId + '"]');
-                if (comboBack) comboBack.value = optBack ? (optBack.getAttribute('data-label') || optBack.textContent) : '';
-                applyPatientList();
-                return;
-            }
-        }
-        lastPatientId = next;
-        if (next !== '') resetDraftPanels();
-        loadPatientInfo(next);
+        loadPatientInfo(patientSelect.value);
         applyPatientList();
     });
-    var lastPatientId = patientSelect.value || '';
 
-    // Draft text inputs that are per-patient (not patient data).
-    var draftFieldIds = ['chief_complaints', 'diagnosis', 'investigations', 'examination_findings', 'advice'];
-
-    function prescriptionDraftDirty() {
-        for (var i = 0; i < draftFieldIds.length; i++) {
-            var el = document.getElementById(draftFieldIds[i]);
-            if (el && String(el.value || '').trim() !== '') return true;
-        }
-        var rows = document.querySelectorAll('#rx-items-body tr');
-        if (rows.length > 1) return true;
-        if (rows.length === 1) {
-            var inputs = rows[0].querySelectorAll('input');
-            for (var j = 0; j < inputs.length; j++) {
-                var v = inputs[j].value;
-                if (inputs[j].type === 'number') {
-                    if (v !== '' && v !== '1') return true;
-                } else if (String(v || '').trim() !== '') {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    function resetDraftPanels() {
-        draftFieldIds.forEach(function (id) {
-            var el = document.getElementById(id);
-            if (!el) return;
-            el.value = '';
-            el.dispatchEvent(new Event('input', { bubbles: true }));
-        });
-        if (window.rxResetMedicineRows) window.rxResetMedicineRows();
-    }
-
-    // Changing the prescriber re-scopes the card serial/payment to that
-    // doctor's queue (no-op until a patient is picked).
     var doctorSelect = document.getElementById('doctor_id');
     if (doctorSelect) {
         doctorSelect.addEventListener('change', function () {
@@ -837,14 +717,8 @@
             paintQueueSerials();
         });
     }
+    window.rxLoadPatientInfo = loadPatientInfo;
 
-    // Patient dropdown follows the live queue: with a doctor picked, only
-    // that doctor's queued patients are annotated (each painted with its
-    // own serial for the day). Nothing is ever hidden: admitted (IPD) and
-    // walk-in patients carry no queue serial but must stay pickable, and
-    // the in-hand selection is always preserved, so an emergency walk-in
-    // you are working with never vanishes mid-flow.
-    // With no doctor picked, scoping is impossible — everyone lists.
     var lastQueueMap = null;
     function queueSerialOf(map, value) {
         if (!map) return null;
@@ -859,8 +733,6 @@
             var base = opt.getAttribute('data-label');
             var serial = queueSerialOf(lastQueueMap, opt.value);
             opt.textContent = serial !== null ? '#' + serial + ' — ' + base : base;
-            // Keep every option visible (IPD / walk-in patients have no
-            // serial); the suffix alone marks queued patients.
             opt.style.display = '';
         });
     }
@@ -888,8 +760,6 @@
             });
     }
     paintQueueSerials();
-    // Quick-add appends options from its own script block — let it ask
-    // for a repaint so the newcomer gets its serial too.
     window.rxPaintQueueSerials = paintQueueSerials;
 
     function openRxVitalsModal(name, raw) {
@@ -931,12 +801,12 @@
             });
         });
     }
+})();
 
 // Strict scoping: the patient dropdown lists ONLY patients holding an
 // appointment with the chosen doctor on the chosen date — nothing else.
-// Doctor/date changes (including the tenant date picker's programmatic
-// sync, caught by polling) rebuild the list; the in-hand selection
-// (fee/walk-in flow) is always preserved.
+// Doctor/date changes rebuild the list; the in-hand selection is always
+// preserved.
 (function () {
     var patientSelect = document.getElementById('patient_id');
     var doctorSelect = document.getElementById('doctor_id');
@@ -1084,14 +954,10 @@
     }
 
     combo.addEventListener('focus', function () {
-        // Populated field stays editable: select-all for instant overwrite
-        // plus the full list, so switching patients is always one action.
         try { combo.select(); } catch (e) {}
         renderList('');
     });
     combo.addEventListener('input', function () {
-        // Instant client filter first; debounced server search reaches the
-        // whole accessible pool (name / MR / phone) beyond the scoped list.
         renderList(combo.value);
         clearTimeout(combo.dataset.timer ? Number(combo.dataset.timer) : 0);
         var q = combo.value;
@@ -1147,7 +1013,7 @@
 
     // The native select is hidden, so browsers skip its `required`
     // validation — guard the submit here instead.
-    var rxForm = document.getElementById('prescription-form');
+    var rxForm = document.getElementById('prescription-edit-form');
     if (rxForm) rxForm.addEventListener('submit', function (e) {
         if (!patientSelect.value) {
             e.preventDefault();
@@ -1208,23 +1074,13 @@
                     var inst = window.bootstrap.Modal.getInstance(modalEl);
                     if (inst) inst.hide();
                 }
-                loadPatientInfo(pidInput.value);
+                if (window.rxLoadPatientInfo) window.rxLoadPatientInfo(pidInput.value);
             })
                 .catch(function () {
                     alert('Could not save vitals (HTTP ' + httpStatus + '). Please try again.');
                 });
     }, true);
 
-    // Note cards share the column equally at first; any textarea with
-    // text stretches its own card (capped with a scrollbar).
-    document.querySelectorAll('textarea[data-autogrow]').forEach(function (ta) {
-        function grow() {
-            ta.style.height = 'auto';
-            ta.style.height = Math.min(ta.scrollHeight, 600) + 'px';
-        }
-        ta.addEventListener('input', grow);
-        grow();
-    });
     var walkinBtn = document.getElementById('rx-walkin-fee-btn');
     if (walkinBtn) {
         walkinBtn.addEventListener('click', function () {
@@ -1239,7 +1095,6 @@
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 if (data.collect_url) {
-                    saveRxDraft();
                     var map = { 'data-fee-url': data.collect_url, 'data-fee-action': data.action, 'data-fee-patient': data.patient, 'data-fee-type': data.fee_type, 'data-fee-amount': data.amount, 'data-fee-redirect': walkinBtn.getAttribute('data-fee-redirect') || '' };
                     openFeeModal({ getAttribute: function (k) { return map[k] || ''; } });
                 }
@@ -1253,166 +1108,5 @@
             });
         });
     }
-
-    function rxDraftKey() { return 'rxDraft_create'; }
-    function saveRxDraft() {
-        var draft = {};
-        ['chief_complaints','examination_findings','diagnosis','investigations','advice','follow_up_date','doctor_id','notes'].forEach(function (id) {
-            var el = document.getElementById(id);
-            if (el) draft[id] = el.value;
-        });
-        var rows = [];
-        document.querySelectorAll('#rx-items-body tr').forEach(function (tr) {
-            var med = tr.querySelector('[name$="[medicine_id]"]');
-            var qty = tr.querySelector('[name$="[quantity]"]');
-            var freq = tr.querySelector('[name$="[frequency]"]');
-            var dur = tr.querySelector('[name$="[duration]"]');
-            var instr = tr.querySelector('[name$="[instructions]"]');
-            if (med) rows.push({
-                medicine_id: med.value,
-                quantity: qty ? qty.value : '',
-                frequency: freq ? freq.value : '',
-                duration: dur ? dur.value : '',
-                instructions: instr ? instr.value : ''
-            });
-        });
-        draft.items = rows;
-        try { localStorage.setItem(rxDraftKey(), JSON.stringify(draft)); } catch (e) {}
-    }
-    window.saveRxDraft = saveRxDraft;
-    document.getElementById('rx-reset-draft').addEventListener('click', function () {
-        if (!confirm('Clear all fields?')) return;
-        ['chief_complaints','examination_findings','diagnosis','investigations','advice','follow_up_date','notes'].forEach(function (id) {
-            var el = document.getElementById(id);
-            if (el) { el.value = ''; el.dispatchEvent(new Event('input')); }
-        });
-        var rows = document.querySelectorAll('#rx-items-body tr');
-        for (var i = rows.length - 1; i > 0; i--) rows[i].remove();
-        var last = document.querySelector('#rx-items-body tr');
-        if (last) last.querySelectorAll('input, select, textarea').forEach(function (el) { el.value = ''; });
-        renumberRows();
-        try { localStorage.removeItem(rxDraftKey()); } catch (e) {}
-    });
-    function restoreRxDraft() {
-        var raw;
-        try { raw = localStorage.getItem(rxDraftKey()); } catch (e) { return; }
-        if (!raw) return;
-        try { var draft = JSON.parse(raw); } catch (e) { return; }
-        localStorage.removeItem(rxDraftKey());
-        ['chief_complaints','examination_findings','diagnosis','investigations','advice','follow_up_date','doctor_id','notes'].forEach(function (id) {
-            if (draft[id] !== undefined) {
-                var el = document.getElementById(id);
-                if (el) { el.value = draft[id]; el.dispatchEvent(new Event('input')); }
-            }
-        });
-        if (draft.doctor_id) {
-            var sel = document.getElementById('doctor_id');
-            if (sel) sel.value = draft.doctor_id;
-        }
-        if (draft.items && draft.items.length) {
-            draft.items.forEach(function (item) {
-                var addBtn = document.getElementById('rx-add-item');
-                if (addBtn) addBtn.click();
-                var lastRow = document.querySelector('#rx-items-body tr:last-child');
-                if (!lastRow) return;
-                var med = lastRow.querySelector('[name$="[medicine_id]"]');
-                var qty = lastRow.querySelector('[name$="[quantity]"]');
-                var freq = lastRow.querySelector('[name$="[frequency]"]');
-                var dur = lastRow.querySelector('[name$="[duration]"]');
-                var instr = lastRow.querySelector('[name$="[instructions]"]');
-                if (med) med.value = item.medicine_id || '';
-                if (qty) qty.value = item.quantity || '';
-                if (freq) freq.value = item.frequency || '';
-                if (dur) dur.value = item.duration || '';
-                if (instr) instr.value = item.instructions || '';
-            });
-        }
-    }
-    restoreRxDraft();
-    document.querySelectorAll('#rx-items-body, [data-rx-panel] textarea, #doctor_id, #follow_up_date').forEach(function (el) {
-        el.addEventListener('input', saveRxDraft);
-        el.addEventListener('change', saveRxDraft);
-    });
-    var observer = new MutationObserver(function () { saveRxDraft(); });
-    observer.observe(document.getElementById('rx-items-body') || document.body, { childList: true, subtree: true });
-})();
-</script>
-@endpush
-
-@push('scripts')
-<script>
-(function () {
-    var patientSelect = document.getElementById('patient_id');
-    var dateInput = document.getElementById('prescription_date');
-    var checkBase = '{{ route("medical.prescriptions.check-existing") }}';
-    if (!patientSelect || !dateInput) return;
-
-    var checkTimer = null;
-
-    function checkExistingPrescription() {
-        var patientId = patientSelect.value;
-        var dateVal = dateInput.value;
-        if (!patientId || !dateVal) return;
-
-        clearTimeout(checkTimer);
-        checkTimer = setTimeout(function () {
-            var doctorSel = document.getElementById('doctor_id');
-            var doctorId = doctorSel ? doctorSel.value : '';
-            var url = checkBase + '?patient_id=' + encodeURIComponent(patientId) + '&date=' + encodeURIComponent(dateVal) + '&doctor_id=' + encodeURIComponent(doctorId);
-            fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' })
-                .then(function (res) { return res.ok ? res.json() : null; })
-                .then(function (data) {
-                    if (!data || !data.exists) return;
-                    showDuplicateModal(data);
-                })
-                .catch(function () {});
-        }, 400);
-    }
-
-    patientSelect.addEventListener('change', checkExistingPrescription);
-    dateInput.addEventListener('change', checkExistingPrescription);
-
-    function showDuplicateModal(data) {
-        document.getElementById('rx-dup-number').textContent = data.prescription_number || '—';
-        document.getElementById('rx-dup-doctor').textContent = data.doctor_name || '—';
-        document.getElementById('rx-dup-date').textContent = data.date || '—';
-        document.getElementById('rx-dup-status').textContent = data.status || '—';
-        document.getElementById('rx-dup-version').textContent = data.version || '1';
-        document.getElementById('rx-dup-items').textContent = data.items_count || '0';
-        var amendedBadge = document.getElementById('rx-dup-amended-badge');
-        if (amendedBadge) amendedBadge.style.display = data.is_amended ? '' : 'none';
-        var editBtn = document.getElementById('rx-dup-edit-btn');
-        if (editBtn) editBtn.href = data.edit_url;
-        var actionText = document.getElementById('rx-dup-action-text');
-        if (actionText) actionText.textContent = data.status === 'Finalized' ? 'Amend' : 'Edit';
-        var modal = document.getElementById('rxDuplicateModal');
-        if (modal && window.bootstrap) {
-            window.bootstrap.Modal.getOrCreateInstance(modal).show();
-        }
-    }
-
-    if (dateInput.form) {
-        dateInput.form.addEventListener('submit', function (e) {
-            if (patientSelect.value && dateInput.value) {
-                var doctorSel = document.getElementById('doctor_id');
-                var doctorId = doctorSel ? doctorSel.value : '';
-                var url = checkBase + '?patient_id=' + encodeURIComponent(patientSelect.value) + '&date=' + encodeURIComponent(dateInput.value) + '&doctor_id=' + encodeURIComponent(doctorId);
-                var xhr = new XMLHttpRequest();
-                xhr.open('GET', url, false);
-                xhr.setRequestHeader('Accept', 'application/json');
-                try { xhr.send(); } catch (ex) {}
-                if (xhr.status === 200) {
-                    try {
-                        var data = JSON.parse(xhr.responseText);
-                        if (data.exists) {
-                            e.preventDefault();
-                            showDuplicateModal(data);
-                        }
-                    } catch (ex) {}
-                }
-            }
-        });
-    }
-})();
 </script>
 @endpush
