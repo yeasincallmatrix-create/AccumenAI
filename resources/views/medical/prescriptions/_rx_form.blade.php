@@ -252,6 +252,50 @@ $defaultFollowUp = $isCreate ? date('Y-m-d') : $prescription->follow_up_date?->f
             </div>
             @endif
 
+            @if($isAmend && $prescription->items->count())
+            <div class="card mb-3 border-warning">
+                <div class="card-header bg-warning-subtle">
+                    <strong>Existing Medicines from v{{ $prescription->version }}</strong>
+                    <small class="text-muted d-block">Mark each medicine as Keep Active or Discontinue.</small>
+                </div>
+                <div class="card-body">
+                    @error('parent_items')<div class="alert alert-danger">{{ $message }}</div>@enderror
+                    @foreach($prescription->items as $parentItem)
+                        <div class="row g-2 align-items-center mb-2 pb-2 border-bottom">
+                            <div class="col-md-5">
+                                <strong>{{ $parentItem->medicine_name }}</strong>
+                                <small class="text-muted d-block">
+                                    {{ $parentItem->dosage }} — {{ $parentItem->frequency }}
+                                    — {{ $parentItem->duration_days ?? '—' }} days
+                                </small>
+                                <input type="hidden" name="parent_items[{{ $parentItem->id }}][id]" value="{{ $parentItem->id }}">
+                                <input type="hidden" name="parent_items[{{ $parentItem->id }}][medicine_name]" value="{{ $parentItem->medicine_name }}">
+                                <input type="hidden" name="parent_items[{{ $parentItem->id }}][medicine_id]" value="{{ $parentItem->medicine_id ?? '' }}">
+                                <input type="hidden" name="parent_items[{{ $parentItem->id }}][dosage]" value="{{ $parentItem->dosage }}">
+                                <input type="hidden" name="parent_items[{{ $parentItem->id }}][frequency]" value="{{ $parentItem->frequency }}">
+                                <input type="hidden" name="parent_items[{{ $parentItem->id }}][duration_days]" value="{{ $parentItem->duration_days }}">
+                                <input type="hidden" name="parent_items[{{ $parentItem->id }}][quantity]" value="{{ $parentItem->quantity }}">
+                                <input type="hidden" name="parent_items[{{ $parentItem->id }}][dgda_code]" value="{{ $parentItem->dgda_code }}">
+                                <input type="hidden" name="parent_items[{{ $parentItem->id }}][special_instructions]" value="{{ $parentItem->special_instructions }}">
+                            </div>
+                            <div class="col-md-3">
+                                <div class="btn-group btn-group-sm w-100" role="group">
+                                    <input type="radio" class="btn-check" name="parent_items[{{ $parentItem->id }}][action]" id="keep_{{ $parentItem->id }}" value="keep" checked>
+                                    <label class="btn btn-outline-success" for="keep_{{ $parentItem->id }}"><i class="bi bi-check-circle"></i> Keep</label>
+                                    <input type="radio" class="btn-check" name="parent_items[{{ $parentItem->id }}][action]" id="disc_{{ $parentItem->id }}" value="discontinue">
+                                    <label class="btn btn-outline-danger" for="disc_{{ $parentItem->id }}"><i class="bi bi-x-circle"></i> Discontinue</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4 discontinue-reason-wrap" data-item-id="{{ $parentItem->id }}" style="display:none;">
+                                <input type="text" name="parent_items[{{ $parentItem->id }}][discontinued_reason]"
+                                       class="form-control form-control-sm" placeholder="Reason (required)" maxlength="255">
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
             @error('items')<div class="alert alert-danger">{{ $message }}</div>@enderror
             <div class="table-responsive">
                 <table class="table table-sm align-middle" id="rx-items-table">
@@ -268,6 +312,21 @@ $defaultFollowUp = $isCreate ? date('Y-m-d') : $prescription->follow_up_date?->f
                     </thead>
                     <tbody id="rx-items-body">
                         @if($isCreate)
+                        @foreach(old('items', []) as $i => $item)
+                        <tr data-rx-row>
+                            <td class="rx-drag-cell"><span class="rx-drag-handle" title="Drag to reorder" aria-label="Drag to reorder"><i class="bi bi-grip-vertical"></i><span class="rx-order">{{ $loop->iteration }}</span></span></td>
+                            <td><input type="hidden" name="items[{{ $i }}][medicine_id]" class="rx-med-id" value="{{ $item['medicine_id'] ?? '' }}">
+                                <input type="text" name="items[{{ $i }}][medicine_name]" class="form-control form-control-sm rx-med-name" list="rx-medicine-list" required maxlength="200" placeholder="Type or pick medicine" value="{{ $item['medicine_name'] ?? '' }}">
+                                <span class="badge rx-dgda mt-1 d-none"></span></td>
+                            <td><input type="text" name="items[{{ $i }}][dosage]" class="form-control form-control-sm" required maxlength="50" placeholder="e.g. 500mg" value="{{ $item['dosage'] ?? '' }}"></td>
+                            <td><input type="text" name="items[{{ $i }}][frequency]" class="form-control form-control-sm" required maxlength="50" placeholder="e.g. 1+0+1" value="{{ $item['frequency'] ?? '' }}"></td>
+                            <td><input type="number" name="items[{{ $i }}][duration_days]" class="form-control form-control-sm" min="1" placeholder="Days" value="{{ $item['duration_days'] ?? '' }}"></td>
+                            <td><input type="number" name="items[{{ $i }}][quantity]" class="form-control form-control-sm" min="1" value="{{ $item['quantity'] ?? 1 }}" required></td>
+                            <td><button type="button" class="btn btn-sm btn-danger rx-remove" title="Remove">×</button> <button type="button" class="btn btn-sm btn-success rx-add-below" title="Add medicine below">+</button></td>
+                        </tr>
+                        @endforeach
+                        @elseif($isAmend)
+                        {{-- Amend mode: items table starts empty; parent items are in the card above --}}
                         @foreach(old('items', []) as $i => $item)
                         <tr data-rx-row>
                             <td class="rx-drag-cell"><span class="rx-drag-handle" title="Drag to reorder" aria-label="Drag to reorder"><i class="bi bi-grip-vertical"></i><span class="rx-order">{{ $loop->iteration }}</span></span></td>
@@ -1424,5 +1483,32 @@ $defaultFollowUp = $isCreate ? date('Y-m-d') : $prescription->follow_up_date?->f
 })();
 </script>
 @endpush
+
+@if($isAmend)
+@push('scripts')
+<script>
+(function(){
+    document.querySelectorAll('input[name$="[action]"]').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            var match = this.name.match(/parent_items\[(\d+)\]/);
+            if (!match) return;
+            var itemId = match[1];
+            var wrap = document.querySelector('.discontinue-reason-wrap[data-item-id="' + itemId + '"]');
+            if (!wrap) return;
+            var input = wrap.querySelector('input');
+            if (this.value === 'discontinue') {
+                wrap.style.display = 'block';
+                input.required = true;
+            } else {
+                wrap.style.display = 'none';
+                input.required = false;
+                input.value = '';
+            }
+        });
+    });
+})();
+</script>
+@endpush
+@endif
 
 @include('medical.appointments._fee_modal')

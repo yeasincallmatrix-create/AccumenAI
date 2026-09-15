@@ -221,10 +221,14 @@
             <p class="rx-heading">℞</p>
 
             @forelse($items as $i => $item)
-                <div class="rx-item">
+                @php $isDisc = method_exists($item, 'isDiscontinued') && $item->isDiscontinued(); @endphp
+                <div class="rx-item" style="{{ $isDisc ? 'text-decoration:line-through; opacity:0.6;' : '' }}">
                     <div class="rx-item-head">
                         <span class="rx-num">{{ $i + 1 }}.</span>
                         <span class="rx-name">{{ $item->medicine_name ?? $item->display_name_snapshot ?? 'Medicine' }}</span>
+                        @if($isDisc)
+                            <span style="color:#dc3545; font-size:10px; font-weight:600; margin-left:6px;">DISCONTINUED</span>
+                        @endif
                         @if(!empty($item->strength_snapshot) || !empty($item->dosage_form_snapshot))
                             <span class="rx-strength">{{ $item->strength_snapshot }} {{ $item->dosage_form_snapshot }}</span>
                         @endif

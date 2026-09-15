@@ -1469,7 +1469,10 @@ class PrescriptionController extends MedicalController implements HasMiddleware
             'investigations' => 'nullable|string',
             'advice' => 'nullable|string',
             'follow_up_date' => 'nullable|date|after:prescription_date',
-            'items' => 'required|array|min:1',
+            'parent_items' => 'required|array',
+            'parent_items.*.action' => 'required|in:keep,discontinue',
+            'parent_items.*.discontinued_reason' => 'required_if:parent_items.*.action,discontinue|nullable|string|min:3|max:255',
+            'items' => 'nullable|array',
             'items.*.medicine_id' => 'nullable|integer',
             'items.*.medicine_name' => 'required|string|max:200',
             'items.*.dosage' => 'required|string|max:50',
@@ -1480,11 +1483,12 @@ class PrescriptionController extends MedicalController implements HasMiddleware
         ]);
 
         $reason = $data['amendment_reason'];
-        $items = $data['items'];
-        unset($data['amendment_reason'], $data['items']);
+        $parentItemsData = $data['parent_items'];
+        $newItemsData = $data['items'] ?? [];
+        unset($data['amendment_reason'], $data['parent_items'], $data['items']);
 
         try {
-            $new = \Illuminate\Support\Facades\DB::transaction(function () use ($data, $items, $prescription, $reason, $instituteId, $request) {
+            $new = \Illuminate\Support\Facades\DB::transaction(function () use ($data, $parentItemsData, $newItemsData, $prescription, $reason, $instituteId, $request) {
             // Create v(N+1) as a draft
             $new = $prescription->replicate([
                 'signature_hash', 'signed_at', 'signed_by',
@@ -1494,7 +1498,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
             $new->amendment_reason = $reason;
             $new->amended_by = auth()->id();
             $new->amended_at = now();
-            $new->prescription_number = $this->prescriptionService->generateNumber($instituteId);
+            $new->prescription_number = $prescription->prescription_number;
             $new->is_finalized = false;
             $new->signature_hash = null;
             $new->signed_at = null;
@@ -1502,8 +1506,94 @@ class PrescriptionController extends MedicalController implements HasMiddleware
             $new->fill($data);
             $new->save();
 
-            // Create items via existing service (handles snapshots + DGDA)
-            $this->prescriptionService->replaceItems($new, $items);
+            // 1. Process parent items (keep / discontinue)
+            foreach ($parentItemsData as $parentId => $pData) {
+                $parentItem = \App\Models\Medical\PrescriptionItem::where('id', $parentId)
+                    ->where('prescription_id', $prescription->id)
+                    ->first();
+
+                if (! $parentItem) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'parent_items' => "Invalid parent item: {$parentId}",
+                    ]);
+                }
+
+                $action = $pData['action'] ?? 'keep';
+
+                if ($action === 'keep') {
+                    $newItem = $parentItem->replicate(['created_at', 'updated_at']);
+                    $newItem->prescription_id = $new->id;
+                    $newItem->item_status = 'active';
+                    $newItem->continued_from_item_id = $parentItem->id;
+                    $newItem->status = 'pending';
+                    $newItem->save();
+                } else {
+                    $discontinued = $parentItem->replicate(['created_at', 'updated_at']);
+                    $discontinued->prescription_id = $new->id;
+                    $discontinued->item_status = 'discontinued';
+                    $discontinued->discontinued_reason = $pData['discontinued_reason'] ?? 'Discontinued';
+                    $discontinued->discontinued_at = now();
+                    $discontinued->continued_from_item_id = $parentItem->id;
+                    $discontinued->status = 'cancelled';
+                    $discontinued->save();
+
+                    // Audit log for item discontinuation
+                    \App\Models\Medical\ClinicalAuditLog::create([
+                        'institute_id' => $prescription->institute_id,
+                        'patient_id' => $prescription->patient_id,
+                        'user_id' => auth()->id(),
+                        'user_type' => 'institute_user',
+                        'actor_name' => auth()->user()->name ?? null,
+                        'auditable_type' => \App\Models\Medical\PrescriptionItem::class,
+                        'auditable_id' => $discontinued->id,
+                        'action' => 'item_discontinued',
+                        'reason' => $pData['discontinued_reason'] ?? 'Discontinued',
+                        'old_values' => json_encode([
+                            'item_status' => 'active',
+                            'medicine_name' => $parentItem->medicine_name,
+                        ]),
+                        'new_values' => json_encode([
+                            'item_status' => 'discontinued',
+                            'reason' => $pData['discontinued_reason'] ?? 'Discontinued',
+                        ]),
+                        'ip_address' => $request->ip(),
+                        'user_agent' => $request->userAgent(),
+                    ]);
+                }
+            }
+
+            // 2. Add new items
+            if (! empty($newItemsData)) {
+                $catalog = \App\Models\Medical\Medicine::whereIn(
+                    'id',
+                    collect($newItemsData)->pluck('medicine_id')->filter()->unique()->values()->all()
+                )->with(['product.concept', 'product.form', 'product.route', 'product.identifiers'])
+                    ->get()->keyBy('id');
+
+                foreach ($newItemsData as $itemData) {
+                    $itemData['prescription_id'] = $new->id;
+                    $itemData['item_status'] = 'active';
+                    if (empty($itemData['dgda_code']) && ! empty($itemData['medicine_id'])) {
+                        $itemData['dgda_code'] = $catalog->get($itemData['medicine_id'])?->dgda_code;
+                    }
+                    if (! empty($itemData['medicine_id']) && ($medicine = $catalog->get($itemData['medicine_id']))) {
+                        foreach (app(\App\Services\Medical\MedicineTerminologyService::class)->snapshotFor($medicine) as $key => $value) {
+                            if (empty($itemData[$key])) {
+                                $itemData[$key] = $value;
+                            }
+                        }
+                    }
+                    \App\Models\Medical\PrescriptionItem::create($itemData);
+                }
+            }
+
+            // 3. Validate at least one active item
+            $activeCount = $new->items()->where('item_status', 'active')->count();
+            if ($activeCount === 0) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'items' => 'At least one medicine must remain active in the amended prescription.',
+                ]);
+            }
 
             // Lifecycle audit
             \App\Models\Medical\PrescriptionAuditLog::record(

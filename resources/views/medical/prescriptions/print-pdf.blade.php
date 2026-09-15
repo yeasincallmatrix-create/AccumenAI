@@ -176,7 +176,11 @@
         {{-- Rx --}}
         <div class="clinical-section">
             <p class="rx-heading">℞</p>
-            @forelse($items as $i => $item)
+            @php
+                $activeItems = $items->filter(fn ($item) => ! method_exists($item, 'isActive') || $item->isActive())->values();
+                $discontinuedCount = $items->filter(fn ($item) => method_exists($item, 'isDiscontinued') && $item->isDiscontinued())->count();
+            @endphp
+            @forelse($activeItems as $i => $item)
                 <div class="rx-item">
                     <div class="rx-item-head">
                         <span class="rx-num">{{ $i + 1 }}.</span>
@@ -206,6 +210,11 @@
             @empty
                 <p class="rx-empty">No medicines prescribed.</p>
             @endforelse
+            @if($discontinuedCount > 0)
+                <div style="font-size:11px; color:#666; margin-top:8px;">
+                    Note: {{ $discontinuedCount }} medicine(s) from the previous prescription have been discontinued.
+                </div>
+            @endif
         </div>
         </div>
 

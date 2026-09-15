@@ -92,6 +92,11 @@
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                 @endif
+                                @if($prescription->is_finalized && $prescription->version >= 1 && !$prescription->isAmended() && auth()->user()->hasPermission('medical_prescriptions.amend'))
+                                    <a href="{{ route('medical.prescriptions.amend', $prescription) }}" class="btn btn-warning" title="Amend">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+                                @endif
                             </div>
                         </td>
                     </tr>

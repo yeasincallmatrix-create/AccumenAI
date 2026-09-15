@@ -42,8 +42,8 @@
                     <i class="bi bi-arrow-right me-1"></i>View Latest Version
                 </a>
             @endif
-            @if(!$prescription->isAmended() && auth()->user()->hasPermission('medical_prescriptions.amend'))
-                <a class="btn btn-outline-warning" href="{{ route('medical.prescriptions.amend', $prescription) }}">
+            @if(!$prescription->isAmended() && $prescription->version >= 1 && auth()->user()->hasPermission('medical_prescriptions.amend'))
+                <a class="btn btn-warning" href="{{ route('medical.prescriptions.amend', $prescription) }}" title="Amend this prescription (creates a new version)">
                     <i class="bi bi-pencil-square me-1"></i>Amend
                 </a>
             @endif
@@ -115,8 +115,16 @@
                     </thead>
                     <tbody>
                         @foreach($prescription->items as $item)
-                        <tr>
-                            <td>{{ $item->medicine_name }}</td>
+                        <tr class="{{ method_exists($item, 'isDiscontinued') && $item->isDiscontinued() ? 'text-decoration-line-through text-muted' : '' }}">
+                            <td>
+                                {{ $item->medicine_name }}
+                                @if(method_exists($item, 'isDiscontinued') && $item->isDiscontinued())
+                                    <span class="badge bg-danger">Discontinued</span>
+                                    @if($item->discontinued_reason)
+                                        <small class="d-block text-danger">Reason: {{ $item->discontinued_reason }}</small>
+                                    @endif
+                                @endif
+                            </td>
                             @if(mawa_dgda_enabled())
                             <td>
                                 @if($item->dgda_code)
@@ -131,9 +139,13 @@
                             <td>{{ $item->duration_days ?? '—' }}</td>
                             <td>{{ $item->quantity }}</td>
                             <td>
-                                <span class="badge bg-{{ $item->status === 'dispensed' ? 'success' : ($item->status === 'cancelled' ? 'danger' : 'secondary') }}">
-                                    {{ ucfirst($item->status) }}
-                                </span>
+                                @if(method_exists($item, 'isDiscontinued') && $item->isDiscontinued())
+                                    <span class="badge bg-danger">Discontinued</span>
+                                @else
+                                    <span class="badge bg-{{ $item->status === 'dispensed' ? 'success' : ($item->status === 'cancelled' ? 'danger' : 'secondary') }}">
+                                        {{ ucfirst($item->status) }}
+                                    </span>
+                                @endif
                             </td>
                             <td class="text-end">
                                 @if(!$prescription->is_finalized && $item->status === 'pending')

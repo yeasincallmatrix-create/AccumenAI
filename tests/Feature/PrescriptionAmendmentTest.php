@@ -7,6 +7,7 @@ use App\Models\Medical\Doctor;
 use App\Models\Medical\Patient;
 use App\Models\Medical\Prescription;
 use App\Models\Medical\PrescriptionAuditLog;
+use App\Models\Medical\PrescriptionItem;
 use App\Models\Membership;
 use App\Models\Role;
 use App\Models\User;
@@ -92,6 +93,33 @@ class PrescriptionAmendmentTest extends TestCase
         ], $overrides));
     }
 
+    private function createRxItem(Prescription $rx, array $overrides = []): PrescriptionItem
+    {
+        return PrescriptionItem::create(array_merge([
+            'prescription_id' => $rx->id,
+            'medicine_name' => 'Test Medicine',
+            'dosage' => '500mg',
+            'frequency' => '1+0+1',
+            'duration_days' => 5,
+            'quantity' => 10,
+            'status' => 'pending',
+            'item_status' => 'active',
+        ], $overrides));
+    }
+
+    private function amendPayload(Prescription $rx, array $parentItems, array $newItems = []): array
+    {
+        return [
+            'patient_id' => $this->patient->id,
+            'doctor_id' => $this->doctor->id,
+            'date' => now()->format('Y-m-d'),
+            'diagnosis' => 'Updated Dx',
+            'amendment_reason' => 'Test amendment reason for item status',
+            'parent_items' => $parentItems,
+            'items' => $newItems,
+        ];
+    }
+
     public function test_model_has_version_fields(): void
     {
         $rx = $this->createRx();
@@ -150,37 +178,30 @@ class PrescriptionAmendmentTest extends TestCase
     public function test_amend_creates_new_version(): void
     {
         $rx = $this->createRx(['is_finalized' => 1]);
-        $response = $this->post(route('medical.prescriptions.amend.store', $rx), [
-            'patient_id' => $this->patient->id,
-            'doctor_id' => $this->doctor->id,
-            'date' => now()->format('Y-m-d'),
-            'diagnosis' => 'Updated Dx',
-            'amendment_reason' => 'Patient response to initial treatment',
-            'items' => [
-                ['medicine_name' => 'Amoxicillin', 'dosage' => '500mg', 'frequency' => '1+0+1', 'duration_days' => 5, 'quantity' => 10],
-            ],
-        ]);
+        $item1 = $this->createRxItem($rx, ['medicine_name' => 'Amoxicillin']);
+        $item2 = $this->createRxItem($rx, ['medicine_name' => 'Paracetamol']);
+
+        $response = $this->post(route('medical.prescriptions.amend.store', $rx), $this->amendPayload($rx, [
+            $item1->id => ['id' => $item1->id, 'action' => 'keep', 'medicine_name' => 'Amoxicillin', 'dosage' => '500mg', 'frequency' => '1+0+1', 'duration_days' => 5, 'quantity' => 10, 'medicine_id' => null, 'dgda_code' => null, 'special_instructions' => null],
+            $item2->id => ['id' => $item2->id, 'action' => 'keep', 'medicine_name' => 'Paracetamol', 'dosage' => '500mg', 'frequency' => '1+1+1', 'duration_days' => 3, 'quantity' => 9, 'medicine_id' => null, 'dgda_code' => null, 'special_instructions' => null],
+        ]));
         $response->assertSessionHasNoErrors();
 
         $newRx = Prescription::where('parent_prescription_id', $rx->id)->first();
         $this->assertNotNull($newRx);
         $this->assertEquals(2, $newRx->version);
         $this->assertEquals('Updated Dx', $newRx->diagnosis);
-        $this->assertEquals('Patient response to initial treatment', $newRx->amendment_reason);
         $this->assertEquals($rx->id, $newRx->parent_prescription_id);
     }
 
     public function test_amend_preserves_original_version(): void
     {
         $rx = $this->createRx(['is_finalized' => 1, 'prescription_number' => 'RX-ORIG-001']);
-        $this->post(route('medical.prescriptions.amend.store', $rx), [
-            'patient_id' => $this->patient->id,
-            'doctor_id' => $this->doctor->id,
-            'date' => now()->format('Y-m-d'),
-            'diagnosis' => 'Dx',
-            'amendment_reason' => 'Reason',
-            'items' => [['medicine_name' => 'Drug', 'dosage' => '10mg', 'frequency' => '1+0+0', 'duration_days' => 1, 'quantity' => 1]],
-        ]);
+        $item = $this->createRxItem($rx, ['medicine_name' => 'Drug']);
+
+        $this->post(route('medical.prescriptions.amend.store', $rx), $this->amendPayload($rx, [
+            $item->id => ['id' => $item->id, 'action' => 'keep', 'medicine_name' => 'Drug', 'dosage' => '10mg', 'frequency' => '1+0+0', 'duration_days' => 1, 'quantity' => 1, 'medicine_id' => null, 'dgda_code' => null, 'special_instructions' => null],
+        ]));
 
         $newRx = Prescription::where('parent_prescription_id', $rx->id)->first();
         $this->assertNotNull($newRx);
@@ -192,14 +213,11 @@ class PrescriptionAmendmentTest extends TestCase
     public function test_amend_logs_prescription_audit(): void
     {
         $rx = $this->createRx(['is_finalized' => 1]);
-        $this->post(route('medical.prescriptions.amend.store', $rx), [
-            'patient_id' => $this->patient->id,
-            'doctor_id' => $this->doctor->id,
-            'date' => now()->format('Y-m-d'),
-            'diagnosis' => 'Dx',
-            'amendment_reason' => 'Audit log test',
-            'items' => [['medicine_name' => 'X', 'dosage' => '1mg', 'frequency' => '1+0+0', 'duration_days' => 1, 'quantity' => 1]],
-        ]);
+        $item = $this->createRxItem($rx);
+
+        $this->post(route('medical.prescriptions.amend.store', $rx), $this->amendPayload($rx, [
+            $item->id => ['id' => $item->id, 'action' => 'keep', 'medicine_name' => 'Test Medicine', 'dosage' => '500mg', 'frequency' => '1+0+1', 'duration_days' => 5, 'quantity' => 10, 'medicine_id' => null, 'dgda_code' => null, 'special_instructions' => null],
+        ]));
 
         $newRx = Prescription::where('parent_prescription_id', $rx->id)->first();
         $log = PrescriptionAuditLog::where('prescription_id', $newRx->id)->where('action', 'amended')->first();
@@ -252,13 +270,18 @@ class PrescriptionAmendmentTest extends TestCase
     public function test_amend_requires_reason(): void
     {
         $rx = $this->createRx(['is_finalized' => 1]);
+        $item = $this->createRxItem($rx);
+
         $response = $this->post(route('medical.prescriptions.amend.store', $rx), [
             'patient_id' => $this->patient->id,
             'doctor_id' => $this->doctor->id,
             'date' => now()->format('Y-m-d'),
             'diagnosis' => 'Dx',
             'amendment_reason' => '',
-            'items' => [['medicine_name' => 'X', 'dosage' => '1mg', 'frequency' => '1+0+0', 'duration_days' => 1, 'quantity' => 1]],
+            'parent_items' => [
+                $item->id => ['id' => $item->id, 'action' => 'keep', 'medicine_name' => 'X', 'dosage' => '1mg', 'frequency' => '1+0+0', 'duration_days' => 1, 'quantity' => 1, 'medicine_id' => null, 'dgda_code' => null, 'special_instructions' => null],
+            ],
+            'items' => [],
         ]);
         $response->assertSessionHasErrors(['amendment_reason']);
     }
@@ -267,15 +290,13 @@ class PrescriptionAmendmentTest extends TestCase
     {
         $rx = $this->createRx(['is_finalized' => 1]);
         $originalNumber = $rx->prescription_number;
+        $item = $this->createRxItem($rx, ['medicine_name' => 'Original Drug']);
 
-        $this->post(route('medical.prescriptions.amend.store', $rx), [
-            'patient_id' => $this->patient->id,
-            'doctor_id' => $this->doctor->id,
-            'date' => now()->format('Y-m-d'),
-            'diagnosis' => 'New Dx',
-            'amendment_reason' => 'Changed',
-            'items' => [['medicine_name' => 'New Drug', 'dosage' => '5mg', 'frequency' => '0+1+1', 'duration_days' => 7, 'quantity' => 14]],
-        ]);
+        $this->post(route('medical.prescriptions.amend.store', $rx), $this->amendPayload($rx, [
+            $item->id => ['id' => $item->id, 'action' => 'keep', 'medicine_name' => 'Original Drug', 'dosage' => '500mg', 'frequency' => '1+0+1', 'duration_days' => 5, 'quantity' => 10, 'medicine_id' => null, 'dgda_code' => null, 'special_instructions' => null],
+        ], [
+            ['medicine_name' => 'New Drug', 'dosage' => '5mg', 'frequency' => '0+1+1', 'duration_days' => 7, 'quantity' => 14],
+        ]));
 
         $original = Prescription::where('prescription_number', $originalNumber)->where('version', 1)->first();
         $this->assertNotNull($original);
@@ -327,7 +348,8 @@ class PrescriptionAmendmentTest extends TestCase
             'date' => now()->format('Y-m-d'),
             'diagnosis' => 'Dx',
             'amendment_reason' => 'Test amendment of invalid version',
-            'items' => [['medicine_name' => 'X', 'dosage' => '1mg', 'frequency' => '1+0+0', 'duration_days' => 1, 'quantity' => 1]],
+            'parent_items' => [],
+            'items' => [],
         ]);
         $response->assertStatus(422);
     }
@@ -363,5 +385,142 @@ class PrescriptionAmendmentTest extends TestCase
         $v1->refresh();
         $this->assertTrue($v1->isAmended());
         $this->assertFalse($v1->isLatestVersion());
+    }
+
+    public function test_amend_can_keep_parent_items(): void
+    {
+        $rx = $this->createRx(['is_finalized' => 1]);
+        $item1 = $this->createRxItem($rx, ['medicine_name' => 'Med A']);
+        $item2 = $this->createRxItem($rx, ['medicine_name' => 'Med B']);
+        $item3 = $this->createRxItem($rx, ['medicine_name' => 'Med C']);
+
+        $this->post(route('medical.prescriptions.amend.store', $rx), $this->amendPayload($rx, [
+            $item1->id => ['id' => $item1->id, 'action' => 'keep', 'medicine_name' => 'Med A', 'dosage' => '500mg', 'frequency' => '1+0+1', 'duration_days' => 5, 'quantity' => 10, 'medicine_id' => null, 'dgda_code' => null, 'special_instructions' => null],
+            $item2->id => ['id' => $item2->id, 'action' => 'keep', 'medicine_name' => 'Med B', 'dosage' => '250mg', 'frequency' => '1+1+0', 'duration_days' => 7, 'quantity' => 14, 'medicine_id' => null, 'dgda_code' => null, 'special_instructions' => null],
+            $item3->id => ['id' => $item3->id, 'action' => 'keep', 'medicine_name' => 'Med C', 'dosage' => '100mg', 'frequency' => '0+1+1', 'duration_days' => 3, 'quantity' => 6, 'medicine_id' => null, 'dgda_code' => null, 'special_instructions' => null],
+        ]));
+
+        $newRx = Prescription::where('parent_prescription_id', $rx->id)->first();
+        $this->assertNotNull($newRx);
+        $this->assertEquals(3, $newRx->items()->count());
+        $this->assertEquals(3, $newRx->items()->where('item_status', 'active')->count());
+        foreach ($newRx->items as $newItem) {
+            $this->assertNotNull($newItem->continued_from_item_id);
+        }
+    }
+
+    public function test_amend_can_discontinue_parent_items(): void
+    {
+        $rx = $this->createRx(['is_finalized' => 1]);
+        $item1 = $this->createRxItem($rx, ['medicine_name' => 'Med A']);
+        $item2 = $this->createRxItem($rx, ['medicine_name' => 'Med B']);
+
+        $this->post(route('medical.prescriptions.amend.store', $rx), $this->amendPayload($rx, [
+            $item1->id => ['id' => $item1->id, 'action' => 'discontinue', 'discontinued_reason' => 'Side effect', 'medicine_name' => 'Med A', 'dosage' => '500mg', 'frequency' => '1+0+1', 'duration_days' => 5, 'quantity' => 10, 'medicine_id' => null, 'dgda_code' => null, 'special_instructions' => null],
+            $item2->id => ['id' => $item2->id, 'action' => 'keep', 'medicine_name' => 'Med B', 'dosage' => '250mg', 'frequency' => '1+1+0', 'duration_days' => 7, 'quantity' => 14, 'medicine_id' => null, 'dgda_code' => null, 'special_instructions' => null],
+        ]));
+
+        $newRx = Prescription::where('parent_prescription_id', $rx->id)->first();
+        $this->assertNotNull($newRx);
+        $this->assertEquals(2, $newRx->items()->count());
+        $this->assertEquals(1, $newRx->items()->where('item_status', 'active')->count());
+        $this->assertEquals(1, $newRx->items()->where('item_status', 'discontinued')->count());
+
+        $disc = $newRx->items()->where('item_status', 'discontinued')->first();
+        $this->assertEquals('Side effect', $disc->discontinued_reason);
+        $this->assertNotNull($disc->discontinued_at);
+        $this->assertEquals($item1->id, $disc->continued_from_item_id);
+    }
+
+    public function test_amend_can_add_new_items_alongside_parent_items(): void
+    {
+        $rx = $this->createRx(['is_finalized' => 1]);
+        $item1 = $this->createRxItem($rx, ['medicine_name' => 'Existing Med']);
+
+        $this->post(route('medical.prescriptions.amend.store', $rx), $this->amendPayload($rx, [
+            $item1->id => ['id' => $item1->id, 'action' => 'keep', 'medicine_name' => 'Existing Med', 'dosage' => '500mg', 'frequency' => '1+0+1', 'duration_days' => 5, 'quantity' => 10, 'medicine_id' => null, 'dgda_code' => null, 'special_instructions' => null],
+        ], [
+            ['medicine_name' => 'New Med A', 'dosage' => '10mg', 'frequency' => '1+0+0', 'duration_days' => 7, 'quantity' => 7],
+            ['medicine_name' => 'New Med B', 'dosage' => '20mg', 'frequency' => '0+1+0', 'duration_days' => 10, 'quantity' => 10],
+        ]));
+
+        $newRx = Prescription::where('parent_prescription_id', $rx->id)->first();
+        $this->assertNotNull($newRx);
+        $this->assertEquals(3, $newRx->items()->count());
+        $this->assertEquals(3, $newRx->items()->where('item_status', 'active')->count());
+        $this->assertNotNull($newRx->items()->where('medicine_name', 'New Med A')->first());
+        $this->assertNotNull($newRx->items()->where('medicine_name', 'New Med B')->first());
+    }
+
+    public function test_amend_discontinued_item_requires_reason(): void
+    {
+        $rx = $this->createRx(['is_finalized' => 1]);
+        $item = $this->createRxItem($rx);
+
+        $response = $this->post(route('medical.prescriptions.amend.store', $rx), [
+            'patient_id' => $this->patient->id,
+            'doctor_id' => $this->doctor->id,
+            'date' => now()->format('Y-m-d'),
+            'diagnosis' => 'Dx',
+            'amendment_reason' => 'Discontinue without reason test',
+            'parent_items' => [
+                $item->id => ['id' => $item->id, 'action' => 'discontinue', 'discontinued_reason' => '', 'medicine_name' => 'X', 'dosage' => '1mg', 'frequency' => '1+0+0', 'duration_days' => 1, 'quantity' => 1, 'medicine_id' => null, 'dgda_code' => null, 'special_instructions' => null],
+            ],
+            'items' => [],
+        ]);
+        $response->assertSessionHasErrors(['parent_items.' . $item->id . '.discontinued_reason']);
+    }
+
+    public function test_amend_cannot_discontinue_all_items(): void
+    {
+        $rx = $this->createRx(['is_finalized' => 1]);
+        $item1 = $this->createRxItem($rx, ['medicine_name' => 'Med A']);
+        $item2 = $this->createRxItem($rx, ['medicine_name' => 'Med B']);
+
+        $response = $this->post(route('medical.prescriptions.amend.store', $rx), $this->amendPayload($rx, [
+            $item1->id => ['id' => $item1->id, 'action' => 'discontinue', 'discontinued_reason' => 'No longer needed', 'medicine_name' => 'Med A', 'dosage' => '500mg', 'frequency' => '1+0+1', 'duration_days' => 5, 'quantity' => 10, 'medicine_id' => null, 'dgda_code' => null, 'special_instructions' => null],
+            $item2->id => ['id' => $item2->id, 'action' => 'discontinue', 'discontinued_reason' => 'Allergy', 'medicine_name' => 'Med B', 'dosage' => '250mg', 'frequency' => '1+1+0', 'duration_days' => 7, 'quantity' => 14, 'medicine_id' => null, 'dgda_code' => null, 'special_instructions' => null],
+        ]));
+        $response->assertSessionHasErrors(['items']);
+    }
+
+    public function test_v1_items_remain_unchanged_after_amend(): void
+    {
+        $rx = $this->createRx(['is_finalized' => 1]);
+        $item1 = $this->createRxItem($rx, ['medicine_name' => 'Med A']);
+        $item2 = $this->createRxItem($rx, ['medicine_name' => 'Med B']);
+
+        $this->post(route('medical.prescriptions.amend.store', $rx), $this->amendPayload($rx, [
+            $item1->id => ['id' => $item1->id, 'action' => 'discontinue', 'discontinued_reason' => 'Changed', 'medicine_name' => 'Med A', 'dosage' => '500mg', 'frequency' => '1+0+1', 'duration_days' => 5, 'quantity' => 10, 'medicine_id' => null, 'dgda_code' => null, 'special_instructions' => null],
+            $item2->id => ['id' => $item2->id, 'action' => 'keep', 'medicine_name' => 'Med B', 'dosage' => '250mg', 'frequency' => '1+1+0', 'duration_days' => 7, 'quantity' => 14, 'medicine_id' => null, 'dgda_code' => null, 'special_instructions' => null],
+        ]));
+
+        $rx->refresh();
+        $this->assertEquals(2, $rx->items()->count());
+        $this->assertEquals(2, $rx->items()->where('item_status', 'active')->count());
+        $this->assertNull($rx->items()->where('medicine_name', 'Med A')->first()->discontinued_reason);
+        $this->assertNull($rx->items()->where('medicine_name', 'Med B')->first()->discontinued_reason);
+    }
+
+    public function test_pdf_shows_only_active_items(): void
+    {
+        $rx = $this->createRx(['is_finalized' => 1]);
+        $item1 = $this->createRxItem($rx, ['medicine_name' => 'Active Med']);
+        $item2 = $this->createRxItem($rx, ['medicine_name' => 'Discontinued Med']);
+
+        $this->post(route('medical.prescriptions.amend.store', $rx), $this->amendPayload($rx, [
+            $item1->id => ['id' => $item1->id, 'action' => 'keep', 'medicine_name' => 'Active Med', 'dosage' => '500mg', 'frequency' => '1+0+1', 'duration_days' => 5, 'quantity' => 10, 'medicine_id' => null, 'dgda_code' => null, 'special_instructions' => null],
+            $item2->id => ['id' => $item2->id, 'action' => 'discontinue', 'discontinued_reason' => 'Side effect', 'medicine_name' => 'Discontinued Med', 'dosage' => '250mg', 'frequency' => '1+1+0', 'duration_days' => 7, 'quantity' => 14, 'medicine_id' => null, 'dgda_code' => null, 'special_instructions' => null],
+        ]));
+
+        $newRx = Prescription::where('parent_prescription_id', $rx->id)->first();
+        $this->assertNotNull($newRx);
+
+        $activeItems = $newRx->items()->where('item_status', 'active')->get();
+        $discItems = $newRx->items()->where('item_status', 'discontinued')->get();
+        $this->assertEquals(1, $activeItems->count());
+        $this->assertEquals(1, $discItems->count());
+        $this->assertEquals('Active Med', $activeItems->first()->medicine_name);
+        $this->assertEquals('Discontinued Med', $discItems->first()->medicine_name);
     }
 }

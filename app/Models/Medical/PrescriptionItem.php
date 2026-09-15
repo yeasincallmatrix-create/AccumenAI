@@ -28,11 +28,16 @@ class PrescriptionItem extends Model
         'quantity',
         'special_instructions',
         'status',
+        'item_status',
+        'discontinued_reason',
+        'discontinued_at',
+        'continued_from_item_id',
     ];
 
     protected $casts = [
         'duration_days' => 'integer',
         'quantity' => 'integer',
+        'discontinued_at' => 'datetime',
     ];
 
     public function prescription()
@@ -58,5 +63,35 @@ class PrescriptionItem extends Model
     public function scopeDispensed($query)
     {
         return $query->where('status', 'dispensed');
+    }
+
+    public function continuedFrom()
+    {
+        return $this->belongsTo(PrescriptionItem::class, 'continued_from_item_id');
+    }
+
+    public function continuations()
+    {
+        return $this->hasMany(PrescriptionItem::class, 'continued_from_item_id');
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('item_status', 'active');
+    }
+
+    public function scopeDiscontinued($query)
+    {
+        return $query->where('item_status', 'discontinued');
+    }
+
+    public function isActive(): bool
+    {
+        return $this->item_status === 'active';
+    }
+
+    public function isDiscontinued(): bool
+    {
+        return $this->item_status === 'discontinued';
     }
 }
