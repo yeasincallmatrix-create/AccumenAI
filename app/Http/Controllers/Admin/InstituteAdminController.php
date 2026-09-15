@@ -283,8 +283,14 @@ class InstituteAdminController extends Controller
                 ? IndustryRules::subIndustries($institute->country ?? '', $institute->industry)
                 : [],
             'divisions' => $geoLevels->get(1, collect()),
-            'districts' => $geoLevels->get(2, collect()),
-            'upazilas' => $geoLevels->get(3, collect()),
+            'districts' => $institute->admin_level_1_id
+                ? AdministrativeUnit::where('country_id', $countryId)->where('status', true)->where('parent_id', $institute->admin_level_1_id)
+                    ->whereHas('level', fn ($q) => $q->where('level_number', 2))->orderBy('name')->get()
+                : $geoLevels->get(2, collect()),
+            'upazilas' => $institute->admin_level_2_id
+                ? AdministrativeUnit::where('country_id', $countryId)->where('status', true)->where('parent_id', $institute->admin_level_2_id)
+                    ->whereHas('level', fn ($q) => $q->where('level_number', 3))->orderBy('name')->get()
+                : $geoLevels->get(3, collect()),
         ]);
     }
 
