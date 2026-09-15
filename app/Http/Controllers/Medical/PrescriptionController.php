@@ -455,7 +455,8 @@ class PrescriptionController extends MedicalController implements HasMiddleware
 
         $query = Prescription::where('institute_id', $instituteId)
             ->where('patient_id', $data['patient_id'])
-            ->whereDate('prescription_date', $data['date']);
+            ->whereDate('prescription_date', $data['date'])
+            ->where('version', '>=', 1);
 
         if (! empty($data['doctor_id'])) {
             $query->where('doctor_id', $data['doctor_id']);
@@ -802,6 +803,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
             ->where('doctor_id', $data['doctor_id'])
             ->where('patient_id', $data['patient_id'])
             ->whereDate('prescription_date', $data['prescription_date'] ?? today())
+            ->where('version', '>=', 1)
             ->orderByDesc('version')
             ->first();
         if ($existingRx) {
@@ -873,7 +875,21 @@ class PrescriptionController extends MedicalController implements HasMiddleware
                 ->withInput();
         }
 
-        $prescription = $this->prescriptionService->createPrescription($data, $items);
+        try {
+            $prescription = $this->prescriptionService->createPrescription($data, $items);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->getCode() === '23000' && (
+                str_contains($e->getMessage(), 'uniq_rx_doctor_patient_date_version') ||
+                str_contains($e->getMessage(), 'uq_prescription_doctor_patient_date_version')
+            )) {
+                $existing = Prescription::todayForDoctorPatient($data['doctor_id'], $data['patient_id'], $instituteId);
+                return redirect()->route('medical.prescriptions.edit', $existing)
+                    ->with('warning', 'A prescription already exists for this patient on '
+                        .\Carbon\Carbon::parse($data['prescription_date'] ?? today())->format('d M Y')
+                        .' ('.clinical_no($existing->prescription_number).'). You are being redirected to edit it.');
+            }
+            throw $e;
+        }
         $this->cdsFindings->recordEvaluation($prescription, $cds);
 
         // Split save button: "Save and Print" (default) signs + locks so
@@ -1363,6 +1379,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
 
         abort_if(! $prescription->is_finalized, 422, 'Only finalized prescriptions can be amended.');
         abort_if($prescription->isAmended(), 422, 'Already amended — amend the latest version instead.');
+        abort_if($prescription->version < 1, 422, 'This prescription has an invalid version and cannot be amended.');
 
         $prescription->load('items');
 
@@ -1440,6 +1457,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
 
         abort_if(! $prescription->is_finalized, 422, 'Only finalized prescriptions can be amended.');
         abort_if($prescription->isAmended(), 422, 'Already amended — amend the latest version instead.');
+        abort_if($prescription->version < 1, 422, 'This prescription has an invalid version and cannot be amended.');
 
         $instituteId = $this->instituteId();
 
@@ -1465,7 +1483,8 @@ class PrescriptionController extends MedicalController implements HasMiddleware
         $items = $data['items'];
         unset($data['amendment_reason'], $data['items']);
 
-        $new = \Illuminate\Support\Facades\DB::transaction(function () use ($data, $items, $prescription, $reason, $instituteId, $request) {
+        try {
+            $new = \Illuminate\Support\Facades\DB::transaction(function () use ($data, $items, $prescription, $reason, $instituteId, $request) {
             // Create v(N+1) as a draft
             $new = $prescription->replicate([
                 'signature_hash', 'signed_at', 'signed_by',
@@ -1523,6 +1542,15 @@ class PrescriptionController extends MedicalController implements HasMiddleware
 
             return $new;
         });
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->getCode() === '23000' && (
+                str_contains($e->getMessage(), 'uniq_rx_doctor_patient_date_version') ||
+                str_contains($e->getMessage(), 'uq_prescription_doctor_patient_date_version')
+            )) {
+                return back()->with('error', 'A concurrent amendment created a duplicate. Please try again.');
+            }
+            throw $e;
+        }
 
         return redirect()->route('medical.prescriptions.show', $new)
             ->with('status', "Prescription amended to v{$new->version}. Original Rx {$prescription->prescription_number} preserved.");

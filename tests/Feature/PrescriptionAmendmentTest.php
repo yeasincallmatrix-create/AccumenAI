@@ -282,4 +282,86 @@ class PrescriptionAmendmentTest extends TestCase
         $this->assertEquals(1, $original->version);
         $this->assertNull($original->parent_prescription_id);
     }
+
+    public function test_unique_constraint_blocks_duplicate_version_at_db_level(): void
+    {
+        // Create v1 via application layer
+        $rx = $this->createRx(['version' => 1]);
+        $this->assertNotNull($rx);
+
+        // Attempt to insert a duplicate v1 via raw DB — must hit UNIQUE constraint
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        \DB::table('prescriptions')->insert([
+            'institute_id'        => $this->institute->id,
+            'patient_id'          => $this->patient->id,
+            'doctor_id'           => $this->doctor->id,
+            'prescription_number' => 'RX-DUPLICATE-DB-TEST',
+            'prescription_date'   => now()->format('Y-m-d'),
+            'version'             => 1,
+            'is_finalized'        => false,
+            'created_at'          => now(),
+            'updated_at'          => now(),
+        ]);
+    }
+
+    public function test_isLatestVersion_returns_false_for_invalid_version(): void
+    {
+        $rx = $this->createRx(['version' => 0]);
+        $this->assertFalse($rx->isLatestVersion());
+    }
+
+    public function test_amend_blocks_version_below_one(): void
+    {
+        $rx = $this->createRx(['is_finalized' => 1, 'version' => 0]);
+        $response = $this->get(route('medical.prescriptions.amend', $rx));
+        $response->assertStatus(422);
+    }
+
+    public function test_amend_store_blocks_version_below_one(): void
+    {
+        $rx = $this->createRx(['is_finalized' => 1, 'version' => 0]);
+        $response = $this->post(route('medical.prescriptions.amend.store', $rx), [
+            'patient_id' => $this->patient->id,
+            'doctor_id' => $this->doctor->id,
+            'date' => now()->format('Y-m-d'),
+            'diagnosis' => 'Dx',
+            'amendment_reason' => 'Test amendment of invalid version',
+            'items' => [['medicine_name' => 'X', 'dosage' => '1mg', 'frequency' => '1+0+0', 'duration_days' => 1, 'quantity' => 1]],
+        ]);
+        $response->assertStatus(422);
+    }
+
+    public function test_today_for_doctor_patient_excludes_version_zero(): void
+    {
+        $this->createRx(['version' => 0]);
+        $found = Prescription::todayForDoctorPatient($this->doctor->id, $this->patient->id, $this->institute->id);
+        $this->assertNull($found);
+    }
+
+    public function test_renumbered_prescriptions_have_correct_lineage(): void
+    {
+        $v1 = $this->createRx(['is_finalized' => 1, 'version' => 1]);
+        $v2 = $this->createRx([
+            'version' => 2,
+            'parent_prescription_id' => $v1->id,
+            'is_finalized' => 1,
+            'prescription_number' => 'RX-TEST-V2-' . uniqid(),
+        ]);
+
+        $this->assertEquals(1, $v1->version);
+        $this->assertNull($v1->parent_prescription_id);
+        $this->assertFalse($v1->isLatestVersion());
+        $this->assertTrue($v1->isAmended());
+
+        $this->assertEquals(2, $v2->version);
+        $this->assertEquals($v1->id, $v2->parent_prescription_id);
+        $this->assertTrue($v2->isAmendment());
+        $this->assertTrue($v2->isLatestVersion());
+        $this->assertFalse($v2->isAmended());
+
+        $v1->refresh();
+        $this->assertTrue($v1->isAmended());
+        $this->assertFalse($v1->isLatestVersion());
+    }
 }

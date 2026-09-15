@@ -355,6 +355,9 @@
                     <a class="nav-link {{ request()->routeIs('admin.platform-settings.*') ? 'active' : '' }}" href="{{ route('admin.platform-settings.index') }}">
                         <i class="bi bi-sliders"></i><span class="sidebar-label">Configuration Center</span>
                     </a>
+                    <a class="nav-link {{ request()->routeIs('admin.home-pages.*') ? 'active' : '' }}" href="{{ route('admin.home-pages.index') }}">
+                        <i class="bi bi-house-page"></i><span class="sidebar-label">Home Pages</span>
+                    </a>
 
                     {{-- ═══ SECURITY ═══ --}}
                     <div class="sidebar-section-label">SECURITY</div>

@@ -112,7 +112,7 @@ Route::middleware(['auth:platform_admin,institute_user,web', 'verified'])->group
     Route::post('ui/columns', [\App\Http\Controllers\UiPreferenceController::class, 'save'])->name('ui.columns');
 });
 
-// Public Home — AccumenAI landing (no auth, Tailwind + Bootstrap Icons) — PHASE: IMPLEMENT_ACCUMENAI_HOME_PAGE
+// Public Home — AccumenAI landing (no auth, Tailwind + Bootstrap Icons)
 Route::get('/', function (\Illuminate\Http\Request $request) {
     // Block dashboard for incomplete onboarding — resume same step after logout
     if (\Illuminate\Support\Facades\Auth::guard('web')->check()) {
@@ -127,6 +127,12 @@ Route::get('/', function (\Illuminate\Http\Request $request) {
         || \Illuminate\Support\Facades\Auth::guard('institute_user')->check()
         || \Illuminate\Support\Facades\Auth::guard('web')->check()) {
         return app(DashboardController::class)();
+    }
+    // Resolve home page by visitor country (session cookie > platform default)
+    $countryIso2 = $request->session()->get('visitor_country', config('app.country'));
+    $homePage = \App\Models\HomePage::resolveForCountry($countryIso2);
+    if ($homePage) {
+        return view($homePage->viewPath(), ['homePage' => $homePage]);
     }
     return view('home');
 })->middleware(['web', 'tenant'])->name('home');
@@ -324,6 +330,20 @@ Route::middleware(['auth:platform_admin', 'verified'])->prefix('admin')->name('a
     Route::post('platform-settings/branding', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'updateBranding'])->name('platform-settings.branding');
     Route::post('platform-settings/dgda', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'updateDgda'])->name('platform-settings.dgda');
     Route::post('platform-settings/maintenance', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'updateMaintenance'])->name('platform-settings.maintenance');
+
+    // Home Page Manager
+    $hpc = \App\Http\Controllers\Admin\HomePageController::class;
+    Route::get('home-pages', [$hpc, 'index'])->name('home-pages.index');
+    Route::get('home-pages/create', [$hpc, 'create'])->name('home-pages.create');
+    Route::post('home-pages', [$hpc, 'store'])->name('home-pages.store');
+    Route::get('home-pages/{homePage}', [$hpc, 'edit'])->name('home-pages.edit');
+    Route::put('home-pages/{homePage}', [$hpc, 'update'])->name('home-pages.update');
+    Route::delete('home-pages/{homePage}', [$hpc, 'destroy'])->name('home-pages.destroy');
+    Route::post('home-pages/{homePage}/toggle', [$hpc, 'toggleActive'])->name('home-pages.toggle');
+    Route::post('home-pages/{homePage}/set-global', [$hpc, 'setDefault'])->name('home-pages.set-global');
+    Route::post('home-pages/{homePage}/countries', [$hpc, 'assignCountries'])->name('home-pages.countries');
+    Route::get('home-pages/{homePage}/preview', [$hpc, 'preview'])->name('home-pages.preview');
+
     Route::get('platform-audit', [\App\Http\Controllers\Admin\PlatformAuditController::class, 'index'])->name('platform-audit.index');
 
     // Platform Staff Management (delegated, least-privilege - NOT super admin)

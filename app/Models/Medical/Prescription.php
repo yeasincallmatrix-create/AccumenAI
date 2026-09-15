@@ -163,6 +163,10 @@ class Prescription extends Model
 
     public function isLatestVersion(): bool
     {
+        if ($this->version < 1) {
+            return false;
+        }
+
         return ! $this->isAmended();
     }
 
@@ -179,6 +183,7 @@ class Prescription extends Model
             ->where('patient_id', $patientId)
             ->where('institute_id', $instituteId)
             ->whereDate('prescription_date', now()->toDateString())
+            ->where('version', '>=', 1)
             ->orderByDesc('version')
             ->first();
     }

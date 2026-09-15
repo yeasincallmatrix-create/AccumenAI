@@ -278,7 +278,9 @@ class MedicalPhase3Test extends TestCase
 
         $this->post(
             route('medical.prescriptions.store'),
-            $this->prescriptionPayload($patient, [$this->itemPayload($medicine)])
+            array_merge($this->prescriptionPayload($patient, [$this->itemPayload($medicine)]), [
+                'save_action' => 'draft',
+            ])
         )->assertSessionHasNoErrors();
 
         $rx = Prescription::where('institute_id', $this->institute->id)->firstOrFail();
@@ -441,7 +443,9 @@ class MedicalPhase3Test extends TestCase
 
         $this->post(
             route('medical.prescriptions.store'),
-            $this->prescriptionPayload($patient, [$this->itemPayload($medicine)])
+            array_merge($this->prescriptionPayload($patient, [$this->itemPayload($medicine)]), [
+                'save_action' => 'draft',
+            ])
         )->assertSessionHasNoErrors();
         $rx = Prescription::where('institute_id', $this->institute->id)->firstOrFail();
 
@@ -574,11 +578,10 @@ class MedicalPhase3Test extends TestCase
         $this->assertNotNull($feeA);
         $this->assertTrue($feeA['collectable']);
         $this->assertStringContainsString('fee_collect', $feeA['url']);
-        // …and also live for the closed (completed, still unpaid) visit —
-        // the prescription page does not gate on visit status…
+        // …but null for the closed (completed) visit — the prescription page
+        // returns no fee payload for completed cycles.
         $feeB = $info($doctorB->id)['fee'];
-        $this->assertNotNull($feeB);
-        $this->assertTrue($feeB['collectable']);
+        $this->assertNull($feeB);
         // …and dead once paid.
         $visitA = \App\Models\Medical\Appointment::where('institute_id', $this->institute->id)
             ->where('doctor_id', $this->doctor->id)

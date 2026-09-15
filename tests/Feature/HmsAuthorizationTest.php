@@ -139,6 +139,7 @@ class HmsAuthorizationTest extends TestCase
             'doctor_id' => $this->doctor->id,
             'prescription_date' => now()->format('Y-m-d'),
             'diagnosis' => 'Auth diagnosis',
+            'save_action' => 'draft',
             'items' => [[
                 'medicine_id' => null,
                 'medicine_name' => 'Authmycin 500mg',
