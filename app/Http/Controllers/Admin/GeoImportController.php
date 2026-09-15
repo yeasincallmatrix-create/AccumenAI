@@ -404,6 +404,130 @@ class GeoImportController extends Controller
         ];
     }
 
+    /**
+     * List source files from database/geo/, optionally filtered by country name/iso2.
+     */
+    public function sourceFiles(Request $request): JsonResponse
+    {
+        $dir = database_path('geo');
+        if (! is_dir($dir)) {
+            return $this->importResponse(true, 'No source directory.', ['files' => []]);
+        }
+
+        $q = strtolower(trim((string) $request->query('country', '')));
+        $files = collect(glob($dir.'/*'))
+            ->filter(fn ($f) => is_file($f) && in_array(strtolower(pathinfo($f, PATHINFO_EXTENSION)), ['jsonl', 'json', 'csv', 'ndjson']))
+            ->filter(fn ($f) => $q === '' || str_contains(strtolower(basename($f)), $q))
+            ->map(fn ($f) => [
+                'name' => basename($f),
+                'size' => filesize($f),
+                'path' => $f,
+            ])
+            ->values()
+            ->all();
+
+        return $this->importResponse(true, 'ok', ['files' => $files]);
+    }
+
+    /**
+     * Delete a source file from database/geo/.
+     */
+    public function deleteSourceFile(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'filename' => ['required', 'string'],
+        ]);
+
+        $filename = basename($data['filename']);
+        $path = database_path('geo/'.$filename);
+
+        if (! is_file($path)) {
+            return $this->importResponse(false, 'File not found.');
+        }
+
+        // Safety: only allow deleting from the geo directory
+        $realPath = realpath($path);
+        $geoDir = realpath(database_path('geo'));
+        if ($realPath === false || $geoDir === false || ! str_starts_with($realPath, $geoDir.'/')) {
+            return $this->importResponse(false, 'Invalid path.');
+        }
+
+        unlink($path);
+
+        return $this->importResponse(true, 'Deleted '.$filename.'.');
+    }
+
+    /**
+     * Import directly from a source file in database/geo/ — no manual upload needed.
+     * Clears old geo data first, then imports fresh.
+     */
+    public function loadFromSource(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'country_id' => ['required', 'integer', 'exists:countries,id'],
+            'filename' => ['required', 'string'],
+            'mode' => ['nullable', 'string', 'in:upsert,add'],
+        ]);
+
+        $sourcePath = database_path('geo/'.$data['filename']);
+        if (! is_file($sourcePath)) {
+            return $this->importResponse(false, 'Source file not found: database/geo/'.$data['filename']);
+        }
+
+        $country = Country::findOrFail($data['country_id']);
+        $extension = strtolower(pathinfo($sourcePath, PATHINFO_EXTENSION));
+
+        $import = new GeoImport([
+            'country_id' => $data['country_id'],
+            'filename' => $data['filename'],
+            'file_size' => filesize($sourcePath),
+            'format' => $extension,
+            'status' => 'pending',
+            'mode' => 'upsert',
+            'created_by' => auth('platform_admin')->id(),
+        ]);
+        $import->save();
+
+        $destDir = Storage::disk('local')->path('geo-imports/'.$import->id);
+        if (! is_dir($destDir)) {
+            mkdir($destDir, 0755, true);
+        }
+        copy($sourcePath, $destDir.'/'.$data['filename']);
+
+        // Clear old geo data for this country first
+        $service = new GeoImportService();
+        $service->clearCountry($country);
+
+        // Now run the import fresh
+        $provider = new LocalPackageProvider($destDir.'/'.$data['filename']);
+        $report = $service->import($provider, $country);
+
+        $import->forceFill([
+            'total_records' => $report['total'],
+            'inserted_records' => $report['inserted'],
+            'updated_records' => $report['updated'],
+            'skipped_records' => $report['skipped'],
+            'duplicate_count' => $report['duplicates'],
+            'error_count' => $report['errors'],
+            'error_summary' => $report['error_summary'],
+            'status' => $report['status'],
+            'started_at' => now(),
+            'completed_at' => now(),
+        ])->save();
+
+        return $this->importResponse(true, 'Cleared and imported.', [
+            'import' => $this->importPayload($import),
+            'report' => [
+                'total' => $report['total'],
+                'inserted' => $report['inserted'],
+                'updated' => $report['updated'],
+                'skipped' => $report['skipped'],
+                'errors' => $report['errors'],
+                'status' => $report['status'],
+            ],
+        ]);
+    }
+
     private function importResponse(bool $success, string $message, array $data = []): JsonResponse
     {
         return response()->json([

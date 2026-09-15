@@ -1559,6 +1559,9 @@ Route::middleware(['auth:platform_admin', 'verified'])->prefix('admin')->name('a
     Route::post('geo/{country}/toggle', [$adminGeo, 'toggleStatus'])->name('geo.toggle');
     Route::get('geo/imports', [$adminGeoImp, 'index'])->name('geo.imports');
     Route::post('geo/imports', [$adminGeoImp, 'store'])->name('geo.imports.store');
+    Route::get('geo/imports/source-files', [$adminGeoImp, 'sourceFiles'])->name('geo.imports.source-files');
+    Route::post('geo/imports/load-from-source', [$adminGeoImp, 'loadFromSource'])->name('geo.imports.load-from-source');
+    Route::post('geo/imports/delete-source-file', [$adminGeoImp, 'deleteSourceFile'])->name('geo.imports.delete-source-file');
     Route::get('geo/imports/template', [$adminGeoImp, 'template'])->name('geo.imports.template');
     Route::post('geo/imports/convert', [$adminGeoImp, 'convert'])->name('geo.imports.convert');
     Route::post('geo/imports/{import}/rollback', [$adminGeoImp, 'rollback'])->name('geo.imports.rollback');
