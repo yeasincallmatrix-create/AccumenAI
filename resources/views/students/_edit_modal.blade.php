@@ -328,7 +328,7 @@
         var submitBtn = form.querySelector('[type="submit"]');
         var restore = Monetix.loading(submitBtn, 'Saving…');
         Monetix.request(form.action, {
-            method: 'PUT',
+            method: 'POST',
             body: new FormData(form),
         }).then(function (res) {
             if (restore) { restore(); }
