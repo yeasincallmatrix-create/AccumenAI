@@ -241,7 +241,7 @@ $defaultFollowUp = $isCreate ? date('Y-m-d') : $prescription->follow_up_date?->f
                     <div class="card h-100">
                         <div class="card-body d-flex flex-column">
 
-            <h6 class="mt-3 mb-6 d-flex align-items-center justify-content-between" title="Medicines"><span><span style="font-size:5em;line-height:1;vertical-align:middle;" title="Medicines">℞</span> <span class="text-danger">*</span></span><button type="button" class="btn btn-sm btn-outline-secondary" data-rx-print-prefs title="Print preferences"><i class="bi bi-gear"></i></button></h6>
+            <h6 class="mt-3 mb-6 d-flex align-items-center justify-content-between" title="Medicines"><span><span style="font-size:5em;line-height:1;vertical-align:middle;" title="Medicines">℞</span> <span class="text-danger">*</span></span><span class="d-flex gap-1"><button type="button" class="btn btn-sm btn-outline-primary" id="rx-quick-add-medicine" title="Add a medicine not in the database"><i class="bi bi-lightning me-1"></i>New</button><button type="button" class="btn btn-sm btn-outline-secondary" data-rx-print-prefs title="Print preferences"><i class="bi bi-gear"></i></button></span></h6>
 
             @if($isAmend)
             <div class="mb-3">
@@ -252,50 +252,7 @@ $defaultFollowUp = $isCreate ? date('Y-m-d') : $prescription->follow_up_date?->f
             </div>
             @endif
 
-            @if($isAmend && $prescription->items->count())
-            <div class="card mb-3 border-warning">
-                <div class="card-header bg-warning-subtle">
-                    <strong>Existing Medicines from v{{ $prescription->version }}</strong>
-                    <small class="text-muted d-block">Mark each medicine as Keep Active or Discontinue.</small>
-                </div>
-                <div class="card-body">
-                    @error('parent_items')<div class="alert alert-danger">{{ $message }}</div>@enderror
-                    @foreach($prescription->items as $parentItem)
-                        <div class="row g-2 align-items-center mb-2 pb-2 border-bottom">
-                            <div class="col-md-5">
-                                <strong>{{ $parentItem->medicine_name }}</strong>
-                                <small class="text-muted d-block">
-                                    {{ $parentItem->dosage }} — {{ $parentItem->frequency }}
-                                    — {{ $parentItem->duration_days ?? '—' }} days
-                                </small>
-                                <input type="hidden" name="parent_items[{{ $parentItem->id }}][id]" value="{{ $parentItem->id }}">
-                                <input type="hidden" name="parent_items[{{ $parentItem->id }}][medicine_name]" value="{{ $parentItem->medicine_name }}">
-                                <input type="hidden" name="parent_items[{{ $parentItem->id }}][medicine_id]" value="{{ $parentItem->medicine_id ?? '' }}">
-                                <input type="hidden" name="parent_items[{{ $parentItem->id }}][dosage]" value="{{ $parentItem->dosage }}">
-                                <input type="hidden" name="parent_items[{{ $parentItem->id }}][frequency]" value="{{ $parentItem->frequency }}">
-                                <input type="hidden" name="parent_items[{{ $parentItem->id }}][duration_days]" value="{{ $parentItem->duration_days }}">
-                                <input type="hidden" name="parent_items[{{ $parentItem->id }}][quantity]" value="{{ $parentItem->quantity }}">
-                                <input type="hidden" name="parent_items[{{ $parentItem->id }}][dgda_code]" value="{{ $parentItem->dgda_code }}">
-                                <input type="hidden" name="parent_items[{{ $parentItem->id }}][special_instructions]" value="{{ $parentItem->special_instructions }}">
-                            </div>
-                            <div class="col-md-3">
-                                <div class="btn-group btn-group-sm w-100" role="group">
-                                    <input type="radio" class="btn-check" name="parent_items[{{ $parentItem->id }}][action]" id="keep_{{ $parentItem->id }}" value="keep" checked>
-                                    <label class="btn btn-outline-success" for="keep_{{ $parentItem->id }}"><i class="bi bi-check-circle"></i> Keep</label>
-                                    <input type="radio" class="btn-check" name="parent_items[{{ $parentItem->id }}][action]" id="disc_{{ $parentItem->id }}" value="discontinue">
-                                    <label class="btn btn-outline-danger" for="disc_{{ $parentItem->id }}"><i class="bi bi-x-circle"></i> Discontinue</label>
-                                </div>
-                            </div>
-                            <div class="col-md-4 discontinue-reason-wrap" data-item-id="{{ $parentItem->id }}" style="display:none;">
-                                <input type="text" name="parent_items[{{ $parentItem->id }}][discontinued_reason]"
-                                       class="form-control form-control-sm" placeholder="Reason (required)" maxlength="255">
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-            @endif
-
+            @error('parent_items')<div class="alert alert-danger">{{ $message }}</div>@enderror
             @error('items')<div class="alert alert-danger">{{ $message }}</div>@enderror
             <div class="table-responsive">
                 <table class="table table-sm align-middle" id="rx-items-table">
@@ -326,20 +283,48 @@ $defaultFollowUp = $isCreate ? date('Y-m-d') : $prescription->follow_up_date?->f
                         </tr>
                         @endforeach
                         @elseif($isAmend)
-                        {{-- Amend mode: items table starts empty; parent items are in the card above --}}
-                        @foreach(old('items', []) as $i => $item)
-                        <tr data-rx-row>
-                            <td class="rx-drag-cell"><span class="rx-drag-handle" title="Drag to reorder" aria-label="Drag to reorder"><i class="bi bi-grip-vertical"></i><span class="rx-order">{{ $loop->iteration }}</span></span></td>
-                            <td><input type="hidden" name="items[{{ $i }}][medicine_id]" class="rx-med-id" value="{{ $item['medicine_id'] ?? '' }}">
-                                <input type="text" name="items[{{ $i }}][medicine_name]" class="form-control form-control-sm rx-med-name" list="rx-medicine-list" required maxlength="200" placeholder="Type or pick medicine" value="{{ $item['medicine_name'] ?? '' }}">
-                                <span class="badge rx-dgda mt-1 d-none"></span></td>
-                            <td><input type="text" name="items[{{ $i }}][dosage]" class="form-control form-control-sm" required maxlength="50" placeholder="e.g. 500mg" value="{{ $item['dosage'] ?? '' }}"></td>
-                            <td><input type="text" name="items[{{ $i }}][frequency]" class="form-control form-control-sm" required maxlength="50" placeholder="e.g. 1+0+1" value="{{ $item['frequency'] ?? '' }}"></td>
-                            <td><input type="number" name="items[{{ $i }}][duration_days]" class="form-control form-control-sm" min="1" placeholder="Days" value="{{ $item['duration_days'] ?? '' }}"></td>
-                            <td><input type="number" name="items[{{ $i }}][quantity]" class="form-control form-control-sm" min="1" value="{{ $item['quantity'] ?? 1 }}" required></td>
-                            <td><button type="button" class="btn btn-sm btn-danger rx-remove" title="Remove">×</button> <button type="button" class="btn btn-sm btn-success rx-add-below" title="Add medicine below">+</button></td>
+                        {{-- Parent items: locked rows from previous version --}}
+                        @foreach($prescription->items as $pi)
+                        <tr data-rx-row data-parent-item-id="{{ $pi->id }}" class="rx-parent-row">
+                            <td class="rx-drag-cell"><span class="rx-order">{{ $loop->iteration }}</span></td>
+                            <td>
+                                <input type="hidden" name="parent_items[{{ $pi->id }}][id]" value="{{ $pi->id }}">
+                                <input type="hidden" name="parent_items[{{ $pi->id }}][medicine_id]" value="{{ $pi->medicine_id ?? '' }}">
+                                <input type="hidden" name="parent_items[{{ $pi->id }}][medicine_name]" value="{{ $pi->medicine_name }}">
+                                <input type="hidden" name="parent_items[{{ $pi->id }}][dosage]" value="{{ $pi->dosage }}">
+                                <input type="hidden" name="parent_items[{{ $pi->id }}][frequency]" value="{{ $pi->frequency }}">
+                                <input type="hidden" name="parent_items[{{ $pi->id }}][duration_days]" value="{{ $pi->duration_days }}">
+                                <input type="hidden" name="parent_items[{{ $pi->id }}][quantity]" value="{{ $pi->quantity }}">
+                                <input type="hidden" name="parent_items[{{ $pi->id }}][dgda_code]" value="{{ $pi->dgda_code ?? '' }}">
+                                <input type="hidden" name="parent_items[{{ $pi->id }}][special_instructions]" value="{{ $pi->special_instructions ?? '' }}">
+                                <span class="rx-locked-text">{{ $pi->medicine_name }}</span>
+                                <span class="badge bg-secondary-subtle text-secondary ms-1" style="font-size:.65em">v{{ $prescription->version }}</span>
+                            </td>
+                            <td><span class="rx-locked-text">{{ $pi->dosage }}</span></td>
+                            <td><span class="rx-locked-text">{{ $pi->frequency }}</span></td>
+                            <td><span class="rx-locked-text">{{ $pi->duration_days ?? '—' }}</span></td>
+                            <td><span class="rx-locked-text">{{ $pi->quantity }}</span></td>
+                            <td>
+                                <div class="d-flex gap-1 align-items-center">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <input type="radio" class="btn-check" name="parent_items[{{ $pi->id }}][action]" id="keep_{{ $pi->id }}" value="keep" checked>
+                                        <label class="btn btn-outline-success btn-sm" for="keep_{{ $pi->id }}" title="Keep active"><i class="bi bi-check-lg"></i></label>
+                                        <input type="radio" class="btn-check" name="parent_items[{{ $pi->id }}][action]" id="disc_{{ $pi->id }}" value="discontinue">
+                                        <label class="btn btn-outline-danger btn-sm" for="disc_{{ $pi->id }}" title="Discontinue"><i class="bi bi-x-lg"></i></label>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="rx-parent-reason d-none" data-parent-reason="{{ $pi->id }}">
+                            <td></td>
+                            <td colspan="5">
+                                <input type="text" name="parent_items[{{ $pi->id }}][discontinued_reason]"
+                                       class="form-control form-control-sm" placeholder="Discontinue reason (required)" maxlength="255">
+                            </td>
+                            <td></td>
                         </tr>
                         @endforeach
+                        {{-- New items start empty; doctor clicks "Add Medicine" --}}
                         @else
                         @foreach(old('items', $prescription->items->map(fn ($i) => [
                             'medicine_id' => $i->medicine_id,
@@ -458,6 +443,50 @@ $defaultFollowUp = $isCreate ? date('Y-m-d') : $prescription->follow_up_date?->f
 {{-- Shared Quick Add Patient popup (plus button in the Patient Details header). --}}
 @include('medical.patients._quick_create_modal')
 
+{{-- Quick Add Medicine popup (lightning button in the Medicines card). --}}
+<div class="modal fade" id="quickAddMedicineModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="quick-add-medicine-form">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-capsule me-1"></i>Quick Add Medicine</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="qmed_dosage_form">Dosage Form <span class="text-danger">*</span></label>
+                        <select id="qmed_dosage_form" name="dosage_form" class="form-select" required>
+                            <option value="">Select type</option>
+                            @foreach(['Tablet','Capsule','Syrup','Suspension','Injection','Drops','Inhaler','Cream','Ointment','Gel','Spray','Suppository','Sachet','Powder','Solution','Lotion','Patch'] as $form)
+                                <option value="{{ $form }}">{{ $form }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="qmed_generic_name">Medicine Name <span class="text-danger">*</span></label>
+                        <input type="text" id="qmed_generic_name" name="generic_name" class="form-control" required maxlength="150" placeholder="e.g. Paracetamol">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="qmed_strength">Strength</label>
+                        <input type="text" id="qmed_strength" name="strength" class="form-control" maxlength="50" placeholder="e.g. 500mg">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="qmed_brand_name">Brand Name</label>
+                        <input type="text" id="qmed_brand_name" name="brand_name" class="form-control" maxlength="150" placeholder="e.g. Napa">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="qmed_submit_btn">
+                        <i class="bi bi-plus-circle me-1"></i>Add &amp; Select
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @if($isCreate)
 {{-- Duplicate prescription warning modal --}}
 <div class="modal fade" id="rxDuplicateModal" tabindex="-1" aria-labelledby="rxDuplicateModalLabel" aria-hidden="true">
@@ -547,7 +576,8 @@ $defaultFollowUp = $isCreate ? date('Y-m-d') : $prescription->follow_up_date?->f
     document.querySelectorAll('#rx-medicine-list option').forEach(function (opt) {
         catalog[opt.value] = { id: opt.getAttribute('data-id'), dgda: opt.getAttribute('data-dgda') || '' };
     });
-    var index = {{ $isCreate ? '0' : 'body.querySelectorAll(\'tr\').length' }};
+    window.rxCatalog = catalog;
+    var index = 0;
     var dgdaOn = @json(mawa_dgda_enabled());
 
     function syncDgdaTag(tr) {
@@ -589,16 +619,19 @@ $defaultFollowUp = $isCreate ? date('Y-m-d') : $prescription->follow_up_date?->f
     @endif
 
     function renumberRows() {
-        var rows = body.querySelectorAll('tr[data-rx-row]');
-        rows.forEach(function (tr, idx) {
+        var allRows = body.querySelectorAll('tr[data-rx-row]');
+        var newIdx = 0;
+        allRows.forEach(function (tr, visualIdx) {
             var badge = tr.querySelector('.rx-order');
-            if (badge) badge.textContent = String(idx + 1);
+            if (badge) badge.textContent = String(visualIdx + 1);
+            if (tr.classList.contains('rx-parent-row')) return;
             tr.querySelectorAll('input[name^="items["]').forEach(function (input) {
-                input.name = input.name.replace(/^items\[\d+\]/, 'items[' + idx + ']');
+                input.name = input.name.replace(/^items\[\d+\]/, 'items[' + newIdx + ']');
             });
+            newIdx++;
         });
-        index = rows.length;
-        if (addBtn) addBtn.style.display = rows.length ? 'none' : '';
+        index = newIdx;
+        if (addBtn) addBtn.style.display = @json($isCreate) ? (allRows.length ? 'none' : '') : '';
     }
 
     var dragSrc = null;
@@ -716,11 +749,12 @@ $defaultFollowUp = $isCreate ? date('Y-m-d') : $prescription->follow_up_date?->f
 
     addBtn.addEventListener('click', function () { addRow(); });
 
-    var existingRows = body.querySelectorAll('tr');
+    var existingRows = body.querySelectorAll('tr[data-rx-row]:not(.rx-parent-row)');
     if (existingRows.length) {
         existingRows.forEach(bindRow);
-        renumberRows();
-    } else {
+    }
+    renumberRows();
+    if (!existingRows.length && !{{ json_encode($isAmend) }}) {
         addRow();
     }
 
@@ -1486,6 +1520,11 @@ $defaultFollowUp = $isCreate ? date('Y-m-d') : $prescription->follow_up_date?->f
 
 @if($isAmend)
 @push('scripts')
+<style>
+.rx-parent-row { background-color: rgba(var(--bs-warning-rgb), .08); }
+.rx-parent-row .rx-locked-text { color: var(--bs-secondary); }
+.rx-parent-reason td { padding-top: 0 !important; padding-bottom: .5rem !important; }
+</style>
 <script>
 (function(){
     document.querySelectorAll('input[name$="[action]"]').forEach(function(radio) {
@@ -1493,14 +1532,14 @@ $defaultFollowUp = $isCreate ? date('Y-m-d') : $prescription->follow_up_date?->f
             var match = this.name.match(/parent_items\[(\d+)\]/);
             if (!match) return;
             var itemId = match[1];
-            var wrap = document.querySelector('.discontinue-reason-wrap[data-item-id="' + itemId + '"]');
-            if (!wrap) return;
-            var input = wrap.querySelector('input');
+            var reasonRow = document.querySelector('tr.rx-parent-reason[data-parent-reason="' + itemId + '"]');
+            if (!reasonRow) return;
+            var input = reasonRow.querySelector('input');
             if (this.value === 'discontinue') {
-                wrap.style.display = 'block';
+                reasonRow.classList.remove('d-none');
                 input.required = true;
             } else {
-                wrap.style.display = 'none';
+                reasonRow.classList.add('d-none');
                 input.required = false;
                 input.value = '';
             }
@@ -1510,5 +1549,94 @@ $defaultFollowUp = $isCreate ? date('Y-m-d') : $prescription->follow_up_date?->f
 </script>
 @endpush
 @endif
+
+@push('scripts')
+<script>
+(function () {
+    var quickBtn = document.getElementById('rx-quick-add-medicine');
+    var quickModal = document.getElementById('quickAddMedicineModal');
+    var quickForm = document.getElementById('quick-add-medicine-form');
+    var quickSubmit = document.getElementById('qmed_submit_btn');
+
+    if (quickBtn && quickModal) {
+        quickBtn.addEventListener('click', function () {
+            if (window.bootstrap) window.bootstrap.Modal.getOrCreateInstance(quickModal).show();
+        });
+    }
+
+    if (!quickForm) return;
+
+    /* Track which medicine-name input is active so we can fill it after save */
+    var activeMedInput = null;
+    document.addEventListener('focusin', function (e) {
+        if (e.target.classList && e.target.classList.contains('rx-med-name')) {
+            activeMedInput = e.target;
+        }
+    });
+
+    quickForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+        quickSubmit.disabled = true;
+        quickSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Adding...';
+
+        fetch(@json(route('medical.pharmacy.medicines.quick-store')), {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': token, 'X-Requested-With': 'XMLHttpRequest' },
+            body: new FormData(quickForm)
+        })
+        .then(function (r) { return r.ok ? r.json() : r.json().then(function (b) { throw b; }); })
+        .then(function (data) {
+            /* Add to datalist */
+            var dl = document.getElementById('rx-medicine-list');
+            if (dl) {
+                var opt = document.createElement('option');
+                opt.setAttribute('data-id', data.id);
+                opt.setAttribute('data-dgda', '');
+                opt.value = data.display_name;
+                opt.textContent = data.display_name;
+                dl.appendChild(opt);
+            }
+
+            /* Add to JS catalog map so bindRow picks it up */
+            if (window.rxCatalog) {
+                window.rxCatalog[data.display_name] = { id: String(data.id), dgda: '' };
+            }
+
+            /* Fill the active row or the last row */
+            var targetInput = activeMedInput;
+            if (!targetInput || !targetInput.closest('table')) {
+                var rows = document.querySelectorAll('#rx-items-body tr[data-rx-row]:not(.rx-parent-row)');
+                if (rows.length) targetInput = rows[rows.length - 1].querySelector('.rx-med-name');
+            }
+            if (targetInput) {
+                targetInput.value = data.display_name;
+                targetInput.dispatchEvent(new Event('change', { bubbles: true }));
+                targetInput.focus();
+            }
+
+            /* Reset form & close */
+            quickForm.reset();
+            if (window.bootstrap) {
+                var inst = window.bootstrap.Modal.getInstance(quickModal);
+                if (inst) inst.hide();
+            }
+        })
+        .catch(function (err) {
+            var msg = (err && err.message) ? err.message : 'Could not add medicine.';
+            if (err && err.errors) {
+                var first = Object.values(err.errors)[0];
+                if (first && first[0]) msg = first[0];
+            }
+            alert(msg);
+        })
+        .finally(function () {
+            quickSubmit.disabled = false;
+            quickSubmit.innerHTML = '<i class="bi bi-plus-circle me-1"></i>Add & Select';
+        });
+    });
+})();
+</script>
+@endpush
 
 @include('medical.appointments._fee_modal')

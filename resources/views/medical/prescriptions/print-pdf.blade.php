@@ -72,7 +72,9 @@
         {{-- HEADER --}}
         <header class="clinic-header">
             <div class="clinic-logo">
-                @php($logoPath = $prescription->institute->logo_path_resolved)
+                @php
+                $logoPath = $prescription->institute->logo_path_resolved;
+                @endphp
                 @if(!empty($logoPath) && file_exists(public_path('storage/'.$logoPath)))
                     <img src="{{ public_path('storage/'.$logoPath) }}" alt="Logo">
                 @endif
@@ -82,7 +84,9 @@
                 @if(!empty($prescription->institute->address))
                     <p class="clinic-sub">{{ $prescription->institute->address }}</p>
                 @endif
-                @php($lhContact = implode(' · ', array_filter([$prescription->institute->phone ?? null, $prescription->institute->email ?? null, $prescription->institute->website ?? null])))
+                @php
+                $lhContact = implode(' · ', array_filter([$prescription->institute->phone ?? null, $prescription->institute->email ?? null, $prescription->institute->website ?? null]));
+                @endphp
                 @if($lhContact !== '')
                     <p class="clinic-sub">{{ $lhContact }}</p>
                 @endif

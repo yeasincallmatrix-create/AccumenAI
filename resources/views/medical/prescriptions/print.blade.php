@@ -125,7 +125,9 @@
                 @if(!empty($prescription->institute->address))
                     <p class="clinic-sub">{{ $prescription->institute->address }}</p>
                 @endif
-                @php($lhContact = implode(' · ', array_filter([$prescription->institute->phone ?? null, $prescription->institute->email ?? null, $prescription->institute->website ?? null])))
+                @php
+                $lhContact = implode(' · ', array_filter([$prescription->institute->phone ?? null, $prescription->institute->email ?? null, $prescription->institute->website ?? null]));
+                @endphp
                 @if($lhContact !== '')
                     <p class="clinic-sub">{{ $lhContact }}</p>
                 @endif
@@ -138,15 +140,6 @@
                 @if(!empty($doctorProfile->registration_number))<div>BMDC Reg: {{ $doctorProfile->registration_number }}</div>@endif
             </div>
         </header>
-
-        @if($prescription->isAmendment())
-            <div style="background:#fff3cd; padding:8px 12px; border:1px solid #ffc107; margin-bottom:12px; border-radius:4px;">
-                <strong>AMENDED PRESCRIPTION (v{{ $prescription->version }})</strong><br>
-                Original Rx: {{ $prescription->parent->prescription_number ?? '—' }}
-                ({{ $prescription->parent->prescription_date?->format('d M Y') ?? '—' }})<br>
-                Reason: {{ $prescription->amendment_reason }}
-            </div>
-        @endif
 
         {{-- RX META --}}
         <div class="rx-meta">

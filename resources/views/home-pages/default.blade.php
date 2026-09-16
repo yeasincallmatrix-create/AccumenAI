@@ -195,10 +195,11 @@
             @foreach($testimonials as $t)
             <div class="bg-gray-50 rounded-2xl p-8 border border-gray-100">
                 <div class="flex gap-1 text-amber-400 mb-4">
+                    @php $rating = (float) $t[3]; @endphp
                     @for($i = 1; $i <= 5; $i++)
-                        @if($i <= floor($t[3]))
+                        @if($i <= floor($rating))
                             <i class="bi bi-star-fill"></i>
-                        @elseif($t[3] - floor($t[3]) >= 0.5 && $i == ceil($t[3]))
+                        @elseif($rating - floor($rating) >= 0.5 && $i == ceil($rating))
                             <i class="bi bi-star-half"></i>
                         @endif
                     @endfor
