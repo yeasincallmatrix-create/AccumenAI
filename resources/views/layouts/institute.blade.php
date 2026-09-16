@@ -162,6 +162,8 @@
                                 'medical.pharmacy' => request()->routeIs('medical.pharmacy.*'),
                                 'medical.laboratory' => request()->routeIs('medical.lab.*'),
                                 'medical.billing' => request()->routeIs('medical.billing.*') || request()->routeIs('medical.tpa.*'),
+                                'medical.emergency' => request()->routeIs('medical.emergency.*'),
+                                'medical.radiology' => request()->routeIs('medical.radiology.*'),
                                 default => false,
                             };
                             $subId = 'medicalSub_' . str_replace('.', '_', $sub->key);
@@ -258,6 +260,38 @@
                                             @if($user && $user->hasPermission('medical_tpa.view'))
                                                 <a class="nav-link sub {{ request()->routeIs('medical.tpa.*') ? 'active' : '' }}" href="{{ route('medical.tpa.claims.index') }}">
                                                     <i class="bi bi-shield-check"></i><span class="sidebar-label">TPA Claims</span>
+                                                </a>
+                                            @endif
+                                            @break
+
+                                        @case('medical.emergency')
+                                            @if($user && $user->hasPermission('medical_emergency.view'))
+                                                <a class="nav-link sub {{ request()->routeIs('medical.emergency.dashboard') ? 'active' : '' }}" href="{{ route('medical.emergency.dashboard') }}">
+                                                    <i class="bi bi-clipboard2-pulse"></i><span class="sidebar-label">Triage Board</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.emergency.index') ? 'active' : '' }}" href="{{ route('medical.emergency.index') }}">
+                                                    <i class="bi bi-list-ul"></i><span class="sidebar-label">All Visits</span>
+                                                </a>
+                                            @endif
+                                            @if($user && $user->hasPermission('medical_emergency.create'))
+                                                <a class="nav-link sub {{ request()->routeIs('medical.emergency.create') ? 'active' : '' }}" href="{{ route('medical.emergency.create') }}">
+                                                    <i class="bi bi-person-plus"></i><span class="sidebar-label">New Walk-in</span>
+                                                </a>
+                                            @endif
+                                            @break
+
+                                        @case('medical.radiology')
+                                            @if($user && $user->hasPermission('medical_radiology.view'))
+                                                <a class="nav-link sub {{ request()->routeIs('medical.radiology.dashboard') ? 'active' : '' }}" href="{{ route('medical.radiology.dashboard') }}">
+                                                    <i class="bi bi-grid"></i><span class="sidebar-label">Worklist</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.radiology.orders.index') ? 'active' : '' }}" href="{{ route('medical.radiology.orders.index') }}">
+                                                    <i class="bi bi-list-ul"></i><span class="sidebar-label">All Orders</span>
+                                                </a>
+                                            @endif
+                                            @if($user && $user->hasPermission('medical_radiology.create'))
+                                                <a class="nav-link sub {{ request()->routeIs('medical.radiology.orders.create') ? 'active' : '' }}" href="{{ route('medical.radiology.orders.create') }}">
+                                                    <i class="bi bi-plus-circle"></i><span class="sidebar-label">New Order</span>
                                                 </a>
                                             @endif
                                             @break

@@ -94,6 +94,21 @@ class MedicalPermissionAliasSeeder extends Seeder
             'medical_branches.view'         => 'medical.branches.view',
             'medical_branches.manage'       => 'medical.branches.manage',
             'medical_reports.view'          => 'medical.reports.view',
+            // Emergency
+            'medical_emergency.view'        => 'medical.emergency.visits.view',
+            'medical_emergency.create'      => 'medical.emergency.visits.create',
+            'medical_emergency.edit'        => 'medical.emergency.visits.edit',
+            'medical_emergency.triage'      => 'medical.emergency.visits.triage',
+            'medical_emergency.discharge'   => 'medical.emergency.visits.discharge',
+            'medical_emergency.delete'      => 'medical.emergency.visits.delete',
+            // Radiology
+            'medical_radiology.view'        => 'medical.radiology.orders.view',
+            'medical_radiology.create'      => 'medical.radiology.orders.create',
+            'medical_radiology.edit'        => 'medical.radiology.orders.edit',
+            'medical_radiology.delete'      => 'medical.radiology.orders.delete',
+            'medical_radiology.perform'     => 'medical.radiology.orders.perform',
+            'medical_radiology.report'      => 'medical.radiology.orders.report',
+            'medical_radiology.verify'      => 'medical.radiology.orders.verify',
         ];
 
         foreach ($permissionMap as $oldSlug => $newSlug) {

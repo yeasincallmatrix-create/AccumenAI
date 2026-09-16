@@ -26,6 +26,10 @@ class NumberSequence extends Model
 
     public const TYPE_ENCOUNTER = 'encounter';
 
+    public const TYPE_EMERGENCY = 'emergency';
+
+    public const TYPE_RADIOLOGY = 'radiology';
+
     protected $fillable = [
         'institute_id',
         'sequence_type',

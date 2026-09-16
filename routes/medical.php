@@ -16,7 +16,9 @@ use App\Http\Controllers\Medical\LabController;
 use App\Http\Controllers\Medical\LabOrderController;
 use App\Http\Controllers\Medical\LabTestController;
 use App\Http\Controllers\Medical\MedicineController;
+use App\Http\Controllers\Medical\EmergencyController;
 use App\Http\Controllers\Medical\PatientController;
+use App\Http\Controllers\Medical\RadiologyController;
 use App\Http\Controllers\Medical\PharmacyController;
 use App\Http\Controllers\Medical\PharmacyStockController;
 use App\Http\Controllers\Medical\PrescriptionController;
@@ -279,5 +281,45 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
         Route::get('invoices/create', [InvoiceController::class, 'create'])->name('invoices.create');
         Route::post('invoices', [InvoiceController::class, 'store'])->name('invoices.store');
         Route::get('tpa-claims', [TpaClaimController::class, 'index'])->name('tpa-claims.index');
+    });
+
+    // Emergency
+    Route::middleware('medical.module:medical.emergency')
+        ->prefix('emergency')->name('medical.emergency.')->group(function () {
+        Route::get('/', [EmergencyController::class, 'dashboard'])->name('dashboard');
+        Route::get('/visits', [EmergencyController::class, 'index'])->name('index');
+        Route::get('/visits/create', [EmergencyController::class, 'create'])->name('create');
+        Route::post('/visits', [EmergencyController::class, 'store'])->name('store');
+        Route::get('/visits/{emergencyVisit}', [EmergencyController::class, 'show'])->name('show');
+        Route::get('/visits/{emergencyVisit}/edit', [EmergencyController::class, 'edit'])->name('edit');
+        Route::put('/visits/{emergencyVisit}', [EmergencyController::class, 'update'])->name('update');
+        Route::get('/visits/{emergencyVisit}/triage', [EmergencyController::class, 'triageForm'])->name('triage.form');
+        Route::post('/visits/{emergencyVisit}/triage', [EmergencyController::class, 'triage'])->name('triage');
+        Route::post('/visits/{emergencyVisit}/attend', [EmergencyController::class, 'attend'])->name('attend');
+        Route::get('/visits/{emergencyVisit}/discharge', [EmergencyController::class, 'dischargeForm'])->name('discharge.form');
+        Route::post('/visits/{emergencyVisit}/discharge', [EmergencyController::class, 'discharge'])->name('discharge');
+        Route::delete('/visits/{emergencyVisit}', [EmergencyController::class, 'destroy'])->name('destroy');
+    });
+
+    // Radiology
+    Route::middleware('medical.module:medical.radiology')
+        ->prefix('radiology')->name('medical.radiology.')->group(function () {
+        Route::get('/', [RadiologyController::class, 'dashboard'])->name('dashboard');
+        Route::get('orders', [RadiologyController::class, 'index'])->name('orders.index');
+        Route::get('orders/create', [RadiologyController::class, 'create'])->name('orders.create');
+        Route::post('orders', [RadiologyController::class, 'store'])->name('orders.store');
+        Route::get('orders/{order}', [RadiologyController::class, 'show'])->name('orders.show');
+        Route::get('orders/{order}/edit', [RadiologyController::class, 'edit'])->name('orders.edit');
+        Route::put('orders/{order}', [RadiologyController::class, 'update'])->name('orders.update');
+        Route::delete('orders/{order}', [RadiologyController::class, 'destroy'])->name('orders.destroy');
+
+        Route::post('orders/{order}/schedule', [RadiologyController::class, 'schedule'])->name('orders.schedule');
+        Route::post('orders/{order}/start', [RadiologyController::class, 'startPerforming'])->name('orders.start');
+        Route::post('orders/{order}/perform', [RadiologyController::class, 'markPerformed'])->name('orders.perform');
+        Route::post('orders/{order}/report', [RadiologyController::class, 'report'])->name('orders.report');
+        Route::post('orders/{order}/verify', [RadiologyController::class, 'verify'])->name('orders.verify');
+
+        Route::post('orders/{order}/images', [RadiologyController::class, 'uploadImage'])->name('orders.images.upload');
+        Route::delete('orders/{order}/images/{image}', [RadiologyController::class, 'deleteImage'])->name('orders.images.destroy');
     });
 });

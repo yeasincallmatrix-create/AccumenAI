@@ -76,6 +76,8 @@ final class NumberSequenceService
             NumberSequence::TYPE_INVOICE => 'INV',
             NumberSequence::TYPE_TPA_CLAIM => 'TPA',
             NumberSequence::TYPE_ENCOUNTER => 'ENC',
+            NumberSequence::TYPE_EMERGENCY => 'ER',
+            NumberSequence::TYPE_RADIOLOGY => 'RAD',
             default => throw new \InvalidArgumentException("Unknown sequence type [{$type}]."),
         };
 
@@ -96,7 +98,7 @@ final class NumberSequenceService
         if (! is_string($stored) || $stored === '') {
             return (string) $stored;
         }
-        if (preg_match('/^(MR|RX|LAB|INV|TPA|ENC)-(\d{4})-(?:\d{3,}-)?(\d{5})$/', $stored, $m)) {
+        if (preg_match('/^(MR|RX|LAB|INV|TPA|ENC|ER|RAD)-(\d{4})-(?:\d{3,}-)?(\d{5})$/', $stored, $m)) {
             return $m[1].'-'.substr($m[2], 2).'-'.$m[3];
         }
 
@@ -112,10 +114,10 @@ final class NumberSequenceService
     public static function toStored(string $input): string
     {
         $input = trim($input);
-        if (preg_match('/^(MR|RX|LAB|INV|TPA|ENC)-(\d{2})-(\d{5})$/', $input, $m)) {
+        if (preg_match('/^(MR|RX|LAB|INV|TPA|ENC|ER|RAD)-(\d{2})-(\d{5})$/', $input, $m)) {
             return $m[1].'-20'.$m[2].'-'.$m[3];
         }
-        if (preg_match('/^(MR|RX|LAB|INV|TPA|ENC)-(\d{4})-\d{3,}-(\d{5})$/', $input, $m)) {
+        if (preg_match('/^(MR|RX|LAB|INV|TPA|ENC|ER|RAD)-(\d{4})-\d{3,}-(\d{5})$/', $input, $m)) {
             return $m[1].'-'.$m[2].'-'.$m[3];
         }
 
@@ -131,7 +133,7 @@ final class NumberSequenceService
     public static function expandShortYears(string $term): string
     {
         return (string) preg_replace_callback(
-            '/\b(MR|RX|LAB|INV|TPA|ENC)-(\d{2})(?!\d)/',
+            '/\b(MR|RX|LAB|INV|TPA|ENC|ER|RAD)-(\d{2})(?!\d)/',
             fn (array $m): string => $m[1].'-20'.$m[2],
             $term
         );
@@ -201,6 +203,8 @@ final class NumberSequenceService
             NumberSequence::TYPE_INVOICE => [Invoice::class, 'invoice_number', "INV-{$year}-"],
             NumberSequence::TYPE_TPA_CLAIM => [TpaClaim::class, 'claim_number', "TPA-{$year}-"],
             NumberSequence::TYPE_ENCOUNTER => [\App\Models\Medical\Encounter::class, 'encounter_number', "ENC-{$year}-"],
+            NumberSequence::TYPE_EMERGENCY => [\App\Models\Medical\EmergencyVisit::class, 'visit_number', "ER-{$year}-"],
+            NumberSequence::TYPE_RADIOLOGY => [\App\Models\Medical\RadiologyOrder::class, 'order_number', "RAD-{$year}-"],
         };
 
         // Soft-deleted rows keep their numbers reserved too (where supported).

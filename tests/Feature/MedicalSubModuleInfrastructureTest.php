@@ -24,22 +24,22 @@ class MedicalSubModuleInfrastructureTest extends TestCase
         $this->assertEquals(14, $count);
     }
 
-    public function test_5_sub_modules_are_active_not_coming_soon(): void
+    public function test_7_sub_modules_are_active_not_coming_soon(): void
     {
         $active = DB::table('module_registry')
             ->where('parent_key', 'medical')
             ->where('coming_soon', false)
             ->count();
-        $this->assertEquals(5, $active);
+        $this->assertEquals(7, $active);
     }
 
-    public function test_9_sub_modules_are_coming_soon(): void
+    public function test_7_sub_modules_are_coming_soon(): void
     {
         $soon = DB::table('module_registry')
             ->where('parent_key', 'medical')
             ->where('coming_soon', true)
             ->count();
-        $this->assertEquals(9, $soon);
+        $this->assertEquals(7, $soon);
     }
 
     public function test_parent_disabled_disables_all_children(): void
@@ -149,6 +149,6 @@ class MedicalSubModuleInfrastructureTest extends TestCase
             ->where('package_id', $pkg->id)
             ->where('module_key', 'like', 'medical.%')
             ->count();
-        $this->assertEquals(5, $count);
+        $this->assertEquals(7, $count);
     }
 }

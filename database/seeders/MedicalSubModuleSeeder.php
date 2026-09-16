@@ -24,11 +24,11 @@ class MedicalSubModuleSeeder extends Seeder
             ['key' => 'medical.pharmacy',   'name' => 'Pharmacy',   'icon' => 'bi-capsule',         'sort' => 53, 'route' => 'medical.pharmacy.medicines.index'],
             ['key' => 'medical.laboratory', 'name' => 'Laboratory', 'icon' => 'bi-eyedropper',      'sort' => 54, 'route' => 'medical.laboratory.orders.index'],
             ['key' => 'medical.billing',    'name' => 'Billing',    'icon' => 'bi-receipt',         'sort' => 55, 'route' => 'medical.billing.invoices.index'],
+            ['key' => 'medical.emergency',  'name' => 'Emergency',  'icon' => 'bi-heart-pulse',     'sort' => 56, 'route' => 'medical.emergency.index'],
+            ['key' => 'medical.radiology',  'name' => 'Radiology',  'icon' => 'bi-radioactive',     'sort' => 57, 'route' => 'medical.radiology.orders.index'],
         ];
 
         $comingSoonSubModules = [
-            ['key' => 'medical.emergency',     'name' => 'Emergency',       'icon' => 'bi-heart-pulse',    'sort' => 56],
-            ['key' => 'medical.radiology',     'name' => 'Radiology',       'icon' => 'bi-radioactive',    'sort' => 57],
             ['key' => 'medical.bloodbank',     'name' => 'Blood Bank',      'icon' => 'bi-droplet-fill',   'sort' => 58],
             ['key' => 'medical.physiotherapy', 'name' => 'Physiotherapy',   'icon' => 'bi-activity',       'sort' => 59],
             ['key' => 'medical.dental',        'name' => 'Dental',          'icon' => 'bi-emoji-smile',    'sort' => 60],

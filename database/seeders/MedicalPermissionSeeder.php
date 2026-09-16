@@ -369,5 +369,144 @@ class MedicalPermissionSeeder extends Seeder
         if ($diagnosticInstitutes->isNotEmpty()) {
             $this->command->info("Diagnostic staff role created for {$diagnosticInstitutes->count()} diagnostic center(s).");
         }
+
+        // Emergency permissions (additive). Granted to doctor, receptionist, nurse roles.
+        $emergencyPerms = [
+            'medical_emergency' => [
+                'view'       => 'View Emergency Visits',
+                'create'     => 'Register Emergency Patients',
+                'edit'       => 'Edit Emergency Visits',
+                'triage'     => 'Perform Triage',
+                'discharge'  => 'Discharge Emergency Patients',
+                'delete'     => 'Delete Emergency Visits',
+            ],
+        ];
+
+        foreach ($emergencyPerms as $module => $actions) {
+            foreach ($actions as $action => $label) {
+                Permission::firstOrCreate(
+                    ['slug' => $module.'.'.$action],
+                    ['module' => $module, 'name' => $label]
+                );
+            }
+        }
+
+        $emergencyRoleIds = Role::whereIn('slug', ['doctor', 'receptionist', 'nurse'])
+            ->pluck('id')
+            ->toArray();
+
+        if (! empty($emergencyRoleIds)) {
+            $emergencyPermIds = Permission::where('module', 'medical_emergency')
+                ->pluck('id')
+                ->toArray();
+
+            $existing = DB::table('role_permissions')
+                ->whereIn('permission_id', $emergencyPermIds)
+                ->whereIn('role_id', $emergencyRoleIds)
+                ->get(['role_id', 'permission_id']);
+
+            $have = [];
+            foreach ($existing as $row) {
+                $have[$row->role_id.'-'.$row->permission_id] = true;
+            }
+            foreach ($emergencyRoleIds as $roleId) {
+                foreach ($emergencyPermIds as $permId) {
+                    if (! isset($have[$roleId.'-'.$permId])) {
+                        DB::table('role_permissions')->insert([
+                            'role_id'       => $roleId,
+                            'permission_id' => $permId,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // Radiology permissions (additive). Granted to doctor, receptionist,
+        // nurse, and hospital_admin roles. Radiologist-specific permissions
+        // (report, verify) are granted to radiologist role if it exists,
+        // otherwise to hospital_admin.
+        $radiologyPerms = [
+            'medical_radiology' => [
+                'view'     => 'View Radiology Orders',
+                'create'   => 'Create Radiology Orders',
+                'edit'     => 'Edit Radiology Orders',
+                'delete'   => 'Delete Radiology Orders',
+                'perform'  => 'Perform Radiology Studies',
+                'report'   => 'Write Radiology Reports',
+                'verify'   => 'Verify Radiology Reports',
+            ],
+        ];
+
+        foreach ($radiologyPerms as $module => $actions) {
+            foreach ($actions as $action => $label) {
+                Permission::firstOrCreate(
+                    ['slug' => $module.'.'.$action],
+                    ['module' => $module, 'name' => $label]
+                );
+            }
+        }
+
+        // Grant view, create, perform to doctor, receptionist, nurse
+        $radiologyBasicRoleIds = Role::whereIn('slug', ['doctor', 'receptionist', 'nurse'])
+            ->pluck('id')
+            ->toArray();
+
+        if (! empty($radiologyBasicRoleIds)) {
+            $radiologyBasicPermIds = Permission::where('module', 'medical_radiology')
+                ->whereIn('slug', ['medical_radiology.view', 'medical_radiology.create', 'medical_radiology.perform'])
+                ->pluck('id')
+                ->toArray();
+
+            $existing = DB::table('role_permissions')
+                ->whereIn('permission_id', $radiologyBasicPermIds)
+                ->whereIn('role_id', $radiologyBasicRoleIds)
+                ->get(['role_id', 'permission_id']);
+
+            $have = [];
+            foreach ($existing as $row) {
+                $have[$row->role_id.'-'.$row->permission_id] = true;
+            }
+            foreach ($radiologyBasicRoleIds as $roleId) {
+                foreach ($radiologyBasicPermIds as $permId) {
+                    if (! isset($have[$roleId.'-'.$permId])) {
+                        DB::table('role_permissions')->insert([
+                            'role_id'       => $roleId,
+                            'permission_id' => $permId,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // Grant report, verify, edit, delete to hospital_admin
+        $radiologyAdminRoleIds = Role::whereIn('slug', ['hospital-admin'])
+            ->pluck('id')
+            ->toArray();
+
+        if (! empty($radiologyAdminRoleIds)) {
+            $radiologyAllPermIds = Permission::where('module', 'medical_radiology')
+                ->pluck('id')
+                ->toArray();
+
+            $existing = DB::table('role_permissions')
+                ->whereIn('permission_id', $radiologyAllPermIds)
+                ->whereIn('role_id', $radiologyAdminRoleIds)
+                ->get(['role_id', 'permission_id']);
+
+            $have = [];
+            foreach ($existing as $row) {
+                $have[$row->role_id.'-'.$row->permission_id] = true;
+            }
+            foreach ($radiologyAdminRoleIds as $roleId) {
+                foreach ($radiologyAllPermIds as $permId) {
+                    if (! isset($have[$roleId.'-'.$permId])) {
+                        DB::table('role_permissions')->insert([
+                            'role_id'       => $roleId,
+                            'permission_id' => $permId,
+                        ]);
+                    }
+                }
+            }
+        }
     }
 }
