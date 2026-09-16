@@ -1,0 +1,32 @@
+{
+  "backup_created": true,
+  "backup_path": "backups/accumen_ai_before_medicine_clear_20260916_222223.sql",
+  "backup_size": "2.18 MB",
+  "dependencies_before": {
+    "prescriptions_linked_to_medicines": 5,
+    "stock_records": 0,
+    "allergy_records": 0
+  },
+  "snapshot_integrity": {
+    "items_with_medicine_id": 6,
+    "items_with_snapshot_name": 6,
+    "verified": true
+  },
+  "medicines_soft_deleted": 205,
+  "normalized_name_cleared": 205,
+  "code_cleared": 205,
+  "active_medicines_remaining": 0,
+  "total_medicines_after": 205,
+  "prescription_display_preserved": true,
+  "tests": {
+    "Medicine*": "83/84 pass (1 pre-existing InventoryStockEngineTest currency)",
+    "PrescriptionAmendmentTest": "28/28",
+    "PrescriptionItemSnapshotTest": "8/8"
+  },
+  "next_steps": [
+    "User can now add new medicines with any name/code",
+    "Old medicines remain queryable via withTrashed()",
+    "Prescription display preserved via snapshot columns (medicine_name, strength_snapshot, dosage_form_snapshot)",
+    "For hard-delete later: DELETE FROM medicines WHERE deleted_at IS NOT NULL AND id NOT IN (SELECT medicine_id FROM prescription_items WHERE medicine_id IS NOT NULL)"
+  ]
+}
