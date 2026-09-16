@@ -137,6 +137,7 @@
                         $medicalOpen = request()->routeIs('medical.*') ? true : false;
                         $subIndustry = $institute->sub_industry ?? 'hospital';
                         $isDiagnostic = $subIndustry === 'diagnostic_center';
+                        $medicalSubModules = app(\App\Services\ModuleAccessService::class)->getMedicalSubModules();
                     @endphp
                     <div class="nav-group">
                         <button class="nav-link w-100 d-flex align-items-center justify-content-between {{ $medicalOpen ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#medicalNavGroup" aria-expanded="{{ $medicalOpen ? 'true' : 'false' }}" aria-controls="medicalNavGroup">
@@ -144,82 +145,137 @@
                             <i class="bi bi-chevron-down small sidebar-label nav-caret"></i>
                         </button>
                         <div class="collapse {{ $medicalOpen ? 'show' : '' }}" id="medicalNavGroup">
-                            @unless($isDiagnostic)
-                                @if($user && $user->hasPermission('medical_patients.view'))
-                                    <a class="nav-link sub {{ request()->routeIs('medical.patients.*') ? 'active' : '' }}" href="{{ route('medical.patients.index') }}">
-                                        <i class="bi bi-person"></i><span class="sidebar-label">Patients</span>
-                                    </a>
-                                @endif
-                                @if($user && $user->hasPermission('medical_appointments.view'))
-                                    <a class="nav-link sub {{ request()->routeIs('medical.appointments.*') ? 'active' : '' }}" href="{{ route('medical.appointments.index') }}">
-                                        <i class="bi bi-calendar-event"></i><span class="sidebar-label">Appointments</span>
-                                    </a>
-                                @endif
-                                @if($user && $user->hasPermission('medical_doctors.view'))
-                                    <a class="nav-link sub {{ request()->routeIs('medical.doctors.*') || request()->routeIs('medical.departments.*') ? 'active' : '' }}" href="{{ route('medical.doctors.index') }}">
-                                        <i class="bi bi-person-badge"></i><span class="sidebar-label">Doctors</span>
-                                    </a>
-                                @endif
-                                @if($user && $user->hasPermission('medical_admissions.view'))
-                                    <a class="nav-link sub {{ request()->routeIs('medical.admissions.*') ? 'active' : '' }}" href="{{ route('medical.admissions.index') }}">
-                                        <i class="bi bi-hospital"></i><span class="sidebar-label">IPD (Admissions)</span>
-                                    </a>
-                                    <a class="nav-link sub {{ request()->routeIs('medical.beds.*') ? 'active' : '' }}" href="{{ route('medical.beds.index') }}">
-                                        <i class="bi bi-grid"></i><span class="sidebar-label">Beds</span>
-                                    </a>
-                                @endif
-                                @if($user && $user->hasPermission('medical_wards.view'))
-                                    <a class="nav-link sub {{ request()->routeIs('medical.wards.*') ? 'active' : '' }}" href="{{ route('medical.wards.index') }}">
-                                        <i class="bi bi-building"></i><span class="sidebar-label">Wards</span>
-                                    </a>
-                                @endif
-                                @if($user && $user->hasPermission('medical_prescriptions.view'))
-                                    <a class="nav-link sub {{ request()->routeIs('medical.prescriptions.*') ? 'active' : '' }}" href="{{ route('medical.prescriptions.index') }}">
-                                        <i class="bi bi-file-medical"></i><span class="sidebar-label">Prescriptions</span>
-                                    </a>
-                                @endif
-                                @if($user && $user->hasAnyPermission(['medical_medicines.view', 'medical_pharmacy.view']))
-                                    <a class="nav-link sub {{ request()->routeIs('medical.pharmacy.dispense.*') ? 'active' : '' }}" href="{{ route('medical.pharmacy.dispense.index') }}">
-                                        <i class="bi bi-capsule"></i><span class="sidebar-label">Pharmacy</span>
-                                    </a>
-                                    <a class="nav-link sub {{ request()->routeIs('medical.pharmacy.stock.*') && !request()->routeIs('medical.pharmacy.expiry-alerts') ? 'active' : '' }}" href="{{ route('medical.pharmacy.stock.index') }}">
-                                        <i class="bi bi-boxes"></i><span class="sidebar-label">Stock</span>
-                                    </a>
-                                    <a class="nav-link sub {{ request()->routeIs('medical.pharmacy.expiry-alerts') ? 'active' : '' }}" href="{{ route('medical.pharmacy.expiry-alerts') }}">
-                                        <i class="bi bi-clock-history"></i><span class="sidebar-label">Expiry Alerts</span>
-                                    </a>
-                                @endif
-                                @if($user && $user->hasPermission('medical_billing.view'))
-                                    <a class="nav-link sub {{ request()->routeIs('medical.billing.*') ? 'active' : '' }}" href="{{ route('medical.billing.invoices.index') }}">
-                                        <i class="bi bi-receipt"></i><span class="sidebar-label">Invoices</span>
-                                    </a>
-                                @endif
-                                @if($user && $user->hasPermission('medical_tpa.view'))
-                                    <a class="nav-link sub {{ request()->routeIs('medical.tpa.claims.*') ? 'active' : '' }}" href="{{ route('medical.tpa.claims.index') }}">
-                                        <i class="bi bi-shield-check"></i><span class="sidebar-label">TPA Claims</span>
-                                    </a>
-                                @endif
-                            @endunless
-                            @if($user && $user->hasPermission('medical_lab.view'))
-                                <a class="nav-link sub {{ request()->routeIs('medical.lab.orders.*') ? 'active' : '' }}" href="{{ route('medical.lab.orders.index') }}">
-                                    <i class="bi bi-flask"></i><span class="sidebar-label">Lab Orders</span>
-                                </a>
-                                <a class="nav-link sub {{ request()->routeIs('medical.lab.tests.*') ? 'active' : '' }}" href="{{ route('medical.lab.tests.index') }}">
-                                    <i class="bi bi-list-ol"></i><span class="sidebar-label">Test Catalog</span>
+                            {{-- Shared items (Patients, Doctors, Branches) --}}
+                            @if($user && $user->hasPermission('medical_patients.view'))
+                                <a class="nav-link sub {{ request()->routeIs('medical.patients.*') ? 'active' : '' }}" href="{{ route('medical.patients.index') }}">
+                                    <i class="bi bi-person"></i><span class="sidebar-label">Patients</span>
                                 </a>
                             @endif
-                            @if($isDiagnostic)
-                                @if($user && $user->hasPermission('medical_reports.view'))
-                                    <a class="nav-link sub {{ request()->routeIs('medical.reports.lab') ? 'active' : '' }}" href="{{ route('medical.reports.lab') }}">
-                                        <i class="bi bi-graph-up"></i><span class="sidebar-label">Lab Reports</span>
-                                    </a>
+                            @if($user && $user->hasPermission('medical_doctors.view'))
+                                <a class="nav-link sub {{ request()->routeIs('medical.doctors.*') || request()->routeIs('medical.departments.*') ? 'active' : '' }}" href="{{ route('medical.doctors.index') }}">
+                                    <i class="bi bi-person-badge"></i><span class="sidebar-label">Doctors</span>
+                                </a>
+                            @endif
+
+                            {{-- Sub-module groups --}}
+                            @foreach($medicalSubModules as $sub)
+                                @php
+                                    $subActive = match($sub->key) {
+                                        'medical.opd' => request()->routeIs('medical.appointments.*') || request()->routeIs('medical.prescriptions.*') || request()->routeIs('medical.encounters.*') || request()->routeIs('medical.vitals.*'),
+                                        'medical.ipd' => request()->routeIs('medical.admissions.*') || request()->routeIs('medical.wards.*') || request()->routeIs('medical.beds.*'),
+                                        'medical.pharmacy' => request()->routeIs('medical.pharmacy.*'),
+                                        'medical.laboratory' => request()->routeIs('medical.lab.*'),
+                                        'medical.billing' => request()->routeIs('medical.billing.*') || request()->routeIs('medical.tpa.*'),
+                                        default => false,
+                                    };
+                                    $subId = 'medicalSub_' . str_replace('.', '_', $sub->key);
+                                @endphp
+                                @if($sub->coming_soon)
+                                    <span class="nav-link sub disabled" style="opacity:.5; cursor:not-allowed;">
+                                        <i class="bi {{ $sub->icon }}"></i>
+                                        <span class="sidebar-label">{{ $sub->name }}</span>
+                                        <span class="badge bg-secondary ms-2" style="font-size:9px;">Soon</span>
+                                    </span>
+                                @else
+                                    <div class="nav-group">
+                                        <button class="nav-link sub w-100 d-flex align-items-center justify-content-between {{ $subActive ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#{{ $subId }}" aria-expanded="{{ $subActive ? 'true' : 'false' }}">
+                                            <span class="d-flex align-items-center gap-2"><i class="bi {{ $sub->icon }}"></i><span class="sidebar-label">{{ $sub->name }}</span></span>
+                                            <i class="bi bi-chevron-down small sidebar-label nav-caret"></i>
+                                        </button>
+                                        <div class="collapse {{ $subActive ? 'show' : '' }}" id="{{ $subId }}">
+                                            @switch($sub->key)
+                                                @case('medical.opd')
+                                                    @if($user && $user->hasPermission('medical_appointments.view'))
+                                                        <a class="nav-link sub-sub {{ request()->routeIs('medical.appointments.*') ? 'active' : '' }}" href="{{ route('medical.appointments.index') }}">
+                                                            <i class="bi bi-calendar-event"></i><span class="sidebar-label">Appointments</span>
+                                                        </a>
+                                                    @endif
+                                                    @if($user && $user->hasPermission('medical_prescriptions.view'))
+                                                        <a class="nav-link sub-sub {{ request()->routeIs('medical.prescriptions.*') ? 'active' : '' }}" href="{{ route('medical.prescriptions.index') }}">
+                                                            <i class="bi bi-file-medical"></i><span class="sidebar-label">Prescriptions</span>
+                                                        </a>
+                                                    @endif
+                                                    @if($user && $user->hasPermission('medical_encounters.view'))
+                                                        <a class="nav-link sub-sub {{ request()->routeIs('medical.encounters.*') ? 'active' : '' }}" href="{{ route('medical.encounters.index') }}">
+                                                            <i class="bi bi-clipboard2-pulse"></i><span class="sidebar-label">Encounters</span>
+                                                        </a>
+                                                    @endif
+                                                    @if($user && $user->hasPermission('medical_vitals.view'))
+                                                        <a class="nav-link sub-sub {{ request()->routeIs('medical.vitals.*') ? 'active' : '' }}" href="{{ route('medical.vitals.index') }}">
+                                                            <i class="bi bi-activity"></i><span class="sidebar-label">Vitals</span>
+                                                        </a>
+                                                    @endif
+                                                    @break
+
+                                                @case('medical.ipd')
+                                                    @if($user && $user->hasPermission('medical_admissions.view'))
+                                                        <a class="nav-link sub-sub {{ request()->routeIs('medical.admissions.*') ? 'active' : '' }}" href="{{ route('medical.admissions.index') }}">
+                                                            <i class="bi bi-hospital"></i><span class="sidebar-label">Admissions</span>
+                                                        </a>
+                                                    @endif
+                                                    @if($user && $user->hasPermission('medical_wards.view'))
+                                                        <a class="nav-link sub-sub {{ request()->routeIs('medical.wards.*') ? 'active' : '' }}" href="{{ route('medical.wards.index') }}">
+                                                            <i class="bi bi-building"></i><span class="sidebar-label">Wards</span>
+                                                        </a>
+                                                    @endif
+                                                    @if($user && $user->hasPermission('medical_beds.view'))
+                                                        <a class="nav-link sub-sub {{ request()->routeIs('medical.beds.*') ? 'active' : '' }}" href="{{ route('medical.beds.index') }}">
+                                                            <i class="bi bi-grid"></i><span class="sidebar-label">Beds</span>
+                                                        </a>
+                                                    @endif
+                                                    @break
+
+                                                @case('medical.pharmacy')
+                                                    @if($user && $user->hasAnyPermission(['medical_medicines.view', 'medical_pharmacy.view']))
+                                                        <a class="nav-link sub-sub {{ request()->routeIs('medical.pharmacy.dispense.*') ? 'active' : '' }}" href="{{ route('medical.pharmacy.dispense.index') }}">
+                                                            <i class="bi bi-capsule"></i><span class="sidebar-label">Dispense</span>
+                                                        </a>
+                                                        <a class="nav-link sub-sub {{ request()->routeIs('medical.pharmacy.stock.*') && !request()->routeIs('medical.pharmacy.expiry-alerts') ? 'active' : '' }}" href="{{ route('medical.pharmacy.stock.index') }}">
+                                                            <i class="bi bi-boxes"></i><span class="sidebar-label">Stock</span>
+                                                        </a>
+                                                        <a class="nav-link sub-sub {{ request()->routeIs('medical.pharmacy.medicines.*') ? 'active' : '' }}" href="{{ route('medical.pharmacy.medicines.index') }}">
+                                                            <i class="bi bi-capsule"></i><span class="sidebar-label">Medicines</span>
+                                                        </a>
+                                                        <a class="nav-link sub-sub {{ request()->routeIs('medical.pharmacy.expiry-alerts') ? 'active' : '' }}" href="{{ route('medical.pharmacy.expiry-alerts') }}">
+                                                            <i class="bi bi-clock-history"></i><span class="sidebar-label">Expiry Alerts</span>
+                                                        </a>
+                                                    @endif
+                                                    @break
+
+                                                @case('medical.laboratory')
+                                                    @if($user && $user->hasPermission('medical_lab.view'))
+                                                        <a class="nav-link sub-sub {{ request()->routeIs('medical.lab.orders.*') ? 'active' : '' }}" href="{{ route('medical.lab.orders.index') }}">
+                                                            <i class="bi bi-flask"></i><span class="sidebar-label">Lab Orders</span>
+                                                        </a>
+                                                        <a class="nav-link sub-sub {{ request()->routeIs('medical.lab.tests.*') ? 'active' : '' }}" href="{{ route('medical.lab.tests.index') }}">
+                                                            <i class="bi bi-list-ol"></i><span class="sidebar-label">Test Catalog</span>
+                                                        </a>
+                                                    @endif
+                                                    @break
+
+                                                @case('medical.billing')
+                                                    @if($user && $user->hasPermission('medical_billing.view'))
+                                                        <a class="nav-link sub-sub {{ request()->routeIs('medical.billing.*') ? 'active' : '' }}" href="{{ route('medical.billing.invoices.index') }}">
+                                                            <i class="bi bi-receipt"></i><span class="sidebar-label">Invoices</span>
+                                                        </a>
+                                                    @endif
+                                                    @if($user && $user->hasPermission('medical_tpa.view'))
+                                                        <a class="nav-link sub-sub {{ request()->routeIs('medical.tpa.*') ? 'active' : '' }}" href="{{ route('medical.tpa.claims.index') }}">
+                                                            <i class="bi bi-shield-check"></i><span class="sidebar-label">TPA Claims</span>
+                                                        </a>
+                                                    @endif
+                                                    @break
+                                            @endswitch
+                                        </div>
+                                    </div>
                                 @endif
-                            @else
-                                @if($user && $user->hasPermission('medical_reports.view'))
-                                    <a class="nav-link sub {{ request()->routeIs('medical.reports.*') ? 'active' : '' }}" href="{{ route('medical.reports.daily') }}">
-                                        <i class="bi bi-graph-up"></i><span class="sidebar-label">Medical Reports</span>
-                                    </a>
-                                @endif
+                            @endforeach
+
+                            {{-- Reports --}}
+                            @if($user && $user->hasPermission('medical_reports.view'))
+                                <a class="nav-link sub {{ request()->routeIs('medical.reports.*') ? 'active' : '' }}" href="{{ route('medical.reports.daily') }}">
+                                    <i class="bi bi-graph-up"></i><span class="sidebar-label">Reports</span>
+                                </a>
                             @endif
                         </div>
                     </div>

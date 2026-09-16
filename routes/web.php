@@ -232,6 +232,8 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->group(func
     // Legacy institute-controlled toggle — now superseded by Super Admin panel (admin.institutes.certificate-approval-mode.update)
     // Kept for backwards compatibility (tests / cached forms); UI removed from settings.
     Route::put('settings/certificate-approval-mode', [InstituteSettingController::class, 'updateCertificateApprovalMode'])->middleware('permission:settings.manage')->name('settings.certificate-approval-mode.update');
+    Route::get('settings/modules', [\App\Http\Controllers\ModuleSettingsController::class, 'index'])->middleware('permission:settings.manage')->name('settings.modules');
+    Route::post('settings/modules', [\App\Http\Controllers\ModuleSettingsController::class, 'update'])->middleware('permission:settings.manage')->name('settings.modules.update');
 });
 
 Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->prefix('staff')->name('staff.')->group(function () {

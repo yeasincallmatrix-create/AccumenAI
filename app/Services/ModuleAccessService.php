@@ -291,6 +291,14 @@ class ModuleAccessService
                 $finalState = false;
             }
 
+            // 6. Parent dependency — child module requires parent to be enabled
+            if ($finalState && ! empty($module->parent_key)) {
+                $parentEnabled = $result[$module->parent_key] ?? false;
+                if (! $parentEnabled) {
+                    $finalState = false;
+                }
+            }
+
             $result[$key] = $finalState;
         }
 
@@ -641,5 +649,24 @@ class ModuleAccessService
         }
 
         return true;
+    }
+
+    /**
+     * Get all active sub-modules for a given parent key, ordered by sort_order.
+     */
+    public function getSubModules(string $parentKey): \Illuminate\Support\Collection
+    {
+        return ModuleRegistry::where('parent_key', $parentKey)
+            ->where('status', 'active')
+            ->orderBy('sort_order')
+            ->get();
+    }
+
+    /**
+     * Shorthand for medical sub-modules.
+     */
+    public function getMedicalSubModules(): \Illuminate\Support\Collection
+    {
+        return $this->getSubModules('medical');
     }
 }

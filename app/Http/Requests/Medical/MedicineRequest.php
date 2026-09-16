@@ -19,18 +19,18 @@ class MedicineRequest extends FormRequest
         $medicineId = $medicine instanceof \App\Models\Medical\Medicine ? $medicine->id : null;
 
         return [
-            // NOTE: `medicines.code` is globally unique in the Phase 0
-            // schema, so the rule is global too (not institute-scoped).
             'code' => [
-                'required',
+                'nullable',
                 'string',
                 'max:50',
-                Rule::unique('medicines', 'code')->ignore($medicineId),
+                Rule::unique('medicines', 'code')
+                    ->where(fn ($q) => $q->where('institute_id', MedicalScope::instituteId())->whereNull('deleted_at'))
+                    ->ignore($medicineId),
             ],
             'generic_name' => 'required|string|max:150',
             'brand_name' => 'nullable|string|max:150',
             'category' => 'nullable|string|max:100',
-            'dosage_form' => 'required|string|max:50',
+            'dosage_form' => 'nullable|string|in:'.implode(',', \App\Support\MedicineDosageForm::all()),
             'strength' => 'nullable|string|max:50',
             'unit' => 'required|string|max:20',
             'pack_size' => 'required|integer|min:1',
@@ -55,8 +55,7 @@ class MedicineRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'code.required' => 'Medicine code is required.',
-            'code.unique' => 'This medicine code already exists.',
+            'code.unique' => 'This medicine code already exists in this institute.',
             'generic_name.required' => 'Generic name is required.',
             'dosage_form.required' => 'Dosage form is required.',
             'unit.required' => 'Unit is required.',

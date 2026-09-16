@@ -3,10 +3,13 @@
 namespace App\Models\Medical;
 
 use App\Models\Institute;
+use App\Models\Medical\ClinicalAuditLog;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Medicine extends Model
 {
+    use SoftDeletes;
     protected $table = 'medicines';
 
     protected $fillable = [
@@ -15,6 +18,7 @@ class Medicine extends Model
         'code',
         'generic_name',
         'brand_name',
+        'normalized_name',
         'category',
         'dosage_form',
         'strength',
@@ -51,6 +55,59 @@ class Medicine extends Model
         'dgda_synced_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::saving(function (Medicine $medicine) {
+            $base = $medicine->brand_name ?? '';
+            $strength = $medicine->strength ?? '';
+            $medicine->normalized_name = preg_replace(
+                '/[^a-z0-9]/',
+                '',
+                strtolower(trim($base.' '.$strength))
+            );
+        });
+
+        static::created(function (Medicine $medicine) {
+            try {
+                ClinicalAuditLog::record($medicine, 'created', [
+                    'new' => ClinicalAuditLog::snapshot($medicine),
+                ]);
+            } catch (\Throwable $e) {
+                \Log::warning('Medicine audit log failed (created)', [
+                    'medicine_id' => $medicine->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        });
+
+        static::updated(function (Medicine $medicine) {
+            try {
+                $changes = $medicine->getChanges();
+                unset($changes['updated_at'], $changes['normalized_name']);
+
+                if (empty($changes)) {
+                    return;
+                }
+
+                $oldValues = array_intersect_key($medicine->getOriginal(), $changes);
+
+                if (empty(array_diff_key($oldValues, array_flip(['normalized_name'])))) {
+                    return;
+                }
+
+                ClinicalAuditLog::record($medicine, 'updated', [
+                    'old' => $oldValues,
+                    'new' => $changes,
+                ]);
+            } catch (\Throwable $e) {
+                \Log::warning('Medicine audit log failed (updated)', [
+                    'medicine_id' => $medicine->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        });
+    }
+
     public function institute()
     {
         return $this->belongsTo(Institute::class);
@@ -75,19 +132,79 @@ class Medicine extends Model
         return $query->where('is_active', true);
     }
 
+    public function scopeInactive($query)
+    {
+        return $query->where('is_active', false);
+    }
+
+    public function scopeControlled($query)
+    {
+        return $query->where('is_controlled', true);
+    }
+
+    public function scopeOverTheCounter($query)
+    {
+        return $query->where('requires_prescription', false);
+    }
+
+    public function scopeRequiresPrescription($query)
+    {
+        return $query->where('requires_prescription', true);
+    }
+
+    public function scopeDgdaCoded($query)
+    {
+        return $query->whereNotNull('dgda_code')->where('dgda_code', '!=', '');
+    }
+
+    public function scopeDgdaPending($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('dgda_code')->orWhere('dgda_code', '');
+        });
+    }
+
+    public function scopeOfForm($query, string $form)
+    {
+        return $query->where('dosage_form', $form);
+    }
+
+    public function scopeLowStock($query)
+    {
+        return $query->whereRaw('(
+            SELECT COALESCE(SUM(current_quantity), 0) FROM pharmacy_stock
+            WHERE pharmacy_stock.medicine_id = medicines.id
+        ) <= medicines.reorder_level')
+            ->where('reorder_level', '>', 0);
+    }
+
+    public function scopeOutOfStock($query)
+    {
+        return $query->whereRaw('(
+            SELECT COALESCE(SUM(current_quantity), 0) FROM pharmacy_stock
+            WHERE pharmacy_stock.medicine_id = medicines.id
+        ) <= 0');
+    }
+
     /**
-     * Phase 02: keyword alternatives are grouped so a chained
-     * where('institute_id', ...) can never be escaped by the ORs.
+     * Case-insensitive search using normalized_name for brand matching.
      */
     public function scopeSearch($query, $search)
     {
-        return $query->where(function ($q) use ($search) {
+        $normalized = preg_replace('/[^a-z0-9]/', '', strtolower(trim($search)));
+
+        return $query->where(function ($q) use ($search, $normalized) {
             $q->where('generic_name', 'LIKE', "%{$search}%")
-                ->orWhere('brand_name', 'LIKE', "%{$search}%")
+                ->orWhere('normalized_name', 'LIKE', "%{$normalized}%")
                 ->orWhere('code', 'LIKE', "%{$search}%")
                 ->orWhere('dgda_code', 'LIKE', "%{$search}%")
                 ->orWhere('dgda_dar_number', 'LIKE', "%{$search}%");
         });
+    }
+
+    public function scopeForIndex($query)
+    {
+        return $query->active()->orderBy('brand_name');
     }
 
     public function getTotalStockAttribute()

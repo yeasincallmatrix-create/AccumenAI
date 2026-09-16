@@ -61,8 +61,8 @@
                         <label class="form-label" for="dosage_form">Dosage Form <span class="text-danger">*</span></label>
                         <select id="dosage_form" name="dosage_form" class="form-select @error('dosage_form') is-invalid @enderror" required>
                             <option value="">Select</option>
-                            @foreach(['Tablet', 'Capsule', 'Syrup', 'Injection', 'Drops', 'Cream', 'Ointment', 'Inhaler', 'Suppository'] as $form)
-                                <option value="{{ $form }}" @selected(old('dosage_form', $medicine->dosage_form) === $form)>{{ $form }}</option>
+                            @foreach(config('medicine.dosage_forms') as $key => $label)
+                                <option value="{{ $key }}" @selected(old('dosage_form', $medicine->dosage_form) === $key)>{{ $label }}</option>
                             @endforeach
                         </select>
                         @error('dosage_form')<div class="invalid-feedback">{{ $message }}</div>@enderror

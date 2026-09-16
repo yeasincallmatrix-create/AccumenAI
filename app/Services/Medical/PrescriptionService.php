@@ -7,6 +7,7 @@ use App\Models\Medical\NumberSequence;
 use App\Models\Medical\Prescription;
 use App\Models\Medical\PrescriptionAuditLog;
 use App\Models\Medical\PrescriptionItem;
+use App\Services\Medical\PrescriptionItemSnapshotService;
 use App\Support\MedicalScope;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -55,15 +56,11 @@ class PrescriptionService
                 if (empty($item['dgda_code']) && isset($item['medicine_id'])) {
                     $item['dgda_code'] = $catalog->get($item['medicine_id'])?->dgda_code;
                 }
-                // Phase 10: immutable medicine-identity snapshot (never
-                // overwritten when explicitly supplied, e.g. by tests).
-                if (isset($item['medicine_id']) && ($medicine = $catalog->get($item['medicine_id']))) {
-                    foreach ($this->terminology->snapshotFor($medicine) as $key => $value) {
-                        if (empty($item[$key])) {
-                            $item[$key] = $value;
-                        }
-                    }
-                }
+                // Immutable medicine-identity snapshot via centralized service.
+                $medicine = isset($item['medicine_id'])
+                    ? ($catalog->get($item['medicine_id']) ?? Medicine::withTrashed()->find($item['medicine_id']))
+                    : null;
+                $item = PrescriptionItemSnapshotService::merge($medicine, $item);
                 PrescriptionItem::create($item);
             }
 
@@ -91,14 +88,11 @@ class PrescriptionService
                 if (empty($item['dgda_code']) && isset($item['medicine_id'])) {
                     $item['dgda_code'] = $catalog->get($item['medicine_id'])?->dgda_code;
                 }
-                // Phase 10: immutable medicine-identity snapshot (see create).
-                if (isset($item['medicine_id']) && ($medicine = $catalog->get($item['medicine_id']))) {
-                    foreach ($this->terminology->snapshotFor($medicine) as $key => $value) {
-                        if (empty($item[$key])) {
-                            $item[$key] = $value;
-                        }
-                    }
-                }
+                // Immutable medicine-identity snapshot (see create).
+                $medicine = isset($item['medicine_id'])
+                    ? ($catalog->get($item['medicine_id']) ?? Medicine::withTrashed()->find($item['medicine_id']))
+                    : null;
+                $item = PrescriptionItemSnapshotService::merge($medicine, $item);
                 PrescriptionItem::create($item);
             }
         });

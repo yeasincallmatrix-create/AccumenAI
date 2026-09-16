@@ -204,7 +204,7 @@ class MedicalPhase3Test extends TestCase
         $this->assertSame('Crudmycin-Renamed', $medicine->fresh()->generic_name);
 
         $this->delete(route('medical.pharmacy.medicines.destroy', $medicine))->assertRedirect();
-        $this->assertDatabaseMissing('medicines', ['id' => $medicine->id]);
+        $this->assertSoftDeleted('medicines', ['id' => $medicine->id]);
     }
 
     public function test_medicine_with_stock_cannot_be_deleted(): void
@@ -324,8 +324,8 @@ class MedicalPhase3Test extends TestCase
     public function test_duplicate_therapy_blocked_but_category_overlap_warns(): void
     {
         $patient = $this->createPatient();
-        $medA = $this->createMedicine(['generic_name' => 'SameGen', 'category' => 'Cat-A']);
-        $medB = $this->createMedicine(['generic_name' => 'SameGen', 'category' => 'Cat-B']);
+        $medA = $this->createMedicine(['generic_name' => 'SameGen', 'brand_name' => 'SameGen 500', 'category' => 'Cat-A']);
+        $medB = $this->createMedicine(['generic_name' => 'SameGen', 'brand_name' => 'SameGen 250', 'strength' => '250mg', 'category' => 'Cat-B']);
 
         // Same generic twice → blocked.
         $this->post(
@@ -392,7 +392,7 @@ class MedicalPhase3Test extends TestCase
     {
         $patient = $this->createPatient();
         $medicine = $this->createMedicine();
-        $other = $this->createMedicine(['generic_name' => 'Othermycin']);
+        $other = $this->createMedicine(['generic_name' => 'Othermycin', 'brand_name' => 'Othermycin 250', 'strength' => '250mg']);
         $wrongBatch = $this->createStock($other);
 
         $this->post(
@@ -429,7 +429,7 @@ class MedicalPhase3Test extends TestCase
         $this->assertTrue($rx->fresh()->isFullyDispensed());
 
         // Expiry dashboard renders with a near-expiry batch present.
-        $this->createStock($this->createMedicine(), [
+        $this->createStock($this->createMedicine(['brand_name' => 'ExpiryMed 100', 'strength' => '100mg']), [
             'expiry_date' => now()->addDays(5)->format('Y-m-d'),
         ]);
         $this->get(route('medical.pharmacy.expiry-alerts'))->assertOk();

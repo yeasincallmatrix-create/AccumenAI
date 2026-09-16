@@ -1225,8 +1225,14 @@ class PrescriptionController extends MedicalController implements HasMiddleware
             return redirect()->back()->with('error', 'Cannot modify a finalized prescription.');
         }
 
-        $item = $request->validated();
-        $item['prescription_id'] = $prescription->id;
+        $raw = $request->validated();
+        $raw['prescription_id'] = $prescription->id;
+
+        // Snapshot medicine data at creation time.
+        $medicine = ! empty($raw['medicine_id'])
+            ? \App\Models\Medical\Medicine::withTrashed()->find($raw['medicine_id'])
+            : null;
+        $item = \App\Services\Medical\PrescriptionItemSnapshotService::build($medicine, $raw);
 
         $safety = $this->drugSafetyService->fullSafetyCheck(
             $prescription->patient,
@@ -1573,17 +1579,11 @@ class PrescriptionController extends MedicalController implements HasMiddleware
                 foreach ($newItemsData as $itemData) {
                     $itemData['prescription_id'] = $new->id;
                     $itemData['item_status'] = 'active';
-                    if (empty($itemData['dgda_code']) && ! empty($itemData['medicine_id'])) {
-                        $itemData['dgda_code'] = $catalog->get($itemData['medicine_id'])?->dgda_code;
-                    }
-                    if (! empty($itemData['medicine_id']) && ($medicine = $catalog->get($itemData['medicine_id']))) {
-                        foreach (app(\App\Services\Medical\MedicineTerminologyService::class)->snapshotFor($medicine) as $key => $value) {
-                            if (empty($itemData[$key])) {
-                                $itemData[$key] = $value;
-                            }
-                        }
-                    }
-                    \App\Models\Medical\PrescriptionItem::create($itemData);
+                    $medicine = ! empty($itemData['medicine_id'])
+                        ? ($catalog->get($itemData['medicine_id']) ?? \App\Models\Medical\Medicine::withTrashed()->find($itemData['medicine_id']))
+                        : null;
+                    $payload = \App\Services\Medical\PrescriptionItemSnapshotService::build($medicine, $itemData);
+                    \App\Models\Medical\PrescriptionItem::create($payload);
                 }
             }
 

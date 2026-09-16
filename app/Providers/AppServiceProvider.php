@@ -62,6 +62,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Blade directive: @moduleEnabled('medical.opd') ... @endmoduleEnabled
+        \Illuminate\Support\Facades\Blade::directive('moduleEnabled', function (string $expression) {
+            return "<?php if(moduleEnabled({$expression})): ?>";
+        });
+        \Illuminate\Support\Facades\Blade::directive('endmoduleEnabled', function () {
+            return '<?php endif; ?>';
+        });
+
         // Parallel testing: populate newly created test databases with full data dump
         ParallelTesting::setUpTestDatabaseBeforeMigrating(function (string $testDatabase) {
             $fullDumpPath = database_path('schema/full_data.sql');

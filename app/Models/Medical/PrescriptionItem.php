@@ -14,12 +14,16 @@ class PrescriptionItem extends Model
         'medicine_name',
         'dgda_code',
         // Phase 10 — immutable medicine-identity snapshots (written once at
-        // item creation by PrescriptionService; never updated afterwards).
+        // item creation; never updated afterwards).
         'medicine_concept_id',
         'medicine_product_id',
         'display_name_snapshot',
+        'generic_name_snapshot',
         'strength_snapshot',
         'dosage_form_snapshot',
+        'unit_snapshot',
+        'pack_size_snapshot',
+        'category_snapshot',
         'route_snapshot',
         'rxnorm_code_snapshot',
         'dosage',
@@ -47,7 +51,7 @@ class PrescriptionItem extends Model
 
     public function medicine()
     {
-        return $this->belongsTo(Medicine::class);
+        return $this->belongsTo(Medicine::class)->withTrashed();
     }
 
     public function dispenses()
@@ -73,6 +77,31 @@ class PrescriptionItem extends Model
     public function continuations()
     {
         return $this->hasMany(PrescriptionItem::class, 'continued_from_item_id');
+    }
+
+    /**
+     * Best-effort display name: snapshot → live medicine → fallback.
+     */
+    public function getMedicineDisplayNameAttribute(): string
+    {
+        return $this->display_name_snapshot
+            ?? $this->medicine_name
+            ?? $this->medicine?->display_name
+            ?? 'Unknown';
+    }
+
+    /**
+     * Composed full display string for print/export contexts.
+     */
+    public function getFullDisplayAttribute(): string
+    {
+        $parts = array_filter([
+            $this->medicine_name,
+            $this->strength_snapshot,
+            $this->dosage_form_snapshot,
+        ]);
+
+        return implode(' ', $parts);
     }
 
     public function scopeActive($query)

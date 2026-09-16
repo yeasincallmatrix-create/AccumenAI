@@ -458,8 +458,8 @@ $defaultFollowUp = $isCreate ? date('Y-m-d') : $prescription->follow_up_date?->f
                         <label class="form-label" for="qmed_dosage_form">Dosage Form <span class="text-danger">*</span></label>
                         <select id="qmed_dosage_form" name="dosage_form" class="form-select" required>
                             <option value="">Select type</option>
-                            @foreach(['Tablet','Capsule','Syrup','Suspension','Injection','Drops','Inhaler','Cream','Ointment','Gel','Spray','Suppository','Sachet','Powder','Solution','Lotion','Patch'] as $form)
-                                <option value="{{ $form }}">{{ $form }}</option>
+                            @foreach(config('medicine.dosage_forms') as $key => $label)
+                                <option value="{{ $key }}">{{ $label }}</option>
                             @endforeach
                         </select>
                     </div>

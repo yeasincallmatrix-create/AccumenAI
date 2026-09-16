@@ -89,6 +89,80 @@
 </div>
 
 <div class="card mt-3">
+    <div class="card-header">
+        <h6 class="mb-0">
+            <i class="bi bi-clock-history me-2"></i>Change History
+        </h6>
+    </div>
+    <div class="card-body">
+        @php
+            $auditLogs = \App\Models\Medical\ClinicalAuditLog::where('auditable_type', \App\Models\Medical\Medicine::class)
+                ->where('auditable_id', $medicine->id)
+                ->orderByDesc('created_at')
+                ->limit(50)
+                ->get();
+        @endphp
+
+        @if($auditLogs->isEmpty())
+            <p class="text-muted mb-0">No changes recorded yet.</p>
+        @else
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>When</th>
+                            <th>Who</th>
+                            <th>Action</th>
+                            <th>Changes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($auditLogs as $log)
+                            <tr>
+                                <td class="text-nowrap">{{ $log->created_at->format('d M Y, h:i A') }}</td>
+                                <td>
+                                    {{ $log->actor_name ?? 'System' }}<br>
+                                    <small class="text-muted">{{ $log->user_type }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{
+                                        match($log->action) {
+                                            'created' => 'success',
+                                            'updated' => 'info',
+                                            'archived' => 'warning',
+                                            'restored' => 'primary',
+                                            default => 'secondary',
+                                        }
+                                    }}">{{ ucfirst($log->action) }}</span>
+                                </td>
+                                <td>
+                                    @if($log->action === 'updated' && $log->new_values)
+                                        @php $changes = is_array($log->new_values) ? $log->new_values : json_decode($log->new_values, true); @endphp
+                                        <ul class="list-unstyled mb-0 small">
+                                            @foreach($changes as $field => $value)
+                                                @continue(in_array($field, ['updated_at', 'created_at', 'deleted_at', 'normalized_name']))
+                                                <li>
+                                                    <strong>{{ $field }}:</strong>
+                                                    {{ is_scalar($value) ? $value : json_encode($value) }}
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    @elseif($log->action === 'created')
+                                        <em class="text-muted small">Medicine created</em>
+                                    @else
+                                        <em class="text-muted small">{{ $log->reason ?? '—' }}</em>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+    </div>
+</div>
+
+<div class="card mt-3">
     <div class="card-header"><h6 class="mb-0">Batches ({{ $medicine->stocks->count() }})</h6></div>
     <div class="card-body">
         @if($medicine->stocks->count() > 0)

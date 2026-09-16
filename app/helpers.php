@@ -1196,3 +1196,23 @@ if (! function_exists('clinical_stored_no')) {
         }
     }
 }
+
+if (! function_exists('moduleEnabled')) {
+    /**
+     * Check if a module (including sub-modules) is enabled for the current tenant.
+     */
+    function moduleEnabled(string $key): bool
+    {
+        $instituteId = \App\Support\TenantContext::id();
+        if (! $instituteId) {
+            return false;
+        }
+        $institute = \App\Models\Institute::find($instituteId);
+        if (! $institute) {
+            return false;
+        }
+
+        return app(\App\Services\ModuleAccessService::class)
+            ->isEnabled($institute, $key);
+    }
+}

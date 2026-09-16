@@ -43,6 +43,14 @@
                         <option value="inactive" @selected(request('status') === 'inactive')>Inactive</option>
                     </select>
                 </div>
+                <div class="col-md-2">
+                    <select name="dosage_form" class="form-select" onchange="this.form.submit()" title="Filter by dosage form">
+                        <option value="">All Forms</option>
+                        @foreach(config('medicine.dosage_forms') as $key => $label)
+                            <option value="{{ $key }}" @selected(request('dosage_form') === $key)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
                 @if(mawa_dgda_enabled())
                 <div class="col-md-2">
                     <select name="dgda" class="form-select" onchange="this.form.submit()" title="Filter by DGDA registry code">

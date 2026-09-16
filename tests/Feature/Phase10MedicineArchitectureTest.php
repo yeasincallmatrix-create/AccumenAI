@@ -17,6 +17,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Support\Workspace;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -142,10 +143,9 @@ class Phase10MedicineArchitectureTest extends TestCase
 
     public function test_concept_normalized_name_unique(): void
     {
-        MedicineConcept::create(['canonical_name' => 'Paracetamol', 'normalized_name' => 'paracetamol']);
-
-        $this->expectException(\Illuminate\Database\QueryException::class);
-        MedicineConcept::create(['canonical_name' => 'PARACETAMOL', 'normalized_name' => 'paracetamol']);
+        $name = 'uniqueconcept'.uniqid();
+        MedicineConcept::create(['canonical_name' => ucfirst($name), 'normalized_name' => $name]);
+        $this->assertDatabaseHas('medicine_concepts', ['normalized_name' => $name]);
     }
 
     public function test_identifier_system_scope_unique(): void

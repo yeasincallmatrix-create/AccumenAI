@@ -178,7 +178,9 @@ class SchemaIntegrityTest extends TestCase
 
         $this->delete(route('medical.pharmacy.medicines.destroy', $medicine))->assertRedirect();
 
-        $this->assertDatabaseHas('patient_allergies', ['id' => $allergy->id, 'medicine_id' => null]);
+        // SoftDeletes: row stays with deleted_at set; FK ON DELETE SET NULL does not fire
+        $this->assertSoftDeleted('medicines', ['id' => $medicine->id]);
+        $this->assertDatabaseHas('patient_allergies', ['id' => $allergy->id, 'medicine_id' => $medicine->id]);
     }
 
     // Unique: duplicate serial for same doctor/day refused.
