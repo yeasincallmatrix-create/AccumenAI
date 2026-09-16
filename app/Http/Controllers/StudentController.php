@@ -475,10 +475,13 @@ class StudentController extends Controller
 
         $student->update($data);
 
-        if ($request->has('roll_number')) {
+        if ($request->filled('roll_number')) {
             $enrollment = $student->enrollments()->latest('id')->first();
             if ($enrollment) {
-                $enrollment->update(['roll_no' => $request->input('roll_number')]);
+                $rollVal = trim($request->input('roll_number'));
+                if (is_numeric($rollVal)) {
+                    $enrollment->update(['roll_no' => (int) $rollVal]);
+                }
             }
         }
 
