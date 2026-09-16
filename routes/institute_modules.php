@@ -1325,6 +1325,7 @@ Route::middleware($tenant)->group(function () {
     Route::put('settings/appearance', [\App\Http\Controllers\InstituteSettingController::class, 'updateAppearance'])->name('settings.appearance.update');
     Route::put('settings/general', [\App\Http\Controllers\InstituteSettingController::class, 'updateGeneral'])->name('settings.general.update');
     Route::put('settings/dgda', [\App\Http\Controllers\InstituteSettingController::class, 'updateDgda'])->name('settings.dgda.update');
+    Route::post('settings/dgda/dismiss-migrate', [\App\Http\Controllers\InstituteSettingController::class, 'dismissMigrate'])->name('settings.dgda.dismiss-migrate');
     Route::put('settings/password', [\App\Http\Controllers\InstituteSettingController::class, 'updatePassword'])->name('settings.password');
 
     // ─── WORKFLOWS ─────────────────────────────────────────────────────────

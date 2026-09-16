@@ -70,6 +70,22 @@ class AppServiceProvider extends ServiceProvider
             return '<?php endif; ?>';
         });
 
+        // Blade directive: @dgdaEnabled ... @enddgdaEnabled
+        \Illuminate\Support\Facades\Blade::directive('dgdaEnabled', function () {
+            return '<?php if(\App\Support\DgdaContext::isEnabled()): ?>';
+        });
+        \Illuminate\Support\Facades\Blade::directive('enddgdaEnabled', function () {
+            return '<?php endif; ?>';
+        });
+
+        // Blade directive: @dgdaMasterEnabled ... @enddgdaMasterEnabled
+        \Illuminate\Support\Facades\Blade::directive('dgdaMasterEnabled', function () {
+            return '<?php if(\App\Support\DgdaContext::isMasterEnabled()): ?>';
+        });
+        \Illuminate\Support\Facades\Blade::directive('enddgdaMasterEnabled', function () {
+            return '<?php endif; ?>';
+        });
+
         // Parallel testing: populate newly created test databases with full data dump
         ParallelTesting::setUpTestDatabaseBeforeMigrating(function (string $testDatabase) {
             $fullDumpPath = database_path('schema/full_data.sql');

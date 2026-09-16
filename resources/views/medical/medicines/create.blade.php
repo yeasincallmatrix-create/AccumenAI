@@ -14,6 +14,26 @@
     </div>
 </div>
 
+@dgdaEnabled
+<div class="card mb-3 border-primary">
+    <div class="card-header bg-primary-subtle">
+        <h5 class="mb-0">
+            <i class="bi bi-search me-2"></i>
+            Search DGDA Registry
+        </h5>
+    </div>
+    <div class="card-body">
+        <input type="text" id="dgda-search-input" class="form-control"
+               placeholder="Type brand name, generic, or DGDA code...">
+        <div id="dgda-results" class="mt-3" style="max-height:400px; overflow-y:auto;"></div>
+    </div>
+</div>
+
+<div class="text-center my-4">
+    <span class="badge bg-secondary">— or add manually below —</span>
+</div>
+@enddgdaEnabled
+
 <div class="card">
     <div class="card-body">
         <form action="{{ route('medical.pharmacy.medicines.store') }}" method="POST">
@@ -224,3 +244,72 @@
     </div>
 </div>
 @endsection
+
+@dgdaEnabled
+@push('scripts')
+<script>
+let searchTimer;
+const searchInput = document.getElementById('dgda-search-input');
+if (searchInput) {
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimer);
+        const q = this.value.trim();
+        const box = document.getElementById('dgda-results');
+        if (q.length < 2) {
+            box.innerHTML = '';
+            return;
+        }
+        searchTimer = setTimeout(() => {
+            fetch('{{ route("medical.pharmacy.medicines.dgda-search") }}?q=' + encodeURIComponent(q))
+                .then(r => r.json())
+                .then(data => renderResults(data));
+        }, 300);
+    });
+}
+
+function renderResults(items) {
+    const box = document.getElementById('dgda-results');
+    if (!items.length) {
+        box.innerHTML = '<p class="text-muted mb-0">No matches found.</p>';
+        return;
+    }
+    box.innerHTML = items.map(m => `
+        <div class="border rounded p-2 mb-2 d-flex justify-content-between align-items-center">
+            <div>
+                <strong>${m.brand_name}</strong> ${m.strength_raw ?? ''}
+                <small class="d-block text-muted">
+                    ${m.generic_name ?? ''} · ${m.dosage_form_raw ?? ''} · DAR: ${m.dar_number}
+                </small>
+            </div>
+            <button type="button" class="btn btn-sm btn-primary"
+                    onclick='fillFromDgda(${JSON.stringify(m).replace(/'/g, "\\'")})'>
+                Import
+            </button>
+        </div>
+    `).join('');
+}
+
+function fillFromDgda(m) {
+    document.querySelector('[name="brand_name"]').value = m.brand_name ?? '';
+    document.querySelector('[name="generic_name"]').value = m.generic_name ?? '';
+    document.querySelector('[name="strength"]').value = m.strength_raw ?? '';
+    if (m.dosage_form_raw) {
+        const sel = document.querySelector('[name="dosage_form"]');
+        if (sel) {
+            for (let opt of sel.options) {
+                if (opt.text.toLowerCase() === m.dosage_form_raw.toLowerCase()) {
+                    sel.value = opt.value;
+                    break;
+                }
+            }
+        }
+    }
+    const dgdaInput = document.querySelector('[name="dgda_code"]');
+    if (dgdaInput) dgdaInput.value = m.dgda_code ?? '';
+    const darInput = document.querySelector('[name="dgda_dar_number"]');
+    if (darInput) darInput.value = m.dar_number ?? '';
+    window.scrollTo({ top: document.querySelector('form').offsetTop - 100, behavior: 'smooth' });
+}
+</script>
+@endpush
+@enddgdaEnabled

@@ -419,4 +419,75 @@ class MedicineController extends MedicalController implements HasMiddleware
                 'total_errors' => count($errors),
             ]);
     }
+
+    /**
+     * Show DGDA migration analysis page.
+     */
+    public function migrateForm()
+    {
+        $instituteId = $this->instituteId();
+        $service = app(\App\Services\Medical\DgdaMigrationService::class);
+        $analysis = $service->analyze($instituteId);
+
+        return view('medical.medicines.migrate', compact('analysis'));
+    }
+
+    /**
+     * Apply auto-matched migrations.
+     */
+    public function migrateApplyAuto()
+    {
+        $instituteId = $this->instituteId();
+        $service = app(\App\Services\Medical\DgdaMigrationService::class);
+        $count = $service->applyAuto($instituteId);
+
+        return redirect()
+            ->route('medical.pharmacy.medicines.migrate')
+            ->with('status', "Linked {$count} medicine(s) to DGDA registry.");
+    }
+
+    /**
+     * Apply a single manual migration match.
+     */
+    public function migrateApplyManual(Request $request)
+    {
+        $request->validate([
+            'medicine_id' => 'required|integer|exists:medicines,id',
+            'dgda_registration_id' => 'required|integer|exists:dgda_registrations,id',
+        ]);
+
+        $service = app(\App\Services\Medical\DgdaMigrationService::class);
+        $ok = $service->applyManual(
+            (int) $request->medicine_id,
+            (int) $request->dgda_registration_id
+        );
+
+        if (! $ok) {
+            return back()->with('error', 'Migration failed. Medicine or DGDA registration not found.');
+        }
+
+        return back()->with('status', 'Medicine linked to DGDA registration.');
+    }
+
+    /**
+     * Search DGDA registry for hybrid mode create form.
+     */
+    public function dgdaSearch(Request $request)
+    {
+        $q = $request->string('q')->toString();
+        if (strlen($q) < 2) {
+            return response()->json([]);
+        }
+
+        $results = \App\Models\Medical\DgdaRegistration::where(function ($query) use ($q) {
+            $query->where('brand_name', 'like', "%{$q}%")
+                ->orWhere('generic_name', 'like', "%{$q}%")
+                ->orWhere('dar_number', 'like', "%{$q}%");
+        })
+            ->where('match_status', '!=', 'invalid')
+            ->limit(20)
+            ->get(['id', 'dar_number', 'brand_name', 'generic_name', 'strength_raw', 'dosage_form_raw', 'manufacturer_name']);
+
+        return response()->json($results);
+    }
 }

@@ -160,9 +160,11 @@ class InstituteSettingController extends Controller
             ->where('institute_id', $instituteId)
             ->value('dgda_enabled');
 
+        $newValue = $data['dgda_enabled'] === '1';
+
         InstituteSetting::updateOrCreate(
             ['institute_id' => $instituteId],
-            ['dgda_enabled' => $data['dgda_enabled'] === '1']
+            ['dgda_enabled' => $newValue]
         );
 
         AuditLog::create([
@@ -173,15 +175,36 @@ class InstituteSettingController extends Controller
             'module' => 'settings',
             'record_id' => $instituteId,
             'old_values' => json_encode(['dgda_enabled' => (bool) $previous]),
-            'new_values' => json_encode(['dgda_enabled' => $data['dgda_enabled'] === '1']),
+            'new_values' => json_encode(['dgda_enabled' => $newValue]),
             'ip_address' => $request->ip(),
             'user_agent' => substr((string) $request->userAgent(), 0, 255),
             'created_at' => now(),
         ]);
 
+        // If just turned ON and custom medicines exist → show migrate prompt
+        if (! $previous && $newValue) {
+            $customCount = \App\Models\Medical\Medicine::where('institute_id', $instituteId)
+                ->whereNull('deleted_at')
+                ->whereNull('dgda_code')
+                ->count();
+
+            if ($customCount > 0) {
+                return redirect()
+                    ->route('settings.index', '#pane-medical')
+                    ->with('migrate_prompt', ['custom_count' => $customCount]);
+            }
+        }
+
         return redirect()
             ->route('settings.index', '#pane-medical')
-            ->with('status', 'DGDA integration '.($data['dgda_enabled'] === '1' ? 'enabled.' : 'disabled.'));
+            ->with('status', 'DGDA integration '.($newValue ? 'enabled.' : 'disabled.'));
+    }
+
+    public function dismissMigrate(): RedirectResponse
+    {
+        return redirect()
+            ->route('settings.index', '#pane-medical')
+            ->with('status', 'Medicines left unchanged.');
     }
 
     public function updateCertificateApprovalMode(Request $request): RedirectResponse

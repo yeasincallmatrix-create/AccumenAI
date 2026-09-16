@@ -138,6 +138,15 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
 
     Route::resource('pharmacy/medicines', MedicineController::class)->names('pharmacy.medicines');
     Route::post('pharmacy/medicines/{medicine}/sync-dgda', [MedicineController::class, 'syncDgda'])->name('pharmacy.medicines.sync-dgda');
+
+    // DGDA Migration
+    Route::get('pharmacy/medicines/migrate', [MedicineController::class, 'migrateForm'])->name('pharmacy.medicines.migrate');
+    Route::post('pharmacy/medicines/migrate/apply-auto', [MedicineController::class, 'migrateApplyAuto'])->name('pharmacy.medicines.migrate.apply-auto');
+    Route::post('pharmacy/medicines/migrate/apply-manual', [MedicineController::class, 'migrateApplyManual'])->name('pharmacy.medicines.migrate.apply-manual');
+
+    // DGDA Search (for hybrid mode)
+    Route::get('pharmacy/medicines/dgda-search', [MedicineController::class, 'dgdaSearch'])->name('pharmacy.medicines.dgda-search');
+
     Route::resource('pharmacy/stock', PharmacyStockController::class)->names('pharmacy.stock');
     Route::get('pharmacy/dispense', [PharmacyController::class, 'dispenseQueue'])->name('pharmacy.dispense.index');
     Route::get('pharmacy/dispense/{prescription_item}', [PharmacyController::class, 'dispenseShow'])->name('pharmacy.dispense.show');

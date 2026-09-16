@@ -288,10 +288,44 @@
                 </div>
 
                 <div class="settings-pane" id="pane-medical">
-                    <div class="table-toolbar">
-                        <div class="toolbar-info"><i class="bi bi-capsule"></i> Medical Settings</div>
-                    </div>
-                    @php $platformDgda = \App\Services\Medical\DgdaService::enabled(); @endphp
+
+                      @if(session('migrate_prompt'))
+                          <div class="modal fade show d-block" style="background:rgba(0,0,0,.5)" tabindex="-1">
+                              <div class="modal-dialog modal-lg">
+                                  <div class="modal-content">
+                                      <div class="modal-header bg-warning-subtle">
+                                          <h5 class="modal-title">
+                                              <i class="bi bi-arrow-left-right me-2"></i>
+                                              Migrate Existing Medicines?
+                                          </h5>
+                                      </div>
+                                      <div class="modal-body">
+                                          <p>You enabled DGDA. We found <strong>{{ session('migrate_prompt.custom_count') }}</strong> custom medicines in your list.</p>
+                                          <p>Would you like to link them to the DGDA registry?</p>
+                                          <ul>
+                                              <li>✅ Matched medicines will link to their DGDA entries</li>
+                                              <li>❌ Unmatched will remain as custom entries</li>
+                                              <li>✅ No data will be lost — you can review before applying</li>
+                                          </ul>
+                                      </div>
+                                      <div class="modal-footer">
+                                          <a href="{{ route('medical.pharmacy.medicines.migrate') }}" class="btn btn-primary">
+                                              <i class="bi bi-arrow-left-right"></i> Yes, migrate
+                                          </a>
+                                          <form action="{{ route('settings.dgda.dismiss-migrate') }}" method="POST" class="d-inline">
+                                              @csrf
+                                              <button class="btn btn-outline-secondary">No, keep unchanged</button>
+                                          </form>
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
+                      @endif
+
+                      <div class="table-toolbar">
+                          <div class="toolbar-info"><i class="bi bi-capsule"></i> Medical Settings</div>
+                      </div>
+                      @php $platformDgda = \App\Services\Medical\DgdaService::enabled(); @endphp
                     <form method="POST" action="{{ route('settings.dgda.update') }}">
                         @csrf
                         @method('PUT')
