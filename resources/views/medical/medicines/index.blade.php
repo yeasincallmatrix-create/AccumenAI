@@ -7,10 +7,13 @@
     <div class="page-header-text">
         <h4 class="page-header-title">Medicine Catalog</h4>
     </div>
-    <div class="page-header-actions">
-        <a class="btn btn-primary" href="{{ route('medical.pharmacy.medicines.create') }}">
-            <i class="bi bi-plus-lg me-1"></i>Add Medicine
-        </a>
+      <div class="page-header-actions">
+         <a class="btn btn-outline-primary" href="{{ route('medical.pharmacy.medicines.import.form') }}">
+              <i class="bi bi-upload me-1"></i>Bulk Import
+          </a>
+         <a class="btn btn-primary" href="{{ route('medical.pharmacy.medicines.create') }}">
+              <i class="bi bi-plus-lg me-1"></i>Add Medicine
+          </a>
     </div>
 </div>
 

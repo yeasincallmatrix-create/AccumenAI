@@ -13,17 +13,15 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Phase 0 — HMS Foundation.
+ * Checks that a specific medical sub-module is enabled for the
+ * current institute via ModuleAccessService.
  *
- * Checks that the `medical_{module}` key is enabled for the current
- * institute via the single entitlement engine (ModuleAccessService).
- * Follows the same resolution/bypass pattern as CheckModuleAccess.
- *
- * Usage: ->middleware('medical.module:pharmacy')
+ * Usage: ->middleware('medical.module:medical.opd')
+ *        ->middleware('medical.module:medical.pharmacy')
  */
 class MedicalModuleAccess
 {
-    public function handle(Request $request, Closure $next, string $module): Response
+    public function handle(Request $request, Closure $next, string $moduleKey): Response
     {
         $user = $request->user();
 
@@ -39,8 +37,8 @@ class MedicalModuleAccess
 
         $moduleAccess = app(ModuleAccessService::class);
 
-        if (! $moduleAccess->isEnabled($institute, 'medical_'.$module)) {
-            abort(403, "Medical module '{$module}' is not enabled for this institution.");
+        if (! $moduleAccess->isEnabled($institute, $moduleKey)) {
+            abort(403, "Module '{$moduleKey}' is not enabled for this institution.");
         }
 
         return $next($request);

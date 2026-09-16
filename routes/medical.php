@@ -130,6 +130,12 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     Route::post('pharmacy/dispense/{prescription_item}', [PharmacyController::class, 'dispense'])->name('pharmacy.dispense');
     Route::post('pharmacy/medicines/quick-store', [MedicineController::class, 'quickStore'])->name('pharmacy.medicines.quick-store');
     Route::post('pharmacy/medicines/{medicine}/restore', [MedicineController::class, 'restore'])->name('pharmacy.medicines.restore');
+
+    // CSV Import (BEFORE resource route to avoid {medicine} capturing 'import')
+    Route::get('pharmacy/medicines/import', [MedicineController::class, 'importForm'])->name('pharmacy.medicines.import.form');
+    Route::post('pharmacy/medicines/import', [MedicineController::class, 'import'])->name('pharmacy.medicines.import');
+    Route::get('pharmacy/medicines/import/template', [MedicineController::class, 'downloadTemplate'])->name('pharmacy.medicines.import.template');
+
     Route::resource('pharmacy/medicines', MedicineController::class)->names('pharmacy.medicines');
     Route::post('pharmacy/medicines/{medicine}/sync-dgda', [MedicineController::class, 'syncDgda'])->name('pharmacy.medicines.sync-dgda');
     Route::resource('pharmacy/stock', PharmacyStockController::class)->names('pharmacy.stock');
@@ -216,7 +222,8 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
 Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('medical')->group(function () {
 
     // OPD
-    Route::prefix('opd')->name('medical.opd.')->group(function () {
+    Route::middleware('medical.module:medical.opd')
+        ->prefix('opd')->name('medical.opd.')->group(function () {
         Route::get('appointments', [AppointmentController::class, 'index'])->name('appointments.index');
         Route::get('appointments/create', [AppointmentController::class, 'create'])->name('appointments.create');
         Route::post('appointments', [AppointmentController::class, 'store'])->name('appointments.store');
@@ -228,7 +235,8 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     });
 
     // IPD
-    Route::prefix('ipd')->name('medical.ipd.')->group(function () {
+    Route::middleware('medical.module:medical.ipd')
+        ->prefix('ipd')->name('medical.ipd.')->group(function () {
         Route::get('admissions', [AdmissionController::class, 'index'])->name('admissions.index');
         Route::get('admissions/create', [AdmissionController::class, 'create'])->name('admissions.create');
         Route::post('admissions', [AdmissionController::class, 'store'])->name('admissions.store');
@@ -237,7 +245,8 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     });
 
     // Pharmacy
-    Route::prefix('pharmacy')->name('medical.pharmacy.')->group(function () {
+    Route::middleware('medical.module:medical.pharmacy')
+        ->prefix('pharmacy')->name('medical.pharmacy.')->group(function () {
         Route::get('medicines', [MedicineController::class, 'index'])->name('medicines.index');
         Route::get('medicines/create', [MedicineController::class, 'create'])->name('medicines.create');
         Route::post('medicines', [MedicineController::class, 'store'])->name('medicines.store');
@@ -246,7 +255,8 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     });
 
     // Laboratory
-    Route::prefix('laboratory')->name('medical.laboratory.')->group(function () {
+    Route::middleware('medical.module:medical.laboratory')
+        ->prefix('laboratory')->name('medical.laboratory.')->group(function () {
         Route::get('orders', [LabOrderController::class, 'index'])->name('orders.index');
         Route::get('orders/create', [LabOrderController::class, 'create'])->name('orders.create');
         Route::post('orders', [LabOrderController::class, 'store'])->name('orders.store');
@@ -254,7 +264,8 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     });
 
     // Billing
-    Route::prefix('billing')->name('medical.billing.')->group(function () {
+    Route::middleware('medical.module:medical.billing')
+        ->prefix('billing')->name('medical.billing.')->group(function () {
         Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
         Route::get('invoices/create', [InvoiceController::class, 'create'])->name('invoices.create');
         Route::post('invoices', [InvoiceController::class, 'store'])->name('invoices.store');

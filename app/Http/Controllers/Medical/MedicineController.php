@@ -9,6 +9,7 @@ use App\Services\Medical\DgdaService;
 use App\Services\Medical\MedicineDuplicateService;
 use App\Support\MedicineDosageForm;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
@@ -269,5 +270,153 @@ class MedicineController extends MedicalController implements HasMiddleware
 
         return redirect()->route('medical.pharmacy.medicines.show', $medicine)
             ->with('status', 'Medicine restored successfully.');
+    }
+
+    /**
+     * Show the bulk CSV import form.
+     */
+    public function importForm()
+    {
+        return view('medical.medicines.import');
+    }
+
+    /**
+     * Download the CSV import template.
+     */
+    public function downloadTemplate()
+    {
+        $path = resource_path('templates/medicine-import-template.csv');
+        if (! file_exists($path)) {
+            abort(404, 'Template not found.');
+        }
+
+        return response()->download($path, 'medicine-import-template.csv');
+    }
+
+    /**
+     * Process a bulk CSV import of medicines.
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:5120',
+        ]);
+
+        $file = $request->file('csv_file');
+        $instituteId = $this->instituteId();
+
+        $handle = fopen($file->getRealPath(), 'r');
+        $header = fgetcsv($handle);
+        $header = array_map(fn ($h) => strtolower(trim($h)), $header);
+
+        $required = ['brand_name', 'strength', 'dosage_form'];
+        $missing = array_diff($required, $header);
+        if (! empty($missing)) {
+            fclose($handle);
+
+            return back()->withErrors(['csv_file' => 'Missing required columns: '.implode(', ', $missing)]);
+        }
+
+        $canonicalForms = array_keys(config('medicine.dosage_forms'));
+
+        $imported = 0;
+        $skipped = 0;
+        $errors = [];
+        $rowNum = 1;
+
+        DB::beginTransaction();
+        try {
+            while (($row = fgetcsv($handle)) !== false) {
+                $rowNum++;
+                if (count(array_filter($row)) === 0) {
+                    continue;
+                }
+
+                $data = array_combine($header, array_pad($row, count($header), null));
+
+                if (empty($data['brand_name']) || empty($data['strength']) || empty($data['dosage_form'])) {
+                    $errors[] = "Row {$rowNum}: missing required field (brand_name, strength, or dosage_form)";
+                    $skipped++;
+                    continue;
+                }
+
+                $form = ucfirst(strtolower(trim($data['dosage_form'])));
+                if (! in_array($form, $canonicalForms, true)) {
+                    $errors[] = "Row {$rowNum}: invalid dosage_form '{$data['dosage_form']}'. Allowed: ".implode(', ', $canonicalForms);
+                    $skipped++;
+                    continue;
+                }
+
+                $normalized = preg_replace('/[^a-z0-9]/', '', strtolower(trim($data['brand_name'].' '.$data['strength'])));
+
+                $existing = Medicine::where('institute_id', $instituteId)
+                    ->where('normalized_name', $normalized)
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                if ($existing) {
+                    $errors[] = "Row {$rowNum}: duplicate of existing medicine '{$existing->brand_name}' ({$existing->strength})";
+                    $skipped++;
+                    continue;
+                }
+
+                $code = ! empty($data['code'])
+                    ? trim($data['code'])
+                    : 'MED-'.$instituteId.'-'.strtoupper(uniqid());
+
+                if (! empty($data['code'])) {
+                    $codeExists = Medicine::where('institute_id', $instituteId)
+                        ->where('code', $code)
+                        ->whereNull('deleted_at')
+                        ->exists();
+                    if ($codeExists) {
+                        $errors[] = "Row {$rowNum}: code '{$code}' already in use";
+                        $skipped++;
+                        continue;
+                    }
+                }
+
+                try {
+                    Medicine::create([
+                        'institute_id' => $instituteId,
+                        'brand_name' => trim($data['brand_name']),
+                        'generic_name' => ! empty($data['generic_name']) ? trim($data['generic_name']) : null,
+                        'strength' => trim($data['strength']),
+                        'dosage_form' => $form,
+                        'route' => ! empty($data['route']) ? trim($data['route']) : null,
+                        'unit' => ! empty($data['unit']) ? trim($data['unit']) : null,
+                        'pack_size' => ! empty($data['pack_size']) ? (int) $data['pack_size'] : null,
+                        'manufacturer' => ! empty($data['manufacturer']) ? trim($data['manufacturer']) : null,
+                        'category' => ! empty($data['category']) ? trim($data['category']) : null,
+                        'selling_price' => ! empty($data['selling_price']) ? (float) $data['selling_price'] : 0,
+                        'reorder_level' => ! empty($data['reorder_level']) ? (int) $data['reorder_level'] : 10,
+                        'code' => $code,
+                        'dgda_code' => ! empty($data['dgda_code']) ? trim($data['dgda_code']) : null,
+                        'is_active' => isset($data['is_active']) ? (bool) $data['is_active'] : true,
+                    ]);
+                    $imported++;
+                } catch (\Throwable $e) {
+                    $errors[] = "Row {$rowNum}: DB error — ".$e->getMessage();
+                    $skipped++;
+                }
+            }
+
+            fclose($handle);
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            fclose($handle);
+
+            return back()->withErrors(['csv_file' => 'Import failed: '.$e->getMessage()]);
+        }
+
+        return redirect()
+            ->route('medical.pharmacy.medicines.index')
+            ->with('import_summary', [
+                'imported' => $imported,
+                'skipped' => $skipped,
+                'errors' => array_slice($errors, 0, 50),
+                'total_errors' => count($errors),
+            ]);
     }
 }
