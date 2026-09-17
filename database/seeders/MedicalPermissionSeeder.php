@@ -839,5 +839,100 @@ class MedicalPermissionSeeder extends Seeder
                 }
             }
         }
+
+        // Medical Records (EMR) permissions
+        $recordsPerms = [
+            'medical.records' => [
+                'view' => 'View Medical Records',
+                'timeline.view' => 'View Patient Timeline',
+                'document.upload' => 'Upload Medical Documents',
+                'document.download' => 'Download Medical Documents',
+                'document.delete' => 'Delete Medical Documents',
+                'discharge.create' => 'Create Discharge Summaries',
+                'note.create' => 'Create Clinical Notes',
+                'note.sign' => 'Sign Clinical Notes',
+            ],
+        ];
+
+        foreach ($recordsPerms as $module => $actions) {
+            foreach ($actions as $action => $label) {
+                Permission::firstOrCreate(
+                    ['slug' => $module.'.'.$action],
+                    ['module' => $module, 'name' => $label]
+                );
+            }
+        }
+
+        $recordsGrants = [
+            'doctor' => [
+                'medical.records.view',
+                'medical.records.timeline.view',
+                'medical.records.discharge.create',
+                'medical.records.note.create',
+                'medical.records.note.sign',
+                'medical.records.document.upload',
+            ],
+            'nurse' => [
+                'medical.records.view',
+                'medical.records.timeline.view',
+                'medical.records.document.upload',
+                'medical.records.note.create',
+            ],
+            'receptionist' => [
+                'medical.records.view',
+                'medical.records.timeline.view',
+                'medical.records.document.upload',
+            ],
+        ];
+
+        foreach ($recordsGrants as $roleSlug => $slugs) {
+            $roleIds = Role::where('slug', $roleSlug)->pluck('id')->toArray();
+            if (empty($roleIds)) {
+                continue;
+            }
+            $permIds = Permission::whereIn('slug', $slugs)->pluck('id')->toArray();
+            $existing = DB::table('role_permissions')
+                ->whereIn('permission_id', $permIds)
+                ->whereIn('role_id', $roleIds)
+                ->get(['role_id', 'permission_id']);
+            $have = [];
+            foreach ($existing as $row) {
+                $have[$row->role_id.'-'.$row->permission_id] = true;
+            }
+            foreach ($roleIds as $roleId) {
+                foreach ($permIds as $permId) {
+                    if (! isset($have[$roleId.'-'.$permId])) {
+                        DB::table('role_permissions')->insert([
+                            'role_id' => $roleId,
+                            'permission_id' => $permId,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // Grant ALL records perms to hospital-admin
+        $recordsAdminRoleIds = Role::whereIn('slug', ['hospital-admin'])->pluck('id')->toArray();
+        if (! empty($recordsAdminRoleIds)) {
+            $recordsAllPermIds = Permission::where('module', 'medical.records')->pluck('id')->toArray();
+            $existing = DB::table('role_permissions')
+                ->whereIn('permission_id', $recordsAllPermIds)
+                ->whereIn('role_id', $recordsAdminRoleIds)
+                ->get(['role_id', 'permission_id']);
+            $have = [];
+            foreach ($existing as $row) {
+                $have[$row->role_id.'-'.$row->permission_id] = true;
+            }
+            foreach ($recordsAdminRoleIds as $roleId) {
+                foreach ($recordsAllPermIds as $permId) {
+                    if (! isset($have[$roleId.'-'.$permId])) {
+                        DB::table('role_permissions')->insert([
+                            'role_id' => $roleId,
+                            'permission_id' => $permId,
+                        ]);
+                    }
+                }
+            }
+        }
     }
 }

@@ -87,6 +87,9 @@ final class NumberSequenceService
             NumberSequence::TYPE_DENTAL_PLAN => 'DT',
             NumberSequence::TYPE_VACCINATION_RECORD => 'VR',
             NumberSequence::TYPE_VACCINATION_CERTIFICATE => 'VC',
+            NumberSequence::TYPE_MEDICAL_DOCUMENT => 'DOC',
+            NumberSequence::TYPE_DISCHARGE_SUMMARY => 'DS',
+            NumberSequence::TYPE_CLINICAL_NOTE => 'CN',
             default => throw new \InvalidArgumentException("Unknown sequence type [{$type}]."),
         };
 
@@ -107,7 +110,7 @@ final class NumberSequenceService
         if (! is_string($stored) || $stored === '') {
             return (string) $stored;
         }
-        if (preg_match('/^(MR|RX|LAB|INV|TPA|ENC|ER|RAD|BD|BU|BR|PP|PS|DP|DT|VR|VC)-(\d{4})-(?:\d{3,}-)?(\d{5})$/', $stored, $m)) {
+        if (preg_match('/^(MR|RX|LAB|INV|TPA|ENC|ER|RAD|BD|BU|BR|PP|PS|DP|DT|VR|VC|DOC|DS|CN)-(\d{4})-(?:\d{3,}-)?(\d{5})$/', $stored, $m)) {
             return $m[1].'-'.substr($m[2], 2).'-'.$m[3];
         }
 
@@ -123,7 +126,7 @@ final class NumberSequenceService
     public static function toStored(string $input): string
     {
         $input = trim($input);
-        if (preg_match('/^(MR|RX|LAB|INV|TPA|ENC|ER|RAD|BD|BU|BR|PP|PS|DP|DT|VR|VC)-(\d{2})-(\d{5})$/', $input, $m)) {
+        if (preg_match('/^(MR|RX|LAB|INV|TPA|ENC|ER|RAD|BD|BU|BR|PP|PS|DP|DT|VR|VC|DOC|DS|CN)-(\d{2})-(\d{5})$/', $input, $m)) {
             return $m[1].'-20'.$m[2].'-'.$m[3];
         }
         if (preg_match('/^(MR|RX|LAB|INV|TPA|ENC|ER|RAD|PP|PS|DP|DT)-(\d{4})-\d{3,}-(\d{5})$/', $input, $m)) {
@@ -142,7 +145,7 @@ final class NumberSequenceService
     public static function expandShortYears(string $term): string
     {
         return (string) preg_replace_callback(
-            '/\b(MR|RX|LAB|INV|TPA|ENC|ER|RAD|BD|BU|BR|PP|PS|DP|DT|VR|VC)-(\d{2})(?!\d)/',
+            '/\b(MR|RX|LAB|INV|TPA|ENC|ER|RAD|BD|BU|BR|PP|PS|DP|DT|VR|VC|DOC|DS|CN)-(\d{2})(?!\d)/',
             fn (array $m): string => $m[1].'-20'.$m[2],
             $term
         );
@@ -223,6 +226,9 @@ final class NumberSequenceService
             NumberSequence::TYPE_DENTAL_PLAN => [\App\Models\Medical\DentalTreatmentPlan::class, 'plan_number', "DT-{$year}-"],
             NumberSequence::TYPE_VACCINATION_RECORD => [\App\Models\Medical\VaccinationRecord::class, 'record_number', "VR-{$year}-"],
             NumberSequence::TYPE_VACCINATION_CERTIFICATE => [\App\Models\Medical\VaccinationRecord::class, 'certificate_number', "VC-{$year}-"],
+            NumberSequence::TYPE_MEDICAL_DOCUMENT => [\App\Models\Medical\MedicalDocument::class, 'document_number', "DOC-{$year}-"],
+            NumberSequence::TYPE_DISCHARGE_SUMMARY => [\App\Models\Medical\DischargeSummary::class, 'summary_number', "DS-{$year}-"],
+            NumberSequence::TYPE_CLINICAL_NOTE => [\App\Models\Medical\ClinicalNote::class, 'note_number', "CN-{$year}-"],
         };
 
         // Soft-deleted rows keep their numbers reserved too (where supported).

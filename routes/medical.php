@@ -46,6 +46,11 @@ use App\Http\Controllers\Medical\VaccineMasterController;
 use App\Http\Controllers\Medical\VaccinationScheduleController;
 use App\Http\Controllers\Medical\VaccinationRecordController;
 use App\Http\Controllers\Medical\VaccineStockController;
+use App\Http\Controllers\Medical\MedicalRecordsDashboardController;
+use App\Http\Controllers\Medical\PatientTimelineController;
+use App\Http\Controllers\Medical\MedicalDocumentController;
+use App\Http\Controllers\Medical\DischargeSummaryController;
+use App\Http\Controllers\Medical\ClinicalNoteController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -486,5 +491,26 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
         Route::post('stocks', [VaccineStockController::class, 'store'])->name('stocks.store');
         Route::get('stocks/{stock}/edit', [VaccineStockController::class, 'edit'])->name('stocks.edit');
         Route::put('stocks/{stock}', [VaccineStockController::class, 'update'])->name('stocks.update');
+    });
+
+    // Medical Records (EMR) sub-module
+    Route::middleware('medical.module:medical.records')
+        ->prefix('records')->name('medical.records.')->group(function () {
+        Route::get('/', [MedicalRecordsDashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('patients/{patient}/timeline', [PatientTimelineController::class, 'show'])->name('patients.timeline');
+        Route::get('patients/{patient}/timeline/data', [PatientTimelineController::class, 'data'])->name('patients.timeline.data');
+        Route::post('patients/{patient}/timeline/backfill', [PatientTimelineController::class, 'backfill'])->name('patients.timeline.backfill');
+
+        Route::get('documents/{document}/download', [MedicalDocumentController::class, 'download'])->name('documents.download');
+        Route::get('documents/{document}/preview', [MedicalDocumentController::class, 'preview'])->name('documents.preview');
+        Route::resource('documents', MedicalDocumentController::class);
+
+        Route::get('discharge-summaries/{dischargeSummary}/pdf', [DischargeSummaryController::class, 'pdf'])->name('discharge-summaries.pdf');
+        Route::resource('discharge-summaries', DischargeSummaryController::class)->parameters(['discharge-summaries' => 'dischargeSummary']);
+
+        Route::post('notes/{note}/sign', [ClinicalNoteController::class, 'sign'])->name('notes.sign');
+        Route::post('notes/{note}/amend', [ClinicalNoteController::class, 'amend'])->name('notes.amend');
+        Route::resource('notes', ClinicalNoteController::class);
     });
 });

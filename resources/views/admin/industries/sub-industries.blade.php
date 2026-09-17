@@ -38,6 +38,39 @@
     </div>
 @endif
 
+<form method="GET" action="{{ route('admin.industries.sub-industries', $industry) }}" class="mb-3">
+    <div class="d-flex gap-2 align-items-end flex-wrap">
+        <div>
+            <label class="form-label form-label-sm mb-0">Search</label>
+            <input type="text" name="q" value="{{ request('q') }}" class="form-control form-control-sm" placeholder="Name or slug..." style="min-width:200px">
+        </div>
+        <div>
+            <label class="form-label form-label-sm mb-0">Country</label>
+            <select name="country" class="form-select form-select-sm" style="min-width:180px" onchange="this.form.submit()">
+                <option value="">All Countries</option>
+                <option value="global" @selected(request('country') === 'global')>Global</option>
+                @foreach ($countries as $country)
+                    <option value="{{ $country->id }}" @selected(request('country') == $country->id)>{{ $country->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div>
+            <label class="form-label form-label-sm mb-0">Status</label>
+            <select name="status" class="form-select form-select-sm" style="min-width:130px" onchange="this.form.submit()">
+                <option value="">All Statuses</option>
+                <option value="active" @selected(request('status') === 'active')>Active</option>
+                <option value="inactive" @selected(request('status') === 'inactive')>Inactive</option>
+            </select>
+        </div>
+        @if (request()->hasAny(['country', 'status', 'q']))
+            <a href="{{ route('admin.industries.sub-industries', $industry) }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-x-lg"></i> Clear
+            </a>
+        @endif
+        <button type="submit" class="btn btn-outline-primary btn-sm"><i class="bi bi-search"></i></button>
+    </div>
+</form>
+
 <div class="admin-card">
     <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">

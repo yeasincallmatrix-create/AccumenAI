@@ -376,6 +376,23 @@
                                                 @endif
                                             @endif
                                             @break
+
+                                        @case('medical.records')
+                                            @if($user && $user->hasPermission('medical.records.view'))
+                                                <a class="nav-link sub {{ request()->routeIs('medical.records.dashboard') ? 'active' : '' }}" href="{{ route('medical.records.dashboard') }}">
+                                                    <i class="bi bi-folder2-open"></i><span class="sidebar-label">Dashboard</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.records.documents.*') ? 'active' : '' }}" href="{{ route('medical.records.documents.index') }}">
+                                                    <i class="bi bi-file-earmark-text"></i><span class="sidebar-label">Documents</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.records.discharge-summaries.*') ? 'active' : '' }}" href="{{ route('medical.records.discharge-summaries.index') }}">
+                                                    <i class="bi bi-box-arrow-right"></i><span class="sidebar-label">Discharge Summaries</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.records.notes.*') ? 'active' : '' }}" href="{{ route('medical.records.notes.index') }}">
+                                                    <i class="bi bi-journal-text"></i><span class="sidebar-label">Clinical Notes</span>
+                                                </a>
+                                            @endif
+                                            @break
                                     @endswitch
                                 </div>
                             </div>

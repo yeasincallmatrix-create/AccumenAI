@@ -113,13 +113,32 @@ class IndustryAdminController extends Controller
             ->with('status', "Industry \"{$name}\" deleted.");
     }
 
-    public function subIndustries(Industry $industry): View
+    public function subIndustries(Request $request, Industry $industry): View
     {
-        $subIndustries = $industry->subIndustries()
-            ->with('country')
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
+        $query = $industry->subIndustries()->with('country');
+
+        if ($request->filled('country')) {
+            $countryValue = $request->query('country');
+            if ($countryValue === 'global') {
+                $query->whereNull('country_id');
+            } else {
+                $query->where('country_id', $countryValue);
+            }
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->query('status'));
+        }
+
+        if ($request->filled('q')) {
+            $q = $request->query('q');
+            $query->where(function ($qq) use ($q) {
+                $qq->where('name', 'like', "%{$q}%")
+                   ->orWhere('slug', 'like', "%{$q}%");
+            });
+        }
+
+        $subIndustries = $query->orderBy('sort_order')->orderBy('name')->get();
 
         $countries = \App\Models\Country::where('status', true)->orderBy('name')->get();
 

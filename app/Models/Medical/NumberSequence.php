@@ -48,6 +48,12 @@ class NumberSequence extends Model
 
     public const TYPE_VACCINATION_CERTIFICATE = 'vaccination_certificate';
 
+    public const TYPE_MEDICAL_DOCUMENT = 'medical_document';
+
+    public const TYPE_DISCHARGE_SUMMARY = 'discharge_summary';
+
+    public const TYPE_CLINICAL_NOTE = 'clinical_note';
+
     protected $fillable = [
         'institute_id',
         'sequence_type',

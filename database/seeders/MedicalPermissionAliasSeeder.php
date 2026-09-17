@@ -134,6 +134,15 @@ class MedicalPermissionAliasSeeder extends Seeder
             'medical.vaccination.schedule'     => 'medical.vaccination.schedule',
             'medical.vaccination.administer'   => 'medical.vaccination.administer',
             'medical.vaccination.stock.manage' => 'medical.vaccination.stock.manage',
+            // Medical Records (EMR)
+            'medical.records.view'              => 'medical.records.view',
+            'medical.records.timeline.view'     => 'medical.records.timeline.view',
+            'medical.records.document.upload'   => 'medical.records.document.upload',
+            'medical.records.document.download' => 'medical.records.document.download',
+            'medical.records.document.delete'   => 'medical.records.document.delete',
+            'medical.records.discharge.create'  => 'medical.records.discharge.create',
+            'medical.records.note.create'       => 'medical.records.note.create',
+            'medical.records.note.sign'         => 'medical.records.note.sign',
         ];
 
         foreach ($permissionMap as $oldSlug => $newSlug) {
