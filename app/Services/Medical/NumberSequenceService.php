@@ -90,6 +90,10 @@ final class NumberSequenceService
             NumberSequence::TYPE_MEDICAL_DOCUMENT => 'DOC',
             NumberSequence::TYPE_DISCHARGE_SUMMARY => 'DS',
             NumberSequence::TYPE_CLINICAL_NOTE => 'CN',
+            // NOTE: DP- is taken by dental procedures — diet plans use DIET-.
+            NumberSequence::TYPE_DIET_PLAN => 'DIET',
+            NumberSequence::TYPE_AMBULANCE_DRIVER => 'AD',
+            NumberSequence::TYPE_AMBULANCE_TRIP => 'AT',
             default => throw new \InvalidArgumentException("Unknown sequence type [{$type}]."),
         };
 
@@ -110,7 +114,7 @@ final class NumberSequenceService
         if (! is_string($stored) || $stored === '') {
             return (string) $stored;
         }
-        if (preg_match('/^(MR|RX|LAB|INV|TPA|ENC|ER|RAD|BD|BU|BR|PP|PS|DP|DT|VR|VC|DOC|DS|CN)-(\d{4})-(?:\d{3,}-)?(\d{5})$/', $stored, $m)) {
+        if (preg_match('/^(MR|RX|LAB|INV|TPA|ENC|ER|RAD|BD|BU|BR|PP|PS|DP|DT|VR|VC|DOC|DS|CN|DIET|AD|AT)-(\d{4})-(?:\d{3,}-)?(\d{5})$/', $stored, $m)) {
             return $m[1].'-'.substr($m[2], 2).'-'.$m[3];
         }
 
@@ -126,7 +130,7 @@ final class NumberSequenceService
     public static function toStored(string $input): string
     {
         $input = trim($input);
-        if (preg_match('/^(MR|RX|LAB|INV|TPA|ENC|ER|RAD|BD|BU|BR|PP|PS|DP|DT|VR|VC|DOC|DS|CN)-(\d{2})-(\d{5})$/', $input, $m)) {
+        if (preg_match('/^(MR|RX|LAB|INV|TPA|ENC|ER|RAD|BD|BU|BR|PP|PS|DP|DT|VR|VC|DOC|DS|CN|DIET|AD|AT)-(\d{2})-(\d{5})$/', $input, $m)) {
             return $m[1].'-20'.$m[2].'-'.$m[3];
         }
         if (preg_match('/^(MR|RX|LAB|INV|TPA|ENC|ER|RAD|PP|PS|DP|DT)-(\d{4})-\d{3,}-(\d{5})$/', $input, $m)) {
@@ -145,7 +149,7 @@ final class NumberSequenceService
     public static function expandShortYears(string $term): string
     {
         return (string) preg_replace_callback(
-            '/\b(MR|RX|LAB|INV|TPA|ENC|ER|RAD|BD|BU|BR|PP|PS|DP|DT|VR|VC|DOC|DS|CN)-(\d{2})(?!\d)/',
+            '/\b(MR|RX|LAB|INV|TPA|ENC|ER|RAD|BD|BU|BR|PP|PS|DP|DT|VR|VC|DOC|DS|CN|DIET|AD|AT)-(\d{2})(?!\d)/',
             fn (array $m): string => $m[1].'-20'.$m[2],
             $term
         );
@@ -229,6 +233,9 @@ final class NumberSequenceService
             NumberSequence::TYPE_MEDICAL_DOCUMENT => [\App\Models\Medical\MedicalDocument::class, 'document_number', "DOC-{$year}-"],
             NumberSequence::TYPE_DISCHARGE_SUMMARY => [\App\Models\Medical\DischargeSummary::class, 'summary_number', "DS-{$year}-"],
             NumberSequence::TYPE_CLINICAL_NOTE => [\App\Models\Medical\ClinicalNote::class, 'note_number', "CN-{$year}-"],
+            NumberSequence::TYPE_DIET_PLAN => [\App\Models\Medical\DietPlan::class, 'plan_number', "DIET-{$year}-"],
+            NumberSequence::TYPE_AMBULANCE_DRIVER => [\App\Models\Medical\AmbulanceDriver::class, 'driver_number', "AD-{$year}-"],
+            NumberSequence::TYPE_AMBULANCE_TRIP => [\App\Models\Medical\AmbulanceTrip::class, 'trip_number', "AT-{$year}-"],
         };
 
         // Soft-deleted rows keep their numbers reserved too (where supported).

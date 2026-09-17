@@ -393,6 +393,43 @@
                                                 </a>
                                             @endif
                                             @break
+
+                                        @case('medical.diet')
+                                            @if($user && $user->hasPermission('medical.diet.view'))
+                                                <a class="nav-link sub {{ request()->routeIs('medical.diet.dashboard') ? 'active' : '' }}" href="{{ route('medical.diet.dashboard') }}">
+                                                    <i class="bi bi-egg-fried"></i><span class="sidebar-label">Dashboard</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.diet.plans.*') ? 'active' : '' }}" href="{{ route('medical.diet.plans.index') }}">
+                                                    <i class="bi bi-journal-medical"></i><span class="sidebar-label">Diet Plans</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.diet.kitchen.*') ? 'active' : '' }}" href="{{ route('medical.diet.kitchen.today') }}">
+                                                    <i class="bi bi-basket"></i><span class="sidebar-label">Kitchen Queue</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.diet.templates.*') ? 'active' : '' }}" href="{{ route('medical.diet.templates.index') }}">
+                                                    <i class="bi bi-book"></i><span class="sidebar-label">Templates</span>
+                                                </a>
+                                            @endif
+                                            @break
+
+                                        @case('medical.ambulance')
+                                            @if($user && $user->hasPermission('medical.ambulance.view'))
+                                                <a class="nav-link sub {{ request()->routeIs('medical.ambulance.dashboard') ? 'active' : '' }}" href="{{ route('medical.ambulance.dashboard') }}">
+                                                    <i class="bi bi-truck"></i><span class="sidebar-label">Dashboard</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.ambulance.vehicles.*') ? 'active' : '' }}" href="{{ route('medical.ambulance.vehicles.index') }}">
+                                                    <i class="bi bi-truck-front"></i><span class="sidebar-label">Fleet</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.ambulance.drivers.*') ? 'active' : '' }}" href="{{ route('medical.ambulance.drivers.index') }}">
+                                                    <i class="bi bi-person-badge"></i><span class="sidebar-label">Drivers</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.ambulance.trips.*') ? 'active' : '' }}" href="{{ route('medical.ambulance.trips.index') }}">
+                                                    <i class="bi bi-signpost-2"></i><span class="sidebar-label">Trips</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.ambulance.dispatch-board') ? 'active' : '' }}" href="{{ route('medical.ambulance.dispatch-board') }}">
+                                                    <i class="bi bi-broadcast"></i><span class="sidebar-label">Dispatch Board</span>
+                                                </a>
+                                            @endif
+                                            @break
                                     @endswitch
                                 </div>
                             </div>

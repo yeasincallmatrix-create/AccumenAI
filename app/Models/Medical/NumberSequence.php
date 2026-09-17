@@ -54,6 +54,12 @@ class NumberSequence extends Model
 
     public const TYPE_CLINICAL_NOTE = 'clinical_note';
 
+    public const TYPE_DIET_PLAN = 'diet_plan';
+
+    public const TYPE_AMBULANCE_DRIVER = 'ambulance_driver';
+
+    public const TYPE_AMBULANCE_TRIP = 'ambulance_trip';
+
     protected $fillable = [
         'institute_id',
         'sequence_type',

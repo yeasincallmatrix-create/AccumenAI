@@ -143,6 +143,19 @@ class MedicalPermissionAliasSeeder extends Seeder
             'medical.records.discharge.create'  => 'medical.records.discharge.create',
             'medical.records.note.create'       => 'medical.records.note.create',
             'medical.records.note.sign'         => 'medical.records.note.sign',
+            // Diet & Nutrition
+            'medical.diet.view'              => 'medical.diet.view',
+            'medical.diet.plan.create'       => 'medical.diet.plan.create',
+            'medical.diet.plan.edit'         => 'medical.diet.plan.edit',
+            'medical.diet.meal.serve'        => 'medical.diet.meal.serve',
+            'medical.diet.template.manage'   => 'medical.diet.template.manage',
+            // Ambulance
+            'medical.ambulance.view'          => 'medical.ambulance.view',
+            'medical.ambulance.fleet.manage'  => 'medical.ambulance.fleet.manage',
+            'medical.ambulance.driver.manage' => 'medical.ambulance.driver.manage',
+            'medical.ambulance.trip.create'   => 'medical.ambulance.trip.create',
+            'medical.ambulance.trip.dispatch' => 'medical.ambulance.trip.dispatch',
+            'medical.ambulance.trip.complete' => 'medical.ambulance.trip.complete',
         ];
 
         foreach ($permissionMap as $oldSlug => $newSlug) {

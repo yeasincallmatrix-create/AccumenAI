@@ -51,6 +51,14 @@ use App\Http\Controllers\Medical\PatientTimelineController;
 use App\Http\Controllers\Medical\MedicalDocumentController;
 use App\Http\Controllers\Medical\DischargeSummaryController;
 use App\Http\Controllers\Medical\ClinicalNoteController;
+use App\Http\Controllers\Medical\DietDashboardController;
+use App\Http\Controllers\Medical\DietPlanController;
+use App\Http\Controllers\Medical\MealScheduleController;
+use App\Http\Controllers\Medical\DietTemplateController;
+use App\Http\Controllers\Medical\AmbulanceDashboardController;
+use App\Http\Controllers\Medical\AmbulanceController;
+use App\Http\Controllers\Medical\AmbulanceDriverController;
+use App\Http\Controllers\Medical\AmbulanceTripController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -512,5 +520,41 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
         Route::post('notes/{note}/sign', [ClinicalNoteController::class, 'sign'])->name('notes.sign');
         Route::post('notes/{note}/amend', [ClinicalNoteController::class, 'amend'])->name('notes.amend');
         Route::resource('notes', ClinicalNoteController::class);
+    });
+
+    // Diet & Nutrition sub-module
+    Route::middleware('medical.module:medical.diet')
+        ->prefix('diet')->name('medical.diet.')->group(function () {
+        Route::get('/', [DietDashboardController::class, 'index'])->name('dashboard');
+        Route::get('kitchen/today', [DietDashboardController::class, 'kitchenToday'])->name('kitchen.today');
+
+        Route::post('plans/{plan}/discontinue', [DietPlanController::class, 'discontinue'])->name('plans.discontinue');
+        Route::post('plans/{plan}/generate-meals', [DietPlanController::class, 'generateMeals'])->name('plans.generate-meals');
+        Route::resource('plans', DietPlanController::class);
+        Route::resource('plans.meals', MealScheduleController::class);
+
+        Route::post('meals/{meal}/prepare', [MealScheduleController::class, 'markPrepared'])->name('meals.prepare');
+        Route::post('meals/{meal}/serve', [MealScheduleController::class, 'markServed'])->name('meals.serve');
+        Route::post('meals/{meal}/refuse', [MealScheduleController::class, 'markRefused'])->name('meals.refuse');
+
+        Route::resource('templates', DietTemplateController::class);
+    });
+
+    // Ambulance sub-module
+    Route::middleware('medical.module:medical.ambulance')
+        ->prefix('ambulance')->name('medical.ambulance.')->group(function () {
+        Route::get('/', [AmbulanceDashboardController::class, 'index'])->name('dashboard');
+        Route::get('dispatch-board', [AmbulanceDashboardController::class, 'dispatchBoard'])->name('dispatch-board');
+
+        Route::post('vehicles/{vehicle}/status', [AmbulanceController::class, 'updateStatus'])->name('vehicles.status');
+        Route::resource('vehicles', AmbulanceController::class);
+
+        Route::resource('drivers', AmbulanceDriverController::class);
+
+        Route::post('trips/{trip}/dispatch', [AmbulanceTripController::class, 'dispatch'])->name('trips.dispatch');
+        Route::post('trips/{trip}/status', [AmbulanceTripController::class, 'updateStatus'])->name('trips.status');
+        Route::post('trips/{trip}/cancel', [AmbulanceTripController::class, 'cancel'])->name('trips.cancel');
+        Route::get('trips/{trip}/fare-estimate', [AmbulanceTripController::class, 'fareEstimate'])->name('trips.fare-estimate');
+        Route::resource('trips', AmbulanceTripController::class);
     });
 });

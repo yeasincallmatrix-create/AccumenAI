@@ -934,5 +934,184 @@ class MedicalPermissionSeeder extends Seeder
                 }
             }
         }
+
+        // Diet & Nutrition permissions (no dietitian/kitchen_staff roles exist;
+        // nurse covers meal serving + templates per spec fallback)
+        $dietPerms = [
+            'medical.diet' => [
+                'view' => 'View Diet & Nutrition',
+                'plan.create' => 'Create Diet Plans',
+                'plan.edit' => 'Edit Diet Plans',
+                'meal.serve' => 'Prepare & Serve Meals',
+                'template.manage' => 'Manage Diet Templates',
+            ],
+        ];
+
+        foreach ($dietPerms as $module => $actions) {
+            foreach ($actions as $action => $label) {
+                Permission::firstOrCreate(
+                    ['slug' => $module.'.'.$action],
+                    ['module' => $module, 'name' => $label]
+                );
+            }
+        }
+
+        $dietGrants = [
+            'doctor' => [
+                'medical.diet.view',
+                'medical.diet.plan.create',
+                'medical.diet.plan.edit',
+            ],
+            'nurse' => [
+                'medical.diet.view',
+                'medical.diet.plan.create',
+                'medical.diet.plan.edit',
+                'medical.diet.meal.serve',
+                'medical.diet.template.manage',
+            ],
+            'receptionist' => [
+                'medical.diet.view',
+            ],
+        ];
+
+        foreach ($dietGrants as $roleSlug => $slugs) {
+            $roleIds = Role::where('slug', $roleSlug)->pluck('id')->toArray();
+            if (empty($roleIds)) {
+                continue;
+            }
+            $permIds = Permission::whereIn('slug', $slugs)->pluck('id')->toArray();
+            $existing = DB::table('role_permissions')
+                ->whereIn('permission_id', $permIds)
+                ->whereIn('role_id', $roleIds)
+                ->get(['role_id', 'permission_id']);
+            $have = [];
+            foreach ($existing as $row) {
+                $have[$row->role_id.'-'.$row->permission_id] = true;
+            }
+            foreach ($roleIds as $roleId) {
+                foreach ($permIds as $permId) {
+                    if (! isset($have[$roleId.'-'.$permId])) {
+                        DB::table('role_permissions')->insert([
+                            'role_id' => $roleId,
+                            'permission_id' => $permId,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // Grant ALL diet perms to hospital-admin
+        $dietAdminRoleIds = Role::whereIn('slug', ['hospital-admin'])->pluck('id')->toArray();
+        if (! empty($dietAdminRoleIds)) {
+            $dietAllPermIds = Permission::where('module', 'medical.diet')->pluck('id')->toArray();
+            $existing = DB::table('role_permissions')
+                ->whereIn('permission_id', $dietAllPermIds)
+                ->whereIn('role_id', $dietAdminRoleIds)
+                ->get(['role_id', 'permission_id']);
+            $have = [];
+            foreach ($existing as $row) {
+                $have[$row->role_id.'-'.$row->permission_id] = true;
+            }
+            foreach ($dietAdminRoleIds as $roleId) {
+                foreach ($dietAllPermIds as $permId) {
+                    if (! isset($have[$roleId.'-'.$permId])) {
+                        DB::table('role_permissions')->insert([
+                            'role_id' => $roleId,
+                            'permission_id' => $permId,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // Ambulance permissions
+        $ambulancePerms = [
+            'medical.ambulance' => [
+                'view' => 'View Ambulance',
+                'fleet.manage' => 'Manage Ambulance Fleet',
+                'driver.manage' => 'Manage Ambulance Drivers',
+                'trip.create' => 'Create Ambulance Trips',
+                'trip.dispatch' => 'Dispatch Ambulance Trips',
+                'trip.complete' => 'Complete/Cancel Ambulance Trips',
+            ],
+        ];
+
+        foreach ($ambulancePerms as $module => $actions) {
+            foreach ($actions as $action => $label) {
+                Permission::firstOrCreate(
+                    ['slug' => $module.'.'.$action],
+                    ['module' => $module, 'name' => $label]
+                );
+            }
+        }
+
+        $ambulanceGrants = [
+            'doctor' => [
+                'medical.ambulance.view',
+                'medical.ambulance.trip.create',
+                'medical.ambulance.trip.dispatch',
+            ],
+            'nurse' => [
+                'medical.ambulance.view',
+                'medical.ambulance.trip.create',
+                'medical.ambulance.trip.dispatch',
+                'medical.ambulance.trip.complete',
+            ],
+            'receptionist' => [
+                'medical.ambulance.view',
+                'medical.ambulance.trip.create',
+                'medical.ambulance.trip.dispatch',
+            ],
+        ];
+
+        foreach ($ambulanceGrants as $roleSlug => $slugs) {
+            $roleIds = Role::where('slug', $roleSlug)->pluck('id')->toArray();
+            if (empty($roleIds)) {
+                continue;
+            }
+            $permIds = Permission::whereIn('slug', $slugs)->pluck('id')->toArray();
+            $existing = DB::table('role_permissions')
+                ->whereIn('permission_id', $permIds)
+                ->whereIn('role_id', $roleIds)
+                ->get(['role_id', 'permission_id']);
+            $have = [];
+            foreach ($existing as $row) {
+                $have[$row->role_id.'-'.$row->permission_id] = true;
+            }
+            foreach ($roleIds as $roleId) {
+                foreach ($permIds as $permId) {
+                    if (! isset($have[$roleId.'-'.$permId])) {
+                        DB::table('role_permissions')->insert([
+                            'role_id' => $roleId,
+                            'permission_id' => $permId,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // Grant ALL ambulance perms to hospital-admin
+        $ambulanceAdminRoleIds = Role::whereIn('slug', ['hospital-admin'])->pluck('id')->toArray();
+        if (! empty($ambulanceAdminRoleIds)) {
+            $ambulanceAllPermIds = Permission::where('module', 'medical.ambulance')->pluck('id')->toArray();
+            $existing = DB::table('role_permissions')
+                ->whereIn('permission_id', $ambulanceAllPermIds)
+                ->whereIn('role_id', $ambulanceAdminRoleIds)
+                ->get(['role_id', 'permission_id']);
+            $have = [];
+            foreach ($existing as $row) {
+                $have[$row->role_id.'-'.$row->permission_id] = true;
+            }
+            foreach ($ambulanceAdminRoleIds as $roleId) {
+                foreach ($ambulanceAllPermIds as $permId) {
+                    if (! isset($have[$roleId.'-'.$permId])) {
+                        DB::table('role_permissions')->insert([
+                            'role_id' => $roleId,
+                            'permission_id' => $permId,
+                        ]);
+                    }
+                }
+            }
+        }
     }
 }

@@ -31,12 +31,11 @@ class MedicalSubModuleSeeder extends Seeder
             ['key' => 'medical.dental',        'name' => 'Dental',          'icon' => 'bi-emoji-smile', 'sort' => 60, 'route' => 'medical.dental.dashboard'],
             ['key' => 'medical.vaccination',   'name' => 'Vaccination',     'icon' => 'bi-shield-plus', 'sort' => 61, 'route' => 'medical.vaccination.dashboard'],
             ['key' => 'medical.records',       'name' => 'Medical Records', 'icon' => 'bi-folder2-open',   'sort' => 64, 'route' => 'medical.records.dashboard'],
+            ['key' => 'medical.diet',          'name' => 'Diet & Nutrition','icon' => 'bi-egg-fried',      'sort' => 63, 'route' => 'medical.diet.dashboard'],
+            ['key' => 'medical.ambulance',     'name' => 'Ambulance',       'icon' => 'bi-truck',          'sort' => 62, 'route' => 'medical.ambulance.dashboard'],
         ];
 
-        $comingSoonSubModules = [
-            ['key' => 'medical.ambulance',     'name' => 'Ambulance',       'icon' => 'bi-truck',          'sort' => 62],
-            ['key' => 'medical.diet',          'name' => 'Diet & Nutrition','icon' => 'bi-egg-fried',      'sort' => 63],
-        ];
+        $comingSoonSubModules = [];
 
         foreach ($activeSubModules as $sub) {
             ModuleRegistry::updateOrCreate(
