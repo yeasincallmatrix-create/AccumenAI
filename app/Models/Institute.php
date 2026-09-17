@@ -211,6 +211,16 @@ class Institute extends Model
         return $this->belongsTo(Country::class, 'country_id');
     }
 
+    public function industry(): BelongsTo
+    {
+        return $this->belongsTo(Industry::class, 'industry_id');
+    }
+
+    public function subIndustry(): BelongsTo
+    {
+        return $this->belongsTo(SubIndustry::class, 'sub_industry_id');
+    }
+
     public function adminLevel1(): BelongsTo
     {
         return $this->belongsTo(AdministrativeUnit::class, 'admin_level_1_id');

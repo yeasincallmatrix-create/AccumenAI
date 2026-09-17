@@ -3,6 +3,7 @@
 namespace App\Models\Medical;
 
 use App\Models\Institute;
+use App\Models\Medical\BloodIssueItem;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -146,6 +147,10 @@ class ClinicalAuditLog extends Model
             $auditable instanceof LabResult => [
                 $auditable->labOrder->institute_id,
                 $auditable->labOrder->patient_id,
+            ],
+            $auditable instanceof BloodIssueItem => [
+                $auditable->request?->institute_id,
+                $auditable->request?->patient_id,
             ],
             default => [$auditable->institute_id ?? null, $auditable->patient_id ?? null],
         };

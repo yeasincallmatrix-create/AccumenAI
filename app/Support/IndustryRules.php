@@ -2,15 +2,18 @@
 
 namespace App\Support;
 
+use App\Models\Country;
+use App\Models\Industry as IndustryModel;
+use App\Models\SubIndustry as SubIndustryModel;
+use App\Services\IndustryService;
+
 /**
- * Country-scoped industry accessor backed by config/industry_rules.php.
+ * Country-scoped industry accessor.
  *
- * The config is the single source of truth: a "global" section holds the
- * platform-wide industry list plus default sub-industries, and every other
- * key is a country defining which industries (and their sub-industries) exist
- * there. A country without an entry falls back to the global industry list
- * with no sub-industries, so onboarding and validation always have a usable
- * answer.
+ * Primary source: database (industries + sub_industries tables).
+ * Fallback: config/industry_rules.php (during transition or if DB is empty).
+ *
+ * All public method signatures remain identical for backward compatibility.
  */
 final class IndustryRules
 {
@@ -22,18 +25,14 @@ final class IndustryRules
      */
     public static function industries(?string $country): array
     {
-        if ($country !== null && filled($country)) {
-            $scoped = config('industry_rules.'.$country, null);
-            if (is_array($scoped) && $scoped !== []) {
-                $industries = [];
-                foreach ($scoped as $industry => $subs) {
-                    $industries[$industry] = self::labelOf($industry);
-                }
+        $countryId = self::resolveCountryId($country);
+        $result = IndustryService::industries($countryId);
 
-                return $industries;
-            }
+        if ($result !== []) {
+            return $result;
         }
 
+        // Fallback to config if DB is empty
         return (array) config('industry_rules.global.industries', []);
     }
 
@@ -45,11 +44,19 @@ final class IndustryRules
      */
     public static function subIndustries(?string $country, string $industry): array
     {
-        if ($country === null || $country === '') {
-            return (array) config('industry_rules.global.sub_industries.'.$industry, []);
+        $countryId = self::resolveCountryId($country);
+        $result = IndustryService::subIndustriesBySlug($country, $industry);
+
+        if ($result !== []) {
+            return $result;
         }
 
-        $subs = config('industry_rules.'.$country.'.'.$industry, null);
+        // Fallback to config
+        if ($country === null || $country === '') {
+            return (array) config('industry_rules.global.sub_industries.' . $industry, []);
+        }
+
+        $subs = config('industry_rules.' . $country . '.' . $industry, null);
 
         return is_array($subs) ? $subs : [];
     }
@@ -71,16 +78,26 @@ final class IndustryRules
      */
     public static function label(string $country, string $industry, ?string $sub = null): ?string
     {
-        $industryLabel = self::industries($country)[$industry] ?? null;
+        $countryId = self::resolveCountryId($country);
+        $label = IndustryService::label($countryId, $industry, $sub);
+
+        if ($label !== null) {
+            return $label;
+        }
+
+        // Fallback to config
+        $industryLabel = config('industry_rules.global.industries.' . $industry);
         if ($industryLabel === null) {
-            return null;
+            $industryLabel = self::labelOf($industry);
         }
 
         if ($sub === null || $sub === '') {
             return $industryLabel;
         }
 
-        return self::subIndustries($country, $industry)[$sub] ?? $sub;
+        return config('industry_rules.' . $country . '.' . $industry . '.' . $sub)
+            ?? config('industry_rules.global.sub_industries.' . $industry . '.' . $sub)
+            ?? $sub;
     }
 
     /**
@@ -89,7 +106,21 @@ final class IndustryRules
      */
     protected static function labelOf(string $industry): string
     {
-        return config('industry_rules.global.industries.'.$industry)
+        return config('industry_rules.global.industries.' . $industry)
             ?? ucwords(str_replace('_', ' ', $industry));
+    }
+
+    /**
+     * Resolve country name to country_id for database lookups.
+     */
+    private static function resolveCountryId(?string $country): ?int
+    {
+        if ($country === null || $country === '') {
+            return null;
+        }
+
+        $countryModel = Country::where('name', $country)->first();
+
+        return $countryModel?->id;
     }
 }

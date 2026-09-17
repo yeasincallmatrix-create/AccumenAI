@@ -30,7 +30,7 @@ class MedicalSubModuleInfrastructureTest extends TestCase
             ->where('parent_key', 'medical')
             ->where('coming_soon', false)
             ->count();
-        $this->assertEquals(7, $active);
+        $this->assertEquals(10, $active);
     }
 
     public function test_7_sub_modules_are_coming_soon(): void
@@ -39,7 +39,7 @@ class MedicalSubModuleInfrastructureTest extends TestCase
             ->where('parent_key', 'medical')
             ->where('coming_soon', true)
             ->count();
-        $this->assertEquals(7, $soon);
+        $this->assertEquals(4, $soon);
     }
 
     public function test_parent_disabled_disables_all_children(): void
@@ -149,6 +149,6 @@ class MedicalSubModuleInfrastructureTest extends TestCase
             ->where('package_id', $pkg->id)
             ->where('module_key', 'like', 'medical.%')
             ->count();
-        $this->assertEquals(7, $count);
+        $this->assertEquals(10, $count);
     }
 }

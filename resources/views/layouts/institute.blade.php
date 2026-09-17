@@ -164,6 +164,9 @@
                                 'medical.billing' => request()->routeIs('medical.billing.*') || request()->routeIs('medical.tpa.*'),
                                 'medical.emergency' => request()->routeIs('medical.emergency.*'),
                                 'medical.radiology' => request()->routeIs('medical.radiology.*'),
+                                'medical.bloodbank' => request()->routeIs('medical.blood-bank.*'),
+                                'medical.physiotherapy' => request()->routeIs('medical.physiotherapy.*'),
+                                'medical.dental' => request()->routeIs('medical.dental.*'),
                                 default => false,
                             };
                             $subId = 'medicalSub_' . str_replace('.', '_', $sub->key);
@@ -280,6 +283,23 @@
                                             @endif
                                             @break
 
+                                        @case('medical.bloodbank')
+                                            @if($user && $user->hasPermission('medical_bloodbank.view'))
+                                                <a class="nav-link sub {{ request()->routeIs('medical.blood-bank.dashboard') ? 'active' : '' }}" href="{{ route('medical.blood-bank.dashboard') }}">
+                                                    <i class="bi bi-grid"></i><span class="sidebar-label">Dashboard</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.blood-bank.donors.*') ? 'active' : '' }}" href="{{ route('medical.blood-bank.donors.index') }}">
+                                                    <i class="bi bi-person-heart"></i><span class="sidebar-label">Donors</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.blood-bank.units.*') ? 'active' : '' }}" href="{{ route('medical.blood-bank.units.index') }}">
+                                                    <i class="bi bi-droplet"></i><span class="sidebar-label">Blood Units</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.blood-bank.requests.*') ? 'active' : '' }}" href="{{ route('medical.blood-bank.requests.index') }}">
+                                                    <i class="bi bi-clipboard2-pulse"></i><span class="sidebar-label">Requests</span>
+                                                </a>
+                                            @endif
+                                            @break
+
                                         @case('medical.radiology')
                                             @if($user && $user->hasPermission('medical_radiology.view'))
                                                 <a class="nav-link sub {{ request()->routeIs('medical.radiology.dashboard') ? 'active' : '' }}" href="{{ route('medical.radiology.dashboard') }}">
@@ -293,6 +313,67 @@
                                                 <a class="nav-link sub {{ request()->routeIs('medical.radiology.orders.create') ? 'active' : '' }}" href="{{ route('medical.radiology.orders.create') }}">
                                                     <i class="bi bi-plus-circle"></i><span class="sidebar-label">New Order</span>
                                                 </a>
+                                            @endif
+                                            @break
+
+                                        @case('medical.physiotherapy')
+                                            @if($user && $user->hasPermission('medical.physiotherapy.view'))
+                                                <a class="nav-link sub {{ request()->routeIs('medical.physiotherapy.dashboard') ? 'active' : '' }}" href="{{ route('medical.physiotherapy.dashboard') }}">
+                                                    <i class="bi bi-clipboard2-pulse"></i><span class="sidebar-label">Dashboard</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.physiotherapy.plans.*') ? 'active' : '' }}" href="{{ route('medical.physiotherapy.plans.index') }}">
+                                                    <i class="bi bi-journal-medical"></i><span class="sidebar-label">Treatment Plans</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.physiotherapy.sessions.*') ? 'active' : '' }}" href="{{ route('medical.physiotherapy.sessions.index') }}">
+                                                    <i class="bi bi-calendar-check"></i><span class="sidebar-label">Sessions</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.physiotherapy.exercises.*') ? 'active' : '' }}" href="{{ route('medical.physiotherapy.exercises.index') }}">
+                                                    <i class="bi bi-activity"></i><span class="sidebar-label">Exercise Library</span>
+                                                </a>
+                                            @endif
+                                            @break
+
+                                        @case('medical.dental')
+                                            @if($user && $user->hasPermission('medical.dental.view'))
+                                                <a class="nav-link sub {{ request()->routeIs('medical.dental.dashboard') ? 'active' : '' }}" href="{{ route('medical.dental.dashboard') }}">
+                                                    <i class="bi bi-emoji-smile"></i><span class="sidebar-label">Dashboard</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.dental.chart.*') ? 'active' : '' }}" href="{{ route('medical.dental.chart.show', 1) }}">
+                                                    <i class="bi bi-journal-medical"></i><span class="sidebar-label">Dental Charts</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.dental.procedures.*') ? 'active' : '' }}" href="{{ route('medical.dental.procedures.index') }}">
+                                                    <i class="bi bi-tools"></i><span class="sidebar-label">Procedures</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.dental.plans.*') ? 'active' : '' }}" href="{{ route('medical.dental.plans.index') }}">
+                                                    <i class="bi bi-list-check"></i><span class="sidebar-label">Treatment Plans</span>
+                                                </a>
+                                                @if($user->hasPermission('medical.dental.catalog.manage'))
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.dental.catalog.*') ? 'active' : '' }}" href="{{ route('medical.dental.catalog.index') }}">
+                                                        <i class="bi bi-book"></i><span class="sidebar-label">Procedure Catalog</span>
+                                                    </a>
+                                                @endif
+                                            @endif
+                                            @break
+
+                                        @case('medical.vaccination')
+                                            @if($user && $user->hasPermission('medical.vaccination.view'))
+                                                <a class="nav-link sub {{ request()->routeIs('medical.vaccination.dashboard') ? 'active' : '' }}" href="{{ route('medical.vaccination.dashboard') }}">
+                                                    <i class="bi bi-shield-plus"></i><span class="sidebar-label">Dashboard</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.vaccination.schedules.*') ? 'active' : '' }}" href="{{ route('medical.vaccination.schedules.index') }}">
+                                                    <i class="bi bi-calendar-check"></i><span class="sidebar-label">Schedules</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.vaccination.records.*') ? 'active' : '' }}" href="{{ route('medical.vaccination.records.index') }}">
+                                                    <i class="bi bi-journal-medical"></i><span class="sidebar-label">Records</span>
+                                                </a>
+                                                <a class="nav-link sub {{ request()->routeIs('medical.vaccination.stocks.*') ? 'active' : '' }}" href="{{ route('medical.vaccination.stocks.index') }}">
+                                                    <i class="bi bi-box-seam"></i><span class="sidebar-label">Vaccine Stock</span>
+                                                </a>
+                                                @if($user->hasPermission('medical.vaccination.manage'))
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.vaccination.vaccine-masters.*') ? 'active' : '' }}" href="{{ route('medical.vaccination.vaccine-masters.index') }}">
+                                                        <i class="bi bi-shield-check"></i><span class="sidebar-label">Vaccine Catalog</span>
+                                                    </a>
+                                                @endif
                                             @endif
                                             @break
                                     @endswitch

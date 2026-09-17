@@ -418,6 +418,25 @@ Route::middleware(['auth:platform_admin,institute_user,web', 'verified'])->group
 Route::get('admin/industry-settings', [\App\Http\Controllers\Admin\IndustrySettingController::class, 'index'])->name('admin.industry-settings')->middleware(['auth:platform_admin', 'verified']);
 Route::post('admin/industry-settings/theme', [\App\Http\Controllers\Admin\IndustrySettingController::class, 'updateTheme'])->name('admin.industry-settings.theme')->middleware(['auth:platform_admin', 'verified']);
 Route::put('admin/themes/{theme}', [\App\Http\Controllers\Admin\ThemeController::class, 'update'])->name('admin.themes.update')->middleware(['auth:platform_admin', 'verified'])->whereNumber('theme');
+
+// ── Admin: Industry / Sub-Industry Taxonomy Management ──
+$adminMiddleware = ['auth:platform_admin', 'verified'];
+Route::get('admin/industries', [\App\Http\Controllers\Admin\IndustryAdminController::class, 'index'])->name('admin.industries.index')->middleware($adminMiddleware);
+Route::get('admin/industries/create', [\App\Http\Controllers\Admin\IndustryAdminController::class, 'create'])->name('admin.industries.create')->middleware($adminMiddleware);
+Route::post('admin/industries', [\App\Http\Controllers\Admin\IndustryAdminController::class, 'store'])->name('admin.industries.store')->middleware($adminMiddleware);
+Route::get('admin/industries/{industry}', [\App\Http\Controllers\Admin\IndustryAdminController::class, 'edit'])->name('admin.industries.edit')->middleware($adminMiddleware)->whereNumber('industry');
+Route::put('admin/industries/{industry}', [\App\Http\Controllers\Admin\IndustryAdminController::class, 'update'])->name('admin.industries.update')->middleware($adminMiddleware)->whereNumber('industry');
+Route::post('admin/industries/{industry}/toggle', [\App\Http\Controllers\Admin\IndustryAdminController::class, 'toggle'])->name('admin.industries.toggle')->middleware($adminMiddleware)->whereNumber('industry');
+Route::delete('admin/industries/{industry}', [\App\Http\Controllers\Admin\IndustryAdminController::class, 'destroy'])->name('admin.industries.destroy')->middleware($adminMiddleware)->whereNumber('industry');
+Route::get('admin/industries/{industry}/sub-industries', [\App\Http\Controllers\Admin\IndustryAdminController::class, 'subIndustries'])->name('admin.industries.sub-industries')->middleware($adminMiddleware)->whereNumber('industry');
+Route::get('admin/industries/{industry}/sub-industries/create', [\App\Http\Controllers\Admin\SubIndustryAdminController::class, 'create'])->name('admin.industries.sub-industry.create')->middleware($adminMiddleware)->whereNumber('industry');
+Route::post('admin/industries/{industry}/sub-industries', [\App\Http\Controllers\Admin\SubIndustryAdminController::class, 'store'])->name('admin.industries.sub-industry.store')->middleware($adminMiddleware)->whereNumber('industry');
+Route::get('admin/industries/{industry}/sub-industries/{subIndustry}/edit', [\App\Http\Controllers\Admin\SubIndustryAdminController::class, 'edit'])->name('admin.industries.sub-industry.edit')->middleware($adminMiddleware)->whereNumber('industry')->whereNumber('subIndustry');
+Route::put('admin/industries/{industry}/sub-industries/{subIndustry}', [\App\Http\Controllers\Admin\SubIndustryAdminController::class, 'update'])->name('admin.industries.sub-industry.update')->middleware($adminMiddleware)->whereNumber('industry')->whereNumber('subIndustry');
+Route::post('admin/industries/{industry}/sub-industries/{subIndustry}/toggle', [\App\Http\Controllers\Admin\SubIndustryAdminController::class, 'toggle'])->name('admin.industries.sub-industry.toggle')->middleware($adminMiddleware)->whereNumber('industry')->whereNumber('subIndustry');
+Route::delete('admin/industries/{industry}/sub-industries/{subIndustry}', [\App\Http\Controllers\Admin\SubIndustryAdminController::class, 'destroy'])->name('admin.industries.sub-industry.destroy')->middleware($adminMiddleware)->whereNumber('industry')->whereNumber('subIndustry');
+
+// ── Admin: Modules ──
 Route::get('admin/modules', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'index'])->name('admin.modules.index')->middleware(['auth:platform_admin', 'verified']);
 Route::put('admin/modules/{module}', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'update'])->name('admin.modules.update')->middleware(['auth:platform_admin', 'verified'])->whereNumber('module');
 Route::get('admin/modules/access-logs', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'accessLogs'])->name('admin.modules.access-logs')->middleware(['auth:platform_admin', 'verified']);

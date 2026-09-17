@@ -508,5 +508,336 @@ class MedicalPermissionSeeder extends Seeder
                 }
             }
         }
+
+        // Blood Bank permissions (additive). Granted to doctor, receptionist, nurse, hospital-admin roles.
+        $bloodBankPerms = [
+            'medical_bloodbank' => [
+                'view'     => 'View Blood Bank',
+                'create'   => 'Manage Blood Donors & Units',
+                'edit'     => 'Edit Blood Bank Records',
+                'delete'   => 'Delete Blood Bank Records',
+                'issue'    => 'Issue & Return Blood Units',
+            ],
+        ];
+
+        foreach ($bloodBankPerms as $module => $actions) {
+            foreach ($actions as $action => $label) {
+                Permission::firstOrCreate(
+                    ['slug' => $module.'.'.$action],
+                    ['module' => $module, 'name' => $label]
+                );
+            }
+        }
+
+        // Grant view, create, issue to doctor, receptionist, nurse
+        $bloodBankBasicRoleIds = Role::whereIn('slug', ['doctor', 'receptionist', 'nurse'])
+            ->pluck('id')
+            ->toArray();
+
+        if (! empty($bloodBankBasicRoleIds)) {
+            $bloodBankBasicPermIds = Permission::where('module', 'medical_bloodbank')
+                ->whereIn('slug', ['medical_bloodbank.view', 'medical_bloodbank.create', 'medical_bloodbank.issue'])
+                ->pluck('id')
+                ->toArray();
+
+            $existing = DB::table('role_permissions')
+                ->whereIn('permission_id', $bloodBankBasicPermIds)
+                ->whereIn('role_id', $bloodBankBasicRoleIds)
+                ->get(['role_id', 'permission_id']);
+
+            $have = [];
+            foreach ($existing as $row) {
+                $have[$row->role_id.'-'.$row->permission_id] = true;
+            }
+            foreach ($bloodBankBasicRoleIds as $roleId) {
+                foreach ($bloodBankBasicPermIds as $permId) {
+                    if (! isset($have[$roleId.'-'.$permId])) {
+                        DB::table('role_permissions')->insert([
+                            'role_id'       => $roleId,
+                            'permission_id' => $permId,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // Grant all blood bank permissions to hospital-admin
+        $bloodBankAdminRoleIds = Role::whereIn('slug', ['hospital-admin'])
+            ->pluck('id')
+            ->toArray();
+
+        if (! empty($bloodBankAdminRoleIds)) {
+            $bloodBankAllPermIds = Permission::where('module', 'medical_bloodbank')
+                ->pluck('id')
+                ->toArray();
+
+            $existing = DB::table('role_permissions')
+                ->whereIn('permission_id', $bloodBankAllPermIds)
+                ->whereIn('role_id', $bloodBankAdminRoleIds)
+                ->get(['role_id', 'permission_id']);
+
+            $have = [];
+            foreach ($existing as $row) {
+                $have[$row->role_id.'-'.$row->permission_id] = true;
+            }
+            foreach ($bloodBankAdminRoleIds as $roleId) {
+                foreach ($bloodBankAllPermIds as $permId) {
+                    if (! isset($have[$roleId.'-'.$permId])) {
+                        DB::table('role_permissions')->insert([
+                            'role_id'       => $roleId,
+                            'permission_id' => $permId,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // Physiotherapy permissions (additive). Granted to doctor, receptionist, nurse, hospital-admin roles.
+        $physioPerms = [
+            'medical.physiotherapy' => [
+                'view'     => 'View Physiotherapy',
+                'plan.create' => 'Create Physiotherapy Plans',
+                'plan.edit'   => 'Edit Physiotherapy Plans',
+                'session.attend' => 'Record Session Attendance',
+                'exercise.manage' => 'Manage Exercise Library',
+            ],
+        ];
+
+        foreach ($physioPerms as $module => $actions) {
+            foreach ($actions as $action => $label) {
+                Permission::firstOrCreate(
+                    ['slug' => $module.'.'.$action],
+                    ['module' => $module, 'name' => $label]
+                );
+            }
+        }
+
+        $physioRoleIds = Role::whereIn('slug', ['doctor', 'receptionist', 'nurse'])
+            ->pluck('id')
+            ->toArray();
+
+        if (! empty($physioRoleIds)) {
+            $physioBasicPermIds = Permission::where('module', 'medical.physiotherapy')
+                ->whereIn('slug', ['medical.physiotherapy.view', 'medical.physiotherapy.plan.create', 'medical.physiotherapy.session.attend'])
+                ->pluck('id')
+                ->toArray();
+
+            $existing = DB::table('role_permissions')
+                ->whereIn('permission_id', $physioBasicPermIds)
+                ->whereIn('role_id', $physioRoleIds)
+                ->get(['role_id', 'permission_id']);
+
+            $have = [];
+            foreach ($existing as $row) {
+                $have[$row->role_id.'-'.$row->permission_id] = true;
+            }
+            foreach ($physioRoleIds as $roleId) {
+                foreach ($physioBasicPermIds as $permId) {
+                    if (! isset($have[$roleId.'-'.$permId])) {
+                        DB::table('role_permissions')->insert([
+                            'role_id'       => $roleId,
+                            'permission_id' => $permId,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        $physioAdminRoleIds = Role::whereIn('slug', ['hospital-admin'])
+            ->pluck('id')
+            ->toArray();
+
+        if (! empty($physioAdminRoleIds)) {
+            $physioAllPermIds = Permission::where('module', 'medical.physiotherapy')
+                ->pluck('id')
+                ->toArray();
+
+            $existing = DB::table('role_permissions')
+                ->whereIn('permission_id', $physioAllPermIds)
+                ->whereIn('role_id', $physioAdminRoleIds)
+                ->get(['role_id', 'permission_id']);
+
+            $have = [];
+            foreach ($existing as $row) {
+                $have[$row->role_id.'-'.$row->permission_id] = true;
+            }
+            foreach ($physioAdminRoleIds as $roleId) {
+                foreach ($physioAllPermIds as $permId) {
+                    if (! isset($have[$roleId.'-'.$permId])) {
+                        DB::table('role_permissions')->insert([
+                            'role_id'       => $roleId,
+                            'permission_id' => $permId,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // Dental permissions
+        $dentalPerms = [
+            'medical.dental' => [
+                'view'              => 'View Dental',
+                'chart.edit'        => 'Edit Dental Charts',
+                'procedure.create'  => 'Create Dental Procedures',
+                'procedure.edit'    => 'Edit Dental Procedures',
+                'plan.manage'       => 'Manage Dental Treatment Plans',
+                'catalog.manage'    => 'Manage Dental Procedure Catalog',
+            ],
+        ];
+
+        foreach ($dentalPerms as $module => $actions) {
+            foreach ($actions as $action => $label) {
+                Permission::firstOrCreate(
+                    ['slug' => $module.'.'.$action],
+                    ['module' => $module, 'name' => $label]
+                );
+            }
+        }
+
+        // Grant basic perms to dentist/doctor, dental_assistant, receptionist
+        $dentalRoleIds = Role::whereIn('slug', ['doctor', 'dentist', 'dental_assistant', 'receptionist'])
+            ->pluck('id')
+            ->toArray();
+
+        if (! empty($dentalRoleIds)) {
+            $dentalBasicPermIds = Permission::where('module', 'medical.dental')
+                ->whereIn('slug', ['medical.dental.view', 'medical.dental.chart.edit', 'medical.dental.procedure.create'])
+                ->pluck('id')
+                ->toArray();
+
+            $existing = DB::table('role_permissions')
+                ->whereIn('permission_id', $dentalBasicPermIds)
+                ->whereIn('role_id', $dentalRoleIds)
+                ->get(['role_id', 'permission_id']);
+
+            $have = [];
+            foreach ($existing as $row) {
+                $have[$row->role_id.'-'.$row->permission_id] = true;
+            }
+            foreach ($dentalRoleIds as $roleId) {
+                foreach ($dentalBasicPermIds as $permId) {
+                    if (! isset($have[$roleId.'-'.$permId])) {
+                        DB::table('role_permissions')->insert([
+                            'role_id'       => $roleId,
+                            'permission_id' => $permId,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // Grant ALL dental perms to hospital-admin
+        $dentalAdminRoleIds = Role::whereIn('slug', ['hospital-admin'])
+            ->pluck('id')
+            ->toArray();
+
+        if (! empty($dentalAdminRoleIds)) {
+            $dentalAllPermIds = Permission::where('module', 'medical.dental')
+                ->pluck('id')
+                ->toArray();
+
+            $existing = DB::table('role_permissions')
+                ->whereIn('permission_id', $dentalAllPermIds)
+                ->whereIn('role_id', $dentalAdminRoleIds)
+                ->get(['role_id', 'permission_id']);
+
+            $have = [];
+            foreach ($existing as $row) {
+                $have[$row->role_id.'-'.$row->permission_id] = true;
+            }
+            foreach ($dentalAdminRoleIds as $roleId) {
+                foreach ($dentalAllPermIds as $permId) {
+                    if (! isset($have[$roleId.'-'.$permId])) {
+                        DB::table('role_permissions')->insert([
+                            'role_id'       => $roleId,
+                            'permission_id' => $permId,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // Vaccination permissions
+        $vaccinationPerms = [
+            'medical.vaccination' => [
+                'view'              => 'View Vaccination',
+                'manage'            => 'Manage Vaccine Masters',
+                'schedule'          => 'Create Vaccination Schedules',
+                'administer'        => 'Administer Vaccinations',
+                'stock.manage'      => 'Manage Vaccine Stock',
+            ],
+        ];
+
+        foreach ($vaccinationPerms as $module => $actions) {
+            foreach ($actions as $action => $label) {
+                Permission::firstOrCreate(
+                    ['slug' => $module.'.'.$action],
+                    ['module' => $module, 'name' => $label]
+                );
+            }
+        }
+
+        // Grant basic perms to nurse/doctor/receptionist
+        $vaccinationRoleIds = Role::whereIn('slug', ['doctor', 'nurse', 'receptionist'])
+            ->pluck('id')
+            ->toArray();
+
+        if (! empty($vaccinationRoleIds)) {
+            $vaccinationBasicPermIds = Permission::where('module', 'medical.vaccination')
+                ->whereIn('slug', ['medical.vaccination.view', 'medical.vaccination.administer'])
+                ->pluck('id')
+                ->toArray();
+
+            $existing = DB::table('role_permissions')
+                ->whereIn('permission_id', $vaccinationBasicPermIds)
+                ->whereIn('role_id', $vaccinationRoleIds)
+                ->get(['role_id', 'permission_id']);
+
+            $have = [];
+            foreach ($existing as $row) {
+                $have[$row->role_id.'-'.$row->permission_id] = true;
+            }
+            foreach ($vaccinationRoleIds as $roleId) {
+                foreach ($vaccinationBasicPermIds as $permId) {
+                    if (! isset($have[$roleId.'-'.$permId])) {
+                        DB::table('role_permissions')->insert([
+                            'role_id'       => $roleId,
+                            'permission_id' => $permId,
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // Grant ALL vaccination perms to hospital-admin
+        $vaccinationAdminRoleIds = Role::whereIn('slug', ['hospital-admin'])
+            ->pluck('id')
+            ->toArray();
+
+        if (! empty($vaccinationAdminRoleIds)) {
+            $vaccinationAllPermIds = Permission::where('module', 'medical.vaccination')
+                ->pluck('id')
+                ->toArray();
+
+            $existing = DB::table('role_permissions')
+                ->whereIn('permission_id', $vaccinationAllPermIds)
+                ->whereIn('role_id', $vaccinationAdminRoleIds)
+                ->get(['role_id', 'permission_id']);
+
+            $have = [];
+            foreach ($existing as $row) {
+                $have[$row->role_id.'-'.$row->permission_id] = true;
+            }
+            foreach ($vaccinationAdminRoleIds as $roleId) {
+                foreach ($vaccinationAllPermIds as $permId) {
+                    if (! isset($have[$roleId.'-'.$permId])) {
+                        DB::table('role_permissions')->insert([
+                            'role_id'       => $roleId,
+                            'permission_id' => $permId,
+                        ]);
+                    }
+                }
+            }
+        }
     }
 }

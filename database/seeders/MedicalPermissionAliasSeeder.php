@@ -109,6 +109,31 @@ class MedicalPermissionAliasSeeder extends Seeder
             'medical_radiology.perform'     => 'medical.radiology.orders.perform',
             'medical_radiology.report'      => 'medical.radiology.orders.report',
             'medical_radiology.verify'      => 'medical.radiology.orders.verify',
+            // Blood Bank
+            'medical_bloodbank.view'        => 'medical.bloodbank.view',
+            'medical_bloodbank.create'      => 'medical.bloodbank.create',
+            'medical_bloodbank.edit'        => 'medical.bloodbank.edit',
+            'medical_bloodbank.delete'      => 'medical.bloodbank.delete',
+            'medical_bloodbank.issue'       => 'medical.bloodbank.issue',
+            // Physiotherapy
+            'medical.physiotherapy.view'          => 'medical.physiotherapy.view',
+            'medical.physiotherapy.plan.create'   => 'medical.physiotherapy.plan.create',
+            'medical.physiotherapy.plan.edit'     => 'medical.physiotherapy.plan.edit',
+            'medical.physiotherapy.session.attend' => 'medical.physiotherapy.session.attend',
+            'medical.physiotherapy.exercise.manage' => 'medical.physiotherapy.exercise.manage',
+            // Dental
+            'medical.dental.view'              => 'medical.dental.view',
+            'medical.dental.chart.edit'        => 'medical.dental.chart.edit',
+            'medical.dental.procedure.create'  => 'medical.dental.procedure.create',
+            'medical.dental.procedure.edit'    => 'medical.dental.procedure.edit',
+            'medical.dental.plan.manage'       => 'medical.dental.plan.manage',
+            'medical.dental.catalog.manage'    => 'medical.dental.catalog.manage',
+            // Vaccination
+            'medical.vaccination.view'         => 'medical.vaccination.view',
+            'medical.vaccination.manage'       => 'medical.vaccination.manage',
+            'medical.vaccination.schedule'     => 'medical.vaccination.schedule',
+            'medical.vaccination.administer'   => 'medical.vaccination.administer',
+            'medical.vaccination.stock.manage' => 'medical.vaccination.stock.manage',
         ];
 
         foreach ($permissionMap as $oldSlug => $newSlug) {

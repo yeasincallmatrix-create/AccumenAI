@@ -78,6 +78,15 @@ final class NumberSequenceService
             NumberSequence::TYPE_ENCOUNTER => 'ENC',
             NumberSequence::TYPE_EMERGENCY => 'ER',
             NumberSequence::TYPE_RADIOLOGY => 'RAD',
+            NumberSequence::TYPE_BLOOD_DONOR => 'BD',
+            NumberSequence::TYPE_BLOOD_UNIT => 'BU',
+            NumberSequence::TYPE_BLOOD_REQUEST => 'BR',
+            NumberSequence::TYPE_PHYSIO_PLAN => 'PP',
+            NumberSequence::TYPE_PHYSIO_SESSION => 'PS',
+            NumberSequence::TYPE_DENTAL_PROCEDURE => 'DP',
+            NumberSequence::TYPE_DENTAL_PLAN => 'DT',
+            NumberSequence::TYPE_VACCINATION_RECORD => 'VR',
+            NumberSequence::TYPE_VACCINATION_CERTIFICATE => 'VC',
             default => throw new \InvalidArgumentException("Unknown sequence type [{$type}]."),
         };
 
@@ -98,7 +107,7 @@ final class NumberSequenceService
         if (! is_string($stored) || $stored === '') {
             return (string) $stored;
         }
-        if (preg_match('/^(MR|RX|LAB|INV|TPA|ENC|ER|RAD)-(\d{4})-(?:\d{3,}-)?(\d{5})$/', $stored, $m)) {
+        if (preg_match('/^(MR|RX|LAB|INV|TPA|ENC|ER|RAD|BD|BU|BR|PP|PS|DP|DT|VR|VC)-(\d{4})-(?:\d{3,}-)?(\d{5})$/', $stored, $m)) {
             return $m[1].'-'.substr($m[2], 2).'-'.$m[3];
         }
 
@@ -114,10 +123,10 @@ final class NumberSequenceService
     public static function toStored(string $input): string
     {
         $input = trim($input);
-        if (preg_match('/^(MR|RX|LAB|INV|TPA|ENC|ER|RAD)-(\d{2})-(\d{5})$/', $input, $m)) {
+        if (preg_match('/^(MR|RX|LAB|INV|TPA|ENC|ER|RAD|BD|BU|BR|PP|PS|DP|DT|VR|VC)-(\d{2})-(\d{5})$/', $input, $m)) {
             return $m[1].'-20'.$m[2].'-'.$m[3];
         }
-        if (preg_match('/^(MR|RX|LAB|INV|TPA|ENC|ER|RAD)-(\d{4})-\d{3,}-(\d{5})$/', $input, $m)) {
+        if (preg_match('/^(MR|RX|LAB|INV|TPA|ENC|ER|RAD|PP|PS|DP|DT)-(\d{4})-\d{3,}-(\d{5})$/', $input, $m)) {
             return $m[1].'-'.$m[2].'-'.$m[3];
         }
 
@@ -133,7 +142,7 @@ final class NumberSequenceService
     public static function expandShortYears(string $term): string
     {
         return (string) preg_replace_callback(
-            '/\b(MR|RX|LAB|INV|TPA|ENC|ER|RAD)-(\d{2})(?!\d)/',
+            '/\b(MR|RX|LAB|INV|TPA|ENC|ER|RAD|BD|BU|BR|PP|PS|DP|DT|VR|VC)-(\d{2})(?!\d)/',
             fn (array $m): string => $m[1].'-20'.$m[2],
             $term
         );
@@ -205,6 +214,15 @@ final class NumberSequenceService
             NumberSequence::TYPE_ENCOUNTER => [\App\Models\Medical\Encounter::class, 'encounter_number', "ENC-{$year}-"],
             NumberSequence::TYPE_EMERGENCY => [\App\Models\Medical\EmergencyVisit::class, 'visit_number', "ER-{$year}-"],
             NumberSequence::TYPE_RADIOLOGY => [\App\Models\Medical\RadiologyOrder::class, 'order_number', "RAD-{$year}-"],
+            NumberSequence::TYPE_BLOOD_DONOR => [\App\Models\Medical\BloodDonor::class, 'donor_number', "BD-{$year}-"],
+            NumberSequence::TYPE_BLOOD_UNIT => [\App\Models\Medical\BloodUnit::class, 'unit_number', "BU-{$year}-"],
+            NumberSequence::TYPE_BLOOD_REQUEST => [\App\Models\Medical\BloodRequest::class, 'request_number', "BR-{$year}-"],
+            NumberSequence::TYPE_PHYSIO_PLAN => [\App\Models\Medical\PhysiotherapyPlan::class, 'plan_number', "PP-{$year}-"],
+            NumberSequence::TYPE_PHYSIO_SESSION => [\App\Models\Medical\PhysiotherapySession::class, 'session_number', "PS-{$year}-"],
+            NumberSequence::TYPE_DENTAL_PROCEDURE => [\App\Models\Medical\DentalProcedure::class, 'procedure_number', "DP-{$year}-"],
+            NumberSequence::TYPE_DENTAL_PLAN => [\App\Models\Medical\DentalTreatmentPlan::class, 'plan_number', "DT-{$year}-"],
+            NumberSequence::TYPE_VACCINATION_RECORD => [\App\Models\Medical\VaccinationRecord::class, 'record_number', "VR-{$year}-"],
+            NumberSequence::TYPE_VACCINATION_CERTIFICATE => [\App\Models\Medical\VaccinationRecord::class, 'certificate_number', "VC-{$year}-"],
         };
 
         // Soft-deleted rows keep their numbers reserved too (where supported).

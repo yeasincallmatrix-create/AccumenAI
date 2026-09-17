@@ -30,6 +30,24 @@ class NumberSequence extends Model
 
     public const TYPE_RADIOLOGY = 'radiology';
 
+    public const TYPE_BLOOD_DONOR = 'blood_donor';
+
+    public const TYPE_BLOOD_UNIT = 'blood_unit';
+
+    public const TYPE_BLOOD_REQUEST = 'blood_request';
+
+    public const TYPE_PHYSIO_PLAN = 'physiotherapy_plan';
+
+    public const TYPE_PHYSIO_SESSION = 'physiotherapy_session';
+
+    public const TYPE_DENTAL_PROCEDURE = 'dental_procedure';
+
+    public const TYPE_DENTAL_PLAN = 'dental_plan';
+
+    public const TYPE_VACCINATION_RECORD = 'vaccination_record';
+
+    public const TYPE_VACCINATION_CERTIFICATE = 'vaccination_certificate';
+
     protected $fillable = [
         'institute_id',
         'sequence_type',

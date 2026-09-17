@@ -26,13 +26,13 @@ class MedicalSubModuleSeeder extends Seeder
             ['key' => 'medical.billing',    'name' => 'Billing',    'icon' => 'bi-receipt',         'sort' => 55, 'route' => 'medical.billing.invoices.index'],
             ['key' => 'medical.emergency',  'name' => 'Emergency',  'icon' => 'bi-heart-pulse',     'sort' => 56, 'route' => 'medical.emergency.index'],
             ['key' => 'medical.radiology',  'name' => 'Radiology',  'icon' => 'bi-radioactive',     'sort' => 57, 'route' => 'medical.radiology.orders.index'],
+            ['key' => 'medical.bloodbank',   'name' => 'Blood Bank',   'icon' => 'bi-droplet-fill',   'sort' => 58, 'route' => 'medical.blood-bank.dashboard'],
+            ['key' => 'medical.physiotherapy', 'name' => 'Physiotherapy', 'icon' => 'bi-activity',     'sort' => 59, 'route' => 'medical.physiotherapy.dashboard'],
+            ['key' => 'medical.dental',        'name' => 'Dental',          'icon' => 'bi-emoji-smile', 'sort' => 60, 'route' => 'medical.dental.dashboard'],
+            ['key' => 'medical.vaccination',   'name' => 'Vaccination',     'icon' => 'bi-shield-plus', 'sort' => 61, 'route' => 'medical.vaccination.dashboard'],
         ];
 
         $comingSoonSubModules = [
-            ['key' => 'medical.bloodbank',     'name' => 'Blood Bank',      'icon' => 'bi-droplet-fill',   'sort' => 58],
-            ['key' => 'medical.physiotherapy', 'name' => 'Physiotherapy',   'icon' => 'bi-activity',       'sort' => 59],
-            ['key' => 'medical.dental',        'name' => 'Dental',          'icon' => 'bi-emoji-smile',    'sort' => 60],
-            ['key' => 'medical.vaccination',   'name' => 'Vaccination',     'icon' => 'bi-shield-plus',    'sort' => 61],
             ['key' => 'medical.ambulance',     'name' => 'Ambulance',       'icon' => 'bi-truck',          'sort' => 62],
             ['key' => 'medical.diet',          'name' => 'Diet & Nutrition','icon' => 'bi-egg-fried',      'sort' => 63],
             ['key' => 'medical.records',       'name' => 'Medical Records', 'icon' => 'bi-folder2-open',   'sort' => 64],

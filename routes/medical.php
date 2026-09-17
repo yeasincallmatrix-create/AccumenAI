@@ -28,6 +28,24 @@ use App\Http\Controllers\Medical\TpaClaimController;
 use App\Http\Controllers\Medical\TpaController;
 use App\Http\Controllers\Medical\VitalSignController;
 use App\Http\Controllers\Medical\WardController;
+use App\Http\Controllers\Medical\BloodBankDashboardController;
+use App\Http\Controllers\Medical\BloodDonorController;
+use App\Http\Controllers\Medical\BloodUnitController;
+use App\Http\Controllers\Medical\BloodRequestController;
+use App\Http\Controllers\Medical\PhysiotherapyDashboardController;
+use App\Http\Controllers\Medical\PhysiotherapyPlanController;
+use App\Http\Controllers\Medical\PhysiotherapySessionController;
+use App\Http\Controllers\Medical\PhysiotherapyExerciseController;
+use App\Http\Controllers\Medical\DentalDashboardController;
+use App\Http\Controllers\Medical\DentalChartController;
+use App\Http\Controllers\Medical\DentalProcedureController;
+use App\Http\Controllers\Medical\DentalTreatmentPlanController;
+use App\Http\Controllers\Medical\DentalProcedureCatalogController;
+use App\Http\Controllers\Medical\VaccinationDashboardController;
+use App\Http\Controllers\Medical\VaccineMasterController;
+use App\Http\Controllers\Medical\VaccinationScheduleController;
+use App\Http\Controllers\Medical\VaccinationRecordController;
+use App\Http\Controllers\Medical\VaccineStockController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -321,5 +339,152 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
 
         Route::post('orders/{order}/images', [RadiologyController::class, 'uploadImage'])->name('orders.images.upload');
         Route::delete('orders/{order}/images/{image}', [RadiologyController::class, 'deleteImage'])->name('orders.images.destroy');
+    });
+
+    // Blood Bank
+    Route::middleware('medical.module:medical.bloodbank')
+        ->prefix('blood-bank')->name('medical.blood-bank.')->group(function () {
+        Route::get('/', [BloodBankDashboardController::class, 'dashboard'])->name('dashboard');
+
+        // Donors
+        Route::get('donors', [BloodDonorController::class, 'index'])->name('donors.index');
+        Route::get('donors/create', [BloodDonorController::class, 'create'])->name('donors.create');
+        Route::post('donors', [BloodDonorController::class, 'store'])->name('donors.store');
+        Route::get('donors/{donor}', [BloodDonorController::class, 'show'])->name('donors.show');
+        Route::get('donors/{donor}/edit', [BloodDonorController::class, 'edit'])->name('donors.edit');
+        Route::put('donors/{donor}', [BloodDonorController::class, 'update'])->name('donors.update');
+        Route::delete('donors/{donor}', [BloodDonorController::class, 'destroy'])->name('donors.destroy');
+
+        // Units
+        Route::get('units', [BloodUnitController::class, 'index'])->name('units.index');
+        Route::get('units/create', [BloodUnitController::class, 'create'])->name('units.create');
+        Route::post('units', [BloodUnitController::class, 'store'])->name('units.store');
+        Route::get('units/{unit}', [BloodUnitController::class, 'show'])->name('units.show');
+        Route::get('units/{unit}/edit', [BloodUnitController::class, 'edit'])->name('units.edit');
+        Route::put('units/{unit}', [BloodUnitController::class, 'update'])->name('units.update');
+        Route::delete('units/{unit}', [BloodUnitController::class, 'destroy'])->name('units.destroy');
+        Route::post('units/{unit}/screen', [BloodUnitController::class, 'screen'])->name('units.screen');
+        Route::post('units/{unit}/expire', [BloodUnitController::class, 'expire'])->name('units.expire');
+        Route::post('units/{unit}/discard', [BloodUnitController::class, 'discard'])->name('units.discard');
+
+        // Requests
+        Route::get('requests', [BloodRequestController::class, 'index'])->name('requests.index');
+        Route::get('requests/create', [BloodRequestController::class, 'create'])->name('requests.create');
+        Route::post('requests', [BloodRequestController::class, 'store'])->name('requests.store');
+        Route::get('requests/{bloodRequest}', [BloodRequestController::class, 'show'])->name('requests.show');
+        Route::get('requests/{bloodRequest}/edit', [BloodRequestController::class, 'edit'])->name('requests.edit');
+        Route::put('requests/{bloodRequest}', [BloodRequestController::class, 'update'])->name('requests.update');
+        Route::delete('requests/{bloodRequest}', [BloodRequestController::class, 'destroy'])->name('requests.destroy');
+        Route::post('requests/{bloodRequest}/approve', [BloodRequestController::class, 'approve'])->name('requests.approve');
+        Route::post('requests/{bloodRequest}/cancel', [BloodRequestController::class, 'cancel'])->name('requests.cancel');
+        Route::post('requests/{bloodRequest}/issue', [BloodRequestController::class, 'issue'])->name('requests.issue');
+        Route::post('requests/{bloodRequest}/return', [BloodRequestController::class, 'return'])->name('requests.return');
+    });
+
+    // Physiotherapy
+    Route::middleware('medical.module:medical.physiotherapy')
+        ->prefix('physiotherapy')->name('medical.physiotherapy.')->group(function () {
+        Route::get('/', [PhysiotherapyDashboardController::class, 'index'])->name('dashboard');
+
+        // Plans
+        Route::get('plans', [PhysiotherapyPlanController::class, 'index'])->name('plans.index');
+        Route::get('plans/create', [PhysiotherapyPlanController::class, 'create'])->name('plans.create');
+        Route::post('plans', [PhysiotherapyPlanController::class, 'store'])->name('plans.store');
+        Route::get('plans/{plan}', [PhysiotherapyPlanController::class, 'show'])->name('plans.show');
+        Route::get('plans/{plan}/edit', [PhysiotherapyPlanController::class, 'edit'])->name('plans.edit');
+        Route::put('plans/{plan}', [PhysiotherapyPlanController::class, 'update'])->name('plans.update');
+        Route::delete('plans/{plan}', [PhysiotherapyPlanController::class, 'destroy'])->name('plans.destroy');
+        Route::post('plans/{plan}/complete', [PhysiotherapyPlanController::class, 'complete'])->name('plans.complete');
+        Route::post('plans/{plan}/discontinue', [PhysiotherapyPlanController::class, 'discontinue'])->name('plans.discontinue');
+
+        // Sessions
+        Route::get('sessions', [PhysiotherapySessionController::class, 'index'])->name('sessions.index');
+        Route::get('plans/{plan}/sessions/create', [PhysiotherapySessionController::class, 'create'])->name('sessions.create');
+        Route::post('plans/{plan}/sessions', [PhysiotherapySessionController::class, 'store'])->name('sessions.store');
+        Route::get('sessions/{session}', [PhysiotherapySessionController::class, 'show'])->name('sessions.show');
+        Route::get('sessions/{session}/edit', [PhysiotherapySessionController::class, 'edit'])->name('sessions.edit');
+        Route::put('sessions/{session}', [PhysiotherapySessionController::class, 'update'])->name('sessions.update');
+        Route::delete('sessions/{session}', [PhysiotherapySessionController::class, 'destroy'])->name('sessions.destroy');
+        Route::post('sessions/{session}/attend', [PhysiotherapySessionController::class, 'markAttended'])->name('sessions.attend');
+        Route::post('sessions/{session}/no-show', [PhysiotherapySessionController::class, 'markNoShow'])->name('sessions.no-show');
+
+        // Exercises
+        Route::resource('exercises', PhysiotherapyExerciseController::class);
+    });
+
+    // Dental
+    Route::middleware('medical.module:medical.dental')
+        ->prefix('dental')->name('medical.dental.')->group(function () {
+        Route::get('/', [DentalDashboardController::class, 'index'])->name('dashboard');
+
+        // Charts
+        Route::get('patients/{patient}/chart', [DentalChartController::class, 'show'])->name('chart.show');
+        Route::post('patients/{patient}/chart', [DentalChartController::class, 'save'])->name('chart.save');
+        Route::post('patients/{patient}/chart/tooth', [DentalChartController::class, 'updateTooth'])->name('chart.tooth.update');
+
+        // Procedures
+        Route::get('procedures', [DentalProcedureController::class, 'index'])->name('procedures.index');
+        Route::get('procedures/create', [DentalProcedureController::class, 'create'])->name('procedures.create');
+        Route::post('procedures', [DentalProcedureController::class, 'store'])->name('procedures.store');
+        Route::get('procedures/{procedure}', [DentalProcedureController::class, 'show'])->name('procedures.show');
+        Route::get('procedures/{procedure}/edit', [DentalProcedureController::class, 'edit'])->name('procedures.edit');
+        Route::put('procedures/{procedure}', [DentalProcedureController::class, 'update'])->name('procedures.update');
+        Route::delete('procedures/{procedure}', [DentalProcedureController::class, 'destroy'])->name('procedures.destroy');
+        Route::post('procedures/{procedure}/follow-up', [DentalProcedureController::class, 'markFollowedUp'])->name('procedures.follow-up');
+
+        // Treatment Plans
+        Route::get('plans', [DentalTreatmentPlanController::class, 'index'])->name('plans.index');
+        Route::get('plans/create', [DentalTreatmentPlanController::class, 'create'])->name('plans.create');
+        Route::post('plans', [DentalTreatmentPlanController::class, 'store'])->name('plans.store');
+        Route::get('plans/{plan}', [DentalTreatmentPlanController::class, 'show'])->name('plans.show');
+        Route::get('plans/{plan}/edit', [DentalTreatmentPlanController::class, 'edit'])->name('plans.edit');
+        Route::put('plans/{plan}', [DentalTreatmentPlanController::class, 'update'])->name('plans.update');
+        Route::delete('plans/{plan}', [DentalTreatmentPlanController::class, 'destroy'])->name('plans.destroy');
+        Route::post('plans/{plan}/complete-step/{step}', [DentalTreatmentPlanController::class, 'completeStep'])->name('plans.complete-step');
+        Route::post('plans/{plan}/discontinue', [DentalTreatmentPlanController::class, 'discontinue'])->name('plans.discontinue');
+
+        // Procedure Catalog
+        Route::get('catalog', [DentalProcedureCatalogController::class, 'index'])->name('catalog.index');
+        Route::get('catalog/create', [DentalProcedureCatalogController::class, 'create'])->name('catalog.create');
+        Route::post('catalog', [DentalProcedureCatalogController::class, 'store'])->name('catalog.store');
+        Route::get('catalog/{catalog}/edit', [DentalProcedureCatalogController::class, 'edit'])->name('catalog.edit');
+        Route::put('catalog/{catalog}', [DentalProcedureCatalogController::class, 'update'])->name('catalog.update');
+        Route::delete('catalog/{catalog}', [DentalProcedureCatalogController::class, 'destroy'])->name('catalog.destroy');
+    });
+
+    // Vaccination sub-module
+    Route::middleware('medical.module:medical.vaccination')
+        ->prefix('vaccination')->name('medical.vaccination.')->group(function () {
+        Route::get('/', [VaccinationDashboardController::class, 'index'])->name('dashboard');
+
+        // Vaccine Masters
+        Route::get('vaccines', [VaccineMasterController::class, 'index'])->name('vaccine-masters.index');
+        Route::get('vaccines/create', [VaccineMasterController::class, 'create'])->name('vaccine-masters.create');
+        Route::post('vaccines', [VaccineMasterController::class, 'store'])->name('vaccine-masters.store');
+        Route::get('vaccines/{vaccineMaster}', [VaccineMasterController::class, 'show'])->name('vaccine-masters.show');
+        Route::get('vaccines/{vaccineMaster}/edit', [VaccineMasterController::class, 'edit'])->name('vaccine-masters.edit');
+        Route::put('vaccines/{vaccineMaster}', [VaccineMasterController::class, 'update'])->name('vaccine-masters.update');
+        Route::delete('vaccines/{vaccineMaster}', [VaccineMasterController::class, 'destroy'])->name('vaccine-masters.destroy');
+
+        // Schedules
+        Route::get('schedules', [VaccinationScheduleController::class, 'index'])->name('schedules.index');
+        Route::get('schedules/create', [VaccinationScheduleController::class, 'create'])->name('schedules.create');
+        Route::post('schedules', [VaccinationScheduleController::class, 'store'])->name('schedules.store');
+        Route::get('schedules/{schedule}', [VaccinationScheduleController::class, 'show'])->name('schedules.show');
+        Route::get('schedules/{schedule}/administer', [VaccinationScheduleController::class, 'administer'])->name('schedules.administer');
+        Route::post('schedules/{schedule}/record', [VaccinationScheduleController::class, 'recordVaccination'])->name('schedules.record');
+
+        // Records
+        Route::get('records', [VaccinationRecordController::class, 'index'])->name('records.index');
+        Route::get('records/create', [VaccinationRecordController::class, 'create'])->name('records.create');
+        Route::post('records', [VaccinationRecordController::class, 'store'])->name('records.store');
+        Route::get('records/{record}', [VaccinationRecordController::class, 'show'])->name('records.show');
+
+        // Stock
+        Route::get('stocks', [VaccineStockController::class, 'index'])->name('stocks.index');
+        Route::get('stocks/create', [VaccineStockController::class, 'create'])->name('stocks.create');
+        Route::post('stocks', [VaccineStockController::class, 'store'])->name('stocks.store');
+        Route::get('stocks/{stock}/edit', [VaccineStockController::class, 'edit'])->name('stocks.edit');
+        Route::put('stocks/{stock}', [VaccineStockController::class, 'update'])->name('stocks.update');
     });
 });

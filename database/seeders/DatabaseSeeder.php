@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call(ModuleRegistrySeeder::class);
+        $this->call(IndustryTaxonomySeeder::class);
         $this->call(AcademicStructureSeeder::class);
         $this->call(GradeScaleSeeder::class);
         $this->call(AdditionalCountrySeeder::class);
