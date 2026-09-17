@@ -75,6 +75,8 @@ class SubIndustryAdminController extends Controller
 
     public function edit(Industry $industry, SubIndustry $subIndustry): View
     {
+        $this->ensureParent($industry, $subIndustry);
+
         $countries = Country::where('status', true)->orderBy('name')->get();
 
         return view('admin.industries.sub-industry-edit', compact('industry', 'subIndustry', 'countries'));
@@ -82,6 +84,8 @@ class SubIndustryAdminController extends Controller
 
     public function update(Request $request, Industry $industry, SubIndustry $subIndustry): RedirectResponse
     {
+        $this->ensureParent($industry, $subIndustry);
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'slug' => ['required', 'string', 'max:60'],
@@ -105,6 +109,8 @@ class SubIndustryAdminController extends Controller
 
     public function toggle(Industry $industry, SubIndustry $subIndustry): RedirectResponse
     {
+        $this->ensureParent($industry, $subIndustry);
+
         $newStatus = $subIndustry->status === 'active' ? 'inactive' : 'active';
         $subIndustry->update(['status' => $newStatus]);
 
@@ -120,6 +126,8 @@ class SubIndustryAdminController extends Controller
 
     public function destroy(Industry $industry, SubIndustry $subIndustry): RedirectResponse
     {
+        $this->ensureParent($industry, $subIndustry);
+
         if ($subIndustry->institutes()->exists()) {
             return back()->withErrors([
                 'error' => 'Cannot delete sub-industry with existing institutes. Deactivate it instead.',
@@ -136,6 +144,19 @@ class SubIndustryAdminController extends Controller
 
         return redirect()->route('admin.industries.sub-industries', $industry)
             ->with('status', "Sub-industry \"{$name}\" deleted.");
+    }
+
+    /**
+     * Enforce the nested-resource invariant: the child must belong to the
+     * parent industry in the URL. A mismatch is a 404 (same convention as
+     * failed implicit model binding) — never silently operate on a
+     * sub-industry of another industry.
+     */
+    private function ensureParent(Industry $industry, SubIndustry $subIndustry): void
+    {
+        if ((int) $subIndustry->industry_id !== (int) $industry->id) {
+            abort(404);
+        }
     }
 
     private function upsertSubIndustry(

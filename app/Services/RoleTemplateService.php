@@ -31,8 +31,13 @@ class RoleTemplateService
      */
     public function templates(): array
     {
+        // Specialized functional roles per medical sub-module. Shared with
+        // MedicalRoleSeeder (single source of truth) so new institutes and
+        // backfilled institutes receive identical bundles.
+        $medicalSpecialistRoles = \Database\Seeders\MedicalRoleSeeder::roles();
+
         return [
-            'healthcare' => [
+            'healthcare' => array_merge([
                 'hospital-admin' => [
                     'name' => 'Hospital Administrator',
                     'permissions' => ['medical_*', 'staff.manage', 'roles.manage'],
@@ -103,7 +108,7 @@ class RoleTemplateService
                         'medical_doctors.view',
                     ],
                 ],
-            ],
+            ], $medicalSpecialistRoles),
             // Industries without dedicated permission modules yet get minimal
             // placeholder roles so the invite dropdown is never empty; bundles
             // grow once those modules ship their permissions. Unknown slugs

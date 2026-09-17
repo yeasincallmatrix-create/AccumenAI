@@ -22,7 +22,9 @@ class MedicineRequest extends FormRequest
             'code' => [
                 'nullable',
                 'string',
-                'max:50',
+                // New codes are 4–6 digits; legacy MED- codes remain valid
+                // so existing medicines can still be updated.
+                'regex:/^([0-9]{4,6}|MED-[A-Za-z0-9\-]+)$/',
                 Rule::unique('medicines', 'code')
                     ->where(fn ($q) => $q->where('institute_id', MedicalScope::instituteId())->whereNull('deleted_at'))
                     ->ignore($medicineId),
@@ -56,6 +58,7 @@ class MedicineRequest extends FormRequest
     {
         return [
             'code.unique' => 'This medicine code already exists in this institute.',
+            'code.regex' => 'Code must be 4 to 6 digits (e.g., 4585 or 123456).',
             'generic_name.required' => 'Generic name is required.',
             'dosage_form.required' => 'Dosage form is required.',
             'unit.required' => 'Unit is required.',

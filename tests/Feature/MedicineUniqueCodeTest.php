@@ -213,9 +213,21 @@ class MedicineUniqueCodeTest extends TestCase
         $data = $response->json();
         $this->assertArrayHasKey('id', $data);
 
-        // Verify code was auto-generated (starts with MED-)
+        // Verify code was auto-generated as a sequential 4–6 digit number.
         $medicine = Medicine::find($data['id']);
-        $this->assertStringStartsWith('MED-', $medicine->code);
+        $this->assertMatchesRegularExpression('/^[0-9]{4,6}$/', $medicine->code);
+
+        // A second quick-store gets the next code (unique, sequential).
+        $response2 = $this->postJson(route('medical.pharmacy.medicines.quick-store'), [
+            'dosage_form' => 'Tablet',
+            'generic_name' => 'Paracetamol',
+            'strength' => '500mg',
+            'brand_name' => 'Napa Extra',
+        ]);
+        $response2->assertOk();
+        $second = Medicine::find($response2->json()['id']);
+        $this->assertNotEquals($medicine->code, $second->code);
+        $this->assertEquals((int) $medicine->code + 1, (int) $second->code);
     }
 
     // ─── Database Constraint ────────────────────────────────

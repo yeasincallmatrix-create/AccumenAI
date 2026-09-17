@@ -6,6 +6,7 @@ use App\Models\Country;
 use App\Models\Industry as IndustryModel;
 use App\Models\SubIndustry as SubIndustryModel;
 use App\Services\IndustryService;
+use Illuminate\Database\QueryException;
 
 /**
  * Country-scoped industry accessor.
@@ -25,14 +26,21 @@ final class IndustryRules
      */
     public static function industries(?string $country): array
     {
-        $countryId = self::resolveCountryId($country);
-        $result = IndustryService::industries($countryId);
+        try {
+            $countryId = self::resolveCountryId($country);
+            $result = IndustryService::industries($countryId);
 
-        if ($result !== []) {
-            return $result;
+            if ($result !== []) {
+                return $result;
+            }
+        } catch (QueryException $e) {
+            // Taxonomy tables unavailable (e.g. migration not yet run in this
+            // environment) — fall through to the config taxonomy below.
+            // Only QueryException is caught: unrelated programming errors
+            // must still surface.
         }
 
-        // Fallback to config if DB is empty
+        // Fallback to config if DB is empty/unavailable
         return (array) config('industry_rules.global.industries', []);
     }
 
@@ -44,11 +52,15 @@ final class IndustryRules
      */
     public static function subIndustries(?string $country, string $industry): array
     {
-        $countryId = self::resolveCountryId($country);
-        $result = IndustryService::subIndustriesBySlug($country, $industry);
+        try {
+            $countryId = self::resolveCountryId($country);
+            $result = IndustryService::subIndustriesBySlug($country, $industry);
 
-        if ($result !== []) {
-            return $result;
+            if ($result !== []) {
+                return $result;
+            }
+        } catch (QueryException $e) {
+            // Taxonomy tables unavailable — fall through to config (see above).
         }
 
         // Fallback to config
@@ -78,17 +90,22 @@ final class IndustryRules
      */
     public static function label(string $country, string $industry, ?string $sub = null): ?string
     {
-        $countryId = self::resolveCountryId($country);
-        $label = IndustryService::label($countryId, $industry, $sub);
+        try {
+            $countryId = self::resolveCountryId($country);
+            $label = IndustryService::label($countryId, $industry, $sub);
 
-        if ($label !== null) {
-            return $label;
+            if ($label !== null) {
+                return $label;
+            }
+        } catch (QueryException $e) {
+            // Taxonomy tables unavailable — fall through to config (see above).
         }
 
-        // Fallback to config
+        // Fallback to config. An industry known to neither the DB nor the
+        // config taxonomy resolves to null (callers coalesce to the raw slug).
         $industryLabel = config('industry_rules.global.industries.' . $industry);
         if ($industryLabel === null) {
-            $industryLabel = self::labelOf($industry);
+            return null;
         }
 
         if ($sub === null || $sub === '') {

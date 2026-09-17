@@ -46,6 +46,7 @@ class StaffInvitationController extends Controller
 
         return view('staff.invite', [
             'roles' => $roles,
+            'roleGroups' => $this->groupRoles($roles),
             'members' => $this->membersFor($institutionId),
             'institutionId' => $institutionId,
         ]);
@@ -161,5 +162,30 @@ class StaffInvitationController extends Controller
             ->with(['user', 'role'])
             ->orderBy('id')
             ->get();
+    }
+
+    /**
+     * Group invite roles by department for the grouped dropdown.
+     * Roles without a group land under "Other".
+     *
+     * @return array<string, \Illuminate\Support\Collection>
+     */
+    protected function groupRoles($roles): array
+    {
+        $groups = \Database\Seeders\MedicalRoleSeeder::groups();
+        $slugToGroup = [];
+        foreach ($groups as $label => $slugs) {
+            foreach ($slugs as $slug) {
+                $slugToGroup[$slug] ??= $label;
+            }
+        }
+
+        $grouped = [];
+        foreach ($roles as $role) {
+            $grouped[$slugToGroup[$role->slug] ?? 'Other'][] = $role;
+        }
+        ksort($grouped);
+
+        return array_map(fn ($items) => collect($items), $grouped);
     }
 }

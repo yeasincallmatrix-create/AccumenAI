@@ -379,7 +379,7 @@ class Phase10MedicineArchitectureTest extends TestCase
     {
         // HTTP creation auto-maps via the controller hook.
         $this->post(route('medical.pharmacy.medicines.store'), [
-            'code' => 'P10-'.strtoupper(uniqid()),
+            'code' => '6003',
             'generic_name' => 'Flowmycin',
             'dosage_form' => 'Capsule',
             'strength' => '250mg',

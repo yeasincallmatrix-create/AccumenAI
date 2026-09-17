@@ -43,27 +43,30 @@ class IndustryRulesTest extends TestCase
     {
         $subs = IndustryRules::subIndustries('Bangladesh', 'education');
 
-        // Core education sub-industries must exist; additional academies (martial_arts, dance, etc.) may be added without breaking test
+        // Canonical education sub-industries (config/industry_rules.php).
+        // Training-center entries (institution, vocational_institute, ...)
+        // belong to the independent training_center industry — see
+        // IndustryInstitutionDomainTest::test_training_center_is_not_child_of_education.
         $expectedCore = [
-            'institution' => 'Institution',
             'school' => 'School',
             'college' => 'College',
+            'polytechnic' => 'Polytechnic',
             'university' => 'University',
             'madrasha' => 'Madrasha',
             'primary_school' => 'Primary School',
             'secondary_high_school' => 'Secondary / High School',
             'school_college' => 'School & College',
-            'vocational_institute' => 'Vocational Institute',
-            'technical_training_center' => 'Technical Training Center',
-            'skill_development_center' => 'Skill Development Center',
-            'computer_it_training_institute' => 'Computer / IT Training Institute',
-            'professional_training_academy' => 'Professional Training Academy',
         ];
         foreach ($expectedCore as $k => $v) {
             $this->assertArrayHasKey($k, $subs);
             $this->assertSame($v, $subs[$k]);
         }
         $this->assertGreaterThanOrEqual(count($expectedCore), count($subs));
+
+        // Training-center subs resolve under their own industry, not education.
+        $trainingSubs = IndustryRules::subIndustries('Bangladesh', 'training_center');
+        $this->assertArrayHasKey('professional_training_center', $trainingSubs);
+        $this->assertArrayNotHasKey('professional_training_center', $subs);
     }
 
     public function test_sub_industries_empty_for_unlisted_industry(): void

@@ -36,16 +36,70 @@
 
 <div class="card">
     <div class="card-body">
+        @php
+            $codeService = app(\App\Services\Medical\MedicineCodeService::class);
+            $suggestedCode = $codeService->suggestNext(\App\Support\MedicalScope::instituteId());
+            $slabInfo = $codeService->slabInfo(\App\Support\MedicalScope::instituteId());
+        @endphp
+
+        {{-- Suggestion Banner --}}
+        @if($suggestedCode)
+            <div class="alert alert-info d-flex justify-content-between align-items-center">
+                <div>
+                    <strong><i class="bi bi-upc me-1"></i> Next suggested code:</strong>
+                    <span class="badge bg-primary fs-6 ms-2">{{ $suggestedCode }}</span>
+                    <small class="text-muted d-block mt-1">
+                        Leave empty to auto-assign on save.
+                    </small>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-primary"
+                        onclick="document.getElementById('code-input').value = '{{ $suggestedCode }}'; document.getElementById('code-input').dispatchEvent(new Event('input'));">
+                    Use This Code
+                </button>
+            </div>
+        @else
+            <div class="alert alert-danger">
+                <strong>Code capacity exhausted!</strong>
+                All 999,999 codes have been used. Contact support to expand capacity.
+            </div>
+        @endif
+
+        {{-- Slab Usage Indicator --}}
+        <div class="card mb-3">
+            <div class="card-body py-2">
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <strong class="text-muted">Code Capacity:</strong>
+                    @foreach($slabInfo as $slab)
+                        @php
+                            $color = $slab['percent_used'] >= 90 ? 'danger'
+                                   : ($slab['percent_used'] >= 70 ? 'warning' : 'success');
+                        @endphp
+                        <span class="badge bg-{{ $color }}"
+                              title="{{ number_format($slab['used']) }} / {{ number_format($slab['capacity']) }} used">
+                            {{ $slab['digits'] }}-digit: {{ number_format($slab['used']) }}/{{ number_format($slab['capacity']) }}
+                        </span>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+
         <form action="{{ route('medical.pharmacy.medicines.store') }}" method="POST">
             @csrf
             <div class="row">
                 <div class="col-md-4">
                     <div class="mb-3">
-                        <label class="form-label" for="code">Code <span class="text-danger">*</span></label>
-                        <input type="text" id="code" name="code" maxlength="50"
+                        <label class="form-label" for="code-input">
+                            Code
+                            <small class="text-muted">(optional — auto-assigned if left empty)</small>
+                        </label>
+                        <input type="text" id="code-input" name="code" maxlength="6"
                                class="form-control @error('code') is-invalid @enderror"
-                               value="{{ old('code') }}" required placeholder="e.g. MED-010">
+                               value="{{ old('code') }}" placeholder="{{ $suggestedCode ?? 'Exhausted' }}"
+                               pattern="[0-9]{4,6}">
                         @error('code')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <small class="text-muted">
+                            Custom code allowed: 4 to 6 digits. Must be unique in your institute.
+                        </small>
                     </div>
                 </div>
                 <div class="col-md-4">
@@ -243,6 +297,43 @@
         </form>
     </div>
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const codeInput = document.getElementById('code-input');
+    if (!codeInput) return;
+    let previewSvg = document.getElementById('barcode-preview');
+
+    if (!previewSvg) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'card mb-3';
+        wrapper.innerHTML = '<div class="card-body text-center"><svg id="barcode-preview"></svg></div>';
+        wrapper.style.display = 'none';
+        codeInput.closest('form').prepend(wrapper);
+        previewSvg = document.getElementById('barcode-preview');
+    }
+
+    function updatePreview() {
+        const code = codeInput.value.trim();
+        if (!code || !window.JsBarcode) return;
+        try {
+            JsBarcode('#barcode-preview', code, {
+                format: 'CODE128', width: 2, height: 60, fontSize: 14, margin: 8
+            });
+            previewSvg.closest('.card').style.display = 'block';
+        } catch (e) {
+            previewSvg.closest('.card').style.display = 'none';
+        }
+    }
+
+    codeInput.addEventListener('input', updatePreview);
+    @if(old('code'))
+        updatePreview();
+    @endif
+});
+</script>
+@endpush
 @endsection
 
 @dgdaEnabled

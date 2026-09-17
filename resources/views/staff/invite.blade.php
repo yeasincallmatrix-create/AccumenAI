@@ -58,8 +58,12 @@
             <label class="form-label" for="inv_role">{{ mawa_e('staff.role') }}</label>
             <select id="inv_role" name="role_id" class="form-select" required>
                 <option value="">{{ mawa_e('staff.select_role') }}</option>
-                @foreach ($roles as $role)
-                    <option value="{{ $role->id }}" @selected(old('role_id') == $role->id)>{{ mawa_role_label($role) }}</option>
+                @foreach (($roleGroups ?? ['All' => $roles]) as $groupLabel => $groupRoles)
+                    <optgroup label="{{ $groupLabel }}">
+                        @foreach ($groupRoles as $role)
+                            <option value="{{ $role->id }}" @selected(old('role_id') == $role->id)>{{ mawa_role_label($role) }}</option>
+                        @endforeach
+                    </optgroup>
                 @endforeach
             </select>
         </div>
@@ -122,8 +126,12 @@
                                 <form action="{{ route('staff.members.role', $member) }}" method="POST" class="d-inline-flex gap-1 align-items-center">
                                     @csrf @method('PUT')
                                     <select name="role_id" class="form-select form-select-sm" style="width:auto;" required title="{{ mawa_e('staff.change_role') }}">
-                                        @foreach($roles as $role)
-                                            <option value="{{ $role->id }}" @selected($member->role_id == $role->id)>{{ mawa_role_label($role) }}</option>
+                                        @foreach(($roleGroups ?? ['All' => $roles]) as $groupLabel => $groupRoles)
+                                            <optgroup label="{{ $groupLabel }}">
+                                                @foreach($groupRoles as $role)
+                                                    <option value="{{ $role->id }}" @selected($member->role_id == $role->id)>{{ mawa_role_label($role) }}</option>
+                                                @endforeach
+                                            </optgroup>
                                         @endforeach
                                     </select>
                                     <button class="btn btn-sm btn-outline-primary" title="{{ mawa_e('staff.change_role') }}"><i class="bi bi-check-lg"></i></button>

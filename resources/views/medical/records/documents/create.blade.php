@@ -46,8 +46,10 @@
                         @error('title')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">File * (max 20MB)</label>
-                        <input type="file" name="file" class="form-control @error('file') is-invalid @enderror" required>
+                        <label class="form-label">File * (max 20MB, auto-compressed to ~100KB)</label>
+                        <input type="file" name="file" id="docFile" class="form-control @error('file') is-invalid @enderror" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.txt,.dcm" required>
+                        <div class="form-text">Images are compressed in your browser and on the server to ~100KB. PDFs are compressed on the server to ~100KB (needs Ghostscript). Office/DICOM files are stored as-is (max 20MB).</div>
+                        <div id="compressStatus" class="form-text text-info d-none"></div>
                         @error('file')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                     <div class="col-12">
@@ -84,4 +86,87 @@
         </div>
     </div>
 </div>
+
+<script>
+// Client-side image pre-compression toward ~100KB so big photos upload fast.
+// Server re-compresses again as the source of truth (images + PDFs).
+(function () {
+    const TARGET = 100 * 1024;
+    const input = document.getElementById('docFile');
+    const status = document.getElementById('compressStatus');
+    if (!input) return;
+
+    const fmt = (b) => b >= 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.round(b / 1024) + ' KB';
+
+    function show(msg) {
+        if (!status) return;
+        status.textContent = msg;
+        status.classList.remove('d-none');
+    }
+
+    async function compressImage(file) {
+        const bitmap = await createImageBitmap(file);
+        let w = bitmap.width, h = bitmap.height;
+        const MAX = 1600;
+        if (w > MAX || h > MAX) {
+            const r = Math.min(MAX / w, MAX / h);
+            w = Math.round(w * r); h = Math.round(h * r);
+        }
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        let qualitySteps = [0.82, 0.72, 0.62, 0.52, 0.42, 0.32];
+
+        for (let shrink = 0; shrink < 6; shrink++) {
+            canvas.width = w; canvas.height = h;
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(bitmap, 0, 0, w, h);
+            for (const q of qualitySteps) {
+                const blob = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', q));
+                if (blob && blob.size <= TARGET) return blob;
+                if (blob && !compressImage._best || (blob && blob.size < (compressImage._best?.size || Infinity))) {
+                    compressImage._best = blob;
+                }
+            }
+            w = Math.round(w * 0.8); h = Math.round(h * 0.8);
+            if (w < 320 || h < 320) break;
+        }
+        return compressImage._best || null;
+    }
+
+    input.addEventListener('change', async () => {
+        compressImage._best = null;
+        const file = input.files && input.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            if (file.type === 'application/pdf' && file.size > TARGET) {
+                show('Original: ' + fmt(file.size) + ' — PDF will be auto-compressed on the server to ~100KB.');
+            } else {
+                show('Original: ' + fmt(file.size));
+            }
+            return;
+        }
+        if (file.size <= TARGET) {
+            show('Original: ' + fmt(file.size) + ' — already under ~100KB.');
+            return;
+        }
+        show('Compressing ' + fmt(file.size) + ' → ~100KB in browser…');
+        try {
+            const blob = await compressImage(file);
+            if (blob) {
+                const name = (file.name.replace(/\.[^.]+$/, '') || 'document') + '.jpg';
+                const compressed = new File([blob], name, { type: 'image/jpeg' });
+                const dt = new DataTransfer();
+                dt.items.add(compressed);
+                input.files = dt.files;
+                show('Original: ' + fmt(file.size) + ' → ready to upload: ' + fmt(compressed.size) + ' (server enforces ~100KB).');
+            } else {
+                show('Could not pre-compress; server will compress after upload.');
+            }
+        } catch (e) {
+            show('Browser compression skipped; server will compress after upload.');
+        }
+    });
+})();
+</script>
 @endsection

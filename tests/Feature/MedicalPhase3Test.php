@@ -156,7 +156,7 @@ class MedicalPhase3Test extends TestCase
 
     public function test_medicine_crud(): void
     {
-        $code = 'CRUD-'.strtoupper(uniqid());
+        $code = '6001';
 
         $this->post(route('medical.pharmacy.medicines.store'), [
             'code' => $code,

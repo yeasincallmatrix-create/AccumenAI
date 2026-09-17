@@ -240,7 +240,7 @@ class MedicineAuditLogTest extends TestCase
         // The model's booted() method wraps ClinicalAuditLog::record() in
         // try-catch. Verify medicine creation succeeds regardless.
         $response = $this->post(route('medical.pharmacy.medicines.store'), [
-            'code' => 'FAIL-'.strtoupper(uniqid()),
+            'code' => '6002',
             'generic_name' => 'Failmycin',
             'brand_name' => 'Failmycin 100',
             'dosage_form' => 'Tablet',

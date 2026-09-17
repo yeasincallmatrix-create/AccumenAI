@@ -7,7 +7,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SubIndustry extends Model
 {
-    protected $guarded = [];
+    /**
+     * Explicit mass-assignment allow-list. The generated scope_hash column
+     * (MySQL stored generated column) plus id/timestamps are intentionally
+     * NOT fillable — scope_hash is computed by the database.
+     */
+    protected $fillable = [
+        'industry_id',
+        'country_id',
+        'name',
+        'slug',
+        'code',
+        'description',
+        'status',
+        'sort_order',
+    ];
 
     protected $casts = [
         'status' => 'string',

@@ -18,6 +18,7 @@
     <link href="{{ asset('css/components.css') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('css/components.css')) }}" rel="stylesheet">
     @include('layouts.partials.theme_colors')
     @stack('styles')
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js" defer></script>
 </head>
 <body>
 
@@ -338,7 +339,7 @@
                                                 <a class="nav-link sub {{ request()->routeIs('medical.dental.dashboard') ? 'active' : '' }}" href="{{ route('medical.dental.dashboard') }}">
                                                     <i class="bi bi-emoji-smile"></i><span class="sidebar-label">Dashboard</span>
                                                 </a>
-                                                <a class="nav-link sub {{ request()->routeIs('medical.dental.chart.*') ? 'active' : '' }}" href="{{ route('medical.dental.chart.show', 1) }}">
+                                                <a class="nav-link sub {{ request()->routeIs('medical.dental.chart.*') ? 'active' : '' }}" href="{{ route('medical.dental.chart.index') }}">
                                                     <i class="bi bi-journal-medical"></i><span class="sidebar-label">Dental Charts</span>
                                                 </a>
                                                 <a class="nav-link sub {{ request()->routeIs('medical.dental.procedures.*') ? 'active' : '' }}" href="{{ route('medical.dental.procedures.index') }}">

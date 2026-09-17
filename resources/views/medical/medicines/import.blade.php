@@ -19,6 +19,26 @@
             </a>
         </div>
 
+        <div class="alert alert-info">
+            <h6 class="mb-2"><i class="bi bi-info-circle me-1"></i>Code Column — Two Options</h6>
+            <ul class="mb-2 small">
+                <li>
+                    <strong>Option 1 — Leave EMPTY:</strong> Auto-generates sequential code
+                    (1000, 1001, 1002, ...) on import.
+                </li>
+                <li>
+                    <strong>Option 2 — Provide code manually:</strong> Must be 4-6 digits
+                    (e.g., <code>4585</code> or <code>123456</code>).
+                </li>
+            </ul>
+            <strong>Import will show a review dialog</strong> before saving if any conflicts are found:
+            <ul class="mb-0 small mt-2">
+                <li>Duplicate code (already exists in your institute)</li>
+                <li>Duplicate generic name (same generic + strength + form)</li>
+                <li>Invalid dosage form or required field missing</li>
+            </ul>
+        </div>
+
         @if(session('import_summary'))
             @php $s = session('import_summary'); @endphp
             <div class="alert alert-{{ $s['imported'] > 0 ? 'success' : 'warning' }}">
@@ -42,7 +62,7 @@
             </div>
         @endif
 
-        <form action="{{ route('medical.pharmacy.medicines.import') }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('medical.pharmacy.medicines.import.upload') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="mb-3">
                 <label for="csv_file" class="form-label">CSV File</label>

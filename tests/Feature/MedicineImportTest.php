@@ -154,7 +154,8 @@ class MedicineImportTest extends TestCase
 
         $medicine = Medicine::where('institute_id', $this->institute->id)->first();
         $this->assertNotNull($medicine);
-        $this->assertStringStartsWith('MED-'.$this->institute->id.'-', $medicine->code);
+        // Empty CSV code → sequential numeric auto-assignment.
+        $this->assertMatchesRegularExpression('/^[0-9]{4,6}$/', $medicine->code);
     }
 
     public function test_import_respects_institute_isolation(): void
@@ -206,5 +207,129 @@ class MedicineImportTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors('csv_file');
+    }
+
+    // ─── Code column validation ──────────────────────────────
+
+    public function test_import_rejects_invalid_code_format(): void
+    {
+        $csv = $this->makeCsv([
+            ['BadRx', 'BadGeneric', '100mg', 'Tablet', 'oral', 'pcs', '10', 'Square', 'other', '1.00', '10', 'RX-001', '', '1'],
+            ['Good', 'GoodGeneric', '100mg', 'Tablet', 'oral', 'pcs', '10', 'Square', 'other', '1.00', '10', '', '', '1'],
+        ]);
+
+        $response = $this->post(route('medical.pharmacy.medicines.import'), [
+            'csv_file' => $csv,
+        ]);
+
+        $response->assertRedirect();
+        // Bad row skipped, good row imported (sequential code assigned).
+        $this->assertEquals(1, Medicine::where('institute_id', $this->institute->id)->count());
+        $this->assertDatabaseHas('medicines', ['brand_name' => 'Good']);
+        $this->assertDatabaseMissing('medicines', ['brand_name' => 'BadRx']);
+    }
+
+    public function test_import_rejects_code_with_letters(): void
+    {
+        $csv = $this->makeCsv([
+            ['BadAlpha', 'BadGeneric', '100mg', 'Tablet', 'oral', 'pcs', '10', 'Square', 'other', '1.00', '10', 'ABCD', '', '1'],
+        ]);
+
+        $this->post(route('medical.pharmacy.medicines.import'), [
+            'csv_file' => $csv,
+        ]);
+
+        $this->assertEquals(0, Medicine::where('institute_id', $this->institute->id)->count());
+    }
+
+    public function test_import_rejects_duplicate_code(): void
+    {
+        Medicine::create([
+            'institute_id' => $this->institute->id,
+            'brand_name' => 'Existing',
+            'generic_name' => 'ExistingGeneric',
+            'strength' => '100mg',
+            'dosage_form' => 'Tablet',
+            'unit' => 'pcs',
+            'code' => '1000',
+            'is_active' => true,
+        ]);
+
+        $csv = $this->makeCsv([
+            ['DupCode', 'DupGeneric', '100mg', 'Tablet', 'oral', 'pcs', '10', 'Square', 'other', '1.00', '10', '1000', '', '1'],
+        ]);
+
+        $this->post(route('medical.pharmacy.medicines.import'), [
+            'csv_file' => $csv,
+        ]);
+
+        $this->assertEquals(1, Medicine::where('institute_id', $this->institute->id)->count());
+        $this->assertDatabaseMissing('medicines', ['brand_name' => 'DupCode']);
+    }
+
+    public function test_import_accepts_4_digit_numeric_code(): void
+    {
+        $csv = $this->makeCsv([
+            ['FourDigit', 'FourGeneric', '100mg', 'Tablet', 'oral', 'pcs', '10', 'Square', 'other', '1.00', '10', '4585', '', '1'],
+        ]);
+
+        $this->post(route('medical.pharmacy.medicines.import'), [
+            'csv_file' => $csv,
+        ]);
+
+        $this->assertDatabaseHas('medicines', [
+            'institute_id' => $this->institute->id,
+            'brand_name' => 'FourDigit',
+            'code' => '4585',
+        ]);
+    }
+
+    public function test_import_accepts_6_digit_numeric_code(): void
+    {
+        $csv = $this->makeCsv([
+            ['SixDigit', 'SixGeneric', '100mg', 'Tablet', 'oral', 'pcs', '10', 'Square', 'other', '1.00', '10', '123456', '', '1'],
+        ]);
+
+        $this->post(route('medical.pharmacy.medicines.import'), [
+            'csv_file' => $csv,
+        ]);
+
+        $this->assertDatabaseHas('medicines', [
+            'institute_id' => $this->institute->id,
+            'brand_name' => 'SixDigit',
+            'code' => '123456',
+        ]);
+    }
+
+    public function test_import_accepts_legacy_med_code(): void
+    {
+        $csv = $this->makeCsv([
+            ['LegacyMed', 'LegacyGeneric', '100mg', 'Tablet', 'oral', 'pcs', '10', 'Square', 'other', '1.00', '10', 'MED-189-ABC123', '', '1'],
+        ]);
+
+        $this->post(route('medical.pharmacy.medicines.import'), [
+            'csv_file' => $csv,
+        ]);
+
+        $this->assertDatabaseHas('medicines', [
+            'institute_id' => $this->institute->id,
+            'brand_name' => 'LegacyMed',
+            'code' => 'MED-189-ABC123',
+        ]);
+    }
+
+    public function test_import_auto_generates_when_code_empty(): void
+    {
+        $csv = $this->makeCsv([
+            ['AutoGen', 'AutoGeneric', '100mg', 'Tablet', 'oral', 'pcs', '10', 'Square', 'other', '1.00', '10', '', '', '1'],
+        ]);
+
+        $this->post(route('medical.pharmacy.medicines.import'), [
+            'csv_file' => $csv,
+        ]);
+
+        $medicine = Medicine::where('institute_id', $this->institute->id)->where('brand_name', 'AutoGen')->first();
+        $this->assertNotNull($medicine);
+        $this->assertMatchesRegularExpression('/^[0-9]{4,6}$/', $medicine->code);
     }
 }

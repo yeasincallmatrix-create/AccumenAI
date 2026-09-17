@@ -57,6 +57,26 @@ class Medicine extends Model
 
     protected static function booted(): void
     {
+        // Sequential per-tenant code assignment. Only fills empty codes —
+        // legacy MED- codes and existing numerics are never touched. The
+        // reservation runs under a row lock (see MedicineCodeService), so
+        // concurrent creates cannot receive the same code.
+        static::creating(function (Medicine $medicine) {
+            if (empty($medicine->code)) {
+                $service = app(\App\Services\Medical\MedicineCodeService::class);
+                $code = $service->reserveCode((int) $medicine->institute_id);
+
+                if ($code === null) {
+                    throw new \RuntimeException(
+                        "Medicine code capacity exhausted for institute {$medicine->institute_id}. ".
+                        'Maximum '.\App\Services\Medical\MedicineCodeService::MAX_CODE.' codes reached.'
+                    );
+                }
+
+                $medicine->code = $code;
+            }
+        });
+
         static::saving(function (Medicine $medicine) {
             $base = $medicine->brand_name ?? '';
             $strength = $medicine->strength ?? '';

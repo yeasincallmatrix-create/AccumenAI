@@ -7,7 +7,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Industry extends Model
 {
-    protected $guarded = [];
+    /**
+     * Explicit mass-assignment allow-list. Generated/database-managed fields
+     * (id, timestamps) are intentionally NOT fillable.
+     */
+    protected $fillable = [
+        'name',
+        'slug',
+        'code',
+        'description',
+        'status',
+        'sort_order',
+    ];
 
     protected $casts = [
         'status' => 'string',

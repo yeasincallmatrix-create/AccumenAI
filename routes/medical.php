@@ -169,6 +169,13 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     Route::post('pharmacy/medicines/import', [MedicineController::class, 'import'])->name('pharmacy.medicines.import');
     Route::get('pharmacy/medicines/import/template', [MedicineController::class, 'downloadTemplate'])->name('pharmacy.medicines.import.template');
 
+    // Two-phase CSV import with conflict review (single-pass import() above
+    // is preserved for backward compatibility and API use).
+    Route::post('pharmacy/medicines/import/upload', [MedicineController::class, 'importUpload'])->name('pharmacy.medicines.import.upload');
+    Route::get('pharmacy/medicines/import/review/{batchId}', [MedicineController::class, 'importReview'])->name('pharmacy.medicines.import.review');
+    Route::post('pharmacy/medicines/import/confirm/{batchId}', [MedicineController::class, 'importConfirm'])->name('pharmacy.medicines.import.confirm');
+    Route::post('pharmacy/medicines/import/cancel/{batchId}', [MedicineController::class, 'importCancel'])->name('pharmacy.medicines.import.cancel');
+
     Route::resource('pharmacy/medicines', MedicineController::class)->names('pharmacy.medicines');
     Route::post('pharmacy/medicines/{medicine}/sync-dgda', [MedicineController::class, 'syncDgda'])->name('pharmacy.medicines.sync-dgda');
 
@@ -431,6 +438,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
         Route::get('/', [DentalDashboardController::class, 'index'])->name('dashboard');
 
         // Charts
+        Route::get('charts', [DentalChartController::class, 'index'])->name('chart.index');
         Route::get('patients/{patient}/chart', [DentalChartController::class, 'show'])->name('chart.show');
         Route::post('patients/{patient}/chart', [DentalChartController::class, 'save'])->name('chart.save');
         Route::post('patients/{patient}/chart/tooth', [DentalChartController::class, 'updateTooth'])->name('chart.tooth.update');

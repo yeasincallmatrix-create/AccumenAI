@@ -41,6 +41,9 @@ Schedule::command('files:cleanup-orphans --dry-run')->dailyAt('02:00');
 // Medical — end-of-day queue rollover (carry as scheduled, auto-cancel no-shows).
 Schedule::command('medical:queue-rollover')->dailyAt('23:50')->withoutOverlapping();
 
+// Medical — medicine code slab capacity monitoring (read-only).
+Schedule::command('medical:medicine-code-capacity --warn=80')->daily()->withoutOverlapping();
+
 // P1 — Automated database backups (RPO < 24h)
 Schedule::command('database:backup --type=daily --verify')->dailyAt('01:00');
 Schedule::command('database:backup --type=weekly --verify')->weeklyOn(0, '02:00');

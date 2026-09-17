@@ -163,6 +163,114 @@
 </div>
 
 <div class="card mt-3">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-upc-scan me-2"></i>Barcode</h5>
+    </div>
+    <div class="card-body text-center">
+        @if($medicine->code)
+            <svg id="barcode-svg" class="mb-3"></svg>
+            <div class="d-flex justify-content-center gap-2 flex-wrap">
+                <button type="button" class="btn btn-sm btn-primary"
+                        onclick="printSingleBarcode()">
+                    <i class="bi bi-printer me-1"></i> Print Barcode
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary"
+                        onclick="downloadBarcode('barcode-svg', '{{ $medicine->code }}')">
+                    <i class="bi bi-download me-1"></i> Download PNG
+                </button>
+            </div>
+        @else
+            <p class="text-muted mb-0">No code assigned yet.</p>
+        @endif
+    </div>
+</div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    @if($medicine->code)
+        generateBarcode('barcode-svg', '{{ $medicine->code }}');
+    @endif
+});
+
+function generateBarcode(elementId, code) {
+    if (!window.JsBarcode || !code) return;
+    try {
+        JsBarcode('#' + elementId, code, {
+            format: 'CODE128',
+            width: 2.5,
+            height: 90,
+            displayValue: true,
+            fontSize: 16,
+            font: 'monospace',
+            margin: 12,
+        });
+    } catch (e) {
+        console.error('Barcode error:', e);
+    }
+}
+
+function printSingleBarcode() {
+    const svg = document.getElementById('barcode-svg');
+    if (!svg) return;
+
+    const name = {!! json_encode($medicine->brand_name) !!};
+    const strength = {!! json_encode($medicine->strength ?? '') !!};
+    const form = {!! json_encode($medicine->dosage_form ?? '') !!};
+
+    const w = window.open('', '_blank', 'width=420,height=320');
+    w.document.write(`
+        <html><head><title>Barcode — ${name}</title>
+        <style>
+            body { font-family: Arial, sans-serif; text-align: center; padding: 20px; margin: 0; }
+            .label { border: 1px dashed #ccc; padding: 15px; max-width: 320px; margin: 0 auto; }
+            .name { font-size: 15px; font-weight: bold; margin-bottom: 4px; }
+            .sub { font-size: 12px; color: #666; margin-bottom: 8px; }
+            svg { max-width: 100%; height: auto; }
+            @media print { .label { border: none; } }
+        </style></head><body>
+        <div class="label">
+            <div class="name">${name}</div>
+            <div class="sub">${strength} ${form}</div>
+            ${svg.outerHTML}
+        </div>
+        <script>window.onload = function() { window.print(); setTimeout(() => window.close(), 500); };<\/script>
+        </body></html>
+    `);
+    w.document.close();
+}
+
+function downloadBarcode(svgId, code) {
+    const svg = document.getElementById(svgId);
+    if (!svg) return;
+
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+
+    img.onload = function() {
+        canvas.width = img.width * 2;
+        canvas.height = img.height * 2;
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+
+        const a = document.createElement('a');
+        a.download = 'barcode-' + code + '.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+    };
+    img.src = url;
+}
+</script>
+@endpush
+
+<div class="card mt-3">
     <div class="card-header"><h6 class="mb-0">Batches ({{ $medicine->stocks->count() }})</h6></div>
     <div class="card-body">
         @if($medicine->stocks->count() > 0)

@@ -1,4 +1,4 @@
 brand_name,generic_name,strength,dosage_form,route,unit,pack_size,manufacturer,category,selling_price,reorder_level,code,dgda_code,is_active
-Napa,Paracetamol,500mg,Tablet,oral,pcs,10,Square Pharma,analgesic,2.50,50,,,1
+Napa,Paracetamol,500mg,Tablet,oral,pcs,10,Square Pharma,analgesic,2.50,50,1000,,1
 Seclo,Omeprazole,20mg,Capsule,oral,pcs,30,Square Pharma,gastro,5.00,30,,,1
-Azithromycin,Azithromycin,250mg,Tablet,oral,pcs,6,Square Pharma,antibiotic,12.00,20,,,1
+Azithromycin,Azithromycin,250mg,Tablet,oral,pcs,6,Square Pharma,antibiotic,12.00,20,1002,,1

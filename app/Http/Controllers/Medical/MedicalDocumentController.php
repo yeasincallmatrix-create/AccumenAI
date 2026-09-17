@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Medical;
 use App\Models\Medical\ClinicalAuditLog;
 use App\Models\Medical\MedicalDocument;
 use App\Models\Medical\NumberSequence;
+use App\Services\Medical\MedicalDocumentCompressorService;
 use App\Services\Medical\NumberSequenceService;
 use App\Services\Medical\PatientTimelineEventService;
 use Illuminate\Http\Request;
@@ -27,6 +28,7 @@ class MedicalDocumentController extends MedicalController implements HasMiddlewa
     public function __construct(
         private readonly NumberSequenceService $sequences,
         private readonly PatientTimelineEventService $timeline,
+        private readonly MedicalDocumentCompressorService $compressor,
     ) {}
 
     public function index(Request $request)
@@ -94,7 +96,21 @@ class MedicalDocumentController extends MedicalController implements HasMiddlewa
         $this->ensureSameInstitute($patient, 'patient');
 
         $file = $request->file('file');
+        $originalName = $file->getClientOriginalName();
+        $originalSize = (int) ($file->getSize() ?? filesize($file->getRealPath()));
+
+        // Auto-compress toward ~100 KB (images fully; PDFs via Ghostscript when
+        // available; office/txt/dicom stored as-is capped at 20 MB).
+        $result = $this->compressor->compress($file);
+        $file = $result['file'];
+        $finalSize = (int) (is_file((string) $file->getRealPath()) ? filesize((string) $file->getRealPath()) : $file->getSize());
+
         $path = $file->store('medical-documents/' . $instituteId, 'local');
+
+        // Temp compressed copies live in sys temp (test mode); clean them up.
+        if (($result['compressed'] ?? false) && str_starts_with((string) $file->getRealPath(), rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR))) {
+            @unlink((string) $file->getRealPath());
+        }
 
         $document = MedicalDocument::create([
             'institute_id' => $instituteId,
@@ -105,10 +121,10 @@ class MedicalDocumentController extends MedicalController implements HasMiddlewa
             'title' => $request->title,
             'description' => $request->description,
             'file_path' => $path,
-            'original_filename' => $file->getClientOriginalName(),
-            'mime_type' => $file->getMimeType(),
-            'file_size' => $file->getSize(),
-            'file_hash' => hash_file('sha256', $file->getRealPath()),
+            'original_filename' => $originalName,
+            'mime_type' => Storage::disk('local')->mimeType($path) ?: $file->getMimeType(),
+            'file_size' => Storage::disk('local')->size($path) ?: $finalSize,
+            'file_hash' => hash('sha256', Storage::disk('local')->get($path)),
             'document_date' => $request->document_date ?? today(),
             'is_confidential' => (bool) $request->boolean('is_confidential'),
             'is_patient_visible' => (bool) $request->boolean('is_patient_visible'),
@@ -132,9 +148,32 @@ class MedicalDocumentController extends MedicalController implements HasMiddlewa
             'icon' => $document->icon(),
         ]);
 
+        $status = 'Document uploaded: ' . $document->document_number;
+        if (($result['compressed'] ?? false) && $originalSize > 0) {
+            $status .= sprintf(
+                ' (auto-compressed %s → %s)',
+                $this->humanBytes($originalSize),
+                $this->humanBytes((int) $document->file_size)
+            );
+        } elseif (! empty($result['note'])) {
+            $status .= ' (' . $result['note'] . ')';
+        }
+
         return redirect()
             ->route('medical.records.documents.show', $document)
-            ->with('status', 'Document uploaded: ' . $document->document_number);
+            ->with('status', $status);
+    }
+
+    private function humanBytes(int $bytes): string
+    {
+        if ($bytes >= 1048576) {
+            return number_format($bytes / 1048576, 1) . ' MB';
+        }
+        if ($bytes >= 1024) {
+            return number_format($bytes / 1024, 0) . ' KB';
+        }
+
+        return $bytes . ' B';
     }
 
     public function show(MedicalDocument $document)

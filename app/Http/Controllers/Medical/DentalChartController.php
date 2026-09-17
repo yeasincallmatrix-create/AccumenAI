@@ -14,7 +14,7 @@ class DentalChartController extends MedicalController implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:medical.dental.view', only: ['show']),
+            new Middleware('permission:medical.dental.view', only: ['index', 'show']),
             new Middleware('permission:medical.dental.chart.edit', only: ['save', 'updateTooth']),
         ];
     }
@@ -22,6 +22,29 @@ class DentalChartController extends MedicalController implements HasMiddleware
     public function __construct(
         private readonly DentalService $dentalService,
     ) {}
+
+    /**
+     * Patient picker for dental charts (institute + branch scoped).
+     *
+     * Previously the sidebar linked to a hardcoded patient id (1), which 404s
+     * whenever that patient doesn't exist in the current institute.
+     */
+    public function index(Request $request)
+    {
+        $instituteId = $this->instituteId();
+
+        $query = Patient::where('institute_id', $instituteId)->active()->patients();
+        $this->scopeBranch($query);
+
+        if ($request->filled('search')) {
+            $query->search($request->search);
+        }
+
+        $patients = $query->orderBy('first_name')->orderBy('last_name')
+            ->paginate(25)->withQueryString();
+
+        return view('medical.dental.charts', compact('patients'));
+    }
 
     public function show(Patient $patient)
     {
