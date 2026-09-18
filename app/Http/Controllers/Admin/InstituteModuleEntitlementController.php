@@ -64,9 +64,8 @@ class InstituteModuleEntitlementController extends Controller
         // Filter for UI hint: mark industry-incompatible modules disabled
         $compatible = [];
         $service = app(ModuleAccessService::class);
-        // Use reflection to access isIndustryCompatible (protected) via public wrapper through resolve? Simpler: duplicate logic
         foreach ($modules as $m) {
-            $compatible[$m->key] = $this->isIndustryCompatible($institute, $m->key);
+            $compatible[$m->key] = $service->isIndustryCompatible($institute, $m->key);
         }
 
         return view('admin.institutes.entitlements.create', compact('institute', 'modules', 'compatible'));
@@ -90,12 +89,12 @@ class InstituteModuleEntitlementController extends Controller
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
+        $service = app(ModuleAccessService::class);
+
         // Server-side industry compatibility — never trust UI
-        if (! $this->isIndustryCompatible($institute, $validated['module_key'])) {
+        if (! $service->isIndustryCompatible($institute, $validated['module_key'])) {
             return back()->withErrors(['module_key' => 'Module is incompatible with institute industry.'])->withInput();
         }
-
-        $service = app(ModuleAccessService::class);
 
         // Module exists already validated; service will throw ValidationException if not
         try {
@@ -186,13 +185,5 @@ class InstituteModuleEntitlementController extends Controller
         app(ModuleAccessService::class)->extendEntitlement($entitlement, $attrs, $request->user()?->id);
 
         return redirect()->route('admin.institutes.entitlements.index', $institute)->with('status', 'Entitlement extended.');
-    }
-
-    private function isIndustryCompatible(Institute $institute, string $moduleKey): bool
-    {
-        if ($moduleKey === 'education' && $institute->industry !== null && $institute->industry !== 'education') {
-            return false;
-        }
-        return true;
     }
 }

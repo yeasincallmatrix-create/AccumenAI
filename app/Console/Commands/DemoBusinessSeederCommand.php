@@ -36,7 +36,7 @@ class DemoBusinessSeederCommand extends Command
         ['industry' => 'manufacturing', 'sub' => 'food_processing', 'name' => 'Food Processing Demo'],
         ['industry' => 'manufacturing', 'sub' => 'pharmaceutical', 'name' => 'Pharmaceutical Demo'],
         ['industry' => 'real_estate', 'sub' => null, 'name' => 'Real Estate Demo'],
-        ['industry' => 'transport', 'sub' => null, 'name' => 'Transport Demo'],
+        ['industry' => 'transportation', 'sub' => null, 'name' => 'Transport Demo'],
         ['industry' => 'restaurant', 'sub' => null, 'name' => 'Restaurant Demo'],
         ['industry' => 'hotels', 'sub' => null, 'name' => 'Hotel Demo'],
         ['industry' => 'personal_finance', 'sub' => null, 'name' => 'Personal Finance Demo'],

@@ -11,7 +11,13 @@ class InstituteModuleOverride extends Model
 
     public $timestamps = true;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'institute_id',
+        'module_key',
+        'enabled',
+        'overridden_by',
+        'reason',
+    ];
 
     public function institute(): BelongsTo
     {

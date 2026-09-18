@@ -11,7 +11,18 @@ class ModuleRegistry extends Model
 
     public $timestamps = true;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'key',
+        'parent_key',
+        'name',
+        'type',
+        'description',
+        'sort_order',
+        'icon',
+        'coming_soon',
+        'index_route',
+        'status',
+    ];
 
     protected $casts = [
         'dependencies' => 'array',

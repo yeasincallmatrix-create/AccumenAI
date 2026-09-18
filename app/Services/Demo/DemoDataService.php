@@ -120,7 +120,7 @@ class DemoDataService
             $this->createDemoCustomers($institute, $industry, null);
             $counts['customers'] = Party::where('institute_id', $institute->id)->where('type', 'customer')->count();
 
-            $needsSuppliers = in_array($industry, ['education', 'healthcare', 'retail', 'manufacturing', 'transport', 'restaurant', 'hotels']);
+            $needsSuppliers = in_array($industry, ['education', 'healthcare', 'retail', 'manufacturing', 'transportation', 'restaurant', 'hotels']);
             if ($needsSuppliers) {
                 $this->createDemoSuppliers($institute, $industry, null);
                 $counts['suppliers'] = Party::where('institute_id', $institute->id)->where('type', 'supplier')->count();
@@ -702,7 +702,7 @@ class DemoDataService
             'restaurant' => ['Chef' => 1, 'Waiter' => 1],
             'hotels' => ['Receptionist' => 1, 'Housekeeping' => 1],
             'information_technology' => ['Developer' => 1, 'Designer' => 1],
-            'transport' => ['Driver' => 1, 'Coordinator' => 1],
+            'transportation' => ['Driver' => 1, 'Coordinator' => 1],
             default => ['Staff' => 1, 'Manager' => 1],
         };
     }

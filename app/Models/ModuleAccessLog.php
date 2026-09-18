@@ -11,7 +11,22 @@ class ModuleAccessLog extends Model
 
     public $timestamps = true;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'institute_id',
+        'module_key',
+        'action',
+        'actor_id',
+        'actor_type',
+        'previous_state',
+        'new_state',
+        'package_id',
+        'notes',
+    ];
+
+    public function getActorTypeLabelAttribute(): string
+    {
+        return $this->actor_type ?? 'legacy/unknown';
+    }
 
     public function institute(): BelongsTo
     {

@@ -6,7 +6,6 @@ use App\Models\ModuleRegistry;
 use App\Models\PackageModule;
 use App\Models\SubscriptionPackage;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class MedicalSubModuleSeeder extends Seeder
 {
@@ -81,33 +80,12 @@ class MedicalSubModuleSeeder extends Seeder
             }
         }
 
-        // Backfill: enable 5 active sub-modules for every institute that has medical enabled
-        $medicalEnabledInstitutes = DB::table('institute_module_overrides')
-            ->where('module_key', 'medical')
-            ->where('enabled', true)
-            ->pluck('institute_id');
-
-        // Also check package-level entitlements
-        $packageMedicalInstitutes = DB::table('institute_module_entitlements')
-            ->where('module_key', 'medical')
-            ->where('status', 'active')
-            ->where('is_grant', true)
-            ->pluck('institute_id');
-
-        $allInstitutes = $medicalEnabledInstitutes->merge($packageMedicalInstitutes)->unique();
-
-        // If no overrides/entitlements exist, check institutes table directly
-        if ($allInstitutes->isEmpty()) {
-            $allInstitutes = DB::table('institutes')->pluck('id');
-        }
-
-        foreach ($allInstitutes as $instituteId) {
-            foreach ($activeSubModules as $sub) {
-                DB::table('institute_module_overrides')->updateOrInsert(
-                    ['institute_id' => $instituteId, 'module_key' => $sub['key']],
-                    ['enabled' => true, 'updated_at' => now()]
-                );
-            }
-        }
+        // SEC-03: no per-institute grants here. A previous version of this
+        // seeder mass-enabled all medical.* sub-modules for every institute
+        // (falling back to ALL institutes when no overrides/entitlements
+        // existed), bypassing package entitlement, the override lifecycle,
+        // and audit. Per-institute access is granted through packages and
+        // the override/entitlement flow only, so re-runs are side-effect
+        // free for tenants by design.
     }
 }

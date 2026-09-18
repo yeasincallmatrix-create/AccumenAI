@@ -228,154 +228,244 @@
                                             @break
 
                                         @case('medical.pharmacy')
-                                            @if($user && $user->hasAnyPermission(['medical_medicines.view', 'medical_pharmacy.view']))
-                                                <a class="nav-link sub {{ request()->routeIs('medical.pharmacy.dispense.*') ? 'active' : '' }}" href="{{ route('medical.pharmacy.dispense.index') }}">
-                                                    <i class="bi bi-capsule"></i><span class="sidebar-label">Dispense</span>
+                                            @featureHidden('medical.pharmacy')
+                                            @endfeatureHidden
+                                            @featureEnabled('medical.pharmacy')
+                                                @if($user && $user->hasAnyPermission(['medical_medicines.view', 'medical_pharmacy.view']))
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.pharmacy.dispense.*') ? 'active' : '' }}" href="{{ route('medical.pharmacy.dispense.index') }}">
+                                                        <i class="bi bi-capsule"></i><span class="sidebar-label">Dispense</span>
+                                                    </a>
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.pharmacy.stock.*') && !request()->routeIs('medical.pharmacy.expiry-alerts') ? 'active' : '' }}" href="{{ route('medical.pharmacy.stock.index') }}">
+                                                        <i class="bi bi-boxes"></i><span class="sidebar-label">Stock</span>
+                                                    </a>
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.pharmacy.medicines.*') ? 'active' : '' }}" href="{{ route('medical.pharmacy.medicines.index') }}">
+                                                        <i class="bi bi-capsule"></i><span class="sidebar-label">Medicines</span>
+                                                    </a>
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.pharmacy.expiry-alerts') ? 'active' : '' }}" href="{{ route('medical.pharmacy.expiry-alerts') }}">
+                                                        <i class="bi bi-clock-history"></i><span class="sidebar-label">Expiry Alerts</span>
+                                                    </a>
+                                                @endif
+                                            @endfeatureEnabled
+                                            @featureLocked('medical.pharmacy')
+                                                <a class="nav-link sub menu-item-locked" href="{{ route('upgrade.show', ['feature' => 'medical.pharmacy']) }}" title="Upgrade to unlock">
+                                                    <i class="bi bi-capsule"></i><span class="sidebar-label">Pharmacy</span>
+                                                    <span class="lock-badge">Upgrade</span>
                                                 </a>
-                                                <a class="nav-link sub {{ request()->routeIs('medical.pharmacy.stock.*') && !request()->routeIs('medical.pharmacy.expiry-alerts') ? 'active' : '' }}" href="{{ route('medical.pharmacy.stock.index') }}">
-                                                    <i class="bi bi-boxes"></i><span class="sidebar-label">Stock</span>
-                                                </a>
-                                                <a class="nav-link sub {{ request()->routeIs('medical.pharmacy.medicines.*') ? 'active' : '' }}" href="{{ route('medical.pharmacy.medicines.index') }}">
-                                                    <i class="bi bi-capsule"></i><span class="sidebar-label">Medicines</span>
-                                                </a>
-                                                <a class="nav-link sub {{ request()->routeIs('medical.pharmacy.expiry-alerts') ? 'active' : '' }}" href="{{ route('medical.pharmacy.expiry-alerts') }}">
-                                                    <i class="bi bi-clock-history"></i><span class="sidebar-label">Expiry Alerts</span>
-                                                </a>
-                                            @endif
+                                            @endfeatureLocked
                                             @break
 
                                         @case('medical.laboratory')
-                                            @if($user && $user->hasPermission('medical_lab.view'))
-                                                <a class="nav-link sub {{ request()->routeIs('medical.lab.orders.*') ? 'active' : '' }}" href="{{ route('medical.lab.orders.index') }}">
-                                                    <i class="bi bi-flask"></i><span class="sidebar-label">Lab Orders</span>
+                                            @featureHidden('medical.laboratory')
+                                            @endfeatureHidden
+                                            @featureEnabled('medical.laboratory')
+                                                @if($user && $user->hasPermission('medical_lab.view'))
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.lab.orders.*') ? 'active' : '' }}" href="{{ route('medical.lab.orders.index') }}">
+                                                        <i class="bi bi-flask"></i><span class="sidebar-label">Lab Orders</span>
+                                                    </a>
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.lab.tests.*') ? 'active' : '' }}" href="{{ route('medical.lab.tests.index') }}">
+                                                        <i class="bi bi-list-ol"></i><span class="sidebar-label">Test Catalog</span>
+                                                    </a>
+                                                @endif
+                                            @endfeatureEnabled
+                                            @featureLocked('medical.laboratory')
+                                                <a class="nav-link sub menu-item-locked" href="{{ route('upgrade.show', ['feature' => 'medical.laboratory']) }}" title="Upgrade to unlock">
+                                                    <i class="bi bi-flask"></i><span class="sidebar-label">Laboratory</span>
+                                                    <span class="lock-badge">Upgrade</span>
                                                 </a>
-                                                <a class="nav-link sub {{ request()->routeIs('medical.lab.tests.*') ? 'active' : '' }}" href="{{ route('medical.lab.tests.index') }}">
-                                                    <i class="bi bi-list-ol"></i><span class="sidebar-label">Test Catalog</span>
-                                                </a>
-                                            @endif
+                                            @endfeatureLocked
                                             @break
 
                                         @case('medical.billing')
-                                            @if($user && $user->hasPermission('medical_billing.view'))
-                                                <a class="nav-link sub {{ request()->routeIs('medical.billing.*') ? 'active' : '' }}" href="{{ route('medical.billing.invoices.index') }}">
-                                                    <i class="bi bi-receipt"></i><span class="sidebar-label">Invoices</span>
+                                            @featureHidden('medical.billing')
+                                            @endfeatureHidden
+                                            @featureEnabled('medical.billing')
+                                                @if($user && $user->hasPermission('medical_billing.view'))
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.billing.*') ? 'active' : '' }}" href="{{ route('medical.billing.invoices.index') }}">
+                                                        <i class="bi bi-receipt"></i><span class="sidebar-label">Invoices</span>
+                                                    </a>
+                                                @endif
+                                                @if($user && $user->hasPermission('medical_tpa.view'))
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.tpa.*') ? 'active' : '' }}" href="{{ route('medical.tpa.claims.index') }}">
+                                                        <i class="bi bi-shield-check"></i><span class="sidebar-label">TPA Claims</span>
+                                                    </a>
+                                                @endif
+                                            @endfeatureEnabled
+                                            @featureLocked('medical.billing')
+                                                <a class="nav-link sub menu-item-locked" href="{{ route('upgrade.show', ['feature' => 'medical.billing']) }}" title="Upgrade to unlock">
+                                                    <i class="bi bi-receipt"></i><span class="sidebar-label">Billing</span>
+                                                    <span class="lock-badge">Upgrade</span>
                                                 </a>
-                                            @endif
-                                            @if($user && $user->hasPermission('medical_tpa.view'))
-                                                <a class="nav-link sub {{ request()->routeIs('medical.tpa.*') ? 'active' : '' }}" href="{{ route('medical.tpa.claims.index') }}">
-                                                    <i class="bi bi-shield-check"></i><span class="sidebar-label">TPA Claims</span>
-                                                </a>
-                                            @endif
+                                            @endfeatureLocked
                                             @break
 
                                         @case('medical.emergency')
-                                            @if($user && $user->hasPermission('medical_emergency.view'))
-                                                <a class="nav-link sub {{ request()->routeIs('medical.emergency.dashboard') ? 'active' : '' }}" href="{{ route('medical.emergency.dashboard') }}">
-                                                    <i class="bi bi-clipboard2-pulse"></i><span class="sidebar-label">Triage Board</span>
+                                            @featureHidden('medical.emergency')
+                                            @endfeatureHidden
+                                            @featureEnabled('medical.emergency')
+                                                @if($user && $user->hasPermission('medical_emergency.view'))
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.emergency.dashboard') ? 'active' : '' }}" href="{{ route('medical.emergency.dashboard') }}">
+                                                        <i class="bi bi-clipboard2-pulse"></i><span class="sidebar-label">Triage Board</span>
+                                                    </a>
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.emergency.index') ? 'active' : '' }}" href="{{ route('medical.emergency.index') }}">
+                                                        <i class="bi bi-list-ul"></i><span class="sidebar-label">All Visits</span>
+                                                    </a>
+                                                @endif
+                                                @if($user && $user->hasPermission('medical_emergency.create'))
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.emergency.create') ? 'active' : '' }}" href="{{ route('medical.emergency.create') }}">
+                                                        <i class="bi bi-person-plus"></i><span class="sidebar-label">New Walk-in</span>
+                                                    </a>
+                                                @endif
+                                            @endfeatureEnabled
+                                            @featureLocked('medical.emergency')
+                                                <a class="nav-link sub menu-item-locked" href="{{ route('upgrade.show', ['feature' => 'medical.emergency']) }}" title="Upgrade to unlock">
+                                                    <i class="bi bi-clipboard2-pulse"></i><span class="sidebar-label">Emergency</span>
+                                                    <span class="lock-badge">Upgrade</span>
                                                 </a>
-                                                <a class="nav-link sub {{ request()->routeIs('medical.emergency.index') ? 'active' : '' }}" href="{{ route('medical.emergency.index') }}">
-                                                    <i class="bi bi-list-ul"></i><span class="sidebar-label">All Visits</span>
-                                                </a>
-                                            @endif
-                                            @if($user && $user->hasPermission('medical_emergency.create'))
-                                                <a class="nav-link sub {{ request()->routeIs('medical.emergency.create') ? 'active' : '' }}" href="{{ route('medical.emergency.create') }}">
-                                                    <i class="bi bi-person-plus"></i><span class="sidebar-label">New Walk-in</span>
-                                                </a>
-                                            @endif
+                                            @endfeatureLocked
                                             @break
 
                                         @case('medical.bloodbank')
-                                            @if($user && $user->hasPermission('medical_bloodbank.view'))
-                                                <a class="nav-link sub {{ request()->routeIs('medical.blood-bank.dashboard') ? 'active' : '' }}" href="{{ route('medical.blood-bank.dashboard') }}">
-                                                    <i class="bi bi-grid"></i><span class="sidebar-label">Dashboard</span>
+                                            @featureHidden('medical.bloodbank')
+                                            @endfeatureHidden
+                                            @featureEnabled('medical.bloodbank')
+                                                @if($user && $user->hasPermission('medical_bloodbank.view'))
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.blood-bank.dashboard') ? 'active' : '' }}" href="{{ route('medical.blood-bank.dashboard') }}">
+                                                        <i class="bi bi-grid"></i><span class="sidebar-label">Dashboard</span>
+                                                    </a>
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.blood-bank.donors.*') ? 'active' : '' }}" href="{{ route('medical.blood-bank.donors.index') }}">
+                                                        <i class="bi bi-person-heart"></i><span class="sidebar-label">Donors</span>
+                                                    </a>
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.blood-bank.units.*') ? 'active' : '' }}" href="{{ route('medical.blood-bank.units.index') }}">
+                                                        <i class="bi bi-droplet"></i><span class="sidebar-label">Blood Units</span>
+                                                    </a>
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.blood-bank.requests.*') ? 'active' : '' }}" href="{{ route('medical.blood-bank.requests.index') }}">
+                                                        <i class="bi bi-clipboard2-pulse"></i><span class="sidebar-label">Requests</span>
+                                                    </a>
+                                                @endif
+                                            @endfeatureEnabled
+                                            @featureLocked('medical.bloodbank')
+                                                <a class="nav-link sub menu-item-locked" href="{{ route('upgrade.show', ['feature' => 'medical.bloodbank']) }}" title="Upgrade to unlock">
+                                                    <i class="bi bi-grid"></i><span class="sidebar-label">Blood Bank</span>
+                                                    <span class="lock-badge">Upgrade</span>
                                                 </a>
-                                                <a class="nav-link sub {{ request()->routeIs('medical.blood-bank.donors.*') ? 'active' : '' }}" href="{{ route('medical.blood-bank.donors.index') }}">
-                                                    <i class="bi bi-person-heart"></i><span class="sidebar-label">Donors</span>
-                                                </a>
-                                                <a class="nav-link sub {{ request()->routeIs('medical.blood-bank.units.*') ? 'active' : '' }}" href="{{ route('medical.blood-bank.units.index') }}">
-                                                    <i class="bi bi-droplet"></i><span class="sidebar-label">Blood Units</span>
-                                                </a>
-                                                <a class="nav-link sub {{ request()->routeIs('medical.blood-bank.requests.*') ? 'active' : '' }}" href="{{ route('medical.blood-bank.requests.index') }}">
-                                                    <i class="bi bi-clipboard2-pulse"></i><span class="sidebar-label">Requests</span>
-                                                </a>
-                                            @endif
+                                            @endfeatureLocked
                                             @break
 
                                         @case('medical.radiology')
-                                            @if($user && $user->hasPermission('medical_radiology.view'))
-                                                <a class="nav-link sub {{ request()->routeIs('medical.radiology.dashboard') ? 'active' : '' }}" href="{{ route('medical.radiology.dashboard') }}">
-                                                    <i class="bi bi-grid"></i><span class="sidebar-label">Worklist</span>
+                                            @featureHidden('medical.radiology')
+                                            @endfeatureHidden
+                                            @featureEnabled('medical.radiology')
+                                                @if($user && $user->hasPermission('medical_radiology.view'))
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.radiology.dashboard') ? 'active' : '' }}" href="{{ route('medical.radiology.dashboard') }}">
+                                                        <i class="bi bi-grid"></i><span class="sidebar-label">Worklist</span>
+                                                    </a>
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.radiology.orders.index') ? 'active' : '' }}" href="{{ route('medical.radiology.orders.index') }}">
+                                                        <i class="bi bi-list-ul"></i><span class="sidebar-label">All Orders</span>
+                                                    </a>
+                                                @endif
+                                                @if($user && $user->hasPermission('medical_radiology.create'))
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.radiology.orders.create') ? 'active' : '' }}" href="{{ route('medical.radiology.orders.create') }}">
+                                                        <i class="bi bi-plus-circle"></i><span class="sidebar-label">New Order</span>
+                                                    </a>
+                                                @endif
+                                            @endfeatureEnabled
+                                            @featureLocked('medical.radiology')
+                                                <a class="nav-link sub menu-item-locked" href="{{ route('upgrade.show', ['feature' => 'medical.radiology']) }}" title="Upgrade to unlock">
+                                                    <i class="bi bi-grid"></i><span class="sidebar-label">Radiology</span>
+                                                    <span class="lock-badge">Upgrade</span>
                                                 </a>
-                                                <a class="nav-link sub {{ request()->routeIs('medical.radiology.orders.index') ? 'active' : '' }}" href="{{ route('medical.radiology.orders.index') }}">
-                                                    <i class="bi bi-list-ul"></i><span class="sidebar-label">All Orders</span>
-                                                </a>
-                                            @endif
-                                            @if($user && $user->hasPermission('medical_radiology.create'))
-                                                <a class="nav-link sub {{ request()->routeIs('medical.radiology.orders.create') ? 'active' : '' }}" href="{{ route('medical.radiology.orders.create') }}">
-                                                    <i class="bi bi-plus-circle"></i><span class="sidebar-label">New Order</span>
-                                                </a>
-                                            @endif
+                                            @endfeatureLocked
                                             @break
 
                                         @case('medical.physiotherapy')
-                                            @if($user && $user->hasPermission('medical.physiotherapy.view'))
-                                                <a class="nav-link sub {{ request()->routeIs('medical.physiotherapy.dashboard') ? 'active' : '' }}" href="{{ route('medical.physiotherapy.dashboard') }}">
-                                                    <i class="bi bi-clipboard2-pulse"></i><span class="sidebar-label">Dashboard</span>
+                                            @featureHidden('medical.physiotherapy')
+                                            @endfeatureHidden
+                                            @featureEnabled('medical.physiotherapy')
+                                                @if($user && $user->hasPermission('medical.physiotherapy.view'))
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.physiotherapy.dashboard') ? 'active' : '' }}" href="{{ route('medical.physiotherapy.dashboard') }}">
+                                                        <i class="bi bi-clipboard2-pulse"></i><span class="sidebar-label">Dashboard</span>
+                                                    </a>
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.physiotherapy.plans.*') ? 'active' : '' }}" href="{{ route('medical.physiotherapy.plans.index') }}">
+                                                        <i class="bi bi-journal-medical"></i><span class="sidebar-label">Treatment Plans</span>
+                                                    </a>
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.physiotherapy.sessions.*') ? 'active' : '' }}" href="{{ route('medical.physiotherapy.sessions.index') }}">
+                                                        <i class="bi bi-calendar-check"></i><span class="sidebar-label">Sessions</span>
+                                                    </a>
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.physiotherapy.exercises.*') ? 'active' : '' }}" href="{{ route('medical.physiotherapy.exercises.index') }}">
+                                                        <i class="bi bi-activity"></i><span class="sidebar-label">Exercise Library</span>
+                                                    </a>
+                                                @endif
+                                            @endfeatureEnabled
+                                            @featureLocked('medical.physiotherapy')
+                                                <a class="nav-link sub menu-item-locked" href="{{ route('upgrade.show', ['feature' => 'medical.physiotherapy']) }}" title="Upgrade to unlock">
+                                                    <i class="bi bi-clipboard2-pulse"></i><span class="sidebar-label">Physiotherapy</span>
+                                                    <span class="lock-badge">Upgrade</span>
                                                 </a>
-                                                <a class="nav-link sub {{ request()->routeIs('medical.physiotherapy.plans.*') ? 'active' : '' }}" href="{{ route('medical.physiotherapy.plans.index') }}">
-                                                    <i class="bi bi-journal-medical"></i><span class="sidebar-label">Treatment Plans</span>
-                                                </a>
-                                                <a class="nav-link sub {{ request()->routeIs('medical.physiotherapy.sessions.*') ? 'active' : '' }}" href="{{ route('medical.physiotherapy.sessions.index') }}">
-                                                    <i class="bi bi-calendar-check"></i><span class="sidebar-label">Sessions</span>
-                                                </a>
-                                                <a class="nav-link sub {{ request()->routeIs('medical.physiotherapy.exercises.*') ? 'active' : '' }}" href="{{ route('medical.physiotherapy.exercises.index') }}">
-                                                    <i class="bi bi-activity"></i><span class="sidebar-label">Exercise Library</span>
-                                                </a>
-                                            @endif
+                                            @endfeatureLocked
                                             @break
 
                                         @case('medical.dental')
-                                            @if($user && $user->hasPermission('medical.dental.view'))
-                                                <a class="nav-link sub {{ request()->routeIs('medical.dental.dashboard') ? 'active' : '' }}" href="{{ route('medical.dental.dashboard') }}">
-                                                    <i class="bi bi-emoji-smile"></i><span class="sidebar-label">Dashboard</span>
-                                                </a>
-                                                <a class="nav-link sub {{ request()->routeIs('medical.dental.chart.*') ? 'active' : '' }}" href="{{ route('medical.dental.chart.index') }}">
-                                                    <i class="bi bi-journal-medical"></i><span class="sidebar-label">Dental Charts</span>
-                                                </a>
-                                                <a class="nav-link sub {{ request()->routeIs('medical.dental.procedures.*') ? 'active' : '' }}" href="{{ route('medical.dental.procedures.index') }}">
-                                                    <i class="bi bi-tools"></i><span class="sidebar-label">Procedures</span>
-                                                </a>
-                                                <a class="nav-link sub {{ request()->routeIs('medical.dental.plans.*') ? 'active' : '' }}" href="{{ route('medical.dental.plans.index') }}">
-                                                    <i class="bi bi-list-check"></i><span class="sidebar-label">Treatment Plans</span>
-                                                </a>
-                                                @if($user->hasPermission('medical.dental.catalog.manage'))
-                                                    <a class="nav-link sub {{ request()->routeIs('medical.dental.catalog.*') ? 'active' : '' }}" href="{{ route('medical.dental.catalog.index') }}">
-                                                        <i class="bi bi-book"></i><span class="sidebar-label">Procedure Catalog</span>
+                                            @featureHidden('medical.dental')
+                                            @endfeatureHidden
+                                            @featureEnabled('medical.dental')
+                                                @if($user && $user->hasPermission('medical.dental.view'))
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.dental.dashboard') ? 'active' : '' }}" href="{{ route('medical.dental.dashboard') }}">
+                                                        <i class="bi bi-emoji-smile"></i><span class="sidebar-label">Dashboard</span>
                                                     </a>
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.dental.chart.*') ? 'active' : '' }}" href="{{ route('medical.dental.chart.index') }}">
+                                                        <i class="bi bi-journal-medical"></i><span class="sidebar-label">Dental Charts</span>
+                                                    </a>
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.dental.procedures.*') ? 'active' : '' }}" href="{{ route('medical.dental.procedures.index') }}">
+                                                        <i class="bi bi-tools"></i><span class="sidebar-label">Procedures</span>
+                                                    </a>
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.dental.plans.*') ? 'active' : '' }}" href="{{ route('medical.dental.plans.index') }}">
+                                                        <i class="bi bi-list-check"></i><span class="sidebar-label">Treatment Plans</span>
+                                                    </a>
+                                                    @if($user->hasPermission('medical.dental.catalog.manage'))
+                                                        <a class="nav-link sub {{ request()->routeIs('medical.dental.catalog.*') ? 'active' : '' }}" href="{{ route('medical.dental.catalog.index') }}">
+                                                            <i class="bi bi-book"></i><span class="sidebar-label">Procedure Catalog</span>
+                                                        </a>
+                                                    @endif
                                                 @endif
-                                            @endif
+                                            @endfeatureEnabled
+                                            @featureLocked('medical.dental')
+                                                <a class="nav-link sub menu-item-locked" href="{{ route('upgrade.show', ['feature' => 'medical.dental']) }}" title="Upgrade to unlock">
+                                                    <i class="bi bi-emoji-smile"></i><span class="sidebar-label">Dental</span>
+                                                    <span class="lock-badge">Upgrade</span>
+                                                </a>
+                                            @endfeatureLocked
                                             @break
 
                                         @case('medical.vaccination')
-                                            @if($user && $user->hasPermission('medical.vaccination.view'))
-                                                <a class="nav-link sub {{ request()->routeIs('medical.vaccination.dashboard') ? 'active' : '' }}" href="{{ route('medical.vaccination.dashboard') }}">
-                                                    <i class="bi bi-shield-plus"></i><span class="sidebar-label">Dashboard</span>
-                                                </a>
-                                                <a class="nav-link sub {{ request()->routeIs('medical.vaccination.schedules.*') ? 'active' : '' }}" href="{{ route('medical.vaccination.schedules.index') }}">
-                                                    <i class="bi bi-calendar-check"></i><span class="sidebar-label">Schedules</span>
-                                                </a>
-                                                <a class="nav-link sub {{ request()->routeIs('medical.vaccination.records.*') ? 'active' : '' }}" href="{{ route('medical.vaccination.records.index') }}">
-                                                    <i class="bi bi-journal-medical"></i><span class="sidebar-label">Records</span>
-                                                </a>
-                                                <a class="nav-link sub {{ request()->routeIs('medical.vaccination.stocks.*') ? 'active' : '' }}" href="{{ route('medical.vaccination.stocks.index') }}">
-                                                    <i class="bi bi-box-seam"></i><span class="sidebar-label">Vaccine Stock</span>
-                                                </a>
-                                                @if($user->hasPermission('medical.vaccination.manage'))
-                                                    <a class="nav-link sub {{ request()->routeIs('medical.vaccination.vaccine-masters.*') ? 'active' : '' }}" href="{{ route('medical.vaccination.vaccine-masters.index') }}">
-                                                        <i class="bi bi-shield-check"></i><span class="sidebar-label">Vaccine Catalog</span>
+                                            @featureHidden('medical.vaccination')
+                                            @endfeatureHidden
+                                            @featureEnabled('medical.vaccination')
+                                                @if($user && $user->hasPermission('medical.vaccination.view'))
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.vaccination.dashboard') ? 'active' : '' }}" href="{{ route('medical.vaccination.dashboard') }}">
+                                                        <i class="bi bi-shield-plus"></i><span class="sidebar-label">Dashboard</span>
                                                     </a>
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.vaccination.schedules.*') ? 'active' : '' }}" href="{{ route('medical.vaccination.schedules.index') }}">
+                                                        <i class="bi bi-calendar-check"></i><span class="sidebar-label">Schedules</span>
+                                                    </a>
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.vaccination.records.*') ? 'active' : '' }}" href="{{ route('medical.vaccination.records.index') }}">
+                                                        <i class="bi bi-journal-medical"></i><span class="sidebar-label">Records</span>
+                                                    </a>
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.vaccination.stocks.*') ? 'active' : '' }}" href="{{ route('medical.vaccination.stocks.index') }}">
+                                                        <i class="bi bi-box-seam"></i><span class="sidebar-label">Vaccine Stock</span>
+                                                    </a>
+                                                    @if($user->hasPermission('medical.vaccination.manage'))
+                                                        <a class="nav-link sub {{ request()->routeIs('medical.vaccination.vaccine-masters.*') ? 'active' : '' }}" href="{{ route('medical.vaccination.vaccine-masters.index') }}">
+                                                            <i class="bi bi-shield-check"></i><span class="sidebar-label">Vaccine Catalog</span>
+                                                        </a>
+                                                    @endif
                                                 @endif
-                                            @endif
+                                            @endfeatureEnabled
+                                            @featureLocked('medical.vaccination')
+                                                <a class="nav-link sub menu-item-locked" href="{{ route('upgrade.show', ['feature' => 'medical.vaccination']) }}" title="Upgrade to unlock">
+                                                    <i class="bi bi-shield-plus"></i><span class="sidebar-label">Vaccination</span>
+                                                    <span class="lock-badge">Upgrade</span>
+                                                </a>
+                                            @endfeatureLocked
                                             @break
 
                                         @case('medical.records')
@@ -413,23 +503,33 @@
                                             @break
 
                                         @case('medical.ambulance')
-                                            @if($user && $user->hasPermission('medical.ambulance.view'))
-                                                <a class="nav-link sub {{ request()->routeIs('medical.ambulance.dashboard') ? 'active' : '' }}" href="{{ route('medical.ambulance.dashboard') }}">
-                                                    <i class="bi bi-truck"></i><span class="sidebar-label">Dashboard</span>
+                                            @featureHidden('medical.ambulance')
+                                            @endfeatureHidden
+                                            @featureEnabled('medical.ambulance')
+                                                @if($user && $user->hasPermission('medical.ambulance.view'))
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.ambulance.dashboard') ? 'active' : '' }}" href="{{ route('medical.ambulance.dashboard') }}">
+                                                        <i class="bi bi-truck"></i><span class="sidebar-label">Dashboard</span>
+                                                    </a>
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.ambulance.vehicles.*') ? 'active' : '' }}" href="{{ route('medical.ambulance.vehicles.index') }}">
+                                                        <i class="bi bi-truck-front"></i><span class="sidebar-label">Fleet</span>
+                                                    </a>
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.ambulance.drivers.*') ? 'active' : '' }}" href="{{ route('medical.ambulance.drivers.index') }}">
+                                                        <i class="bi bi-person-badge"></i><span class="sidebar-label">Drivers</span>
+                                                    </a>
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.ambulance.trips.*') ? 'active' : '' }}" href="{{ route('medical.ambulance.trips.index') }}">
+                                                        <i class="bi bi-signpost-2"></i><span class="sidebar-label">Trips</span>
+                                                    </a>
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.ambulance.dispatch-board') ? 'active' : '' }}" href="{{ route('medical.ambulance.dispatch-board') }}">
+                                                        <i class="bi bi-broadcast"></i><span class="sidebar-label">Dispatch Board</span>
+                                                    </a>
+                                                @endif
+                                            @endfeatureEnabled
+                                            @featureLocked('medical.ambulance')
+                                                <a class="nav-link sub menu-item-locked" href="{{ route('upgrade.show', ['feature' => 'medical.ambulance']) }}" title="Upgrade to unlock">
+                                                    <i class="bi bi-truck"></i><span class="sidebar-label">Ambulance</span>
+                                                    <span class="lock-badge">Upgrade</span>
                                                 </a>
-                                                <a class="nav-link sub {{ request()->routeIs('medical.ambulance.vehicles.*') ? 'active' : '' }}" href="{{ route('medical.ambulance.vehicles.index') }}">
-                                                    <i class="bi bi-truck-front"></i><span class="sidebar-label">Fleet</span>
-                                                </a>
-                                                <a class="nav-link sub {{ request()->routeIs('medical.ambulance.drivers.*') ? 'active' : '' }}" href="{{ route('medical.ambulance.drivers.index') }}">
-                                                    <i class="bi bi-person-badge"></i><span class="sidebar-label">Drivers</span>
-                                                </a>
-                                                <a class="nav-link sub {{ request()->routeIs('medical.ambulance.trips.*') ? 'active' : '' }}" href="{{ route('medical.ambulance.trips.index') }}">
-                                                    <i class="bi bi-signpost-2"></i><span class="sidebar-label">Trips</span>
-                                                </a>
-                                                <a class="nav-link sub {{ request()->routeIs('medical.ambulance.dispatch-board') ? 'active' : '' }}" href="{{ route('medical.ambulance.dispatch-board') }}">
-                                                    <i class="bi bi-broadcast"></i><span class="sidebar-label">Dispatch Board</span>
-                                                </a>
-                                            @endif
+                                            @endfeatureLocked
                                             @break
                                     @endswitch
                                 </div>

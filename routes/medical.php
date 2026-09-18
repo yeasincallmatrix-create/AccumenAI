@@ -158,41 +158,6 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     Route::post('prescriptions/{prescription}/items', [PrescriptionController::class, 'addItem'])->name('prescriptions.items.store');
     Route::delete('prescriptions/{prescription}/items/{item}', [PrescriptionController::class, 'removeItem'])->name('prescriptions.items.destroy');
 
-    // Pharmacy
-    Route::get('pharmacy/expiry-alerts', [PharmacyController::class, 'expiryAlerts'])->name('pharmacy.expiry-alerts');
-    Route::post('pharmacy/dispense/{prescription_item}', [PharmacyController::class, 'dispense'])->name('pharmacy.dispense');
-    Route::post('pharmacy/medicines/quick-store', [MedicineController::class, 'quickStore'])->name('pharmacy.medicines.quick-store');
-    Route::post('pharmacy/medicines/{medicine}/restore', [MedicineController::class, 'restore'])->name('pharmacy.medicines.restore');
-
-    // CSV Import (BEFORE resource route to avoid {medicine} capturing 'import')
-    Route::get('pharmacy/medicines/import', [MedicineController::class, 'importForm'])->name('pharmacy.medicines.import.form');
-    Route::post('pharmacy/medicines/import', [MedicineController::class, 'import'])->name('pharmacy.medicines.import');
-    Route::get('pharmacy/medicines/import/template', [MedicineController::class, 'downloadTemplate'])->name('pharmacy.medicines.import.template');
-
-    // Two-phase CSV import with conflict review (single-pass import() above
-    // is preserved for backward compatibility and API use).
-    Route::post('pharmacy/medicines/import/upload', [MedicineController::class, 'importUpload'])->name('pharmacy.medicines.import.upload');
-    Route::get('pharmacy/medicines/import/review/{batchId}', [MedicineController::class, 'importReview'])->name('pharmacy.medicines.import.review');
-    Route::post('pharmacy/medicines/import/confirm/{batchId}', [MedicineController::class, 'importConfirm'])->name('pharmacy.medicines.import.confirm');
-    Route::post('pharmacy/medicines/import/cancel/{batchId}', [MedicineController::class, 'importCancel'])->name('pharmacy.medicines.import.cancel');
-
-    Route::resource('pharmacy/medicines', MedicineController::class)->names('pharmacy.medicines');
-    Route::post('pharmacy/medicines/{medicine}/sync-dgda', [MedicineController::class, 'syncDgda'])->name('pharmacy.medicines.sync-dgda');
-
-    // DGDA Migration
-    Route::get('pharmacy/medicines/migrate', [MedicineController::class, 'migrateForm'])->name('pharmacy.medicines.migrate');
-    Route::post('pharmacy/medicines/migrate/apply-auto', [MedicineController::class, 'migrateApplyAuto'])->name('pharmacy.medicines.migrate.apply-auto');
-    Route::post('pharmacy/medicines/migrate/apply-manual', [MedicineController::class, 'migrateApplyManual'])->name('pharmacy.medicines.migrate.apply-manual');
-
-    // DGDA Search (for hybrid mode)
-    Route::get('pharmacy/medicines/dgda-search', [MedicineController::class, 'dgdaSearch'])->name('pharmacy.medicines.dgda-search');
-
-    Route::resource('pharmacy/stock', PharmacyStockController::class)->names('pharmacy.stock');
-    Route::get('pharmacy/dispense', [PharmacyController::class, 'dispenseQueue'])->name('pharmacy.dispense.index');
-    Route::get('pharmacy/dispense/{prescription_item}', [PharmacyController::class, 'dispenseShow'])->name('pharmacy.dispense.show');
-    Route::post('pharmacy/batch-dispense/{prescription}', [PharmacyController::class, 'batchDispense'])->name('pharmacy.dispense.batch');
-    Route::post('pharmacy/stock/{stock}/adjust', [PharmacyStockController::class, 'adjust'])->name('pharmacy.stock.adjust');
-
     // Lab
     Route::resource('lab/tests', LabTestController::class)->names('lab.tests');
     Route::resource('lab/orders', LabOrderController::class)->names('lab.orders');
@@ -201,12 +166,6 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     Route::post('lab/orders/{order}/result', [LabOrderController::class, 'enterResult'])->name('lab.orders.result');
     Route::get('lab/orders/{order}/report', [LabOrderController::class, 'report'])->name('lab.orders.report');
     Route::get('lab/orders/{order}/result', [LabOrderController::class, 'resultForm'])->name('lab.orders.result.form');
-
-    // Billing
-    Route::resource('billing/invoices', InvoiceController::class)->names('billing.invoices');
-    Route::post('billing/invoices/{invoice}/payment', [InvoiceController::class, 'payment'])->name('billing.invoices.payment');
-    Route::get('billing/invoices/{invoice}/print', [InvoiceController::class, 'print'])->name('billing.invoices.print');
-    Route::get('billing/payments', [InvoiceController::class, 'payments'])->name('billing.payments.index');
 
     // TPA
     Route::resource('tpa/claims', TpaClaimController::class)->names('tpa.claims');
@@ -227,9 +186,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     });
 
     // Backwards-compat aliases
-    Route::get('billing', [BillingController::class, 'index'])->name('billing.index');
     Route::get('lab', [LabController::class, 'index'])->name('lab.index');
-    Route::get('pharmacy', [PharmacyController::class, 'index'])->name('pharmacy.index');
     Route::get('tpa', [TpaController::class, 'index'])->name('tpa.index');
 
     // IPD extras
@@ -293,18 +250,67 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
         Route::get('beds', [BedController::class, 'index'])->name('beds.index');
     });
 
-    // Pharmacy
-    Route::middleware('medical.module:medical.pharmacy')
+    // Pharmacy (feature-gated)
+    Route::middleware(['medical.module:medical.pharmacy', 'feature:medical.pharmacy'])
         ->prefix('pharmacy')->name('medical.pharmacy.')->group(function () {
+        // Backwards-compat alias
+        Route::get('', [PharmacyController::class, 'index'])->name('index');
+
+        // Expiry alerts
+        Route::get('expiry-alerts', [PharmacyController::class, 'expiryAlerts'])->name('expiry-alerts');
+
+        // Dispense
+        Route::get('dispense', [PharmacyController::class, 'dispenseQueue'])->name('dispense.index');
+        Route::get('dispense/{prescription_item}', [PharmacyController::class, 'dispenseShow'])->name('dispense.show');
+        Route::post('dispense/{prescription_item}', [PharmacyController::class, 'dispense'])->name('dispense');
+        Route::post('batch-dispense/{prescription}', [PharmacyController::class, 'batchDispense'])->name('dispense.batch');
+
+        // Medicines (resource)
         Route::get('medicines', [MedicineController::class, 'index'])->name('medicines.index');
         Route::get('medicines/create', [MedicineController::class, 'create'])->name('medicines.create');
         Route::post('medicines', [MedicineController::class, 'store'])->name('medicines.store');
+        Route::get('medicines/{medicine}', [MedicineController::class, 'show'])->name('medicines.show');
+        Route::get('medicines/{medicine}/edit', [MedicineController::class, 'edit'])->name('medicines.edit');
+        Route::put('medicines/{medicine}', [MedicineController::class, 'update'])->name('medicines.update');
+        Route::delete('medicines/{medicine}', [MedicineController::class, 'destroy'])->name('medicines.destroy');
+
+        // Medicines extras
+        Route::post('medicines/quick-store', [MedicineController::class, 'quickStore'])->name('medicines.quick-store');
+        Route::post('medicines/{medicine}/restore', [MedicineController::class, 'restore'])->name('medicines.restore');
+        Route::post('medicines/{medicine}/sync-dgda', [MedicineController::class, 'syncDgda'])->name('medicines.sync-dgda');
+
+        // CSV Import (BEFORE resource route to avoid {medicine} capturing 'import')
+        Route::get('medicines/import', [MedicineController::class, 'importForm'])->name('medicines.import.form');
+        Route::post('medicines/import', [MedicineController::class, 'import'])->name('medicines.import');
+        Route::get('medicines/import/template', [MedicineController::class, 'downloadTemplate'])->name('medicines.import.template');
+
+        // Two-phase CSV import with conflict review
+        Route::post('medicines/import/upload', [MedicineController::class, 'importUpload'])->name('medicines.import.upload');
+        Route::get('medicines/import/review/{batchId}', [MedicineController::class, 'importReview'])->name('medicines.import.review');
+        Route::post('medicines/import/confirm/{batchId}', [MedicineController::class, 'importConfirm'])->name('medicines.import.confirm');
+        Route::post('medicines/import/cancel/{batchId}', [MedicineController::class, 'importCancel'])->name('medicines.import.cancel');
+
+        // DGDA Migration
+        Route::get('medicines/migrate', [MedicineController::class, 'migrateForm'])->name('medicines.migrate');
+        Route::post('medicines/migrate/apply-auto', [MedicineController::class, 'migrateApplyAuto'])->name('medicines.migrate.apply-auto');
+        Route::post('medicines/migrate/apply-manual', [MedicineController::class, 'migrateApplyManual'])->name('medicines.migrate.apply-manual');
+
+        // DGDA Search (for hybrid mode)
+        Route::get('medicines/dgda-search', [MedicineController::class, 'dgdaSearch'])->name('medicines.dgda-search');
+
+        // Stock (resource)
         Route::get('stock', [PharmacyStockController::class, 'index'])->name('stock.index');
-        Route::get('dispense', [PharmacyController::class, 'dispenseQueue'])->name('dispense.index');
+        Route::get('stock/create', [PharmacyStockController::class, 'create'])->name('stock.create');
+        Route::post('stock', [PharmacyStockController::class, 'store'])->name('stock.store');
+        Route::get('stock/{stock}', [PharmacyStockController::class, 'show'])->name('stock.show');
+        Route::get('stock/{stock}/edit', [PharmacyStockController::class, 'edit'])->name('stock.edit');
+        Route::put('stock/{stock}', [PharmacyStockController::class, 'update'])->name('stock.update');
+        Route::delete('stock/{stock}', [PharmacyStockController::class, 'destroy'])->name('stock.destroy');
+        Route::post('stock/{stock}/adjust', [PharmacyStockController::class, 'adjust'])->name('stock.adjust');
     });
 
     // Laboratory
-    Route::middleware('medical.module:medical.laboratory')
+    Route::middleware(['medical.module:medical.laboratory', 'feature:medical.laboratory'])
         ->prefix('laboratory')->name('medical.laboratory.')->group(function () {
         Route::get('orders', [LabOrderController::class, 'index'])->name('orders.index');
         Route::get('orders/create', [LabOrderController::class, 'create'])->name('orders.create');
@@ -313,16 +319,33 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     });
 
     // Billing
-    Route::middleware('medical.module:medical.billing')
+    Route::middleware(['medical.module:medical.billing', 'feature:medical.billing'])
         ->prefix('billing')->name('medical.billing.')->group(function () {
+        // Backwards-compat alias
+        Route::get('', [BillingController::class, 'index'])->name('index');
+
+        // Invoices (resource)
         Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
         Route::get('invoices/create', [InvoiceController::class, 'create'])->name('invoices.create');
         Route::post('invoices', [InvoiceController::class, 'store'])->name('invoices.store');
+        Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
+        Route::get('invoices/{invoice}/edit', [InvoiceController::class, 'edit'])->name('invoices.edit');
+        Route::match(['put', 'patch'], 'invoices/{invoice}', [InvoiceController::class, 'update'])->name('invoices.update');
+        Route::delete('invoices/{invoice}', [InvoiceController::class, 'destroy'])->name('invoices.destroy');
+
+        // Invoice extras
+        Route::post('invoices/{invoice}/payment', [InvoiceController::class, 'payment'])->name('invoices.payment');
+        Route::get('invoices/{invoice}/print', [InvoiceController::class, 'print'])->name('invoices.print');
+
+        // Payments
+        Route::get('payments', [InvoiceController::class, 'payments'])->name('payments.index');
+
+        // TPA claims
         Route::get('tpa-claims', [TpaClaimController::class, 'index'])->name('tpa-claims.index');
     });
 
     // Emergency
-    Route::middleware('medical.module:medical.emergency')
+    Route::middleware(['medical.module:medical.emergency', 'feature:medical.emergency'])
         ->prefix('emergency')->name('medical.emergency.')->group(function () {
         Route::get('/', [EmergencyController::class, 'dashboard'])->name('dashboard');
         Route::get('/visits', [EmergencyController::class, 'index'])->name('index');
@@ -340,7 +363,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     });
 
     // Radiology
-    Route::middleware('medical.module:medical.radiology')
+    Route::middleware(['medical.module:medical.radiology', 'feature:medical.radiology'])
         ->prefix('radiology')->name('medical.radiology.')->group(function () {
         Route::get('/', [RadiologyController::class, 'dashboard'])->name('dashboard');
         Route::get('orders', [RadiologyController::class, 'index'])->name('orders.index');
@@ -362,7 +385,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     });
 
     // Blood Bank
-    Route::middleware('medical.module:medical.bloodbank')
+    Route::middleware(['medical.module:medical.bloodbank', 'feature:medical.bloodbank'])
         ->prefix('blood-bank')->name('medical.blood-bank.')->group(function () {
         Route::get('/', [BloodBankDashboardController::class, 'dashboard'])->name('dashboard');
 
@@ -402,7 +425,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     });
 
     // Physiotherapy
-    Route::middleware('medical.module:medical.physiotherapy')
+    Route::middleware(['medical.module:medical.physiotherapy', 'feature:medical.physiotherapy'])
         ->prefix('physiotherapy')->name('medical.physiotherapy.')->group(function () {
         Route::get('/', [PhysiotherapyDashboardController::class, 'index'])->name('dashboard');
 
@@ -433,7 +456,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     });
 
     // Dental
-    Route::middleware('medical.module:medical.dental')
+    Route::middleware(['medical.module:medical.dental', 'feature:medical.dental'])
         ->prefix('dental')->name('medical.dental.')->group(function () {
         Route::get('/', [DentalDashboardController::class, 'index'])->name('dashboard');
 
@@ -474,7 +497,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     });
 
     // Vaccination sub-module
-    Route::middleware('medical.module:medical.vaccination')
+    Route::middleware(['medical.module:medical.vaccination', 'feature:medical.vaccination'])
         ->prefix('vaccination')->name('medical.vaccination.')->group(function () {
         Route::get('/', [VaccinationDashboardController::class, 'index'])->name('dashboard');
 
@@ -549,7 +572,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     });
 
     // Ambulance sub-module
-    Route::middleware('medical.module:medical.ambulance')
+    Route::middleware(['medical.module:medical.ambulance', 'feature:medical.ambulance'])
         ->prefix('ambulance')->name('medical.ambulance.')->group(function () {
         Route::get('/', [AmbulanceDashboardController::class, 'index'])->name('dashboard');
         Route::get('dispatch-board', [AmbulanceDashboardController::class, 'dispatchBoard'])->name('dispatch-board');

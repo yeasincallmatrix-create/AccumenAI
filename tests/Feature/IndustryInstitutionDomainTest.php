@@ -65,4 +65,17 @@ class IndustryInstitutionDomainTest extends TestCase
         $mock = new \App\Models\Institute(['industry'=>'training_center','sub_industry'=>'dance_academy']);
         $this->assertSame('professional', InstituteDomain::subjectTypeFor($mock));
     }
+
+    public function test_transport_alias_not_a_db_row(): void
+    {
+        $row = \App\Models\Industry::where('slug', 'transport')->first();
+        $this->assertNull($row, 'slug transport should not exist as a real industry row');
+    }
+
+    public function test_industry_rules_resolves_transport_alias(): void
+    {
+        $transportLabel = \App\Support\IndustryRules::label('Bangladesh', 'transport');
+        $transportationLabel = \App\Support\IndustryRules::label('Bangladesh', 'transportation');
+        $this->assertSame($transportationLabel, $transportLabel);
+    }
 }

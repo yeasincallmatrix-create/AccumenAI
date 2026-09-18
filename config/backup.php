@@ -34,6 +34,10 @@ return [
         'enabled' => true,
     ],
 
+    'entitlements' => [
+        'expire_enabled' => env('ENTITLEMENTS_EXPIRE_SCHEDULED', false),
+    ],
+
     'pre_orphan_cleanup' => [
         'enabled' => true,
     ],

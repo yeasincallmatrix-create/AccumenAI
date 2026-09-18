@@ -22,7 +22,37 @@ class Institute extends Model
 
     public $timestamps = true;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'name',
+        'short_name',
+        'slug',
+        'institute_code',
+        'status',
+        'verified',
+        'package_id',
+        'subscription_expiry',
+        'phone',
+        'email',
+        'website',
+        'address',
+        'admin_level_1_id',
+        'admin_level_2_id',
+        'admin_level_3_id',
+        'founded_year',
+        'country',
+        'country_id',
+        'industry',
+        'industry_id',
+        'sub_industry',
+        'sub_industry_id',
+        'description',
+        'is_test',
+        'onboarded_at',
+        'deleted_at',
+        'deleted_by',
+        'deletion_requested_at',
+        'deletion_requested_by',
+    ];
 
     protected $dates = ['deleted_at', 'deletion_requested_at'];
 

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Institute;
 use App\Services\ModuleAccessService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class ModuleSettingsController extends Controller
 {
@@ -29,6 +28,8 @@ class ModuleSettingsController extends Controller
         $institute = $this->resolveInstitute();
         $moduleService = app(ModuleAccessService::class);
         $enabled = $request->input('modules', []);
+        $actorId = $request->user()?->id;
+        $reason = $request->input('reason');
 
         // Get all medical sub-modules
         $subModules = $moduleService->getMedicalSubModules();
@@ -36,16 +37,14 @@ class ModuleSettingsController extends Controller
         foreach ($subModules as $sub) {
             $shouldEnable = in_array($sub->key, $enabled, true);
 
+            // SEC-04: route every toggle through the service layer (same
+            // enableModule()/disableModule() methods as the admin path) so
+            // industry validation, actor attribution, audit logging, and
+            // cache invalidation apply. No raw override writes here.
             if ($shouldEnable) {
-                DB::table('institute_module_overrides')->updateOrInsert(
-                    ['institute_id' => $institute->id, 'module_key' => $sub->key],
-                    ['enabled' => true, 'updated_at' => now()]
-                );
+                $moduleService->enableModule($institute, $sub->key, $actorId, $reason);
             } else {
-                DB::table('institute_module_overrides')
-                    ->where('institute_id', $institute->id)
-                    ->where('module_key', $sub->key)
-                    ->update(['enabled' => false, 'updated_at' => now()]);
+                $moduleService->disableModule($institute, $sub->key, $actorId, $reason);
             }
         }
 

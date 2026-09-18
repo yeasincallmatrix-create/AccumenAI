@@ -141,6 +141,7 @@ Route::middleware(['auth:platform_admin,institute_user,web', 'tenant', 'verified
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     // Backward compat: / still resolves to dashboard for authenticated via home above, but keep alias
     Route::get('academic-dashboard', [DashboardController::class, '__invoke'])->name('academic-dashboard');
+    Route::get('/upgrade', [\App\Http\Controllers\UpgradeController::class, 'show'])->name('upgrade.show');
 });
 
 // Workspace — picker/switch are protected (verified), create/store are onboarding (accessible while unverified)

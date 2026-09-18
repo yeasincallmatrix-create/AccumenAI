@@ -42,9 +42,9 @@ class SaaSModuleAccessTest extends TestCase
         ]);
 
         $this->freePkg = SubscriptionPackage::where('slug', 'free')->first();
-        $this->basicPkg = SubscriptionPackage::where('slug', 'starter')->first();
-        $this->proPkg = SubscriptionPackage::where('slug', 'professional')->first();
-        $this->enterprisePkg = SubscriptionPackage::where('slug', 'enterprise')->first();
+        $this->basicPkg = SubscriptionPackage::where('slug', 'basic')->first();
+        $this->proPkg = SubscriptionPackage::where('slug', 'advanced')->first();
+        $this->enterprisePkg = SubscriptionPackage::where('slug', 'premium')->first();
 
         $this->institute = Institute::create([
             'name' => 'Test Institute',
@@ -271,8 +271,7 @@ class SaaSModuleAccessTest extends TestCase
     {
         $response = $this->actingAs($this->admin, 'platform_admin')
             ->put(route('admin.institutes.modules.update', $this->institute), [
-                'module_key' => 'ai',
-                'enabled' => true,
+                'modules' => ['ai'],
                 'reason' => 'Special case',
             ]);
 
@@ -362,9 +361,9 @@ class SaaSModuleAccessTest extends TestCase
 
         $packages = [
             'free' => $this->freePkg,
-            'starter' => $this->basicPkg,
-            'professional' => $this->proPkg,
-            'enterprise' => $this->enterprisePkg,
+            'basic' => $this->basicPkg,
+            'advanced' => $this->proPkg,
+            'premium' => $this->enterprisePkg,
         ];
 
         foreach ($packages as $label => $pkg) {
@@ -433,10 +432,27 @@ class SaaSModuleAccessTest extends TestCase
     {
         $response = $this->actingAs($this->admin, 'platform_admin')
             ->put(route('admin.institutes.modules.update', $this->institute), [
-                'module_key' => 'nonexistent_module',
-                'enabled' => true,
+                'modules' => ['nonexistent_module'],
             ]);
 
-        $response->assertSessionHasErrors('module_key');
+        $response->assertSessionHasErrors('modules.0');
+    }
+
+    public function test_institute_modules_update_requires_modules_array(): void
+    {
+        $validKey = ModuleRegistry::where('status', 'active')->pluck('key')->first();
+
+        $correct = $this->actingAs($this->admin, 'platform_admin')
+            ->put(route('admin.institutes.modules.update', $this->institute), [
+                'modules' => [$validKey],
+            ]);
+        $correct->assertRedirect();
+
+        $wrongShape = $this->actingAs($this->admin, 'platform_admin')
+            ->put(route('admin.institutes.modules.update', $this->institute), [
+                'module_key' => $validKey,
+                'enabled' => true,
+            ]);
+        $wrongShape->assertSessionHasErrors('modules');
     }
 }

@@ -11,7 +11,11 @@ class PackageModule extends Model
 
     public $timestamps = true;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'package_id',
+        'module_key',
+        'enabled',
+    ];
 
     public function package(): BelongsTo
     {

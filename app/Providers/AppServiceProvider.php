@@ -86,6 +86,81 @@ class AppServiceProvider extends ServiceProvider
             return '<?php endif; ?>';
         });
 
+        // Blade directive: @featureEnabled('medical.pharmacy') ... @endfeatureEnabled
+        // C1: All three directives share an isset()-guarded cache. The compiled
+        //     Blade template is a single anonymous function called once per
+        //     request, so plain variables are request-scoped. The first directive
+        //     to run initializes $__instCache; subsequent directives reuse it.
+        // C2: Uses Institute::find() which respects SoftDeletes (returns null
+        //     for trashed rows) instead of blanket withoutGlobalScopes().
+        \Illuminate\Support\Facades\Blade::directive('featureEnabled', function (string $featureKey) {
+            return "<?php
+                if (! isset(\$__instCache)) {
+                    \$____tId = \App\Support\TenantContext::id();
+                    \$__instCache = \$____tId
+                        ? (\App\Models\Institute::find(\$____tId) ?: false)
+                        : false;
+                }
+                \$____inst = \$__instCache === false ? null : \$__instCache;
+                \$__featureEnabled = \$____inst
+                    ? app(\App\Services\ModuleAccessService::class)->isFeatureEnabled(\$____inst, {$featureKey})
+                    : false;
+                if (\$__featureEnabled): ?>
+            ";
+        });
+        \Illuminate\Support\Facades\Blade::directive('endfeatureEnabled', function () {
+            return '<?php endif; ?>';
+        });
+
+        // Blade directive: @featureLocked('medical.pharmacy') ... @endfeatureLocked
+        \Illuminate\Support\Facades\Blade::directive('featureLocked', function (string $featureKey) {
+            return "<?php
+                if (! isset(\$__instCache)) {
+                    \$____tId = \App\Support\TenantContext::id();
+                    \$__instCache = \$____tId
+                        ? (\App\Models\Institute::find(\$____tId) ?: false)
+                        : false;
+                }
+                \$____inst = \$__instCache === false ? null : \$__instCache;
+                \$__featureLocked = false;
+                if (\$____inst) {
+                    \$__featureSvc = app(\App\Services\ModuleAccessService::class);
+                    \$__featureModKey = explode('.', {$featureKey}, 2)[0];
+                    if (\$__featureSvc->isIndustryCompatible(\$____inst, \$__featureModKey)
+                        && \$__featureSvc->isEnabled(\$____inst, \$__featureModKey)
+                        && ! \$__featureSvc->isFeatureEnabled(\$____inst, {$featureKey})) {
+                        \$__featureLocked = true;
+                    }
+                }
+                if (\$__featureLocked): ?>
+            ";
+        });
+        \Illuminate\Support\Facades\Blade::directive('endfeatureLocked', function () {
+            return '<?php endif; ?>';
+        });
+
+        // Blade directive: @featureHidden('medical.pharmacy') ... @endfeatureHidden
+        \Illuminate\Support\Facades\Blade::directive('featureHidden', function (string $featureKey) {
+            return "<?php
+                if (! isset(\$__instCache)) {
+                    \$____tId = \App\Support\TenantContext::id();
+                    \$__instCache = \$____tId
+                        ? (\App\Models\Institute::find(\$____tId) ?: false)
+                        : false;
+                }
+                \$____inst = \$__instCache === false ? null : \$__instCache;
+                \$__featureHidden = true;
+                if (\$____inst) {
+                    \$__featureModKey = explode('.', {$featureKey}, 2)[0];
+                    \$__featureHidden = ! app(\App\Services\ModuleAccessService::class)->isIndustryCompatible(\$____inst, \$__featureModKey);
+                }
+                if (\$__featureHidden): ?>
+            ";
+        });
+        \Illuminate\Support\Facades\Blade::directive('endfeatureHidden', function () {
+            return '<?php endif; ?>';
+        });
+
         // Parallel testing: populate newly created test databases with full data dump
         ParallelTesting::setUpTestDatabaseBeforeMigrating(function (string $testDatabase) {
             $fullDumpPath = database_path('schema/full_data.sql');

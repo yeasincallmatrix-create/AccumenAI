@@ -19,7 +19,14 @@ class AccountingSetting extends Model
 
     protected $table = 'accounting_settings';
 
-    protected $guarded = [];
+    protected $fillable = [
+        'institute_id',
+        'branch_id',
+        'settings_key',
+        'settings_value',
+        'created_by',
+        'updated_by',
+    ];
 
     protected function casts(): array
     {

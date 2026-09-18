@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CheckFeatureAccess;
 use App\Http\Middleware\CheckModuleAccess;
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\EnsureAiEnabled;
@@ -40,6 +41,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant' => SetTenantContext::class,
             'permission' => CheckPermission::class,
             'module_access' => CheckModuleAccess::class,
+            'feature' => CheckFeatureAccess::class,
             'setlocale' => SetLocale::class,
             'verified' => EnsureEmailIsVerified::class,
             'fortifyguard' => SetFortifyGuard::class,
@@ -111,9 +113,11 @@ return Application::configure(basePath: dirname(__DIR__))
             ->withoutOverlapping();
 
         // Entitlement expiry & pending activation — hourly, without overlapping
-        $schedule->command('entitlements:expire')
-            ->hourly()
-            ->withoutOverlapping();
+        if (config('backup.entitlements.expire_enabled', false)) {
+            $schedule->command('entitlements:expire')
+                ->hourly()
+                ->withoutOverlapping();
+        }
 
         // SaaS bKash pending payment reconciliation — every 5 minutes
         $schedule->command('saas:verify-pending --limit=50')

@@ -225,4 +225,145 @@ class EntitlementsExpireTest extends TestCase
         $this->assertFalse($svc->isEnabled($instA->fresh(), 'sales'));
         $this->assertTrue($svc->isEnabled($instB->fresh(), 'sales'));
     }
+
+    // ─── Dry-run tests ────────────────────────────────────────
+
+    public function test_dry_run_does_not_transition_stale_rows(): void
+    {
+        $inst = $this->institute();
+        $svc = app(ModuleAccessService::class);
+
+        $pending = InstituteModuleEntitlement::create([
+            'institute_id' => $inst->id,
+            'module_key' => 'inventory',
+            'status' => 'pending',
+            'is_grant' => true,
+            'starts_at' => now()->subDay(),
+        ]);
+        $activeExpired = InstituteModuleEntitlement::create([
+            'institute_id' => $inst->id,
+            'module_key' => 'sales',
+            'status' => 'active',
+            'is_grant' => true,
+            'ends_at' => now()->subDay(),
+        ]);
+        $trialExpired = InstituteModuleEntitlement::create([
+            'institute_id' => $inst->id,
+            'module_key' => 'hr',
+            'status' => 'trialing',
+            'is_grant' => true,
+            'trial_starts_at' => now()->subDays(5),
+            'trial_ends_at' => now()->subDay(),
+        ]);
+
+        $logsBefore = \App\Models\ModuleAccessLog::count();
+
+        $output = Artisan::output();
+        Artisan::call('entitlements:expire', ['--dry-run' => true]);
+        $output = Artisan::output();
+
+        // Rows NOT transitioned
+        $this->assertEquals('pending', $pending->fresh()->status);
+        $this->assertEquals('active', $activeExpired->fresh()->status);
+        $this->assertEquals('trialing', $trialExpired->fresh()->status);
+
+        // No logs written
+        $this->assertEquals($logsBefore, \App\Models\ModuleAccessLog::count());
+
+        // Output contains DRY RUN
+        $this->assertStringContainsString('DRY RUN', $output);
+        $this->assertStringContainsString('pending → active:    1 rows', $output);
+        $this->assertStringContainsString('active  → expired:   1 rows', $output);
+        $this->assertStringContainsString('trialing→ expired:   1 rows', $output);
+        $this->assertStringContainsString('Total:               3 rows', $output);
+    }
+
+    public function test_dry_run_exit_code_is_success(): void
+    {
+        $exitCode = Artisan::call('entitlements:expire', ['--dry-run' => true]);
+        $this->assertEquals(0, $exitCode);
+    }
+
+    public function test_non_dry_run_transitions_and_logs(): void
+    {
+        $inst = $this->institute();
+        $svc = app(ModuleAccessService::class);
+
+        $pending = InstituteModuleEntitlement::create([
+            'institute_id' => $inst->id,
+            'module_key' => 'inventory',
+            'status' => 'pending',
+            'is_grant' => true,
+            'starts_at' => now()->subDay(),
+        ]);
+        $activeExpired = InstituteModuleEntitlement::create([
+            'institute_id' => $inst->id,
+            'module_key' => 'sales',
+            'status' => 'active',
+            'is_grant' => true,
+            'ends_at' => now()->subDay(),
+        ]);
+        $trialExpired = InstituteModuleEntitlement::create([
+            'institute_id' => $inst->id,
+            'module_key' => 'hr',
+            'status' => 'trialing',
+            'is_grant' => true,
+            'trial_starts_at' => now()->subDays(5),
+            'trial_ends_at' => now()->subDay(),
+        ]);
+
+        $logsBefore = \App\Models\ModuleAccessLog::count();
+
+        Artisan::call('entitlements:expire');
+        $output = Artisan::output();
+
+        // Rows ARE transitioned
+        $this->assertEquals('active', $pending->fresh()->status);
+        $this->assertEquals('expired', $activeExpired->fresh()->status);
+        $this->assertEquals('expired', $trialExpired->fresh()->status);
+
+        // Logs ARE written (pending→active: 1, active→expired: 1, trialing→expired: 2 = 4 total)
+        $this->assertGreaterThan($logsBefore, \App\Models\ModuleAccessLog::count());
+
+        // Output shows LIVE
+        $this->assertStringContainsString('LIVE', $output);
+        $this->assertStringContainsString('Total:               3 rows', $output);
+    }
+
+    public function test_non_dry_run_exit_code_is_success(): void
+    {
+        $exitCode = Artisan::call('entitlements:expire');
+        $this->assertEquals(0, $exitCode);
+    }
+
+    public function test_dry_run_zero_rows_output(): void
+    {
+        Artisan::call('entitlements:expire', ['--dry-run' => true]);
+        $output = Artisan::output();
+        $this->assertStringContainsString('pending → active:    0 rows', $output);
+        $this->assertStringContainsString('active  → expired:   0 rows', $output);
+        $this->assertStringContainsString('trialing→ expired:   0 rows', $output);
+        $this->assertStringContainsString('Total:               0 rows', $output);
+        $this->assertStringContainsString('DRY RUN — no changes made.', $output);
+    }
+
+    // ─── Safeguard flag tests ──────────────────────────────────
+
+    public function test_safeguard_config_defaults_to_false(): void
+    {
+        $enabled = config('backup.entitlements.expire_enabled');
+        $this->assertFalse($enabled, 'expire_enabled must default to false for safe first-run');
+    }
+
+    public function test_safeguard_flag_can_be_enabled(): void
+    {
+        config(['backup.entitlements.expire_enabled' => true]);
+        $this->assertTrue(config('backup.entitlements.expire_enabled'));
+    }
+
+    public function test_safeguard_flag_can_be_disabled(): void
+    {
+        config(['backup.entitlements.expire_enabled' => false]);
+        $this->assertFalse(config('backup.entitlements.expire_enabled'));
+    }
 }

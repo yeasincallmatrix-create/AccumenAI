@@ -24,6 +24,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Support\BranchContext;
 use App\Support\Workspace;
+use App\Models\SubscriptionPackage;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
@@ -108,14 +109,25 @@ class Phase18BranchIsolationTest extends TestCase
 
     private function makeInstitute(string $name): Institute
     {
-        return Institute::create([
+        $inst = Institute::create([
             'name' => $name,
             'slug' => \Illuminate\Support\Str::slug($name).'-'.uniqid(),
             'industry' => 'healthcare',
             'sub_industry' => 'hospital',
             'country' => 'Bangladesh',
             'status' => 'active',
+            'package_id' => SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['advanced'])->value('id'),
         ]);
+
+        DB::table('institute_subscriptions')->insert([
+            'institute_id' => $inst->id,
+            'package_id' => $inst->package_id,
+            'status' => 'active',
+            'start_date' => now()->toDateString(),
+            'end_date' => now()->addYear()->toDateString(),
+        ]);
+
+        return $inst;
     }
 
     private function makeBranch(Institute $institute, string $name): Branch

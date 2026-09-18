@@ -11,7 +11,20 @@ class SubscriptionPackage extends Model
 
     public $timestamps = true;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'name',
+        'slug',
+        'price_monthly',
+        'price_yearly',
+        'max_students',
+        'max_teachers',
+        'max_courses',
+        'max_branches',
+        'storage_limit_mb',
+        'sms_limit_monthly',
+        'is_default',
+        'status',
+    ];
 
     public function institutes(): HasMany
     {

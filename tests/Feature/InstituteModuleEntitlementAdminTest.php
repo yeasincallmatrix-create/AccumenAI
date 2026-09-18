@@ -307,4 +307,50 @@ class InstituteModuleEntitlementAdminTest extends TestCase
         $this->assertTrue(app(ModuleAccessService::class)->isEnabled($instA, 'hr'));
         $this->assertFalse(app(ModuleAccessService::class)->isEnabled($instB, 'hr'));
     }
+
+    // Focused: service-driven industry compatibility for all three scoped modules
+    public function test_industry_compatibility_via_service(): void
+    {
+        $service = app(ModuleAccessService::class);
+        $admin = $this->platformAdmin();
+
+        $medicalInst = $this->institute('FREE', 'healthcare', 'clinic');
+        $educationInst = $this->institute('FREE', 'education', 'school');
+        $trainingInst = $this->institute('FREE', 'training_center', 'vocational');
+
+        // medical module: only compatible with healthcare
+        $this->assertTrue($service->isIndustryCompatible($medicalInst, 'medical'));
+        $this->assertFalse($service->isIndustryCompatible($educationInst, 'medical'));
+        $this->assertFalse($service->isIndustryCompatible($trainingInst, 'medical'));
+
+        // education module: only compatible with education
+        $this->assertFalse($service->isIndustryCompatible($medicalInst, 'education'));
+        $this->assertTrue($service->isIndustryCompatible($educationInst, 'education'));
+        $this->assertFalse($service->isIndustryCompatible($trainingInst, 'education'));
+
+        // training_center module: only compatible with training_center
+        $this->assertFalse($service->isIndustryCompatible($medicalInst, 'training_center'));
+        $this->assertFalse($service->isIndustryCompatible($educationInst, 'training_center'));
+        $this->assertTrue($service->isIndustryCompatible($trainingInst, 'training_center'));
+
+        // non-industry modules always pass
+        $this->assertTrue($service->isIndustryCompatible($medicalInst, 'crm'));
+        $this->assertTrue($service->isIndustryCompatible($educationInst, 'crm'));
+        $this->assertTrue($service->isIndustryCompatible($trainingInst, 'crm'));
+        $this->assertTrue($service->isIndustryCompatible($medicalInst, 'finance'));
+
+        // Controller rejects medical module on non-healthcare institute
+        $this->actingAs($admin, 'platform_admin')->post(route('admin.institutes.entitlements.store', $educationInst), [
+            'module_key' => 'medical',
+            'is_grant' => 1,
+            'status' => 'active',
+        ])->assertSessionHasErrors('module_key');
+
+        // Controller rejects training_center on non-training institute
+        $this->actingAs($admin, 'platform_admin')->post(route('admin.institutes.entitlements.store', $educationInst), [
+            'module_key' => 'training_center',
+            'is_grant' => 1,
+            'status' => 'active',
+        ])->assertSessionHasErrors('module_key');
+    }
 }

@@ -52,6 +52,7 @@ final class IndustryRules
      */
     public static function subIndustries(?string $country, string $industry): array
     {
+        $industry = InstituteDomain::normalizeIndustry($industry);
         try {
             $countryId = self::resolveCountryId($country);
             $result = IndustryService::subIndustriesBySlug($country, $industry);
@@ -90,6 +91,7 @@ final class IndustryRules
      */
     public static function label(string $country, string $industry, ?string $sub = null): ?string
     {
+        $industry = InstituteDomain::normalizeIndustry($industry);
         try {
             $countryId = self::resolveCountryId($country);
             $label = IndustryService::label($countryId, $industry, $sub);

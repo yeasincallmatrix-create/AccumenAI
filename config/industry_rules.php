@@ -30,6 +30,7 @@ return [
             'real_estate' => 'Real Estate',
             'transportation' => 'Transportation',
             // legacy alias kept for migration compatibility; canonical is transportation
+            // DO NOT seed a DB row for 'transport' — InstituteDomain::normalizeIndustry() maps it at runtime
             'transport' => 'Transport & Logistics',
             'service' => 'Service',
             'restaurant' => 'Restaurant',

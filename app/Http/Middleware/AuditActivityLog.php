@@ -135,28 +135,41 @@ class AuditActivityLog
     }
 
     /**
-     * Resolve the institute ID from the request context.
+     * Resolve the institute ID from authoritative context only (SEC-05).
+     *
+     * Strict order: TenantContext::id() when enabled, then the session
+     * workspace (Workspace::id()), otherwise null. Tenant identity must
+     * NEVER come from request input — $request->input('institute_id')
+     * is client-controlled and would allow audit log poisoning — so no
+     * request-derived value is read here at all (neither institute_id
+     * nor tenant_id, from query, body, or route). The audit table has no
+     * non-authoritative forensics field, so request values are dropped
+     * rather than recorded. Null (platform-admin / CLI / pre-login) is
+     * correct and makes the caller skip the record.
      */
     private function resolveInstituteId(Request $request): ?int
     {
-        $user = $request->user();
-
-        if (method_exists($user, 'institute_id')) {
-            return (int) $user->institute_id;
-        }
-
-        if (app()->bound('request') && $request->has('institute_id')) {
-            return (int) $request->input('institute_id');
-        }
-
-        // Try to resolve from tenant context
-        if (class_exists(\App\Support\TenantContext::class)) {
+        // 1. Authoritative tenant context (set by SetTenantContext after auth).
+        if (class_exists(\App\Support\TenantContext::class) && \App\Support\TenantContext::enabled()) {
             $tenantId = \App\Support\TenantContext::id();
             if ($tenantId !== null) {
                 return (int) $tenantId;
             }
         }
 
+        // 2. Session workspace (verified membership institution id).
+        if (class_exists(\App\Support\Workspace::class)) {
+            try {
+                $workspaceId = \App\Support\Workspace::id();
+            } catch (\Throwable $e) {
+                $workspaceId = null;
+            }
+            if ($workspaceId !== null) {
+                return (int) $workspaceId;
+            }
+        }
+
+        // 3. No tenant context — never fall back to request input.
         return null;
     }
 }

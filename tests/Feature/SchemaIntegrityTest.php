@@ -14,11 +14,13 @@ use App\Models\Medical\PatientAllergy;
 use App\Models\Medical\PrescriptionAuditLog;
 use App\Models\Membership;
 use App\Models\Role;
+use App\Models\SubscriptionPackage;
 use App\Models\User;
 use App\Support\Workspace;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -52,6 +54,15 @@ class SchemaIntegrityTest extends TestCase
             'sub_industry' => 'hospital',
             'country' => 'Bangladesh',
             'status' => 'active',
+            'package_id' => SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['advanced'])->value('id'),
+        ]);
+
+        DB::table('institute_subscriptions')->insert([
+            'institute_id' => $this->institute->id,
+            'package_id' => $this->institute->package_id,
+            'status' => 'active',
+            'start_date' => now()->toDateString(),
+            'end_date' => now()->addYear()->toDateString(),
         ]);
 
         $this->owner = User::factory()->create([

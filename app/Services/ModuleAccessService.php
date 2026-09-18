@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\FeatureRegistry;
 use App\Models\Institute;
 use App\Models\InstituteModuleEntitlement;
 use App\Models\InstituteModuleOverride;
 use App\Models\ModuleAccessLog;
 use App\Models\ModuleRegistry;
+use App\Models\PackageFeature;
 use App\Models\PackageModule;
 use App\Models\SubscriptionPackage;
 use Illuminate\Support\Carbon;
@@ -219,7 +221,7 @@ class ModuleAccessService
             );
         }
 
-        InstituteModuleOverride::where('institute_id', $institute->id)->delete();
+        $this->archiveOverrides($institute, 'package_change', $actorId, $oldPackageId, $newPackageId);
 
         $this->flushCache($institute->id);
     }
@@ -388,7 +390,7 @@ class ModuleAccessService
      * required industry for a given module key. Non-industry modules
      * (finance, crm, ...) have no entry and are always compatible.
      */
-    protected function isIndustryCompatible(Institute $institute, string $moduleKey): bool
+    public function isIndustryCompatible(Institute $institute, string $moduleKey): bool
     {
         $industry = $institute->industry ?? null;
 
@@ -420,13 +422,17 @@ class ModuleAccessService
         ?string $previousState,
         ?string $newState,
         ?int $packageId,
-        ?string $notes
+        ?string $notes,
+        ?string $actorType = null,
     ): void {
+        $resolvedType = $actorType ?? $this->resolveActorType();
+
         ModuleAccessLog::create([
             'institute_id' => $instituteId,
             'module_key' => $moduleKey,
             'action' => $action,
             'actor_id' => $actorId,
+            'actor_type' => $resolvedType,
             'previous_state' => $previousState,
             'new_state' => $newState,
             'package_id' => $packageId,
@@ -434,9 +440,61 @@ class ModuleAccessService
         ]);
     }
 
+    private function resolveActorType(): ?string
+    {
+        foreach (['platform_admin', 'institute_user', 'web', 'guardian', 'platform_staff'] as $guard) {
+            if (auth()->guard($guard)->check()) {
+                return $guard;
+            }
+        }
+
+        return app()->runningInConsole() ? 'system' : null;
+    }
+
     public function flushCache(int $instituteId): void
     {
         Cache::forget($this->cachePrefix.$instituteId);
+    }
+
+    private function archiveOverrides(
+        Institute $institute,
+        string $archiveReason,
+        ?int $actorId = null,
+        ?int $oldPackageId = null,
+        ?int $newPackageId = null,
+    ): int {
+        $rows = InstituteModuleOverride::where('institute_id', $institute->id)->get();
+
+        if ($rows->isEmpty()) {
+            return 0;
+        }
+
+        $now = now();
+        $archiveRows = [];
+        foreach ($rows as $row) {
+            $archiveRows[] = [
+                'original_id'    => $row->id,
+                'institute_id'   => $row->institute_id,
+                'module_key'     => $row->module_key,
+                'enabled'        => $row->enabled,
+                'overridden_by'  => $row->overridden_by,
+                'reason'         => $row->reason,
+                'archived_at'    => $now,
+                'archived_by'    => $actorId,
+                'archive_reason' => $archiveReason,
+                'old_package_id' => $oldPackageId,
+                'new_package_id' => $newPackageId,
+                'created_at'     => $row->created_at,
+                'updated_at'     => $row->updated_at,
+            ];
+        }
+
+        DB::transaction(function () use ($institute, $archiveRows) {
+            DB::table('institute_module_overrides_archive')->insert($archiveRows);
+            InstituteModuleOverride::where('institute_id', $institute->id)->delete();
+        });
+
+        return count($archiveRows);
     }
 
     public function removeOverride(Institute $institute, string $moduleKey): void
@@ -623,29 +681,38 @@ class ModuleAccessService
         return isset($map[$moduleKey]) && $map[$moduleKey]->is_grant;
     }
 
+    /**
+     * Fail-closed subscription check (SEC-01).
+     *
+     * Authoritative columns (institute_subscriptions table only):
+     *   - status: ENUM('active','expired','cancelled') — only 'active' counts.
+     *   - end_date: DATE — must be NULL or >= today.
+     *
+     * Notes:
+     *   - 'trialing' does not exist at subscription level (the ENUM has no such
+     *     value; trial exists only at entitlement level / billing_cycle='trial'),
+     *     so it is never treated as active here.
+     *   - No institutes-table columns are read here; the subscription row above
+     *     is the single source of truth.
+     *   - Fail-closed: missing row, non-'active' status, past end_date, or ANY
+     *     exception returns FALSE, so resolveEnabled() falls back to FREE.
+     */
     private function isSubscriptionActive(Institute $institute): bool
     {
         try {
             $sub = DB::table('institute_subscriptions')->where('institute_id', $institute->id)->orderByDesc('id')->first();
-            if ($sub) {
-                if (isset($sub->status) && $sub->status !== 'active' && $sub->status !== 'trialing') {
-                    return false;
-                }
-                $expires = $sub->ends_at ?? $sub->expires_at ?? $sub->expired_at ?? null;
-                if ($expires && strtotime((string) $expires) < time()) {
-                    return false;
-                }
-            }
-            // Fallback to institutes table columns if present
-            if (isset($institute->subscription_status) && $institute->subscription_status && ! in_array($institute->subscription_status, ['active','trialing'], true)) {
+            if (! $sub) {
                 return false;
             }
-            $exp = $institute->subscription_expires_at ?? $institute->expires_at ?? $institute->subscription_ends_at ?? null;
-            if ($exp && strtotime((string) $exp) < time()) {
+            if (($sub->status ?? null) !== 'active') {
+                return false;
+            }
+            $endDate = $sub->end_date ?? null;
+            if ($endDate !== null && $endDate !== '' && Carbon::parse((string) $endDate)->startOfDay()->lt(Carbon::today())) {
                 return false;
             }
         } catch (\Throwable $e) {
-            // Table/column missing — treat as active (graceful)
+            return false;
         }
 
         return true;
@@ -668,5 +735,63 @@ class ModuleAccessService
     public function getMedicalSubModules(): \Illuminate\Support\Collection
     {
         return $this->getSubModules('medical');
+    }
+
+    /**
+     * Check if a specific feature is enabled for an institute.
+     *
+     * featureKey format: '<module>.<capability>'
+     *   e.g. 'medical.pharmacy', 'medical.laboratory'
+     *
+     * Resolution chain (Phase 5a — feature entitlement only):
+     *   1. Parent module must be enabled (existing isEnabled).
+     *   2. Feature must exist in feature_registry with
+     *      status='active'.
+     *   3. Package must have the feature enabled in
+     *      package_features.
+     *
+     * Fail-closed: any missing row → false.
+     *
+     * NOTE: This method does NOT enforce anything yet. It
+     * is a pure query. Phase 5b middleware will call it.
+     *
+     * NOTE: PlatformAdmin bypass is NOT in this method — it
+     * belongs in the middleware layer (consistent with
+     * existing CheckModuleAccess / MedicalModuleAccess).
+     *
+     * @param  Institute  $institute
+     * @param  string     $featureKey  e.g. 'medical.pharmacy'
+     * @return bool
+     */
+    public function isFeatureEnabled(Institute $institute, string $featureKey): bool
+    {
+        if ($featureKey === '' || ! str_contains($featureKey, '.')) {
+            return false;
+        }
+
+        $moduleKey = explode('.', $featureKey, 2)[0];
+
+        if (! $this->isEnabled($institute, $moduleKey)) {
+            return false;
+        }
+
+        $feature = FeatureRegistry::where('feature_key', $featureKey)->first();
+        if (! $feature || $feature->status !== 'active') {
+            return false;
+        }
+
+        $packageId = $institute->package_id;
+        if ($packageId === null) {
+            $free = SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['free'])->first();
+            $packageId = $free?->id;
+        }
+        if ($packageId === null) {
+            return false;
+        }
+
+        return PackageFeature::where('package_id', $packageId)
+            ->where('feature_key', $featureKey)
+            ->where('enabled', true)
+            ->exists();
     }
 }

@@ -11,6 +11,7 @@ use App\Models\Medical\Prescription;
 use App\Models\Membership;
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\SubscriptionPackage;
 use App\Models\User;
 use App\Support\Workspace;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
@@ -51,6 +52,15 @@ class HmsAuthorizationTest extends TestCase
             'sub_industry' => 'hospital',
             'country' => 'Bangladesh',
             'status' => 'active',
+            'package_id' => SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['advanced'])->value('id'),
+        ]);
+
+        DB::table('institute_subscriptions')->insert([
+            'institute_id' => $this->institute->id,
+            'package_id' => $this->institute->package_id,
+            'status' => 'active',
+            'start_date' => now()->toDateString(),
+            'end_date' => now()->addYear()->toDateString(),
         ]);
 
         $this->owner = User::factory()->create([
@@ -363,6 +373,7 @@ class HmsAuthorizationTest extends TestCase
             'sub_industry' => 'clinic',
             'country' => 'Bangladesh',
             'status' => 'active',
+            'package_id' => SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['advanced'])->value('id'),
         ]);
         $rival = User::factory()->create(['account_type' => 'owner', 'status' => 'active']);
         Membership::create([

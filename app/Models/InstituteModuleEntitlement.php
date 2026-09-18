@@ -12,7 +12,24 @@ class InstituteModuleEntitlement extends Model
 
     protected $table = 'institute_module_entitlements';
 
-    protected $guarded = [];
+    protected $fillable = [
+        'institute_id',
+        'module_key',
+        'status',
+        'is_grant',
+        'starts_at',
+        'ends_at',
+        'trial_starts_at',
+        'trial_ends_at',
+        'monthly_price',
+        'yearly_price',
+        'billing_cycle',
+        'auto_renew',
+        'discount_percent',
+        'purchased_by',
+        'granted_by',
+        'notes',
+    ];
 
     protected $casts = [
         'is_grant' => 'boolean',

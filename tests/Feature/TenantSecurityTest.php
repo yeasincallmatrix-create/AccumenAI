@@ -10,11 +10,13 @@ use App\Models\Medical\Medicine;
 use App\Models\Medical\Patient;
 use App\Models\Membership;
 use App\Models\Role;
+use App\Models\SubscriptionPackage;
 use App\Models\User;
 use App\Support\MedicalScope;
 use App\Support\Workspace;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -76,14 +78,25 @@ class TenantSecurityTest extends TestCase
 
     private function makeInstitute(string $name): Institute
     {
-        return Institute::create([
+        $inst = Institute::create([
             'name' => $name,
             'slug' => \Str::slug($name).'-'.uniqid(),
             'industry' => 'healthcare',
             'sub_industry' => 'hospital',
             'country' => 'Bangladesh',
             'status' => 'active',
+            'package_id' => SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['advanced'])->value('id'),
         ]);
+
+        DB::table('institute_subscriptions')->insert([
+            'institute_id' => $inst->id,
+            'package_id' => $inst->package_id,
+            'status' => 'active',
+            'start_date' => now()->toDateString(),
+            'end_date' => now()->addYear()->toDateString(),
+        ]);
+
+        return $inst;
     }
 
     private function makeUser(): User

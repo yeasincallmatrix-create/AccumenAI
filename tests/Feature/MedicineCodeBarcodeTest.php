@@ -7,12 +7,14 @@ use App\Models\Medical\Medicine;
 use App\Models\Medical\NumberSequence;
 use App\Models\Membership;
 use App\Models\Role;
+use App\Models\SubscriptionPackage;
 use App\Models\User;
 use App\Services\Medical\MedicineCodeService;
 use App\Services\Medical\NumberSequenceService;
 use App\Support\Workspace;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class MedicineCodeBarcodeTest extends TestCase
@@ -34,6 +36,15 @@ class MedicineCodeBarcodeTest extends TestCase
             'sub_industry' => 'hospital',
             'country' => 'Bangladesh',
             'status' => 'active',
+            'package_id' => SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['advanced'])->value('id'),
+        ]);
+
+        DB::table('institute_subscriptions')->insert([
+            'institute_id' => $this->institute->id,
+            'package_id' => $this->institute->package_id,
+            'status' => 'active',
+            'start_date' => now()->toDateString(),
+            'end_date' => now()->addYear()->toDateString(),
         ]);
 
         $this->owner = User::factory()->create([

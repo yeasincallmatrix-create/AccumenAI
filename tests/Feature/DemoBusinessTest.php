@@ -89,7 +89,7 @@ class DemoBusinessTest extends TestCase
         $industries = Institute::pluck('industry')->unique()->sort()->values()->all();
         $expected = [
             'education', 'healthcare', 'information_technology', 'finance',
-            'retail', 'manufacturing', 'real_estate', 'transport',
+            'retail', 'manufacturing', 'real_estate', 'transportation',
             'restaurant', 'hotels', 'personal_finance', 'other',
         ];
 

@@ -10,5 +10,8 @@ class IndustrySetting extends Model
 
     public $timestamps = true;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'industry_key',
+        'theme_slug',
+    ];
 }
