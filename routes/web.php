@@ -532,7 +532,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->group(func
 });
 
 // institute/finance/accounting stubs
-Route::middleware(['auth:institute_user,web','tenant', 'verified'])->group(function () {
+Route::middleware(['auth:institute_user,web','tenant', 'deny.teacher.finance', 'verified'])->group(function () {
     Route::get('business/{institute}', function ($institute) { return redirect()->route('dashboard'); })->name('business.show');
     Route::get('teachers', [\App\Http\Controllers\TeacherController::class, 'index'])->name('teachers.index');
     Route::get('alumni', [\App\Http\Controllers\Alumni\AlumniController::class, 'index'])->name('alumni.index');

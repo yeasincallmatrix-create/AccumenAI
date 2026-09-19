@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-$tenant = ['auth:institute_user,web', 'tenant', 'verified'];
+$tenant = ['auth:institute_user,web', 'tenant', 'deny.teacher.finance', 'verified'];
 
 Route::middleware($tenant)->group(function () {
 

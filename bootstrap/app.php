@@ -3,6 +3,7 @@
 use App\Http\Middleware\CheckFeatureAccess;
 use App\Http\Middleware\CheckModuleAccess;
 use App\Http\Middleware\CheckPermission;
+use App\Http\Middleware\DenyTeacherFromFinance;
 use App\Http\Middleware\EnsureAiEnabled;
 use App\Http\Middleware\EnsureDomain;
 use App\Http\Middleware\EnsureInstituteContext;
@@ -39,6 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'tenant' => SetTenantContext::class,
+            'deny.teacher.finance' => DenyTeacherFromFinance::class,
             'permission' => CheckPermission::class,
             'module_access' => CheckModuleAccess::class,
             'feature' => CheckFeatureAccess::class,
@@ -55,6 +57,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'medical' => MedicalDomain::class,
             'medical.module' => MedicalModuleAccess::class,
             'medical_module' => MedicalModuleAccess::class,
+            // Phase 4 lab analyzer integration: device (analyzer/gateway)
+            // authentication, separate from user auth guards.
+            'lab.device' => \App\Http\Middleware\AuthenticateLabDevice::class,
         ]);
 
         $middleware->web(append: [
