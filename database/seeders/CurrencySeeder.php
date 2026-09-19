@@ -3,50 +3,447 @@
 namespace Database\Seeders;
 
 use App\Models\Currency;
+use App\Models\CountryCurrencyMap;
 use Illuminate\Database\Seeder;
 
-/**
- * Seed the global currency catalog.
- *
- * The currencies table ships empty in the SQL dump, causing hundreds of
- * cascading failures in accounting / tax / finance tests.
- *
- * Idempotent via firstOrCreate by code — safe to re-run.
- *
- * Run explicitly:
- *
- *   php artisan db:seed --class=CurrencySeeder
- */
 class CurrencySeeder extends Seeder
 {
     public static function currencies(): array
     {
         return [
-            ['code' => 'BDT', 'name' => 'Bangladeshi Taka',        'symbol' => "\u{09F3}",   'decimal_places' => 2, 'is_base' => true,  'is_active' => true],
-            ['code' => 'USD', 'name' => 'US Dollar',               'symbol' => '$',         'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
-            ['code' => 'MYR', 'name' => 'Malaysian Ringgit',       'symbol' => 'RM',        'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
-            ['code' => 'INR', 'name' => 'Indian Rupee',            'symbol' => "\u{20B9}",  'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
-            ['code' => 'EUR', 'name' => 'Euro',                    'symbol' => "\u{20AC}",  'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            // South Asia
+            ['code' => 'BDT', 'name' => 'Bangladeshi Taka', 'symbol' => '৳', 'decimal_places' => 2, 'is_base' => true , 'is_active' => true],
+            ['code' => 'INR', 'name' => 'Indian Rupee', 'symbol' => '₹', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'PKR', 'name' => 'Pakistani Rupee', 'symbol' => '₨', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'LKR', 'name' => 'Sri Lankan Rupee', 'symbol' => '₨', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'NPR', 'name' => 'Nepalese Rupee', 'symbol' => '₨', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'BTN', 'name' => 'Bhutanese Ngultrum', 'symbol' => 'Nu.', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'MVR', 'name' => 'Maldivian Rufiyaa', 'symbol' => 'Rf.', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'AFN', 'name' => 'Afghan Afghani', 'symbol' => '؋', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+
+            // North America
+            ['code' => 'USD', 'name' => 'US Dollar', 'symbol' => '$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'CAD', 'name' => 'Canadian Dollar', 'symbol' => 'C$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'MXN', 'name' => 'Mexican Peso', 'symbol' => '$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'GTQ', 'name' => 'Guatemalan Quetzal', 'symbol' => 'Q', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'BZD', 'name' => 'Belize Dollar', 'symbol' => 'BZ$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'HNL', 'name' => 'Honduran Lempira', 'symbol' => 'L', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'NIO', 'name' => 'Nicaraguan Cordoba', 'symbol' => 'C$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'CRC', 'name' => 'Costa Rican Colon', 'symbol' => '₡', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'PAB', 'name' => 'Panamanian Balboa', 'symbol' => 'B/.', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'CUP', 'name' => 'Cuban Peso', 'symbol' => '₱', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'JMD', 'name' => 'Jamaican Dollar', 'symbol' => 'J$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'HTG', 'name' => 'Haitian Gourde', 'symbol' => 'G', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'DOP', 'name' => 'Dominican Peso', 'symbol' => 'RD$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'TTD', 'name' => 'Trinidad and Tobago Dollar', 'symbol' => 'TT$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'BBD', 'name' => 'Barbadian Dollar', 'symbol' => 'Bds$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'BSD', 'name' => 'Bahamian Dollar', 'symbol' => 'B$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'XCD', 'name' => 'East Caribbean Dollar', 'symbol' => 'EC$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'KYD', 'name' => 'Cayman Islands Dollar', 'symbol' => 'CI$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'BMD', 'name' => 'Bermuda Dollar', 'symbol' => 'BD$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'ANG', 'name' => 'Netherlands Antillean Guilder', 'symbol' => 'ƒ', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+
+            // South America
+            ['code' => 'BRL', 'name' => 'Brazilian Real', 'symbol' => 'R$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'ARS', 'name' => 'Argentine Peso', 'symbol' => 'AR$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'CLP', 'name' => 'Chilean Peso', 'symbol' => 'CL$', 'decimal_places' => 0, 'is_base' => false, 'is_active' => true],
+            ['code' => 'COP', 'name' => 'Colombian Peso', 'symbol' => 'COL$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'PEN', 'name' => 'Peruvian Sol', 'symbol' => 'S/.', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'UYU', 'name' => 'Uruguayan Peso', 'symbol' => '$U', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'PYG', 'name' => 'Paraguayan Guarani', 'symbol' => '₲', 'decimal_places' => 0, 'is_base' => false, 'is_active' => true],
+            ['code' => 'BOB', 'name' => 'Bolivian Boliviano', 'symbol' => 'Bs.', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'VES', 'name' => 'Venezuelan Bolivar', 'symbol' => 'Bs.S', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'GYD', 'name' => 'Guyanese Dollar', 'symbol' => 'GY$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'SRD', 'name' => 'Surinamese Dollar', 'symbol' => 'SR$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'FKP', 'name' => 'Falkland Islands Pound', 'symbol' => '£', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+
+            // Europe
+            ['code' => 'EUR', 'name' => 'Euro', 'symbol' => '€', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'GBP', 'name' => 'British Pound Sterling', 'symbol' => '£', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'CHF', 'name' => 'Swiss Franc', 'symbol' => 'CHF', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'SEK', 'name' => 'Swedish Krona', 'symbol' => 'kr', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'NOK', 'name' => 'Norwegian Krone', 'symbol' => 'kr', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'DKK', 'name' => 'Danish Krone', 'symbol' => 'kr', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'ISK', 'name' => 'Icelandic Krona', 'symbol' => 'kr', 'decimal_places' => 0, 'is_base' => false, 'is_active' => true],
+            ['code' => 'PLN', 'name' => 'Polish Zloty', 'symbol' => 'ń', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'CZK', 'name' => 'Czech Koruna', 'symbol' => 'č', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'HUF', 'name' => 'Hungarian Forint', 'symbol' => 'Ft', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'RON', 'name' => 'Romanian Leu', 'symbol' => 'lei', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'BGN', 'name' => 'Bulgarian Lev', 'symbol' => 'л', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'HRK', 'name' => 'Croatian Kuna', 'symbol' => 'kn', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'RSD', 'name' => 'Serbian Dinar', 'symbol' => 'din.', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'BAM', 'name' => 'Bosnia-Herzegovina Mark', 'symbol' => 'KM', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'MKD', 'name' => 'Macedonian Denar', 'symbol' => 'д', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'ALL', 'name' => 'Albanian Lek', 'symbol' => 'L', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'MDL', 'name' => 'Moldovan Leu', 'symbol' => 'L', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'UAH', 'name' => 'Ukrainian Hryvnia', 'symbol' => '₴', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'GEL', 'name' => 'Georgian Lari', 'symbol' => '₾', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'AMD', 'name' => 'Armenian Dram', 'symbol' => '֏', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'AZN', 'name' => 'Azerbaijani Manat', 'symbol' => '₼', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'BYN', 'name' => 'Belarusian Ruble', 'symbol' => 'Br', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'RUB', 'name' => 'Russian Ruble', 'symbol' => '₽', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'TRY', 'name' => 'Turkish Lira', 'symbol' => '₺', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+
+            // Central Asia
+            ['code' => 'KZT', 'name' => 'Kazakhstani Tenge', 'symbol' => '₸', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'UZS', 'name' => 'Uzbekistani Som', 'symbol' => 'сўм', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'KGS', 'name' => 'Kyrgyzstani Som', 'symbol' => 'сом', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'TJS', 'name' => 'Tajikistani Somoni', 'symbol' => 'SM', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'TMT', 'name' => 'Turkmenistani Manat', 'symbol' => 'T', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+
+            // Middle East
+            ['code' => 'AED', 'name' => 'UAE Dirham', 'symbol' => 'د.إ', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'SAR', 'name' => 'Saudi Riyal', 'symbol' => '﷼', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'QAR', 'name' => 'Qatari Riyal', 'symbol' => '﷼', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'OMR', 'name' => 'Omani Rial', 'symbol' => '﷼', 'decimal_places' => 3, 'is_base' => false, 'is_active' => true],
+            ['code' => 'BHD', 'name' => 'Bahraini Dinar', 'symbol' => 'BD', 'decimal_places' => 3, 'is_base' => false, 'is_active' => true],
+            ['code' => 'KWD', 'name' => 'Kuwaiti Dinar', 'symbol' => 'د.ك', 'decimal_places' => 3, 'is_base' => false, 'is_active' => true],
+            ['code' => 'JOD', 'name' => 'Jordanian Dinar', 'symbol' => 'JD', 'decimal_places' => 3, 'is_base' => false, 'is_active' => true],
+            ['code' => 'IQD', 'name' => 'Iraqi Dinar', 'symbol' => 'ع.د', 'decimal_places' => 3, 'is_base' => false, 'is_active' => true],
+            ['code' => 'IRR', 'name' => 'Iranian Rial', 'symbol' => '﷼', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'LBP', 'name' => 'Lebanese Pound', 'symbol' => 'L£', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'SYP', 'name' => 'Syrian Pound', 'symbol' => '£S', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'YER', 'name' => 'Yemeni Rial', 'symbol' => '﷼', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'ILS', 'name' => 'Israeli New Shekel', 'symbol' => '₪', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'LYD', 'name' => 'Libyan Dinar', 'symbol' => 'LD', 'decimal_places' => 3, 'is_base' => false, 'is_active' => true],
+            ['code' => 'TND', 'name' => 'Tunisian Dinar', 'symbol' => 'DT', 'decimal_places' => 3, 'is_base' => false, 'is_active' => true],
+            ['code' => 'DZD', 'name' => 'Algerian Dinar', 'symbol' => 'DA', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'EGP', 'name' => 'Egyptian Pound', 'symbol' => 'E£', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'MAD', 'name' => 'Moroccan Dirham', 'symbol' => 'MAD', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'SDG', 'name' => 'Sudanese Pound', 'symbol' => '£S', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+
+            // East Asia
+            ['code' => 'CNY', 'name' => 'Chinese Yuan', 'symbol' => '¥', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'JPY', 'name' => 'Japanese Yen', 'symbol' => '¥', 'decimal_places' => 0, 'is_base' => false, 'is_active' => true],
+            ['code' => 'KRW', 'name' => 'South Korean Won', 'symbol' => '₩', 'decimal_places' => 0, 'is_base' => false, 'is_active' => true],
+            ['code' => 'HKD', 'name' => 'Hong Kong Dollar', 'symbol' => 'HK$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'MOP', 'name' => 'Macanese Pataca', 'symbol' => 'MOP$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'MNT', 'name' => 'Mongolian Tugrik', 'symbol' => '₮', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'KPW', 'name' => 'North Korean Won', 'symbol' => '₩', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'TWD', 'name' => 'New Taiwan Dollar', 'symbol' => 'NT$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+
+            // Southeast Asia
+            ['code' => 'MYR', 'name' => 'Malaysian Ringgit', 'symbol' => 'RM', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'SGD', 'name' => 'Singapore Dollar', 'symbol' => 'S$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'THB', 'name' => 'Thai Baht', 'symbol' => '฿', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'IDR', 'name' => 'Indonesian Rupiah', 'symbol' => 'Rp', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'PHP', 'name' => 'Philippine Peso', 'symbol' => '₱', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'VND', 'name' => 'Vietnamese Dong', 'symbol' => '₫', 'decimal_places' => 0, 'is_base' => false, 'is_active' => true],
+            ['code' => 'KHR', 'name' => 'Cambodian Riel', 'symbol' => '៛', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'LAK', 'name' => 'Lao Kip', 'symbol' => '₭', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'MMK', 'name' => 'Myanmar Kyat', 'symbol' => 'K', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'BND', 'name' => 'Brunei Dollar', 'symbol' => 'B$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+
+            // Oceania
+            ['code' => 'AUD', 'name' => 'Australian Dollar', 'symbol' => 'A$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'NZD', 'name' => 'New Zealand Dollar', 'symbol' => 'NZ$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'FJD', 'name' => 'Fijian Dollar', 'symbol' => 'FJ$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'PGK', 'name' => 'Papua New Guinean Kina', 'symbol' => 'K', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'WST', 'name' => 'Samoan Tala', 'symbol' => 'WS$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'TOP', 'name' => 'Tongan Paanga', 'symbol' => 'T$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'VUV', 'name' => 'Vanuatu Vatu', 'symbol' => 'VT', 'decimal_places' => 0, 'is_base' => false, 'is_active' => true],
+            ['code' => 'SBD', 'name' => 'Solomon Islands Dollar', 'symbol' => 'SI$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+
+            // Africa
+            ['code' => 'NGN', 'name' => 'Nigerian Naira', 'symbol' => '₦', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'GHS', 'name' => 'Ghanaian Cedi', 'symbol' => '₵', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'KES', 'name' => 'Kenyan Shilling', 'symbol' => 'KSh', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'TZS', 'name' => 'Tanzanian Shilling', 'symbol' => 'TSh', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'UGX', 'name' => 'Ugandan Shilling', 'symbol' => 'USh', 'decimal_places' => 0, 'is_base' => false, 'is_active' => true],
+            ['code' => 'ETB', 'name' => 'Ethiopian Birr', 'symbol' => 'Br', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'RWF', 'name' => 'Rwandan Franc', 'symbol' => 'RF', 'decimal_places' => 0, 'is_base' => false, 'is_active' => true],
+            ['code' => 'CDF', 'name' => 'Congolese Franc', 'symbol' => 'FC', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'XOF', 'name' => 'CFA Franc BCEAO', 'symbol' => 'CFA', 'decimal_places' => 0, 'is_base' => false, 'is_active' => true],
+            ['code' => 'XAF', 'name' => 'CFA Franc BEAC', 'symbol' => 'FCFA', 'decimal_places' => 0, 'is_base' => false, 'is_active' => true],
+            ['code' => 'GNF', 'name' => 'Guinean Franc', 'symbol' => 'FG', 'decimal_places' => 0, 'is_base' => false, 'is_active' => true],
+            ['code' => 'BIF', 'name' => 'Burundian Franc', 'symbol' => 'FBu', 'decimal_places' => 0, 'is_base' => false, 'is_active' => true],
+            ['code' => 'DJF', 'name' => 'Djiboutian Franc', 'symbol' => 'Fdj', 'decimal_places' => 0, 'is_base' => false, 'is_active' => true],
+            ['code' => 'KMF', 'name' => 'Comorian Franc', 'symbol' => 'CF', 'decimal_places' => 0, 'is_base' => false, 'is_active' => true],
+            ['code' => 'MGA', 'name' => 'Malagasy Ariary', 'symbol' => 'Ar', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'MWK', 'name' => 'Malawian Kwacha', 'symbol' => 'MK', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'ZMW', 'name' => 'Zambian Kwacha', 'symbol' => 'ZK', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'MZN', 'name' => 'Mozambican Metical', 'symbol' => 'MT', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'AOA', 'name' => 'Angolan Kwanza', 'symbol' => 'Kz', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'SOS', 'name' => 'Somali Shilling', 'symbol' => 'Sh', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'ZAR', 'name' => 'South African Rand', 'symbol' => 'R', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'NAD', 'name' => 'Namibian Dollar', 'symbol' => 'N$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'BWP', 'name' => 'Botswana Pula', 'symbol' => 'P', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'SZL', 'name' => 'Swazi Lilangeni', 'symbol' => 'E', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'LSL', 'name' => 'Lesotho Loti', 'symbol' => 'L', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'MUR', 'name' => 'Mauritian Rupee', 'symbol' => '₨', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'SCR', 'name' => 'Seychellois Rupee', 'symbol' => '₨', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'STN', 'name' => 'Sao Tomean Dobra', 'symbol' => 'Db', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'CVE', 'name' => 'Cape Verdean Escudo', 'symbol' => 'Esc', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'GMD', 'name' => 'Gambian Dalasi', 'symbol' => 'D', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'LRD', 'name' => 'Liberian Dollar', 'symbol' => 'L$', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'SLL', 'name' => 'Sierra Leonean Leone', 'symbol' => 'Le', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'ERN', 'name' => 'Eritrean Nakfa', 'symbol' => 'Nfk', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+            ['code' => 'SSP', 'name' => 'South Sudanese Pound', 'symbol' => '£S', 'decimal_places' => 2, 'is_base' => false, 'is_active' => true],
+
+        ];
+    }
+
+    public static function countryCurrencyMap(): array
+    {
+        return [
+            // South Asia
+            ['country_code' => 'BD', 'country_name' => 'Bangladesh', 'currency_code' => 'BDT'],
+            ['country_code' => 'IN', 'country_name' => 'India', 'currency_code' => 'INR'],
+            ['country_code' => 'PK', 'country_name' => 'Pakistan', 'currency_code' => 'PKR'],
+            ['country_code' => 'LK', 'country_name' => 'Sri Lanka', 'currency_code' => 'LKR'],
+            ['country_code' => 'NP', 'country_name' => 'Nepal', 'currency_code' => 'NPR'],
+            ['country_code' => 'BT', 'country_name' => 'Bhutan', 'currency_code' => 'BTN'],
+            ['country_code' => 'MV', 'country_name' => 'Maldives', 'currency_code' => 'MVR'],
+            ['country_code' => 'AF', 'country_name' => 'Afghanistan', 'currency_code' => 'AFN'],
+
+            // North America
+            ['country_code' => 'US', 'country_name' => 'United States', 'currency_code' => 'USD'],
+            ['country_code' => 'CA', 'country_name' => 'Canada', 'currency_code' => 'CAD'],
+            ['country_code' => 'MX', 'country_name' => 'Mexico', 'currency_code' => 'MXN'],
+            ['country_code' => 'GT', 'country_name' => 'Guatemala', 'currency_code' => 'GTQ'],
+            ['country_code' => 'BZ', 'country_name' => 'Belize', 'currency_code' => 'BZD'],
+            ['country_code' => 'HN', 'country_name' => 'Honduras', 'currency_code' => 'HNL'],
+            ['country_code' => 'NI', 'country_name' => 'Nicaragua', 'currency_code' => 'NIO'],
+            ['country_code' => 'CR', 'country_name' => 'Costa Rica', 'currency_code' => 'CRC'],
+            ['country_code' => 'PA', 'country_name' => 'Panama', 'currency_code' => 'PAB'],
+            ['country_code' => 'CU', 'country_name' => 'Cuba', 'currency_code' => 'CUP'],
+            ['country_code' => 'JM', 'country_name' => 'Jamaica', 'currency_code' => 'JMD'],
+            ['country_code' => 'HT', 'country_name' => 'Haiti', 'currency_code' => 'HTG'],
+            ['country_code' => 'DO', 'country_name' => 'Dominican Republic', 'currency_code' => 'DOP'],
+            ['country_code' => 'TT', 'country_name' => 'Trinidad and Tobago', 'currency_code' => 'TTD'],
+            ['country_code' => 'BB', 'country_name' => 'Barbados', 'currency_code' => 'BBD'],
+            ['country_code' => 'BS', 'country_name' => 'Bahamas', 'currency_code' => 'BSD'],
+            ['country_code' => 'AG', 'country_name' => 'Antigua and Barbuda', 'currency_code' => 'XCD'],
+            ['country_code' => 'DM', 'country_name' => 'Dominica', 'currency_code' => 'XCD'],
+            ['country_code' => 'GD', 'country_name' => 'Grenada', 'currency_code' => 'XCD'],
+            ['country_code' => 'KN', 'country_name' => 'Saint Kitts and Nevis', 'currency_code' => 'XCD'],
+            ['country_code' => 'LC', 'country_name' => 'Saint Lucia', 'currency_code' => 'XCD'],
+            ['country_code' => 'VC', 'country_name' => 'Saint Vincent and the Grenadines', 'currency_code' => 'XCD'],
+            ['country_code' => 'AW', 'country_name' => 'Aruba', 'currency_code' => 'ANG'],
+            ['country_code' => 'CW', 'country_name' => 'Curacao', 'currency_code' => 'ANG'],
+            ['country_code' => 'SX', 'country_name' => 'Sint Maarten', 'currency_code' => 'ANG'],
+            ['country_code' => 'BQ', 'country_name' => 'Bonaire', 'currency_code' => 'USD'],
+            ['country_code' => 'PR', 'country_name' => 'Puerto Rico', 'currency_code' => 'USD'],
+            ['country_code' => 'VI', 'country_name' => 'US Virgin Islands', 'currency_code' => 'USD'],
+            ['country_code' => 'KY', 'country_name' => 'Cayman Islands', 'currency_code' => 'KYD'],
+            ['country_code' => 'TC', 'country_name' => 'Turks and Caicos Islands', 'currency_code' => 'USD'],
+            ['country_code' => 'BM', 'country_name' => 'Bermuda', 'currency_code' => 'BMD'],
+            ['country_code' => 'GF', 'country_name' => 'French Guiana', 'currency_code' => 'EUR'],
+            ['country_code' => 'GP', 'country_name' => 'Guadeloupe', 'currency_code' => 'EUR'],
+            ['country_code' => 'MQ', 'country_name' => 'Martinique', 'currency_code' => 'EUR'],
+            ['country_code' => 'BL', 'country_name' => 'Saint Barthelemy', 'currency_code' => 'EUR'],
+            ['country_code' => 'MF', 'country_name' => 'Saint Martin', 'currency_code' => 'EUR'],
+
+            // South America
+            ['country_code' => 'BR', 'country_name' => 'Brazil', 'currency_code' => 'BRL'],
+            ['country_code' => 'AR', 'country_name' => 'Argentina', 'currency_code' => 'ARS'],
+            ['country_code' => 'CL', 'country_name' => 'Chile', 'currency_code' => 'CLP'],
+            ['country_code' => 'CO', 'country_name' => 'Colombia', 'currency_code' => 'COP'],
+            ['country_code' => 'PE', 'country_name' => 'Peru', 'currency_code' => 'PEN'],
+            ['country_code' => 'UY', 'country_name' => 'Uruguay', 'currency_code' => 'UYU'],
+            ['country_code' => 'PY', 'country_name' => 'Paraguay', 'currency_code' => 'PYG'],
+            ['country_code' => 'BO', 'country_name' => 'Bolivia', 'currency_code' => 'BOB'],
+            ['country_code' => 'VE', 'country_name' => 'Venezuela', 'currency_code' => 'VES'],
+            ['country_code' => 'GY', 'country_name' => 'Guyana', 'currency_code' => 'GYD'],
+            ['country_code' => 'SR', 'country_name' => 'Suriname', 'currency_code' => 'SRD'],
+            ['country_code' => 'FK', 'country_name' => 'Falkland Islands', 'currency_code' => 'FKP'],
+            ['country_code' => 'EC', 'country_name' => 'Ecuador', 'currency_code' => 'USD'],
+
+            // Europe - Eurozone
+            ['country_code' => 'DE', 'country_name' => 'Germany', 'currency_code' => 'EUR'],
+            ['country_code' => 'FR', 'country_name' => 'France', 'currency_code' => 'EUR'],
+            ['country_code' => 'IT', 'country_name' => 'Italy', 'currency_code' => 'EUR'],
+            ['country_code' => 'ES', 'country_name' => 'Spain', 'currency_code' => 'EUR'],
+            ['country_code' => 'NL', 'country_name' => 'Netherlands', 'currency_code' => 'EUR'],
+            ['country_code' => 'BE', 'country_name' => 'Belgium', 'currency_code' => 'EUR'],
+            ['country_code' => 'AT', 'country_name' => 'Austria', 'currency_code' => 'EUR'],
+            ['country_code' => 'PT', 'country_name' => 'Portugal', 'currency_code' => 'EUR'],
+            ['country_code' => 'IE', 'country_name' => 'Ireland', 'currency_code' => 'EUR'],
+            ['country_code' => 'FI', 'country_name' => 'Finland', 'currency_code' => 'EUR'],
+            ['country_code' => 'GR', 'country_name' => 'Greece', 'currency_code' => 'EUR'],
+            ['country_code' => 'LU', 'country_name' => 'Luxembourg', 'currency_code' => 'EUR'],
+            ['country_code' => 'SI', 'country_name' => 'Slovenia', 'currency_code' => 'EUR'],
+            ['country_code' => 'SK', 'country_name' => 'Slovakia', 'currency_code' => 'EUR'],
+            ['country_code' => 'LT', 'country_name' => 'Lithuania', 'currency_code' => 'EUR'],
+            ['country_code' => 'LV', 'country_name' => 'Latvia', 'currency_code' => 'EUR'],
+            ['country_code' => 'EE', 'country_name' => 'Estonia', 'currency_code' => 'EUR'],
+            ['country_code' => 'MT', 'country_name' => 'Malta', 'currency_code' => 'EUR'],
+            ['country_code' => 'CY', 'country_name' => 'Cyprus', 'currency_code' => 'EUR'],
+            ['country_code' => 'HR', 'country_name' => 'Croatia', 'currency_code' => 'EUR'],
+
+            // Europe - Non-Euro
+            ['country_code' => 'GB', 'country_name' => 'United Kingdom', 'currency_code' => 'GBP'],
+            ['country_code' => 'CH', 'country_name' => 'Switzerland', 'currency_code' => 'CHF'],
+            ['country_code' => 'SE', 'country_name' => 'Sweden', 'currency_code' => 'SEK'],
+            ['country_code' => 'NO', 'country_name' => 'Norway', 'currency_code' => 'NOK'],
+            ['country_code' => 'DK', 'country_name' => 'Denmark', 'currency_code' => 'DKK'],
+            ['country_code' => 'IS', 'country_name' => 'Iceland', 'currency_code' => 'ISK'],
+            ['country_code' => 'PL', 'country_name' => 'Poland', 'currency_code' => 'PLN'],
+            ['country_code' => 'CZ', 'country_name' => 'Czech Republic', 'currency_code' => 'CZK'],
+            ['country_code' => 'HU', 'country_name' => 'Hungary', 'currency_code' => 'HUF'],
+            ['country_code' => 'RO', 'country_name' => 'Romania', 'currency_code' => 'RON'],
+            ['country_code' => 'BG', 'country_name' => 'Bulgaria', 'currency_code' => 'BGN'],
+            ['country_code' => 'RS', 'country_name' => 'Serbia', 'currency_code' => 'RSD'],
+            ['country_code' => 'BA', 'country_name' => 'Bosnia and Herzegovina', 'currency_code' => 'BAM'],
+            ['country_code' => 'MK', 'country_name' => 'North Macedonia', 'currency_code' => 'MKD'],
+            ['country_code' => 'AL', 'country_name' => 'Albania', 'currency_code' => 'ALL'],
+            ['country_code' => 'MD', 'country_name' => 'Moldova', 'currency_code' => 'MDL'],
+            ['country_code' => 'UA', 'country_name' => 'Ukraine', 'currency_code' => 'UAH'],
+            ['country_code' => 'GE', 'country_name' => 'Georgia', 'currency_code' => 'GEL'],
+            ['country_code' => 'AM', 'country_name' => 'Armenia', 'currency_code' => 'AMD'],
+            ['country_code' => 'AZ', 'country_name' => 'Azerbaijan', 'currency_code' => 'AZN'],
+            ['country_code' => 'BY', 'country_name' => 'Belarus', 'currency_code' => 'BYN'],
+            ['country_code' => 'RU', 'country_name' => 'Russia', 'currency_code' => 'RUB'],
+            ['country_code' => 'TR', 'country_name' => 'Turkey', 'currency_code' => 'TRY'],
+            ['country_code' => 'XK', 'country_name' => 'Kosovo', 'currency_code' => 'EUR'],
+            ['country_code' => 'ME', 'country_name' => 'Montenegro', 'currency_code' => 'EUR'],
+            ['country_code' => 'AD', 'country_name' => 'Andorra', 'currency_code' => 'EUR'],
+            ['country_code' => 'MC', 'country_name' => 'Monaco', 'currency_code' => 'EUR'],
+            ['country_code' => 'SM', 'country_name' => 'San Marino', 'currency_code' => 'EUR'],
+            ['country_code' => 'VA', 'country_name' => 'Vatican City', 'currency_code' => 'EUR'],
+            ['country_code' => 'LI', 'country_name' => 'Liechtenstein', 'currency_code' => 'CHF'],
+
+            // Central Asia
+            ['country_code' => 'KZ', 'country_name' => 'Kazakhstan', 'currency_code' => 'KZT'],
+            ['country_code' => 'UZ', 'country_name' => 'Uzbekistan', 'currency_code' => 'UZS'],
+            ['country_code' => 'KG', 'country_name' => 'Kyrgyzstan', 'currency_code' => 'KGS'],
+            ['country_code' => 'TJ', 'country_name' => 'Tajikistan', 'currency_code' => 'TJS'],
+            ['country_code' => 'TM', 'country_name' => 'Turkmenistan', 'currency_code' => 'TMT'],
+
+            // Middle East
+            ['country_code' => 'AE', 'country_name' => 'United Arab Emirates', 'currency_code' => 'AED'],
+            ['country_code' => 'SA', 'country_name' => 'Saudi Arabia', 'currency_code' => 'SAR'],
+            ['country_code' => 'QA', 'country_name' => 'Qatar', 'currency_code' => 'QAR'],
+            ['country_code' => 'OM', 'country_name' => 'Oman', 'currency_code' => 'OMR'],
+            ['country_code' => 'BH', 'country_name' => 'Bahrain', 'currency_code' => 'BHD'],
+            ['country_code' => 'KW', 'country_name' => 'Kuwait', 'currency_code' => 'KWD'],
+            ['country_code' => 'JO', 'country_name' => 'Jordan', 'currency_code' => 'JOD'],
+            ['country_code' => 'IQ', 'country_name' => 'Iraq', 'currency_code' => 'IQD'],
+            ['country_code' => 'IR', 'country_name' => 'Iran', 'currency_code' => 'IRR'],
+            ['country_code' => 'LB', 'country_name' => 'Lebanon', 'currency_code' => 'LBP'],
+            ['country_code' => 'SY', 'country_name' => 'Syria', 'currency_code' => 'SYP'],
+            ['country_code' => 'YE', 'country_name' => 'Yemen', 'currency_code' => 'YER'],
+            ['country_code' => 'IL', 'country_name' => 'Israel', 'currency_code' => 'ILS'],
+            ['country_code' => 'PS', 'country_name' => 'Palestine', 'currency_code' => 'ILS'],
+            ['country_code' => 'LY', 'country_name' => 'Libya', 'currency_code' => 'LYD'],
+            ['country_code' => 'TN', 'country_name' => 'Tunisia', 'currency_code' => 'TND'],
+            ['country_code' => 'DZ', 'country_name' => 'Algeria', 'currency_code' => 'DZD'],
+            ['country_code' => 'EG', 'country_name' => 'Egypt', 'currency_code' => 'EGP'],
+            ['country_code' => 'MA', 'country_name' => 'Morocco', 'currency_code' => 'MAD'],
+            ['country_code' => 'SD', 'country_name' => 'Sudan', 'currency_code' => 'SDG'],
+
+            // East Asia
+            ['country_code' => 'CN', 'country_name' => 'China', 'currency_code' => 'CNY'],
+            ['country_code' => 'JP', 'country_name' => 'Japan', 'currency_code' => 'JPY'],
+            ['country_code' => 'KR', 'country_name' => 'South Korea', 'currency_code' => 'KRW'],
+            ['country_code' => 'HK', 'country_name' => 'Hong Kong', 'currency_code' => 'HKD'],
+            ['country_code' => 'MO', 'country_name' => 'Macau', 'currency_code' => 'MOP'],
+            ['country_code' => 'MN', 'country_name' => 'Mongolia', 'currency_code' => 'MNT'],
+            ['country_code' => 'KP', 'country_name' => 'North Korea', 'currency_code' => 'KPW'],
+            ['country_code' => 'TW', 'country_name' => 'Taiwan', 'currency_code' => 'TWD'],
+
+            // Southeast Asia
+            ['country_code' => 'MY', 'country_name' => 'Malaysia', 'currency_code' => 'MYR'],
+            ['country_code' => 'SG', 'country_name' => 'Singapore', 'currency_code' => 'SGD'],
+            ['country_code' => 'TH', 'country_name' => 'Thailand', 'currency_code' => 'THB'],
+            ['country_code' => 'ID', 'country_name' => 'Indonesia', 'currency_code' => 'IDR'],
+            ['country_code' => 'PH', 'country_name' => 'Philippines', 'currency_code' => 'PHP'],
+            ['country_code' => 'VN', 'country_name' => 'Vietnam', 'currency_code' => 'VND'],
+            ['country_code' => 'KH', 'country_name' => 'Cambodia', 'currency_code' => 'KHR'],
+            ['country_code' => 'LA', 'country_name' => 'Laos', 'currency_code' => 'LAK'],
+            ['country_code' => 'MM', 'country_name' => 'Myanmar', 'currency_code' => 'MMK'],
+            ['country_code' => 'BN', 'country_name' => 'Brunei', 'currency_code' => 'BND'],
+            ['country_code' => 'TL', 'country_name' => 'Timor-Leste', 'currency_code' => 'USD'],
+
+            // Oceania
+            ['country_code' => 'AU', 'country_name' => 'Australia', 'currency_code' => 'AUD'],
+            ['country_code' => 'NZ', 'country_name' => 'New Zealand', 'currency_code' => 'NZD'],
+            ['country_code' => 'FJ', 'country_name' => 'Fiji', 'currency_code' => 'FJD'],
+            ['country_code' => 'PG', 'country_name' => 'Papua New Guinea', 'currency_code' => 'PGK'],
+            ['country_code' => 'WS', 'country_name' => 'Samoa', 'currency_code' => 'WST'],
+            ['country_code' => 'TO', 'country_name' => 'Tonga', 'currency_code' => 'TOP'],
+            ['country_code' => 'VU', 'country_name' => 'Vanuatu', 'currency_code' => 'VUV'],
+            ['country_code' => 'SB', 'country_name' => 'Solomon Islands', 'currency_code' => 'SBD'],
+            ['country_code' => 'KI', 'country_name' => 'Kiribati', 'currency_code' => 'AUD'],
+            ['country_code' => 'NR', 'country_name' => 'Nauru', 'currency_code' => 'AUD'],
+            ['country_code' => 'PW', 'country_name' => 'Palau', 'currency_code' => 'USD'],
+            ['country_code' => 'FM', 'country_name' => 'Micronesia', 'currency_code' => 'USD'],
+            ['country_code' => 'MH', 'country_name' => 'Marshall Islands', 'currency_code' => 'USD'],
+
+            // Africa
+            ['country_code' => 'NG', 'country_name' => 'Nigeria', 'currency_code' => 'NGN'],
+            ['country_code' => 'GH', 'country_name' => 'Ghana', 'currency_code' => 'GHS'],
+            ['country_code' => 'KE', 'country_name' => 'Kenya', 'currency_code' => 'KES'],
+            ['country_code' => 'TZ', 'country_name' => 'Tanzania', 'currency_code' => 'TZS'],
+            ['country_code' => 'UG', 'country_name' => 'Uganda', 'currency_code' => 'UGX'],
+            ['country_code' => 'ET', 'country_name' => 'Ethiopia', 'currency_code' => 'ETB'],
+            ['country_code' => 'RW', 'country_name' => 'Rwanda', 'currency_code' => 'RWF'],
+            ['country_code' => 'CD', 'country_name' => 'DR Congo', 'currency_code' => 'CDF'],
+            ['country_code' => 'SN', 'country_name' => 'Senegal', 'currency_code' => 'XOF'],
+            ['country_code' => 'ML', 'country_name' => 'Mali', 'currency_code' => 'XOF'],
+            ['country_code' => 'BF', 'country_name' => 'Burkina Faso', 'currency_code' => 'XOF'],
+            ['country_code' => 'NE', 'country_name' => 'Niger', 'currency_code' => 'XOF'],
+            ['country_code' => 'CI', 'country_name' => 'Ivory Coast', 'currency_code' => 'XOF'],
+            ['country_code' => 'TG', 'country_name' => 'Togo', 'currency_code' => 'XOF'],
+            ['country_code' => 'BJ', 'country_name' => 'Benin', 'currency_code' => 'XOF'],
+            ['country_code' => 'GW', 'country_name' => 'Guinea-Bissau', 'currency_code' => 'XOF'],
+            ['country_code' => 'CM', 'country_name' => 'Cameroon', 'currency_code' => 'XAF'],
+            ['country_code' => 'GA', 'country_name' => 'Gabon', 'currency_code' => 'XAF'],
+            ['country_code' => 'CG', 'country_name' => 'Republic of the Congo', 'currency_code' => 'XAF'],
+            ['country_code' => 'TD', 'country_name' => 'Chad', 'currency_code' => 'XAF'],
+            ['country_code' => 'CF', 'country_name' => 'Central African Republic', 'currency_code' => 'XAF'],
+            ['country_code' => 'GQ', 'country_name' => 'Equatorial Guinea', 'currency_code' => 'XAF'],
+            ['country_code' => 'GN', 'country_name' => 'Guinea', 'currency_code' => 'GNF'],
+            ['country_code' => 'BI', 'country_name' => 'Burundi', 'currency_code' => 'BIF'],
+            ['country_code' => 'DJ', 'country_name' => 'Djibouti', 'currency_code' => 'DJF'],
+            ['country_code' => 'KM', 'country_name' => 'Comoros', 'currency_code' => 'KMF'],
+            ['country_code' => 'MG', 'country_name' => 'Madagascar', 'currency_code' => 'MGA'],
+            ['country_code' => 'MW', 'country_name' => 'Malawi', 'currency_code' => 'MWK'],
+            ['country_code' => 'ZM', 'country_name' => 'Zambia', 'currency_code' => 'ZMW'],
+            ['country_code' => 'MZ', 'country_name' => 'Mozambique', 'currency_code' => 'MZN'],
+            ['country_code' => 'AO', 'country_name' => 'Angola', 'currency_code' => 'AOA'],
+            ['country_code' => 'SO', 'country_name' => 'Somalia', 'currency_code' => 'SOS'],
+            ['country_code' => 'ZA', 'country_name' => 'South Africa', 'currency_code' => 'ZAR'],
+            ['country_code' => 'NA', 'country_name' => 'Namibia', 'currency_code' => 'NAD'],
+            ['country_code' => 'BW', 'country_name' => 'Botswana', 'currency_code' => 'BWP'],
+            ['country_code' => 'SZ', 'country_name' => 'Eswatini', 'currency_code' => 'SZL'],
+            ['country_code' => 'LS', 'country_name' => 'Lesotho', 'currency_code' => 'LSL'],
+            ['country_code' => 'MU', 'country_name' => 'Mauritius', 'currency_code' => 'MUR'],
+            ['country_code' => 'SC', 'country_name' => 'Seychelles', 'currency_code' => 'SCR'],
+            ['country_code' => 'ST', 'country_name' => 'Sao Tome and Principe', 'currency_code' => 'STN'],
+            ['country_code' => 'CV', 'country_name' => 'Cape Verde', 'currency_code' => 'CVE'],
+            ['country_code' => 'GM', 'country_name' => 'Gambia', 'currency_code' => 'GMD'],
+            ['country_code' => 'LR', 'country_name' => 'Liberia', 'currency_code' => 'LRD'],
+            ['country_code' => 'SL', 'country_name' => 'Sierra Leone', 'currency_code' => 'SLL'],
+            ['country_code' => 'ER', 'country_name' => 'Eritrea', 'currency_code' => 'ERN'],
+            ['country_code' => 'SS', 'country_name' => 'South Sudan', 'currency_code' => 'SSP'],
         ];
     }
 
     public function run(): void
     {
         $created = 0;
+        $mapCreated = 0;
 
         foreach (self::currencies() as $attrs) {
             Currency::firstOrCreate(
                 ['code' => $attrs['code']],
                 $attrs,
             );
-
-            if (! $this->command) {
-                continue;
-            }
-
             $created++;
         }
 
+        if (\Illuminate\Support\Facades\Schema::hasTable('country_currency_map')) {
+            foreach (self::countryCurrencyMap() as $map) {
+                CountryCurrencyMap::updateOrCreate(
+                    ['country_code' => $map['country_code']],
+                    $map,
+                );
+                $mapCreated++;
+            }
+        }
+
         $this->command?->info("Currencies seeded: {$created} ensured.");
+        $this->command?->info("Country-currency maps seeded: {$mapCreated} ensured.");
     }
 }
