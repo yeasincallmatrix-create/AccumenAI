@@ -814,6 +814,12 @@ class ModuleAccessService
      *   Gate 2: feature registry active
      *   Gate 3: package_feature enabled
      *   Gate 3.5: institute_feature_override wins
+     *   Gate 4: tenant_access_grants (additive, after overrides)
+     *   Gate 5: tenant_access_denials (subtractive, wins over everything)
+     *
+     * Resolution: (Base ∪ Overrides ∪ Grants) − Denials.
+     * Only rows with status='active' and expires_at NULL/future apply.
+     * 'tier' grant_type is skipped with a warning log (Phase 7 refines).
      *
      * @return array<string, bool>
      */
@@ -888,6 +894,62 @@ class ModuleAccessService
             }
 
             $map[$key] = $packageEnabled;
+        }
+
+        // Gate 4: Super admin grants (additive — applied after package + institute overrides)
+        $grants = \App\Models\TenantAccessGrant::where('institute_id', $institute->id)
+            ->where('status', 'active')
+            ->where(function ($q) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            })
+            ->get();
+
+        foreach ($grants as $grant) {
+            if ($grant->grant_type === 'feature') {
+                if (array_key_exists($grant->grant_key, $map)) {
+                    $map[$grant->grant_key] = true;
+                }
+            } elseif ($grant->grant_type === 'module') {
+                // All features in this module
+                $moduleFeatures = \App\Models\FeatureRegistry::where('module_key', $grant->grant_key)
+                    ->pluck('feature_key');
+                foreach ($moduleFeatures as $fk) {
+                    if (array_key_exists($fk, $map)) {
+                        $map[$fk] = true;
+                    }
+                }
+            } elseif ($grant->grant_type === 'tier') {
+                // Tier grants skipped for now (product decision — Phase 7 refines).
+                \Illuminate\Support\Facades\Log::warning('TenantAccessGrant tier grant skipped in runtime resolution', [
+                    'institute_id' => $institute->id,
+                    'grant_id' => $grant->id,
+                    'grant_key' => $grant->grant_key,
+                ]);
+            }
+        }
+
+        // Gate 5: Super admin denials (subtractive — applied LAST, wins over everything)
+        $denials = \App\Models\TenantAccessDenial::where('institute_id', $institute->id)
+            ->where('status', 'active')
+            ->where(function ($q) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            })
+            ->get();
+
+        foreach ($denials as $denial) {
+            if ($denial->deny_type === 'feature') {
+                if (array_key_exists($denial->deny_key, $map)) {
+                    $map[$denial->deny_key] = false;
+                }
+            } elseif ($denial->deny_type === 'module') {
+                $moduleFeatures = \App\Models\FeatureRegistry::where('module_key', $denial->deny_key)
+                    ->pluck('feature_key');
+                foreach ($moduleFeatures as $fk) {
+                    if (array_key_exists($fk, $map)) {
+                        $map[$fk] = false;
+                    }
+                }
+            }
         }
 
         return $map;
