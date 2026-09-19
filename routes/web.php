@@ -4,8 +4,10 @@ use App\Http\Controllers\Admin\CertificateAdminController;
 use App\Http\Controllers\Admin\CourseAdminController;
 use App\Http\Controllers\Admin\InstituteAdminController;
 use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\Admin\PackageScopeAdminController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\StudentAdminController;
+use App\Http\Controllers\Admin\TenantAccessController;
 use App\Http\Controllers\Auth\InstituteUserLoginController;
 use App\Http\Controllers\Auth\InstituteUserRegisterController;
 use App\Http\Controllers\Auth\LogoutController;
@@ -236,6 +238,13 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->group(func
     Route::get('settings/modules', [\App\Http\Controllers\ModuleSettingsController::class, 'index'])->middleware('permission:settings.manage')->name('settings.modules');
     Route::post('settings/modules', [\App\Http\Controllers\ModuleSettingsController::class, 'update'])->middleware('permission:settings.manage')->name('settings.modules.update');
     Route::get('settings/features', [\App\Http\Controllers\Institute\FeatureAccessController::class, 'index'])->middleware('permission:settings.manage')->name('settings.features');
+    // Currency settings
+    Route::get('settings/currency', [\App\Http\Controllers\Settings\CurrencySettingController::class, 'index'])->middleware('permission:settings.manage')->name('settings.currency.index');
+    Route::put('settings/currency', [\App\Http\Controllers\Settings\CurrencySettingController::class, 'update'])->middleware('permission:settings.manage')->name('settings.currency.update');
+    Route::post('settings/currency/toggle-multi', [\App\Http\Controllers\Settings\CurrencySettingController::class, 'toggleMultiCurrency'])->middleware('permission:settings.manage')->name('settings.currency.toggle-multi');
+    Route::get('settings/currency/rates', [\App\Http\Controllers\Settings\CurrencySettingController::class, 'getExchangeRates'])->middleware('permission:settings.manage')->name('settings.currency.rates');
+    Route::post('settings/currency/rates', [\App\Http\Controllers\Settings\CurrencySettingController::class, 'storeExchangeRate'])->middleware('permission:settings.manage')->name('settings.currency.rates.store');
+    Route::delete('settings/currency/rates/{rate}', [\App\Http\Controllers\Settings\CurrencySettingController::class, 'destroyExchangeRate'])->middleware('permission:settings.manage')->name('settings.currency.rates.destroy');
 });
 
 Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->prefix('staff')->name('staff.')->group(function () {
@@ -453,6 +462,26 @@ Route::get('admin/features/{feature_key}', [\App\Http\Controllers\Admin\FeatureA
 Route::post('admin/features/{feature_key}/toggle-package/{package_id}', [\App\Http\Controllers\Admin\FeatureAdminController::class, 'togglePackage'])->name('admin.features.toggle-package')->middleware(['auth:platform_admin', 'verified'])->whereNumber('package_id');
 Route::post('admin/features/{feature_key}/institute-overrides', [\App\Http\Controllers\Admin\FeatureAdminController::class, 'addInstituteOverride'])->name('admin.features.institute-override.add')->middleware(['auth:platform_admin', 'verified']);
 Route::delete('admin/features/{feature_key}/institute-overrides/{institute_id}', [\App\Http\Controllers\Admin\FeatureAdminController::class, 'removeInstituteOverride'])->name('admin.features.institute-override.remove')->middleware(['auth:platform_admin', 'verified'])->whereNumber('institute_id');
+
+// ── Admin: Scoped Packages (Phase 4b-6, UI-only — no new tables) ──
+Route::middleware(['auth:platform_admin', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+    // Scoped packages
+    Route::get('packages/{package}/scopes', [PackageScopeAdminController::class, 'index'])->name('packages.scopes.index')->whereNumber('package');
+    Route::get('packages/{package}/scopes/create', [PackageScopeAdminController::class, 'create'])->name('packages.scopes.create')->whereNumber('package');
+    Route::post('packages/{package}/scopes', [PackageScopeAdminController::class, 'store'])->name('packages.scopes.store')->whereNumber('package');
+    Route::get('scopes/{scope}', [PackageScopeAdminController::class, 'show'])->name('scopes.show')->whereNumber('scope');
+    Route::get('scopes/{scope}/edit', [PackageScopeAdminController::class, 'edit'])->name('scopes.edit')->whereNumber('scope');
+    Route::put('scopes/{scope}', [PackageScopeAdminController::class, 'update'])->name('scopes.update')->whereNumber('scope');
+    Route::put('scopes/{scope}/features', [PackageScopeAdminController::class, 'updateFeatures'])->name('scopes.features.update')->whereNumber('scope');
+    Route::delete('scopes/{scope}', [PackageScopeAdminController::class, 'destroy'])->name('scopes.destroy')->whereNumber('scope');
+
+    // Tenant access (grants + denials)
+    Route::get('institutes/{institute}/access', [TenantAccessController::class, 'show'])->name('institutes.access')->whereNumber('institute');
+    Route::post('institutes/{institute}/grants', [TenantAccessController::class, 'addGrant'])->name('institutes.grants.store')->whereNumber('institute');
+    Route::delete('institutes/{institute}/grants/{grant}', [TenantAccessController::class, 'revokeGrant'])->name('institutes.grants.revoke')->whereNumber('institute')->whereNumber('grant');
+    Route::post('institutes/{institute}/denials', [TenantAccessController::class, 'addDenial'])->name('institutes.denials.store')->whereNumber('institute');
+    Route::delete('institutes/{institute}/denials/{denial}', [TenantAccessController::class, 'liftDenial'])->name('institutes.denials.lift')->whereNumber('institute')->whereNumber('denial');
+});
 
 Route::get('admin/academic', [\App\Http\Controllers\Admin\AcademicStructureAdminController::class, 'index'])->name('admin.academic.index')->middleware(['auth:platform_admin', 'verified']);
 Route::get('admin/academic/subjects', [\App\Http\Controllers\Admin\AcademicSubjectAdminController::class, 'index'])->name('admin.academic.subjects.index')->middleware(['auth:platform_admin', 'verified']);

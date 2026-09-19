@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Global currency catalog. Shared across all institutes (no institute_id).
  * One row is flagged is_base per installation; each institute pins its own base
- * currency via accounting_settings.
+ * currency via tenant_currency_settings.
  */
 class Currency extends Model
 {
@@ -20,9 +21,15 @@ class Currency extends Model
     {
         return [
             'decimal_places' => 'integer',
+            'rounding' => 'integer',
             'is_base' => 'boolean',
             'is_active' => 'boolean',
         ];
+    }
+
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('is_active', true);
     }
 
     public function exchangeRatesFrom(): HasMany

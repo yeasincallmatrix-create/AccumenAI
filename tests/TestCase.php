@@ -14,6 +14,8 @@ use Database\Seeders\RoleSeeder;
 use Database\Seeders\SystemRoleSeeder;
 use Database\Seeders\TaxPermissionSeeder;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -31,6 +33,8 @@ abstract class TestCase extends BaseTestCase
         if (Currency::count() === 0) {
             (new CurrencySeeder)->run();
         }
+
+        $this->seedCountryCurrencyMap();
 
         if (Role::where('slug', 'institute-owner')->whereNull('institute_id')->doesntExist()) {
             (new RoleSeeder)->run();
@@ -50,6 +54,24 @@ abstract class TestCase extends BaseTestCase
 
         if (Industry::count() === 0) {
             (new IndustryTaxonomyTestSeeder)->run();
+        }
+    }
+
+    protected function seedCountryCurrencyMap(): void
+    {
+        if (! Schema::hasTable('country_currency_map')) {
+            return;
+        }
+
+        if (DB::table('country_currency_map')->count() > 0) {
+            return;
+        }
+
+        foreach (CurrencySeeder::countryCurrencyMap() as $map) {
+            DB::table('country_currency_map')->updateOrInsert(
+                ['country_code' => $map['country_code']],
+                $map,
+            );
         }
     }
 }

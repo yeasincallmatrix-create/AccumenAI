@@ -49,6 +49,10 @@
                 <i class="bi bi-capsule"></i>
                 <span>Medical</span>
             </button>
+            <a href="{{ route('settings.currency.index') }}" class="settings-nav-item settings-tab-btn">
+                <i class="bi bi-cash-coin"></i>
+                <span>Currency</span>
+            </a>
         @endif
 <button class="settings-nav-item settings-tab-btn" type="button" data-target="pane-security" aria-selected="false">
                 <i class="bi bi-shield-lock"></i>

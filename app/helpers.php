@@ -1216,3 +1216,57 @@ if (! function_exists('moduleEnabled')) {
             ->isEnabled($institute, $key);
     }
 }
+
+if (! function_exists('tenant_id')) {
+    /**
+     * Return the current tenant (institute) ID from the request context.
+     */
+    function tenant_id(): ?int
+    {
+        try {
+            return \App\Support\TenantContext::id();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+}
+
+if (! function_exists('currency')) {
+    /**
+     * Format a monetary amount using the current tenant's currency settings.
+     */
+    function currency(float $amount, ?string $code = null): string
+    {
+        return app(\App\Services\CurrencyService::class)->format($amount, $code);
+    }
+}
+
+if (! function_exists('base_currency')) {
+    /**
+     * Return the current tenant's base currency code.
+     */
+    function base_currency(): string
+    {
+        return app(\App\Services\CurrencyService::class)->getBaseCurrency();
+    }
+}
+
+if (! function_exists('is_multi_currency')) {
+    /**
+     * Check if multi-currency mode is enabled for the current tenant.
+     */
+    function is_multi_currency(): bool
+    {
+        return app(\App\Services\CurrencyService::class)->isMultiCurrencyEnabled();
+    }
+}
+
+if (! function_exists('selectable_currencies')) {
+    /**
+     * Return the currencies available for selection in forms/dropdowns.
+     */
+    function selectable_currencies(): array
+    {
+        return app(\App\Services\CurrencyService::class)->getSelectableCurrencies();
+    }
+}

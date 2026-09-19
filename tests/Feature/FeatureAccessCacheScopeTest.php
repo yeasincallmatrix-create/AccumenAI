@@ -46,11 +46,13 @@ class FeatureAccessCacheScopeTest extends TestCase
 
     private function institute(array $attrs): Institute
     {
-        return Institute::create(array_merge([
-            'name' => 'Cache Scope Test ' . uniqid(),
-            'slug' => 'cache-scope-' . uniqid(),
-            'status' => 'active',
-        ], $attrs));
+        return Institute::withoutEvents(function () use ($attrs) {
+            return Institute::create(array_merge([
+                'name' => 'Cache Scope Test ' . uniqid(),
+                'slug' => 'cache-scope-' . uniqid(),
+                'status' => 'active',
+            ], $attrs));
+        });
     }
 
     public function test_cache_key_includes_scope_hash(): void
