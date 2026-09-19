@@ -75,7 +75,7 @@ class FeatureAdminControllerTest extends TestCase
         $response->assertOk();
         $response->assertSee('Pharmacy');
         $response->assertSee('medical.pharmacy');
-        $response->assertSee('Package Availability');
+        $response->assertSee('Package Coverage');
     }
 
     public function test_toggle_package_requires_auth(): void
@@ -255,5 +255,91 @@ class FeatureAdminControllerTest extends TestCase
             'package_id' => $pkg->id,
             'enabled' => 'not-a-bool',
         ]))->assertSessionHasErrors('enabled');
+    }
+
+    public function test_index_filter_by_search_query(): void
+    {
+        $this->loginAsAdmin();
+
+        $response = $this->get(route('admin.features.index', ['q' => 'pharmacy']));
+        $response->assertOk();
+        $response->assertSee('medical.pharmacy');
+        $response->assertSee('Pharmacy');
+        $response->assertDontSee('medical.laboratory');
+    }
+
+    public function test_index_filter_by_module(): void
+    {
+        $this->loginAsAdmin();
+
+        $response = $this->get(route('admin.features.index', ['module' => 'medical']));
+        $response->assertOk();
+        $response->assertSee('medical.pharmacy');
+        $response->assertSee('medical.laboratory');
+
+        $allFeatures = FeatureRegistry::where('module_key', '!=', 'medical')->pluck('feature_key')->toArray();
+        foreach ($allFeatures as $key) {
+            $response->assertDontSee($key);
+        }
+    }
+
+    public function test_index_filter_by_package(): void
+    {
+        $this->loginAsAdmin();
+
+        $advancedPkg = SubscriptionPackage::where('slug', 'advanced')->first();
+        $premiumPkg = SubscriptionPackage::where('slug', 'premium')->first();
+        if (! $advancedPkg || ! $premiumPkg) {
+            $this->markTestSkipped('Advanced or Premium package not found.');
+        }
+
+        $response = $this->get(route('admin.features.index', [
+            'package' => $advancedPkg->id,
+        ]));
+        $response->assertOk();
+
+        // Selected package IS visible
+        $response->assertSee($advancedPkg->name);
+
+        // Other packages' matrix column headers should NOT appear.
+        // The dropdown always lists all packages as <option> text,
+        // so a bare assertDontSee('Premium') would always fail.
+        // We target the matrix-specific HTML: the <th> with class "text-center"
+        // followed by the package name, which only renders in the matrix header.
+        // Extract the rendered view and inspect the <thead> section.
+        $content = $response->getContent();
+        preg_match('/<thead>[\s\S]*?<\/thead>/', $content, $matches);
+        $this->assertNotEmpty($matches, 'Matrix thead should be present');
+        $thead = $matches[0];
+        $this->assertStringContainsString($advancedPkg->name, $thead);
+        $this->assertStringNotContainsString($premiumPkg->name, $thead);
+    }
+
+    public function test_index_preserves_filters_in_pagination_urls(): void
+    {
+        $this->loginAsAdmin();
+
+        $response = $this->get(route('admin.features.index', ['q' => 'medical']));
+        $response->assertOk();
+
+        $features = $response->viewData('features');
+        $this->assertNotNull($features, 'features paginator missing from view data');
+
+        // url(1) should include q=medical in the query string
+        $this->assertStringContainsString(
+            'q=medical',
+            $features->url(1),
+            'Pagination URL should preserve q filter'
+        );
+    }
+
+    public function test_index_empty_state_for_no_matches(): void
+    {
+        $this->loginAsAdmin();
+
+        $response = $this->get(route('admin.features.index', ['q' => 'nonexistent-xyz']));
+        $response->assertOk();
+        $response->assertSee('No features match your filters');
+        $response->assertDontSee('No features configured');
     }
 }
