@@ -6,6 +6,7 @@ use App\Models\ApprovalAction;
 use App\Models\ApprovalRequest;
 use App\Models\ApprovalStep;
 use App\Models\ApprovalWorkflow;
+use App\Support\InstituteUserResolver;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -24,7 +25,7 @@ class ApprovalWorkflowService
         return DB::transaction(function () use ($instituteId, $data, $steps, $actorId) {
             $workflow = ApprovalWorkflow::create(array_merge($data, [
                 'institute_id' => $instituteId,
-                'created_by' => $actorId,
+                'created_by' => InstituteUserResolver::resolve($instituteId, $actorId),
             ]));
 
             foreach ($steps as $i => $step) {
@@ -67,7 +68,7 @@ class ApprovalWorkflowService
             'amount' => $amount,
             'status' => 'pending_approval',
             'current_step' => 1,
-            'requested_by' => $actorId,
+            'requested_by' => InstituteUserResolver::resolve($instituteId, $actorId),
             'requested_at' => now(),
         ]);
     }
@@ -85,7 +86,7 @@ class ApprovalWorkflowService
                 'request_id' => $request->id,
                 'institute_id' => $request->institute_id,
                 'step_order' => $stepOrder,
-                'approver_id' => $approverId,
+                'approver_id' => InstituteUserResolver::resolve((int) $request->institute_id, $approverId),
                 'action' => 'approved',
                 'notes' => $notes,
                 'acted_at' => now(),
@@ -94,7 +95,7 @@ class ApprovalWorkflowService
             if ($stepOrder >= $totalSteps) {
                 $request->update([
                     'status' => 'approved',
-                    'resolved_by' => $approverId,
+                    'resolved_by' => InstituteUserResolver::resolve((int) $request->institute_id, $approverId),
                     'resolved_at' => now(),
                 ]);
             } else {
@@ -115,7 +116,7 @@ class ApprovalWorkflowService
                 'request_id' => $request->id,
                 'institute_id' => $request->institute_id,
                 'step_order' => $request->current_step,
-                'approver_id' => $approverId,
+                'approver_id' => InstituteUserResolver::resolve((int) $request->institute_id, $approverId),
                 'action' => 'rejected',
                 'notes' => $notes,
                 'acted_at' => now(),
@@ -123,7 +124,7 @@ class ApprovalWorkflowService
 
             $request->update([
                 'status' => 'rejected',
-                'resolved_by' => $approverId,
+                'resolved_by' => InstituteUserResolver::resolve((int) $request->institute_id, $approverId),
                 'resolved_at' => now(),
             ]);
 
