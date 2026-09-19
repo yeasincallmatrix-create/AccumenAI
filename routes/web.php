@@ -562,6 +562,10 @@ Route::middleware(['auth:institute_user,web','tenant', 'deny.teacher.finance', '
     Route::get('finance/reports/trial-balance', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'trialBalance'])->name('finance.reports.trial-balance');
     Route::get('finance/reports/income-statement', [\App\Http\Controllers\FinanceReportController::class, 'incomeStatement'])->name('finance.reports.income-statement');
     Route::get('finance/reports/balance-sheet', [\App\Http\Controllers\FinanceReportController::class, 'balanceSheet'])->name('finance.reports.balance-sheet');
+    Route::get('finance/reports/ledger', [\App\Http\Controllers\FinanceReportController::class, 'ledger'])->name('finance.reports.ledger');
+    Route::get('finance/reports/cash-bank', [\App\Http\Controllers\FinanceReportController::class, 'cashBank'])->name('finance.reports.cash-bank');
+    Route::get('finance/reports/receivables', [\App\Http\Controllers\FinanceReportController::class, 'receivables'])->name('finance.reports.receivables');
+    Route::get('finance/reports/payables', [\App\Http\Controllers\FinanceReportController::class, 'payables'])->name('finance.reports.payables');
     Route::get('accounting', [\App\Http\Controllers\Accounting\AccountingDashboardController::class, 'index'])->name('accounting.dashboard');
     Route::get('accounting/reports/trial-balance', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'trialBalance'])->name('accounting.reports.trial-balance');
     Route::get('accounting/reports/profit-loss', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'profitAndLoss'])->name('accounting.reports.profit-loss');
