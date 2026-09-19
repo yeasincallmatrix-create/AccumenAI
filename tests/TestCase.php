@@ -23,6 +23,7 @@ use Database\Seeders\IndustryTaxonomyTestSeeder;
 use Database\Seeders\RoleSeeder;
 use Database\Seeders\SystemRoleSeeder;
 use Database\Seeders\TaxPermissionSeeder;
+use Database\Seeders\TestInstituteFixtureSeeder;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -59,6 +60,35 @@ abstract class TestCase extends BaseTestCase
         // chart of accounts, fiscal years) are OPT-IN — tests must pass an
         // institute id — so setUp() never creates orphan tenant rows.
         $this->seedReferenceMasters();
+
+        // Phase 7 STEP 2A: test-only institute fixtures (Tutu Center,
+        // Mawa Academy) for tests that hardcode firstOrFail() by name.
+        // TEST-ONLY — never runs outside the testing environment.
+        $this->seedTestInstitutes();
+    }
+
+    /**
+     * TEST-ONLY fixture seed: institutes hardcoded by name in feature tests.
+     * Guarded to the testing environment so production rows are never
+     * touched (the user explicitly deleted "Tutu Center" from production).
+     * Idempotent via firstOrCreate inside the seeder.
+     */
+    protected function seedTestInstitutes(): void
+    {
+        if (! app()->environment('testing')) {
+            return;
+        }
+
+        if (! Schema::hasTable('institutes')) {
+            return;
+        }
+
+        if (Institute::where('name', 'Tutu Center')->exists()
+            && Institute::where('name', 'Mawa Academy')->exists()) {
+            return;
+        }
+
+        (new TestInstituteFixtureSeeder)->run();
     }
 
     /**
