@@ -394,6 +394,19 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
                 ->middleware('permission:medical.laboratory.analyzers.retry_messages')
                 ->name('messages.retry');
 
+            // Phase 6 dead-letter resolution (same permission family).
+            Route::post('{analyzer}/messages/{message}/resolve-manual', [\App\Http\Controllers\Medical\LabAnalyzerMessageController::class, 'resolveManually'])
+                ->middleware('permission:medical.laboratory.analyzers.retry_messages')
+                ->name('messages.resolve-manual');
+
+            Route::post('{analyzer}/messages/{message}/discard', [\App\Http\Controllers\Medical\LabAnalyzerMessageController::class, 'discard'])
+                ->middleware('permission:medical.laboratory.analyzers.retry_messages')
+                ->name('messages.discard');
+
+            Route::post('{analyzer}/messages/{message}/escalate', [\App\Http\Controllers\Medical\LabAnalyzerMessageController::class, 'escalate'])
+                ->middleware('permission:medical.laboratory.analyzers.retry_messages')
+                ->name('messages.escalate');
+
             // Worklist
             Route::get('{analyzer}/worklist', [\App\Http\Controllers\Medical\LabAnalyzerWorklistController::class, 'index'])
                 ->middleware('permission:medical.laboratory.analyzers.view_worklist')

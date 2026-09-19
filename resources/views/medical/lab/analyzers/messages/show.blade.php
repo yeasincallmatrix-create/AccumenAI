@@ -25,6 +25,112 @@
 </div>
 @endif
 
+@if(in_array($message->status, ['error', 'dead']))
+<div class="card border-danger mb-3">
+    <div class="card-header bg-danger-subtle">
+        <h5 class="mb-0"><i class="bi bi-exclamation-octagon me-2"></i>Failed Message</h5>
+    </div>
+    <div class="card-body">
+        <p><strong>Error Code:</strong> {{ $message->error_code ?? '—' }}</p>
+        <p><strong>Error Message:</strong> {{ $message->error_message ?? '—' }}</p>
+        <p><strong>Attempts:</strong> {{ $message->attempts }}</p>
+        <p><strong>Last Attempt:</strong> {{ $message->last_attempted_at?->diffForHumans() ?? '—' }}</p>
+
+        @if($message->isResolved())
+            <div class="alert alert-info mb-0">
+                <strong>Resolution:</strong> {{ $message->resolution_status }}<br>
+                <strong>Notes:</strong> {{ $message->resolution_notes }}<br>
+                <strong>By:</strong> {{ $message->resolved_by }} at {{ $message->resolved_at?->format('Y-m-d H:i') }}
+            </div>
+        @else
+            <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#retryModal">
+                    <i class="bi bi-arrow-clockwise"></i> Retry
+                </button>
+                <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#resolveModal">
+                    <i class="bi bi-check-circle"></i> Resolve Manually
+                </button>
+                <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#escalateModal">
+                    <i class="bi bi-arrow-up-circle"></i> Escalate
+                </button>
+                <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#discardModal">
+                    <i class="bi bi-trash"></i> Discard
+                </button>
+            </div>
+        @endif
+    </div>
+</div>
+
+<div class="modal fade" id="retryModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <form method="POST" action="{{ route('medical.laboratory.analyzers.messages.retry', [$analyzer, $message]) }}">
+            @csrf
+            <div class="modal-header"><h5 class="modal-title">Retry Message #{{ $message->id }}</h5></div>
+            <div class="modal-body">
+                <p>Re-queue this message for processing? Attempts reset to 0.</p>
+                <textarea name="notes" class="form-control" rows="2" placeholder="Optional notes"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Retry</button>
+            </div>
+        </form>
+    </div></div>
+</div>
+
+<div class="modal fade" id="resolveModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <form method="POST" action="{{ route('medical.laboratory.analyzers.messages.resolve-manual', [$analyzer, $message]) }}">
+            @csrf
+            <div class="modal-header"><h5 class="modal-title">Resolve Manually</h5></div>
+            <div class="modal-body">
+                <label class="form-label" for="resolve_notes">Resolution notes *</label>
+                <textarea id="resolve_notes" name="notes" class="form-control" rows="3" required minlength="5" maxlength="500" placeholder="What was fixed (sample linked, mapping corrected...)"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-info">Resolve</button>
+            </div>
+        </form>
+    </div></div>
+</div>
+
+<div class="modal fade" id="escalateModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <form method="POST" action="{{ route('medical.laboratory.analyzers.messages.escalate', [$analyzer, $message]) }}">
+            @csrf
+            <div class="modal-header"><h5 class="modal-title">Escalate for Review</h5></div>
+            <div class="modal-body">
+                <label class="form-label" for="escalate_reason">Reason *</label>
+                <textarea id="escalate_reason" name="reason" class="form-control" rows="3" required minlength="5" maxlength="500"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-warning">Escalate</button>
+            </div>
+        </form>
+    </div></div>
+</div>
+
+<div class="modal fade" id="discardModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <form method="POST" action="{{ route('medical.laboratory.analyzers.messages.discard', [$analyzer, $message]) }}">
+            @csrf
+            <div class="modal-header"><h5 class="modal-title">Discard Message</h5></div>
+            <div class="modal-body">
+                <p class="text-danger">The message stays in dead-letter but will never retry.</p>
+                <label class="form-label" for="discard_reason">Reason *</label>
+                <textarea id="discard_reason" name="reason" class="form-control" rows="3" required minlength="5" maxlength="500"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-outline-danger">Discard</button>
+            </div>
+        </form>
+    </div></div>
+</div>
+@endif
+
 <div class="card mb-3">
     <div class="card-header"><h6 class="mb-0">Metadata</h6></div>
     <div class="card-body">

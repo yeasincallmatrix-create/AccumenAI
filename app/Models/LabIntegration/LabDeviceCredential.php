@@ -13,6 +13,7 @@ class LabDeviceCredential extends Model
     protected $table = 'lab_device_credentials';
     protected $fillable = [
         'institute_id', 'analyzer_id', 'token_hash', 'token_prefix',
+        'previous_token_hash', 'previous_token_prefix', 'previous_token_expires_at',
         'name', 'abilities', 'rotated_at', 'revoked_at', 'expires_at',
         'last_used_at', 'last_ip', 'notes',
     ];
@@ -22,7 +23,10 @@ class LabDeviceCredential extends Model
         'revoked_at' => 'datetime',
         'expires_at' => 'datetime',
         'last_used_at' => 'datetime',
+        'previous_token_expires_at' => 'datetime',
     ];
+
+    public const GRACE_PERIOD_HOURS = 24;
 
     public function institute() { return $this->belongsTo(\App\Models\Institute::class); }
     public function analyzer() { return $this->belongsTo(LabAnalyzer::class, 'analyzer_id'); }
@@ -47,6 +51,44 @@ class LabDeviceCredential extends Model
     {
         return self::where('token_prefix', substr($plainToken, 0, 12))
             ->where('token_hash', hash('sha256', $plainToken))
+            ->first();
+    }
+
+    /**
+     * Returns true if the previous token (during rotation grace) is still valid.
+     */
+    public function previousTokenIsValid(): bool
+    {
+        return $this->previous_token_hash !== null
+            && $this->previous_token_expires_at !== null
+            && $this->previous_token_expires_at->isFuture();
+    }
+
+    /**
+     * Find a credential matching the given plaintext token,
+     * checking current + previous (during grace).
+     */
+    public static function findByTokenWithGrace(string $plainToken): ?self
+    {
+        if (strlen($plainToken) < 12) {
+            return null;
+        }
+
+        $hash = hash('sha256', $plainToken);
+        $prefix = substr($plainToken, 0, 12);
+
+        // Try current
+        $current = self::where('token_prefix', $prefix)
+            ->where('token_hash', $hash)
+            ->first();
+        if ($current) {
+            return $current;
+        }
+
+        // Try previous (grace)
+        return self::where('previous_token_prefix', $prefix)
+            ->where('previous_token_hash', $hash)
+            ->where('previous_token_expires_at', '>', now())
             ->first();
     }
 }

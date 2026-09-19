@@ -36,6 +36,14 @@ class LabAnalyzerMessageController extends MedicalController
         if ($request->filled('to_date')) {
             $query->whereDate('received_at', '<=', $request->input('to_date'));
         }
+        if ($request->filled('resolution')) {
+            $resolution = $request->input('resolution');
+            if ($resolution === 'unresolved') {
+                $query->whereIn('status', ['error', 'dead'])->whereNull('resolution_status');
+            } else {
+                $query->where('resolution_status', $resolution);
+            }
+        }
 
         $messages = $query->paginate(20)->withQueryString();
 
@@ -56,25 +64,52 @@ class LabAnalyzerMessageController extends MedicalController
         return view('medical.lab.analyzers.messages.show', compact('analyzer', 'message', 'linkedResults'));
     }
 
-    public function retry(LabAnalyzer $analyzer, LabMessage $message)
+    public function retry(LabAnalyzer $analyzer, LabMessage $message, \App\Services\LabIntegration\DeadLetterService $service)
     {
         $this->analyzer($analyzer);
         if ((int) $message->analyzer_id !== (int) $analyzer->id || (int) $message->institute_id !== $this->instituteId()) {
             abort(404);
         }
 
-        if (! in_array($message->status, ['error', 'dead', 'received', 'parsed'], true)) {
-            return back()->with('warning', 'Only failed or pending messages can be retried.');
+        $ok = $service->retry($message, (int) auth()->id(), request()->input('notes'));
+
+        return back()->with($ok ? 'success' : 'warning', $ok ? "Message #{$message->id} re-queued for processing." : 'Only failed messages can be retried.');
+    }
+
+    public function resolveManually(Request $request, LabAnalyzer $analyzer, LabMessage $message, \App\Services\LabIntegration\DeadLetterService $service)
+    {
+        $this->analyzer($analyzer);
+        $this->ensureMessage($analyzer, $message);
+        $request->validate(['notes' => 'required|string|min:5|max:500']);
+        $service->resolveManually($message, (int) auth()->id(), $request->input('notes'));
+
+        return back()->with('success', 'Message resolved manually.');
+    }
+
+    public function discard(Request $request, LabAnalyzer $analyzer, LabMessage $message, \App\Services\LabIntegration\DeadLetterService $service)
+    {
+        $this->analyzer($analyzer);
+        $this->ensureMessage($analyzer, $message);
+        $request->validate(['reason' => 'required|string|min:5|max:500']);
+        $service->discard($message, (int) auth()->id(), $request->input('reason'));
+
+        return back()->with('success', 'Message discarded.');
+    }
+
+    public function escalate(Request $request, LabAnalyzer $analyzer, LabMessage $message, \App\Services\LabIntegration\DeadLetterService $service)
+    {
+        $this->analyzer($analyzer);
+        $this->ensureMessage($analyzer, $message);
+        $request->validate(['reason' => 'required|string|min:5|max:500']);
+        $service->escalate($message, (int) auth()->id(), $request->input('reason'));
+
+        return back()->with('success', 'Message escalated for pathologist review.');
+    }
+
+    protected function ensureMessage(LabAnalyzer $analyzer, LabMessage $message): void
+    {
+        if ((int) $message->analyzer_id !== (int) $analyzer->id || (int) $message->institute_id !== $this->instituteId()) {
+            abort(404);
         }
-
-        $message->update([
-            'status' => 'received',
-            'attempts' => 0,
-            'error_code' => null,
-            'error_message' => null,
-        ]);
-        ProcessAnalyzerMessage::dispatch($message->id, $analyzer->id);
-
-        return back()->with('success', "Message #{$message->id} re-queued for processing.");
     }
 }

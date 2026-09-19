@@ -24,7 +24,15 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
+                    <select name="resolution" class="form-select">
+                        <option value="">All Resolutions</option>
+                        @foreach(['unresolved' => 'Unresolved', 'retried' => 'Retried', 'resolved_manual' => 'Resolved', 'discarded' => 'Discarded', 'escalated' => 'Escalated'] as $value => $label)
+                            <option value="{{ $value }}" @selected(request('resolution') === $value)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <input type="text" name="accession_number" value="{{ request('accession_number') }}" class="form-control" placeholder="Accession...">
                 </div>
                 <div class="col-md-3">
@@ -43,7 +51,7 @@
         <div class="table-responsive">
             <table class="table table-hover align-middle">
                 <thead>
-                    <tr><th>ID</th><th>Received</th><th>Status</th><th>Message ID</th><th>Accession</th><th>Error</th><th class="text-end">Actions</th></tr>
+                    <tr><th>ID</th><th>Received</th><th>Status</th><th>Resolution</th><th>Message ID</th><th>Accession</th><th>Error</th><th class="text-end">Actions</th></tr>
                 </thead>
                 <tbody>
                     @forelse($messages as $message)
@@ -51,6 +59,7 @@
                         <td><strong>#{{ $message->id }}</strong></td>
                         <td>{{ $message->received_at ? $message->received_at->format('d M H:i') : '—' }}</td>
                         <td><span class="badge bg-{{ $message->status === 'stored' ? 'success' : (in_array($message->status, ['error', 'dead']) ? 'danger' : 'secondary') }}">{{ $message->status }}</span></td>
+                        <td>{{ $message->resolution_status ?? (in_array($message->status, ['error', 'dead']) ? 'unresolved' : '—') }}</td>
                         <td>{{ $message->message_id ?? '—' }}</td>
                         <td>{{ $message->accession_number ?? '—' }}</td>
                         <td class="text-danger small">{{ $message->error_code ?? '—' }}</td>
@@ -70,7 +79,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="text-center text-muted py-4">
+                        <td colspan="8" class="text-center text-muted py-4">
                             <i class="bi bi-inbox fs-2 d-block mb-2"></i>
                             No messages found.
                         </td>

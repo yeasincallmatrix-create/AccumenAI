@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\GoodsReceiptController;
 use App\Http\Controllers\Api\HrApiController;
 use App\Http\Controllers\Api\InventoryApiController;
 use App\Http\Controllers\Api\InvoiceController;
+use App\Http\Controllers\Api\LabGatewayController;
 use App\Http\Controllers\Api\MedicalReactController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PaymentController;
@@ -133,3 +134,30 @@ Route::middleware(['auth:sanctum', 'ensure.institute.context', 'throttle:60,1'])
     Route::get('medical/prescriptions', [MedicalReactController::class, 'prescriptions'])
         ->middleware('permission:medical_prescriptions.view');
 });
+
+// Phase 4 lab analyzer integration: device auth (NOT user auth — no
+// auth:sanctum here). HMAC signing enforced on results POST by middleware.
+Route::prefix('lab-gateway')
+    ->middleware(['lab.device', 'throttle:30,1'])
+    ->group(function () {
+        Route::post('results', [LabGatewayController::class, 'receiveResult'])
+            ->middleware('lab.device:result:post')
+            ->name('api.lab-gateway.results');
+
+        // Phase 6 reconciliation probe for reconnecting gateways.
+        Route::get('results/check', [LabGatewayController::class, 'checkResult'])
+            ->middleware('lab.device:result:post')
+            ->name('api.lab-gateway.results.check');
+
+        Route::get('worklist', [LabGatewayController::class, 'worklist'])
+            ->middleware('lab.device:worklist:get')
+            ->name('api.lab-gateway.worklist');
+
+        Route::post('ack', [LabGatewayController::class, 'ack'])
+            ->middleware('lab.device:worklist:get')
+            ->name('api.lab-gateway.ack');
+
+        Route::post('health', [LabGatewayController::class, 'health'])
+            ->middleware('lab.device:health:post')
+            ->name('api.lab-gateway.health');
+    });

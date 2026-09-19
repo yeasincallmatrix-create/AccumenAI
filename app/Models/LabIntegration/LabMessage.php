@@ -17,12 +17,14 @@ class LabMessage extends Model
         'attempts', 'last_attempted_at', 'accession_number',
         'sample_id', 'lab_order_id', 'source_ip', 'source_host',
         'received_at', 'processed_at',
+        'resolution_status', 'resolution_notes', 'resolved_by', 'resolved_at',
     ];
     protected $casts = [
         'parsed_json' => 'array',
         'received_at' => 'datetime',
         'processed_at' => 'datetime',
         'last_attempted_at' => 'datetime',
+        'resolved_at' => 'datetime',
     ];
 
     public const STATUSES = ['received', 'parsed', 'matched', 'stored', 'error', 'dead', 'duplicate'];
@@ -34,4 +36,25 @@ class LabMessage extends Model
 
     public function scopePending($q) { return $q->whereIn('status', ['received', 'parsed']); }
     public function scopeFailed($q) { return $q->whereIn('status', ['error', 'dead']); }
+
+    public function scopeDeadLetter($q)
+    {
+        return $q->where('status', 'dead');
+    }
+
+    public function scopeUnresolved($q)
+    {
+        return $q->whereIn('status', ['error', 'dead'])
+            ->whereNull('resolution_status');
+    }
+
+    public function isDeadLetter(): bool
+    {
+        return $this->status === 'dead';
+    }
+
+    public function isResolved(): bool
+    {
+        return $this->resolution_status !== null;
+    }
 }
