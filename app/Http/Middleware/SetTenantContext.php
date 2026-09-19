@@ -39,9 +39,19 @@ class SetTenantContext
         } elseif ($user instanceof User) {
             $workspaceId = Workspace::id();
 
-            if ($workspaceId !== null && ! Workspace::verify($workspaceId, $user->id)) {
+            // Forged workspace: a session id that fails membership verification
+            // must be rejected outright (403). This is distinct from an ABSENT
+            // workspace (stale cookie / new device), which keeps the
+            // auto-resolve fallback below so the navbar never 404s.
+            $wasForged = $workspaceId !== null && ! Workspace::verify($workspaceId, $user->id);
+
+            if ($wasForged) {
                 $workspaceId = null;
                 Workspace::clear();
+            }
+
+            if ($wasForged) {
+                abort(403, 'Invalid workspace.');
             }
 
             // Cookie/session fix forever: if workspace is null (stale cookie after

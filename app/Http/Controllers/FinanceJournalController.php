@@ -105,12 +105,15 @@ class FinanceJournalController extends Controller
 
     public function show(Request $request, Journal $journal): View
     {
-        $this->requireInstitute($request);
+        $institute = $this->requireInstitute($request);
+
+        abort_if((int) $journal->institute_id !== (int) $institute->id, 403,
+            'This journal does not belong to your institute.');
 
         $journal->load(['entries.coa', 'entries.party', 'creator', 'postedBy', 'reversedBy', 'reversalOf', 'period']);
 
         return view('institute.finance.journals.show', [
-            'institute' => $this->requireInstitute($request),
+            'institute' => $institute,
             'journal' => $journal,
         ]);
     }
