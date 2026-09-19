@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
 use App\Services\ModuleAccessService;
 
@@ -70,6 +71,11 @@ class PackageScope extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', 'active');
+    }
+
+    public function scopedModules(): HasMany
+    {
+        return $this->hasMany(PackageScopedModule::class, 'package_scope_id');
     }
 
     public function isGlobal(): bool

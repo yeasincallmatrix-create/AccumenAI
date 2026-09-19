@@ -4,8 +4,10 @@ namespace App\Console\Commands;
 
 use App\Models\Institute;
 use App\Models\PackageFeature;
+use App\Models\PackageModule;
 use App\Models\PackageScope;
 use App\Models\PackageScopedFeature;
+use App\Models\PackageScopedModule;
 use App\Models\SubscriptionPackage;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -31,6 +33,7 @@ class PackagesGenerateScopes extends Command
             'global_scopes_created' => 0,
             'institute_scopes_created' => 0,
             'features_copied' => 0,
+            'modules_copied' => 0,
             'skipped' => 0,
         ];
 
@@ -47,6 +50,7 @@ class PackagesGenerateScopes extends Command
         $this->info("Global scopes created: {$counters['global_scopes_created']}");
         $this->info("Institute-specific scopes created: {$counters['institute_scopes_created']}");
         $this->info("Feature rows copied: {$counters['features_copied']}");
+        $this->info("Module rows copied: {$counters['modules_copied']}");
         $this->info("Skipped (already exist): {$counters['skipped']}");
 
         return self::SUCCESS;
@@ -77,6 +81,7 @@ class PackagesGenerateScopes extends Command
                     ]);
 
                     $counters['features_copied'] += $this->copyFeatures($package->id, $scope->id);
+                    $counters['modules_copied'] += $this->copyModules($package->id, $scope->id);
                 } catch (\Illuminate\Database\QueryException $e) {
                     $counters['skipped']++;
                     continue;
@@ -126,6 +131,7 @@ class PackagesGenerateScopes extends Command
                         ]);
 
                         $counters['features_copied'] += $this->copyFeatures($packageId, $scope->id);
+                        $counters['modules_copied'] += $this->copyModules($packageId, $scope->id);
                     } catch (\Illuminate\Database\QueryException $e) {
                         $counters['skipped']++;
                         continue;
@@ -149,6 +155,28 @@ class PackagesGenerateScopes extends Command
                 'enabled' => $feature->enabled,
             ]);
             $count++;
+        }
+
+        return $count;
+    }
+
+    /**
+     * Copy package_modules → package_scoped_modules for a scope (Phase 6).
+     * Idempotent: existing (scope, module_key) rows are skipped.
+     */
+    private function copyModules(int $packageId, int $scopeId): int
+    {
+        $modules = PackageModule::where('package_id', $packageId)->get();
+        $count = 0;
+
+        foreach ($modules as $module) {
+            $row = PackageScopedModule::firstOrCreate(
+                ['package_scope_id' => $scopeId, 'module_key' => $module->module_key],
+                ['enabled' => $module->enabled]
+            );
+            if ($row->wasRecentlyCreated) {
+                $count++;
+            }
         }
 
         return $count;

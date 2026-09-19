@@ -13,6 +13,7 @@ use App\Models\PackageFeature;
 use App\Models\PackageModule;
 use App\Models\PackageScope;
 use App\Models\PackageScopedFeature;
+use App\Models\PackageScopedModule;
 use App\Models\SubscriptionPackage;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -240,23 +241,9 @@ class ModuleAccessService
         $allModules = ModuleRegistry::all()->keyBy('key');
 
         // SaaS subscription enforcement — expired/cancelled falls back to FREE (P0 fix, Step 60)
-        // Legacy institutes without package are also treated as FREE tier
-        if (! $this->isSubscriptionActive($institute)) {
-            $free = SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['free'])->first();
-            $packageModules = $free ? PackageModule::where('package_id', $free->id)->where('enabled', true)->pluck('module_key')->toArray() : [];
-        } else {
-            $packageModules = [];
-            if ($institute->package_id) {
-                $packageModules = PackageModule::where('package_id', $institute->package_id)
-                    ->where('enabled', true)
-                    ->pluck('module_key')
-                    ->toArray();
-            } else {
-                // Legacy / null package => FREE base
-                $free = SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['free'])->first();
-                $packageModules = $free ? PackageModule::where('package_id', $free->id)->where('enabled', true)->pluck('module_key')->toArray() : [];
-            }
-        }
+        // Legacy institutes without package are also treated as FREE tier.
+        // Scope-aware dual-read with legacy fallback (Phase 6).
+        $packageModules = $this->resolvePackageModules($institute);
 
         // Education industry: disable sales/purchase/hr/crm by default regardless of package.
         // Package base is filtered; override/entitlement can still re-enable (steps 2 & 3).
@@ -1056,6 +1043,83 @@ class ModuleAccessService
     }
 
     /**
+     * Get all enabled module keys for a scope, with inherit-from-parent logic.
+     * Mirrors getScopedFeatureKeys() (Phase 6 — module configuration scope).
+     */
+    private function getScopedModuleKeys(PackageScope $scope): array
+    {
+        $directModules = PackageScopedModule::where('package_scope_id', $scope->id)
+            ->where('enabled', true)
+            ->pluck('module_key')
+            ->toArray();
+
+        if (! $scope->inherit_from_parent) {
+            return $directModules;
+        }
+
+        $parent = $this->resolveParentScope($scope);
+        if (! $parent) {
+            return $directModules;
+        }
+
+        $parentModules = $this->getScopedModuleKeys($parent);
+
+        $disabled = PackageScopedModule::where('package_scope_id', $scope->id)
+            ->where('enabled', false)
+            ->pluck('module_key')
+            ->toArray();
+
+        return array_values(array_diff(
+            array_unique(array_merge($parentModules, $directModules)),
+            $disabled
+        ));
+    }
+
+    /**
+     * Resolve the package-level module base for an institute (Phase 6).
+     *
+     * Dual-read with legacy fallback:
+     *   - Effective package: institute package when subscription active,
+     *     FREE package when subscription inactive/expired or package null
+     *     (FREE fallback behavior unchanged).
+     *   - When a scope resolves for the effective package and holds
+     *     scoped modules, those win; otherwise legacy package_modules.
+     *
+     * @return array<int, string>
+     */
+    private function resolvePackageModules(Institute $institute): array
+    {
+        $packageId = $institute->package_id;
+        if (! $this->isSubscriptionActive($institute) || $packageId === null) {
+            $packageId = SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['free'])->value('id');
+        }
+
+        if ($packageId === null) {
+            return [];
+        }
+
+        // Resolve scope for the EFFECTIVE package (not necessarily the
+        // institute's own package_id, which may be a lapsed paid tier).
+        $probe = clone $institute;
+        $probe->setAttribute('package_id', $packageId);
+        $scope = $this->resolveScopedPackage($probe);
+
+        if ($scope) {
+            $scopedModules = $this->getScopedModuleKeys($scope);
+            if (! empty($scopedModules)) {
+                return $scopedModules;
+            }
+        }
+
+        // Legacy fallback — package_modules stays the source of truth
+        // until scoped rows exist for the effective scope.
+        return PackageModule::where('package_id', $packageId)
+            ->where('enabled', true)
+            ->pluck('module_key')
+            ->toArray();
+    }
+
+    /**
      * Walk one level up the scope hierarchy.
      */
     public function resolveParentScope(PackageScope $scope): ?PackageScope
@@ -1139,6 +1203,18 @@ class ModuleAccessService
                             'enabled' => $pf->enabled,
                         ]);
                     }
+
+                    // Phase 6: also copy parent scope's modules (not just features)
+                    $parentModules = PackageScopedModule::where(
+                        'package_scope_id', $parent->id
+                    )->get();
+                    foreach ($parentModules as $pm) {
+                        PackageScopedModule::create([
+                            'package_scope_id' => $scope->id,
+                            'module_key' => $pm->module_key,
+                            'enabled' => $pm->enabled,
+                        ]);
+                    }
                 }
             }
 
@@ -1190,6 +1266,28 @@ class ModuleAccessService
             $this->flushFeatureCache($id);
             Cache::forget($this->featureCachePrefix . $id . ':' . $scope->scope_hash);
             Cache::forget($this->featureCachePrefix . $id . ':global');
+        });
+    }
+
+    /**
+     * Flush module-access cache for all institutes matching a scope.
+     * Call when PackageScopedModule rows change (Phase 6).
+     */
+    public function flushModuleCacheForScope(PackageScope $scope): void
+    {
+        $query = Institute::where('package_id', $scope->package_id);
+        if ($scope->country_id !== null) {
+            $query->where('country_id', $scope->country_id);
+        }
+        if ($scope->industry_id !== null) {
+            $query->where('industry_id', $scope->industry_id);
+        }
+        if ($scope->sub_industry_id !== null) {
+            $query->where('sub_industry_id', $scope->sub_industry_id);
+        }
+
+        $query->pluck('id')->each(function ($id) {
+            $this->flushCache($id);
         });
     }
 }

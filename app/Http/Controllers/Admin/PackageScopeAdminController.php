@@ -8,8 +8,10 @@ use App\Models\FeatureRegistry;
 use App\Models\Industry;
 use App\Models\Institute;
 use App\Models\ModuleAccessLog;
+use App\Models\ModuleRegistry;
 use App\Models\PackageScope;
 use App\Models\PackageScopedFeature;
+use App\Models\PackageScopedModule;
 use App\Models\SubIndustry;
 use App\Models\SubscriptionPackage;
 use App\Services\ModuleAccessService;
@@ -96,8 +98,25 @@ class PackageScopeAdminController extends Controller
                 ->all();
         }
 
+        $scopedModuleRows = PackageScopedModule::where('package_scope_id', $scope->id)->get();
+        $scopedModuleMap = $scopedModuleRows->pluck('enabled', 'module_key')->all();
+
+        $allModules = ModuleRegistry::orderBy('parent_key')
+            ->orderBy('sort_order')
+            ->get();
+
+        $parentModuleMap = [];
+        if ($parentScope) {
+            $parentModuleMap = PackageScopedModule::where('package_scope_id', $parentScope->id)
+                ->where('enabled', true)
+                ->pluck('module_key')
+                ->flip()
+                ->all();
+        }
+
         return view('admin.scopes.show', compact(
-            'scope', 'scopedFeatures', 'scopedMap', 'allFeatures', 'parentScope', 'parentMap'
+            'scope', 'scopedFeatures', 'scopedMap', 'allFeatures', 'parentScope', 'parentMap',
+            'scopedModuleMap', 'allModules', 'parentModuleMap'
         ));
     }
 
@@ -265,6 +284,37 @@ class PackageScopeAdminController extends Controller
             "Scope #{$scope->id} features synced");
 
         return back()->with('success', 'Scope features updated successfully.');
+    }
+
+    public function updateModules(Request $request, PackageScope $scope): RedirectResponse
+    {
+        $validated = $request->validate([
+            'modules' => ['nullable', 'array'],
+            'modules.*' => ['string', 'exists:module_registry,key'],
+        ]);
+
+        $enabledKeys = array_values(array_unique($validated['modules'] ?? []));
+
+        $allKeys = ModuleRegistry::pluck('key')->all();
+
+        DB::transaction(function () use ($scope, $allKeys, $enabledKeys) {
+            $enabledLookup = array_flip($enabledKeys);
+
+            foreach ($allKeys as $key) {
+                PackageScopedModule::updateOrCreate(
+                    ['package_scope_id' => $scope->id, 'module_key' => $key],
+                    ['enabled' => isset($enabledLookup[$key])]
+                );
+            }
+        });
+
+        app(ModuleAccessService::class)->flushModuleCacheForScope($scope);
+
+        $this->audit($request, null, $scope->package_id, 'scope_modules_updated',
+            null, count($enabledKeys) . ' modules enabled',
+            "Scope #{$scope->id} modules synced");
+
+        return back()->with('success', 'Scope modules updated successfully.');
     }
 
     public function destroy(Request $request, PackageScope $scope): RedirectResponse

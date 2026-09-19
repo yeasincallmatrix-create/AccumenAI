@@ -473,6 +473,7 @@ Route::middleware(['auth:platform_admin', 'verified'])->prefix('admin')->name('a
     Route::get('scopes/{scope}/edit', [PackageScopeAdminController::class, 'edit'])->name('scopes.edit')->whereNumber('scope');
     Route::put('scopes/{scope}', [PackageScopeAdminController::class, 'update'])->name('scopes.update')->whereNumber('scope');
     Route::put('scopes/{scope}/features', [PackageScopeAdminController::class, 'updateFeatures'])->name('scopes.features.update')->whereNumber('scope');
+    Route::put('scopes/{scope}/modules', [PackageScopeAdminController::class, 'updateModules'])->name('scopes.modules.update')->whereNumber('scope');
     Route::delete('scopes/{scope}', [PackageScopeAdminController::class, 'destroy'])->name('scopes.destroy')->whereNumber('scope');
 
     // Tenant access (grants + denials)

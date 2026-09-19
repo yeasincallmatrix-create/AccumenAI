@@ -148,6 +148,70 @@
                 </div>
             </form>
         </div>
+
+        <div class="admin-card mb-4">
+            <div class="table-toolbar">
+                <div class="toolbar-info"><i class="bi bi-boxes"></i> Scoped Modules</div>
+            </div>
+            <form method="POST" action="{{ route('admin.scopes.modules.update', $scope) }}">
+                @csrf
+                @method('PUT')
+                <div class="p-3">
+                    @php
+                        $groupedModules = $allModules->groupBy(fn ($m) => $m->parent_key ?? 'top');
+                        $topModules = $groupedModules->pull('top', collect());
+                    @endphp
+                    @forelse ($topModules as $module)
+                        <h6 class="mt-3 mb-2"><code>{{ $module->key }}</code> <span class="text-muted fw-normal">— {{ $module->name }}</span></h6>
+                        <div class="row g-2">
+                            @php
+                                $isModuleEnabled = (bool) ($scopedModuleMap[$module->key] ?? false);
+                                $moduleInherited = !$isModuleEnabled && isset($parentModuleMap[$module->key]);
+                            @endphp
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="modules[]"
+                                        value="{{ $module->key }}" id="mod-{{ $module->id }}"
+                                        @checked($isModuleEnabled)>
+                                    <label class="form-check-label" for="mod-{{ $module->id }}">
+                                        Enable <code>{{ $module->key }}</code>
+                                        @if ($moduleInherited)
+                                            <span class="badge bg-info ms-1">inherited</span>
+                                        @endif
+                                    </label>
+                                </div>
+                            </div>
+                            @foreach ($groupedModules->get($module->key, collect()) as $child)
+                                @php
+                                    $isChildEnabled = (bool) ($scopedModuleMap[$child->key] ?? false);
+                                    $childInherited = !$isChildEnabled && isset($parentModuleMap[$child->key]);
+                                @endphp
+                                <div class="col-md-6 ps-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="modules[]"
+                                            value="{{ $child->key }}" id="mod-{{ $child->id }}"
+                                            @checked($isChildEnabled)>
+                                        <label class="form-check-label" for="mod-{{ $child->id }}">
+                                            {{ $child->name }}
+                                            <br><small class="text-muted"><code>{{ $child->key }}</code></small>
+                                            @if ($childInherited)
+                                                <span class="badge bg-info ms-1">inherited</span>
+                                            @endif
+                                        </label>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @empty
+                        <p class="text-muted mb-0">No modules in the registry.</p>
+                    @endforelse
+                </div>
+                <div class="p-3 border-top d-flex justify-content-end gap-2">
+                    <a href="{{ route('admin.packages.scopes.index', $scope->package) }}" class="btn btn-outline-secondary btn-sm">Back</a>
+                    <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-save"></i> Save Modules</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 @endsection
