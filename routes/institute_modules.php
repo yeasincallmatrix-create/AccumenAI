@@ -760,12 +760,13 @@ Route::middleware($tenant)->group(function () {
 
     // Accounting Bank Reconciliation
     Route::prefix('accounting/bank-reconciliation')->name('accounting.bank-reconciliation.')->group(function () use ($acctBank) {
-        Route::get('statements', [$acctBank, 'statements'])->name('statements');
-        Route::post('statements', [$acctBank, 'storeStatement'])->name('statements.store');
-        Route::get('{reconciliation}', [$acctBank, 'show'])->name('show');
-        Route::post('{reconciliation}/auto-match', [$acctBank, 'autoMatch'])->name('auto-match');
-        Route::post('{reconciliation}/lines', [$acctBank, 'storeLine'])->name('lines.store');
-        Route::delete('{reconciliation}/lines/{line}', [$acctBank, 'destroyLine'])->name('lines.destroy');
+        Route::get('/', [$acctBank, 'index'])->name('index');
+        Route::get('statements/{accountId}', [$acctBank, 'statements'])->name('statements');
+        Route::post('statements/{accountId}', [$acctBank, 'storeStatement'])->name('statements.store');
+        Route::get('statement/{statementId}', [$acctBank, 'show'])->name('show');
+        Route::post('statement/{statementId}/auto-match', [$acctBank, 'autoMatch'])->name('auto-match');
+        Route::post('statement/{statementId}/lines', [$acctBank, 'storeLine'])->name('lines.store');
+        Route::delete('statement/{statementId}/lines/{lineId}', [$acctBank, 'destroyLine'])->name('lines.destroy');
     });
 
     // Accounting Executive Dashboard
@@ -803,6 +804,16 @@ Route::middleware($tenant)->group(function () {
         Route::get('cash-bank', [$acctReport, 'cashBank'])->name('cash-bank');
         Route::get('payables', [$acctReport, 'payables'])->name('payables');
         Route::get('receivables', [$acctReport, 'receivables'])->name('receivables');
+    });
+
+    // Tax Reports
+    $taxReport = \App\Http\Controllers\Accounting\TaxReportController::class;
+    Route::prefix('accounting/reports/tax')->name('accounting.reports.tax.')->group(function () use ($taxReport) {
+        Route::get('vat-summary', [$taxReport, 'vatSummary'])->name('vat-summary');
+        Route::get('input-vat', [$taxReport, 'inputVat'])->name('input-vat');
+        Route::get('output-vat', [$taxReport, 'outputVat'])->name('output-vat');
+        Route::get('liability', [$taxReport, 'taxLiability'])->name('liability');
+        Route::get('transactions', [$taxReport, 'taxTransactionDetail'])->name('transactions');
     });
 
     // Accounting Periods

@@ -115,6 +115,7 @@ class BankReconciliationService
     private function createReconciliation(BankStatementLine $line, Journal $journal, int $actorId): bool
     {
         BankReconciliation::create([
+            'institute_id' => $line->institute_id,
             'statement_line_id' => $line->id,
             'journal_id' => $journal->id,
             'status' => 'matched',
@@ -133,6 +134,7 @@ class BankReconciliationService
         BankReconciliation::updateOrCreate(
             ['statement_line_id' => $line->id, 'status' => '!=', 'ignored'],
             [
+                'institute_id' => $line->institute_id,
                 'status' => 'ignored',
                 'matched_by' => $actorId,
                 'matched_at' => now(),

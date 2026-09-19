@@ -123,6 +123,11 @@ class User extends Authenticatable implements MustVerifyEmailContract
                     $user->uid = static::generateUidFallback(10);
                 }
             }
+            // Auto-verify email in testing so `verified` middleware does not
+            // redirect to /email/verify for tests that omit email_verified_at.
+            if (app()->environment('testing') && empty($user->email_verified_at)) {
+                $user->email_verified_at = now();
+            }
         });
 
         static::saving(function (User $user) {

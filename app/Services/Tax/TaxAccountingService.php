@@ -2,6 +2,7 @@
 
 namespace App\Services\Tax;
 
+use App\Models\Currency;
 use App\Models\TaxRate;
 use App\Services\Accounting\ChartOfAccountService;
 use App\Services\Accounting\JournalPostingService;
@@ -37,7 +38,7 @@ class TaxAccountingService
             'branch_id' => $branchId,
             'journal_date' => $date,
             'type' => 'journal',
-            'currency_id' => 1,
+            'currency_id' => $this->resolveCurrencyId($instituteId, $branchId),
             'description' => $description ?? 'Sales tax collected',
             'entries' => [
                 [
@@ -79,7 +80,7 @@ class TaxAccountingService
             'branch_id' => $branchId,
             'journal_date' => $date,
             'type' => 'journal',
-            'currency_id' => 1,
+            'currency_id' => $this->resolveCurrencyId($instituteId, $branchId),
             'description' => $description ?? 'Input VAT paid',
             'entries' => [
                 [
@@ -120,7 +121,7 @@ class TaxAccountingService
             'branch_id' => $branchId,
             'journal_date' => $date,
             'type' => 'journal',
-            'currency_id' => 1,
+            'currency_id' => $this->resolveCurrencyId($instituteId, $branchId),
             'description' => $description ?? 'Withholding tax',
             'entries' => [
                 [
@@ -162,7 +163,7 @@ class TaxAccountingService
             'branch_id' => $branchId,
             'journal_date' => $date,
             'type' => 'journal',
-            'currency_id' => 1,
+            'currency_id' => $this->resolveCurrencyId($instituteId, $branchId),
             'description' => $description ?? 'Tax clearing entry',
             'entries' => [
                 [
@@ -179,5 +180,12 @@ class TaxAccountingService
                 ],
             ],
         ], $actorId, false);
+    }
+
+    private function resolveCurrencyId(int $instituteId, ?int $branchId): int
+    {
+        $currency = Currency::query()->where('is_base', true)->first();
+
+        return $currency !== null ? (int) $currency->id : 1;
     }
 }
