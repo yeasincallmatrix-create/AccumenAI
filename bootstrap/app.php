@@ -7,6 +7,7 @@ use App\Http\Middleware\DenyTeacherFromFinance;
 use App\Http\Middleware\EnsureAiEnabled;
 use App\Http\Middleware\EnsureDomain;
 use App\Http\Middleware\EnsureInstituteContext;
+use App\Http\Middleware\FinanceWriteGate;
 use App\Http\Middleware\ForceJsonResponse;
 use App\Http\Middleware\MedicalDomain;
 use App\Http\Middleware\MedicalModuleAccess;
@@ -35,12 +36,14 @@ return Application::configure(basePath: dirname(__DIR__))
         ],
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
+        channels: __DIR__.'/../routes/channels.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'tenant' => SetTenantContext::class,
             'deny.teacher.finance' => DenyTeacherFromFinance::class,
+            'finance.write' => FinanceWriteGate::class,
             'permission' => CheckPermission::class,
             'module_access' => CheckModuleAccess::class,
             'feature' => CheckFeatureAccess::class,

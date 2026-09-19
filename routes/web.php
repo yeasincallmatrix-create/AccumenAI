@@ -532,7 +532,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->group(func
 });
 
 // institute/finance/accounting stubs
-Route::middleware(['auth:institute_user,web','tenant', 'deny.teacher.finance', 'verified'])->group(function () {
+Route::middleware(['auth:institute_user,web','tenant', 'deny.teacher.finance', 'finance.write', 'verified'])->group(function () {
     Route::get('business/{institute}', function ($institute) { return redirect()->route('dashboard'); })->name('business.show');
     Route::get('teachers', [\App\Http\Controllers\TeacherController::class, 'index'])->name('teachers.index');
     Route::get('alumni', [\App\Http\Controllers\Alumni\AlumniController::class, 'index'])->name('alumni.index');
@@ -550,6 +550,8 @@ Route::middleware(['auth:institute_user,web','tenant', 'deny.teacher.finance', '
     Route::get('finance/payments', [\App\Http\Controllers\FinancePaymentController::class, 'index'])->name('finance.payments.index');
     Route::get('finance/parties', [\App\Http\Controllers\FinancePartyController::class, 'index'])->name('finance.parties.index');
     Route::get('finance/payment-methods', [\App\Http\Controllers\FinancePaymentMethodController::class, 'index'])->name('finance.payment-methods.index');
+    Route::post('finance/payment-methods/{method}/toggle', [\App\Http\Controllers\FinancePaymentMethodController::class, 'toggle'])->name('finance.payment-methods.toggle');
+    Route::delete('finance/payment-methods/{method}', [\App\Http\Controllers\FinancePaymentMethodController::class, 'destroy'])->name('finance.payment-methods.destroy');
     Route::get('finance/periods', [\App\Http\Controllers\FinancePeriodController::class, 'index'])->name('finance.periods.index');
     Route::get('finance/opening-balances/create', [\App\Http\Controllers\FinanceOpeningBalanceController::class, 'create'])->name('finance.opening-balances.create');
     Route::get('finance/exchange-rates', [\App\Http\Controllers\FinanceExchangeRateController::class, 'index'])->name('finance.exchange-rates.index');
