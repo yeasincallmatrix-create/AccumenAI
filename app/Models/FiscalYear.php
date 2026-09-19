@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\BranchScopedOrShared;
 use App\Models\Concerns\TenantScoped;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class FiscalYear extends Model
 {
     use BranchScopedOrShared;
+    use HasFactory;
     use SoftDeletes;
     use TenantScoped;
 

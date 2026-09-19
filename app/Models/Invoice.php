@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Invoice extends Model
 {
     use Concerns\TenantScoped;
+    use HasFactory;
 
     protected $table = 'invoices';
 
@@ -29,6 +31,11 @@ class Invoice extends Model
         'invoice_meta',
         'discount',
         'total_amount',
+        'payable_amount',
+        'paid_amount',
+        'due_amount',
+        'status',
+        'created_by',
     ];
 
     protected function casts(): array
