@@ -12,6 +12,7 @@ use App\Models\SubscriptionPackage;
 use App\Services\ModuleAccessService;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
@@ -200,5 +201,85 @@ class InstituteFeatureOverrideTest extends TestCase
 
         $this->assertNotNull($override->overriddenBy, 'overriddenBy relationship should resolve');
         $this->assertEquals($admin->id, $override->overriddenBy->id);
+    }
+
+    public function test_isFeatureEnabled_uses_cache_on_second_call(): void
+    {
+        $inst = $this->institute('advanced');
+
+        DB::enableQueryLog();
+        $this->service->getFeatureAccessMap($inst);
+        $queriesAfterFirst = count(DB::getQueryLog());
+        DB::flushQueryLog();
+
+        DB::enableQueryLog();
+        $map = $this->service->getFeatureAccessMap($inst);
+        $queriesAfterSecond = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        $this->assertTrue($map['medical.pharmacy'] ?? false);
+        $this->assertLessThan($queriesAfterFirst, $queriesAfterSecond, 'Second call should use cache and hit fewer queries');
+    }
+
+    public function test_add_override_flushes_feature_cache(): void
+    {
+        $inst = $this->institute('basic');
+
+        // Warm cache — feature should be disabled (basic doesn't include pharmacy)
+        $this->assertFalse($this->service->isFeatureEnabled($inst, 'medical.pharmacy'));
+
+        // Add override granting the feature
+        InstituteFeatureOverride::create([
+            'institute_id' => $inst->id,
+            'feature_key' => 'medical.pharmacy',
+            'enabled' => true,
+        ]);
+
+        $this->service->flushFeatureCache($inst->id);
+
+        // Must reflect new state immediately
+        $this->assertTrue($this->service->isFeatureEnabled($inst, 'medical.pharmacy'), 'Override should be visible after cache flush');
+    }
+
+    public function test_remove_override_flushes_feature_cache(): void
+    {
+        $inst = $this->institute('advanced');
+
+        // Warm cache — feature should be enabled (advanced includes pharmacy)
+        $this->assertTrue($this->service->isFeatureEnabled($inst, 'medical.pharmacy'));
+
+        // Add override denying the feature
+        InstituteFeatureOverride::create([
+            'institute_id' => $inst->id,
+            'feature_key' => 'medical.pharmacy',
+            'enabled' => false,
+        ]);
+
+        $this->service->flushFeatureCache($inst->id);
+        $this->assertFalse($this->service->isFeatureEnabled($inst, 'medical.pharmacy'), 'Override deny should be visible');
+
+        // Remove the override
+        InstituteFeatureOverride::where('institute_id', $inst->id)
+            ->where('feature_key', 'medical.pharmacy')
+            ->delete();
+
+        $this->service->flushFeatureCache($inst->id);
+        $this->assertTrue($this->service->isFeatureEnabled($inst, 'medical.pharmacy'), 'Feature should revert to package default after override removal');
+    }
+
+    public function test_disable_module_flushes_feature_cache(): void
+    {
+        $inst = $this->institute('advanced');
+
+        // Warm cache — pharmacy should be enabled
+        $this->assertTrue($this->service->isFeatureEnabled($inst, 'medical.pharmacy'));
+
+        // Disable the parent module
+        $this->service->disableModule($inst, 'medical', null, 'Test disable');
+        $this->service->flushFeatureCache($inst->id);
+
+        // All medical.* features must now be false
+        $this->assertFalse($this->service->isFeatureEnabled($inst, 'medical.pharmacy'), 'Pharmacy should be disabled when medical module is disabled');
+        $this->assertFalse($this->service->isFeatureEnabled($inst, 'medical.laboratory'), 'Laboratory should be disabled when medical module is disabled');
     }
 }

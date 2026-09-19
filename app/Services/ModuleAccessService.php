@@ -29,6 +29,8 @@ class ModuleAccessService
 {
     protected string $cachePrefix = 'module_access:';
 
+    protected string $featureCachePrefix = 'feature_access:';
+
     /**
      * For education industry these modules are disabled by default regardless of package.
      * Admin can re-enable via InstituteModuleOverride (enableModule) or entitlement grant.
@@ -106,6 +108,7 @@ class ModuleAccessService
         );
 
         $this->flushCache($institute->id);
+        $this->flushFeatureCache($institute->id);
     }
 
     public function disableModule(Institute $institute, string $moduleKey, ?int $actorId = null, ?string $reason = null): void
@@ -136,6 +139,7 @@ class ModuleAccessService
         );
 
         $this->flushCache($institute->id);
+        $this->flushFeatureCache($institute->id);
     }
 
     public function setPackageModules(SubscriptionPackage $package, array $moduleKeys): void
@@ -159,6 +163,7 @@ class ModuleAccessService
         $instituteIds = Institute::where('package_id', $package->id)->pluck('id')->toArray();
         foreach ($instituteIds as $id) {
             $this->flushCache($id);
+            $this->flushFeatureCache($id);
         }
     }
 
@@ -225,6 +230,7 @@ class ModuleAccessService
         $this->archiveOverrides($institute, 'package_change', $actorId, $oldPackageId, $newPackageId);
 
         $this->flushCache($institute->id);
+        $this->flushFeatureCache($institute->id);
     }
 
     public function resolveEnabled(Institute $institute): array
@@ -505,6 +511,7 @@ class ModuleAccessService
             ->delete();
 
         $this->flushCache($institute->id);
+        $this->flushFeatureCache($institute->id);
     }
 
     /**
@@ -571,6 +578,7 @@ class ModuleAccessService
         }
 
         $this->flushCache($institute->id);
+        $this->flushFeatureCache($institute->id);
 
         return $entitlement;
     }
@@ -601,6 +609,7 @@ class ModuleAccessService
         );
 
         $this->flushCache($institute->id);
+        $this->flushFeatureCache($institute->id);
     }
 
     /**
@@ -671,6 +680,7 @@ class ModuleAccessService
             );
 
             $this->flushCache($entitlement->institute_id);
+            $this->flushFeatureCache($entitlement->institute_id);
 
             return $entitlement->fresh();
         });
@@ -770,41 +780,98 @@ class ModuleAccessService
             return false;
         }
 
-        $moduleKey = explode('.', $featureKey, 2)[0];
+        $map = $this->computeFeatureAccessMap($institute);
 
-        if (! $this->isEnabled($institute, $moduleKey)) {
-            return false;
-        }
+        return $map[$featureKey] ?? false;
+    }
 
-        $feature = FeatureRegistry::where('feature_key', $featureKey)->first();
-        if (! $feature || $feature->status !== 'active') {
-            return false;
-        }
+    /**
+     * Get the full feature-access map for an institute, cached.
+     *
+     * Use this in controllers/views for batch feature lookups.
+     * isFeatureEnabled() uses the uncached version for backward compatibility.
+     *
+     * @return array<string, bool>
+     */
+    public function getFeatureAccessMap(Institute $institute): array
+    {
+        $cacheKey = $this->featureCachePrefix . $institute->id;
+
+        return Cache::remember($cacheKey, 3600, function () use ($institute) {
+            return $this->computeFeatureAccessMap($institute);
+        });
+    }
+
+    /**
+     * Compute the full feature-access map for an institute.
+     *
+     * For each feature in feature_registry:
+     *   Gate 1: parent module enabled (isEnabled)
+     *   Gate 2: feature registry active
+     *   Gate 3: package_feature enabled
+     *   Gate 3.5: institute_feature_override wins
+     *
+     * @return array<string, bool>
+     */
+    private function computeFeatureAccessMap(Institute $institute): array
+    {
+        $allFeatures = FeatureRegistry::where('status', 'active')
+            ->orderBy('module_key')
+            ->orderBy('sort_order')
+            ->get();
 
         $packageId = $institute->package_id;
         if ($packageId === null) {
             $free = SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['free'])->first();
             $packageId = $free?->id;
         }
-        if ($packageId === null) {
-            return false;
+
+        $packageFeatureKeys = [];
+        if ($packageId !== null) {
+            $packageFeatureKeys = PackageFeature::where('package_id', $packageId)
+                ->where('enabled', true)
+                ->pluck('feature_key')
+                ->flip()
+                ->keys()
+                ->all();
         }
 
-        // Gate 3: Package-level enabled state
-        $packageEnabled = PackageFeature::where('package_id', $packageId)
-            ->where('feature_key', $featureKey)
-            ->where('enabled', true)
-            ->exists();
+        $overrides = InstituteFeatureOverride::where('institute_id', $institute->id)
+            ->get()
+            ->keyBy('feature_key');
 
-        // Gate 3.5: Institute-level feature override (super admin grant/deny)
-        $override = InstituteFeatureOverride::where('institute_id', $institute->id)
-            ->where('feature_key', $featureKey)
-            ->first();
+        $map = [];
 
-        if ($override !== null) {
-            return $override->enabled;
+        foreach ($allFeatures as $feature) {
+            $key = $feature->feature_key;
+            $moduleKey = explode('.', $key, 2)[0];
+
+            // Gate 1: parent module must be enabled
+            if (! $this->isEnabled($institute, $moduleKey)) {
+                $map[$key] = false;
+                continue;
+            }
+
+            // Gate 3: package-level enabled state
+            $packageEnabled = in_array($key, $packageFeatureKeys, true);
+
+            // Gate 3.5: institute-level override wins
+            if ($overrides->has($key)) {
+                $map[$key] = (bool) $overrides->get($key)->enabled;
+                continue;
+            }
+
+            $map[$key] = $packageEnabled;
         }
 
-        return $packageEnabled;
+        return $map;
+    }
+
+    /**
+     * Flush the feature-access cache for an institute.
+     */
+    public function flushFeatureCache(int $instituteId): void
+    {
+        Cache::forget($this->featureCachePrefix . $instituteId);
     }
 }

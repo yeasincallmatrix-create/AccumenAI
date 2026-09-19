@@ -9,6 +9,7 @@ use App\Models\InstituteFeatureOverride;
 use App\Models\ModuleAccessLog;
 use App\Models\PackageFeature;
 use App\Models\SubscriptionPackage;
+use App\Services\ModuleAccessService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -135,6 +136,12 @@ class FeatureAdminController extends Controller
 
         $status = $nowEnabled ? 'enabled' : 'disabled';
 
+        $instituteIds = Institute::where('package_id', $package_id)->pluck('id');
+        $service = app(ModuleAccessService::class);
+        foreach ($instituteIds as $instId) {
+            $service->flushFeatureCache($instId);
+        }
+
         return back()->with('success',
             "Feature '{$feature->name}' {$status} for {$package->name}.");
     }
@@ -188,6 +195,8 @@ class FeatureAdminController extends Controller
             'notes'          => "Feature '{$feature_key}' overridden for institute '{$institute->name}'",
         ]);
 
+        app(ModuleAccessService::class)->flushFeatureCache($institute->id);
+
         return back()->with('success',
             "Feature override " . ($enabled ? 'enabled' : 'disabled') . " for '{$institute->name}'.");
     }
@@ -220,6 +229,8 @@ class FeatureAdminController extends Controller
             'package_id'     => $institute->package_id,
             'notes'          => "Feature override removed for institute '{$institute->name}'",
         ]);
+
+        app(ModuleAccessService::class)->flushFeatureCache($institute_id);
 
         return back()->with('success',
             "Feature override removed for '{$institute->name}'.");

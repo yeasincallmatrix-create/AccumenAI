@@ -9,6 +9,7 @@ use App\Models\ModuleAccessLog;
 use App\Models\PackageFeature;
 use App\Models\PlatformAdmin;
 use App\Models\SubscriptionPackage;
+use App\Services\ModuleAccessService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -547,5 +548,47 @@ class FeatureAdminControllerTest extends TestCase
         $response = $this->get(route('admin.features.show', 'medical.pharmacy'));
         $response->assertOk();
         $response->assertSee('System');
+    }
+
+    public function test_toggle_package_flushes_feature_cache(): void
+    {
+        $this->loginAsAdmin();
+
+        $pkg = SubscriptionPackage::where('slug', 'advanced')->first();
+        if (! $pkg) {
+            $this->markTestSkipped('Advanced package not found.');
+        }
+
+        $inst = Institute::create([
+            'name' => 'Cache Flush Test ' . uniqid(),
+            'slug' => 'cache-flush-' . uniqid(),
+            'status' => 'active',
+            'package_id' => $pkg->id,
+            'industry' => 'healthcare',
+        ]);
+
+        $service = app(ModuleAccessService::class);
+
+        // Warm cache — feature should be enabled for advanced
+        $this->assertTrue($service->isFeatureEnabled($inst, 'medical.pharmacy'));
+
+        // Disable via admin toggle
+        $this->post(route('admin.features.toggle-package', [
+            'feature_key' => 'medical.pharmacy',
+            'package_id' => $pkg->id,
+            'enabled' => false,
+        ]))->assertRedirect();
+
+        // Cache was flushed; isFeatureEnabled must reflect new DB state
+        $this->assertFalse($service->isFeatureEnabled($inst, 'medical.pharmacy'), 'Feature cache should be flushed after toggle');
+
+        // Re-enable
+        $this->post(route('admin.features.toggle-package', [
+            'feature_key' => 'medical.pharmacy',
+            'package_id' => $pkg->id,
+            'enabled' => true,
+        ]))->assertRedirect();
+
+        $this->assertTrue($service->isFeatureEnabled($inst, 'medical.pharmacy'), 'Feature cache should be flushed after re-enable');
     }
 }

@@ -235,6 +235,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->group(func
     Route::put('settings/certificate-approval-mode', [InstituteSettingController::class, 'updateCertificateApprovalMode'])->middleware('permission:settings.manage')->name('settings.certificate-approval-mode.update');
     Route::get('settings/modules', [\App\Http\Controllers\ModuleSettingsController::class, 'index'])->middleware('permission:settings.manage')->name('settings.modules');
     Route::post('settings/modules', [\App\Http\Controllers\ModuleSettingsController::class, 'update'])->middleware('permission:settings.manage')->name('settings.modules.update');
+    Route::get('settings/features', [\App\Http\Controllers\Institute\FeatureAccessController::class, 'index'])->middleware('permission:settings.manage')->name('settings.features');
 });
 
 Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->prefix('staff')->name('staff.')->group(function () {
