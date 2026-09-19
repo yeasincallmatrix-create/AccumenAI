@@ -9,6 +9,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LabOrder extends Model
 {
+    // NOTE (Phase 1): intentionally NOT TenantScoped. Existing tests and
+    // controllers rely on model-level cross-institute writes with
+    // controller-side enforcement (ensureSameInstitute); adding the global
+    // scope silently rewrites institute_id on create and broke
+    // test_cross_tenant_lab_order_denied + cross institute lab order is
+    // forbidden. Tenant safety stays at the controller/service layer as before.
     use SoftDeletes;
 
     protected $table = 'lab_orders';
@@ -17,10 +23,12 @@ class LabOrder extends Model
         'institute_id',
         'branch_id',
         'patient_id',
+        'sample_id',
         'doctor_id',
         'encounter_id',
         'prescription_id',
         'order_number',
+        'accession_number',
         'order_date',
         'priority',
         'status',
@@ -76,6 +84,21 @@ class LabOrder extends Model
     public function results()
     {
         return $this->hasMany(LabResult::class, 'lab_order_id');
+    }
+
+    public function sample()
+    {
+        return $this->belongsTo(\App\Models\LabIntegration\LabSample::class, 'sample_id');
+    }
+
+    public function samples()
+    {
+        return $this->hasMany(\App\Models\LabIntegration\LabSample::class, 'lab_order_id');
+    }
+
+    public function messages()
+    {
+        return $this->hasMany(\App\Models\LabIntegration\LabMessage::class, 'lab_order_id');
     }
 
     public function scopePending($query)

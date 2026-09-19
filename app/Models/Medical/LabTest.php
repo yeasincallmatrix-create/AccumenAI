@@ -2,11 +2,13 @@
 
 namespace App\Models\Medical;
 
+use App\Models\Concerns\TenantScoped;
 use App\Models\Institute;
 use Illuminate\Database\Eloquent\Model;
 
 class LabTest extends Model
 {
+    use TenantScoped;
     protected $table = 'lab_tests';
 
     protected $fillable = [

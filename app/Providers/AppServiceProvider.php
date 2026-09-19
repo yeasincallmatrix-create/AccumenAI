@@ -54,7 +54,17 @@ class AppServiceProvider extends ServiceProvider
         // reuse Fortify as the engine for password reset / 2FA / verification.
         Fortify::ignoreRoutes();
 
-        
+        // Phase 1 lab analyzer integration: adapter registry skeleton.
+        // Concrete adapters arrive in Phase 2/3; the registry resolves them
+        // by adapter_key + adapter_version pinned per analyzer row.
+        $this->app->singleton(\App\Services\LabIntegration\AnalyzerAdapterRegistry::class, function () {
+            $registry = new \App\Services\LabIntegration\AnalyzerAdapterRegistry();
+            // Adapters will be registered in Phase 2/3.
+            // Example (commented):
+            // $registry->register(new \App\Services\LabIntegration\Adapters\SysmexXnAdapter());
+            return $registry;
+        });
+
     }
 
     /**
