@@ -560,6 +560,7 @@ Route::middleware(['auth:institute_user,web','tenant', 'verified'])->group(funct
         ->middleware(['permission:finance.view', 'module_access:finance'])
         ->name('finance.education.fee-structures.index');
     Route::get('finance/reports/trial-balance', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'trialBalance'])->name('finance.reports.trial-balance');
+    Route::get('finance/reports/income-statement', [\App\Http\Controllers\FinanceReportController::class, 'incomeStatement'])->name('finance.reports.income-statement');
     Route::get('accounting', [\App\Http\Controllers\Accounting\AccountingDashboardController::class, 'index'])->name('accounting.dashboard');
     Route::get('accounting/reports/trial-balance', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'trialBalance'])->name('accounting.reports.trial-balance');
     Route::get('accounting/reports/profit-loss', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'profitAndLoss'])->name('accounting.reports.profit-loss');
