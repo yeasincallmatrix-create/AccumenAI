@@ -1,0 +1,21 @@
+{
+  "name": "accumenai-lab-simulator",
+  "version": "1.0.0",
+  "description": "Virtual lab analyzer simulator for AccumenAI LIS integration testing",
+  "main": "src/index.js",
+  "bin": {
+    "lab-sim": "src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "list": "node src/index.js --list-scenarios",
+    "send:valid": "node src/index.js --scenario=valid_cbc",
+    "send:duplicate": "node src/index.js --scenario=duplicate_burst",
+    "send:malformed": "node src/index.js --scenario=malformed_hl7"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
