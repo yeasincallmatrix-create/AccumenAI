@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\FeatureRegistry;
 use App\Models\Institute;
+use App\Models\InstituteFeatureOverride;
 use App\Models\InstituteModuleEntitlement;
 use App\Models\InstituteModuleOverride;
 use App\Models\ModuleAccessLog;
@@ -789,9 +790,21 @@ class ModuleAccessService
             return false;
         }
 
-        return PackageFeature::where('package_id', $packageId)
+        // Gate 3: Package-level enabled state
+        $packageEnabled = PackageFeature::where('package_id', $packageId)
             ->where('feature_key', $featureKey)
             ->where('enabled', true)
             ->exists();
+
+        // Gate 3.5: Institute-level feature override (super admin grant/deny)
+        $override = InstituteFeatureOverride::where('institute_id', $institute->id)
+            ->where('feature_key', $featureKey)
+            ->first();
+
+        if ($override !== null) {
+            return $override->enabled;
+        }
+
+        return $packageEnabled;
     }
 }

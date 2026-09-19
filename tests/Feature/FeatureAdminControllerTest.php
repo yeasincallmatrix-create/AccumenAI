@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\FeatureRegistry;
+use App\Models\Institute;
+use App\Models\InstituteFeatureOverride;
 use App\Models\ModuleAccessLog;
 use App\Models\PackageFeature;
 use App\Models\PlatformAdmin;
@@ -341,5 +343,209 @@ class FeatureAdminControllerTest extends TestCase
         $response->assertOk();
         $response->assertSee('No features match your filters');
         $response->assertDontSee('No features configured');
+    }
+
+    public function test_show_displays_institute_overrides_section(): void
+    {
+        $this->loginAsAdmin();
+
+        $response = $this->get(route('admin.features.show', 'medical.pharmacy'));
+        $response->assertOk();
+        $response->assertSee('Institute Overrides');
+    }
+
+    public function test_show_displays_existing_override(): void
+    {
+        $this->loginAsAdmin();
+
+        $pkg = SubscriptionPackage::where('slug', 'advanced')->first();
+        if (! $pkg) {
+            $this->markTestSkipped('Advanced package not found.');
+        }
+
+        $inst = Institute::create([
+            'name' => 'Override Display Test ' . uniqid(),
+            'slug' => 'override-display-' . uniqid(),
+            'status' => 'active',
+            'package_id' => $pkg->id,
+            'industry' => 'healthcare',
+        ]);
+
+        InstituteFeatureOverride::create([
+            'institute_id' => $inst->id,
+            'feature_key'  => 'medical.pharmacy',
+            'enabled'      => true,
+        ]);
+
+        $response = $this->get(route('admin.features.show', 'medical.pharmacy'));
+        $response->assertOk();
+        $response->assertSee($inst->name);
+        $response->assertSee('Enabled');
+    }
+
+    public function test_add_institute_override_creates_record(): void
+    {
+        $this->loginAsAdmin();
+
+        $pkg = SubscriptionPackage::where('slug', 'advanced')->first();
+        if (! $pkg) {
+            $this->markTestSkipped('Advanced package not found.');
+        }
+
+        $inst = Institute::create([
+            'name' => 'Override Create Test ' . uniqid(),
+            'slug' => 'override-create-' . uniqid(),
+            'status' => 'active',
+            'package_id' => $pkg->id,
+            'industry' => 'healthcare',
+        ]);
+
+        $this->post(route('admin.features.institute-override.add', 'medical.pharmacy'), [
+            'institute_id' => $inst->id,
+            'enabled'      => true,
+            'reason'       => 'Test grant',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('institute_feature_overrides', [
+            'institute_id' => $inst->id,
+            'feature_key'  => 'medical.pharmacy',
+            'enabled'      => true,
+        ]);
+    }
+
+    public function test_remove_institute_override_deletes_record(): void
+    {
+        $this->loginAsAdmin();
+
+        $pkg = SubscriptionPackage::where('slug', 'advanced')->first();
+        if (! $pkg) {
+            $this->markTestSkipped('Advanced package not found.');
+        }
+
+        $inst = Institute::create([
+            'name' => 'Override Remove Test ' . uniqid(),
+            'slug' => 'override-remove-' . uniqid(),
+            'status' => 'active',
+            'package_id' => $pkg->id,
+            'industry' => 'healthcare',
+        ]);
+
+        InstituteFeatureOverride::create([
+            'institute_id' => $inst->id,
+            'feature_key'  => 'medical.pharmacy',
+            'enabled'      => false,
+        ]);
+
+        $this->assertDatabaseHas('institute_feature_overrides', [
+            'institute_id' => $inst->id,
+            'feature_key'  => 'medical.pharmacy',
+        ]);
+
+        $this->delete(route('admin.features.institute-override.remove', [
+            'feature_key'  => 'medical.pharmacy',
+            'institute_id' => $inst->id,
+        ]))->assertRedirect();
+
+        $this->assertDatabaseMissing('institute_feature_overrides', [
+            'institute_id' => $inst->id,
+            'feature_key'  => 'medical.pharmacy',
+        ]);
+    }
+
+    public function test_add_override_logs_to_audit(): void
+    {
+        $this->loginAsAdmin();
+
+        $pkg = SubscriptionPackage::where('slug', 'advanced')->first();
+        if (! $pkg) {
+            $this->markTestSkipped('Advanced package not found.');
+        }
+
+        $inst = Institute::create([
+            'name' => 'Override Audit Test ' . uniqid(),
+            'slug' => 'override-audit-' . uniqid(),
+            'status' => 'active',
+            'package_id' => $pkg->id,
+            'industry' => 'healthcare',
+        ]);
+
+        $baselineCount = ModuleAccessLog::count();
+
+        $this->post(route('admin.features.institute-override.add', 'medical.pharmacy'), [
+            'institute_id' => $inst->id,
+            'enabled'      => true,
+        ])->assertRedirect();
+
+        $this->assertEquals($baselineCount + 1, ModuleAccessLog::count(), 'Audit log entry should be created.');
+
+        $latestLog = ModuleAccessLog::latest()->first();
+        $this->assertStringContainsString('feature_override_', $latestLog->action);
+        $this->assertEquals($inst->id, $latestLog->institute_id);
+        $this->assertEquals('platform_admin', $latestLog->actor_type);
+    }
+
+    public function test_add_override_is_idempotent(): void
+    {
+        $this->loginAsAdmin();
+
+        $pkg = SubscriptionPackage::where('slug', 'advanced')->first();
+        if (! $pkg) {
+            $this->markTestSkipped('Advanced package not found.');
+        }
+
+        $inst = Institute::create([
+            'name' => 'Override Idempotent Test ' . uniqid(),
+            'slug' => 'override-idempotent-' . uniqid(),
+            'status' => 'active',
+            'package_id' => $pkg->id,
+            'industry' => 'healthcare',
+        ]);
+
+        InstituteFeatureOverride::create([
+            'institute_id' => $inst->id,
+            'feature_key'  => 'medical.pharmacy',
+            'enabled'      => true,
+        ]);
+
+        $baselineCount = ModuleAccessLog::count();
+
+        $response = $this->post(route('admin.features.institute-override.add', 'medical.pharmacy'), [
+            'institute_id' => $inst->id,
+            'enabled'      => true,
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('info');
+
+        $this->assertEquals($baselineCount, ModuleAccessLog::count(), 'No audit log entry should be created for idempotent action.');
+    }
+
+    public function test_granted_by_displays_system_for_null_actor(): void
+    {
+        $this->loginAsAdmin();
+
+        $pkg = SubscriptionPackage::where('slug', 'advanced')->first();
+        if (! $pkg) {
+            $this->markTestSkipped('Advanced package not found.');
+        }
+
+        $inst = Institute::create([
+            'name' => 'Override Null Actor Test ' . uniqid(),
+            'slug' => 'override-null-actor-' . uniqid(),
+            'status' => 'active',
+            'package_id' => $pkg->id,
+            'industry' => 'healthcare',
+        ]);
+
+        InstituteFeatureOverride::create([
+            'institute_id'  => $inst->id,
+            'feature_key'   => 'medical.pharmacy',
+            'enabled'       => true,
+            'overridden_by' => null,
+        ]);
+
+        $response = $this->get(route('admin.features.show', 'medical.pharmacy'));
+        $response->assertOk();
+        $response->assertSee('System');
     }
 }

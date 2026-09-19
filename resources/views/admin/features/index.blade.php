@@ -15,6 +15,9 @@
         <h4 class="page-header-title">Feature Management</h4>
         <p class="page-header-desc">Manage feature availability across subscription packages.</p>
     </div>
+    <div class="page-header-actions">
+        <span class="badge text-bg-primary badge-soft">{{ $features->total() }} features × {{ $packages->count() }} packages</span>
+    </div>
 </div>
 
 @if (session('success'))
@@ -24,10 +27,63 @@
     </div>
 @endif
 
+@if (session('info'))
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        {{ session('info') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+
+@if (session('error'))
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        {{ session('error') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+
+<div class="filter-card mb-3">
+    <form class="filter-layout" method="GET" action="{{ route('admin.features.index') }}">
+        <div class="filter-search-row align-items-end">
+            <div class="filter-search" style="flex:1 1 0; min-width:180px;">
+                <i class="bi bi-search"></i>
+                <input type="text" class="form-control form-control-sm" name="q" placeholder="Search by feature key or name..." value="{{ request('q', '') }}">
+            </div>
+
+            <div class="filter-span" style="flex:1 1 0; min-width:160px;">
+                <label class="form-label mb-1">Module</label>
+                <select class="form-select form-select-sm" name="module">
+                    <option value="">All Modules</option>
+                    @foreach ($modules as $mod)
+                        <option value="{{ $mod }}" @selected(request('module') === $mod)>{{ ucfirst($mod) }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="filter-span flex-shrink-0" style="min-width:150px">
+                <label class="form-label mb-1">Package</label>
+                <select class="form-select form-select-sm" name="package">
+                    <option value="">All Packages</option>
+                    @php
+                        $allPackages = \App\Models\SubscriptionPackage::where('status', 'active')->orderBy('id')->get();
+                    @endphp
+                    @foreach ($allPackages as $pkg)
+                        <option value="{{ $pkg->id }}" @selected(request('package') == $pkg->id)>{{ $pkg->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="filter-actions">
+                <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-search"></i> Search</button>
+                <a class="btn btn-outline-secondary btn-sm" href="{{ route('admin.features.index') }}" title="Reset filters"><i class="bi bi-arrow-counterclockwise"></i> Reset</a>
+            </div>
+        </div>
+    </form>
+</div>
+
 <div class="admin-card mb-4">
     <div class="table-toolbar">
         <div class="toolbar-info">
-            <i class="bi bi-grid-3x3-gap-fill"></i> Feature × Package Matrix
+            <i class="bi bi-grid-3x3-gap-fill"></i> Feature x Package Matrix
         </div>
         <div class="toolbar-info">
             <span class="badge bg-success"><i class="bi bi-check-circle"></i> Enabled</span>
@@ -79,11 +135,25 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="{{ $packages->count() + 2 }}" class="text-center text-muted py-4">No features registered.</td>
+                        <td colspan="{{ $packages->count() + 2 }}" class="text-center text-muted py-4">
+                            @if (request('q') || request('module') || request('package'))
+                                <i class="bi bi-search fs-3 d-block mb-2"></i>
+                                No features match your filters.
+                            @else
+                                <i class="bi bi-grid-3x3-gap fs-3 d-block mb-2"></i>
+                                No features configured.
+                            @endif
+                        </td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
+
+    @if ($features->hasPages())
+        <div class="d-flex justify-content-center mt-3">
+            {{ $features->withQueryString()->links() }}
+        </div>
+    @endif
 </div>
 @endsection

@@ -450,6 +450,8 @@ Route::put('admin/institutes/{institute}/modules', [\App\Http\Controllers\Admin\
 Route::get('admin/features', [\App\Http\Controllers\Admin\FeatureAdminController::class, 'index'])->name('admin.features.index')->middleware(['auth:platform_admin', 'verified']);
 Route::get('admin/features/{feature_key}', [\App\Http\Controllers\Admin\FeatureAdminController::class, 'show'])->name('admin.features.show')->middleware(['auth:platform_admin', 'verified']);
 Route::post('admin/features/{feature_key}/toggle-package/{package_id}', [\App\Http\Controllers\Admin\FeatureAdminController::class, 'togglePackage'])->name('admin.features.toggle-package')->middleware(['auth:platform_admin', 'verified'])->whereNumber('package_id');
+Route::post('admin/features/{feature_key}/institute-overrides', [\App\Http\Controllers\Admin\FeatureAdminController::class, 'addInstituteOverride'])->name('admin.features.institute-override.add')->middleware(['auth:platform_admin', 'verified']);
+Route::delete('admin/features/{feature_key}/institute-overrides/{institute_id}', [\App\Http\Controllers\Admin\FeatureAdminController::class, 'removeInstituteOverride'])->name('admin.features.institute-override.remove')->middleware(['auth:platform_admin', 'verified'])->whereNumber('institute_id');
 
 Route::get('admin/academic', [\App\Http\Controllers\Admin\AcademicStructureAdminController::class, 'index'])->name('admin.academic.index')->middleware(['auth:platform_admin', 'verified']);
 Route::get('admin/academic/subjects', [\App\Http\Controllers\Admin\AcademicSubjectAdminController::class, 'index'])->name('admin.academic.subjects.index')->middleware(['auth:platform_admin', 'verified']);
