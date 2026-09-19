@@ -39,5 +39,9 @@ class DatabaseSeeder extends Seeder
         $this->call(CertificateSeeder::class);
         $this->call(FeatureRegistrySeeder::class);
         $this->call(PackageFeatureSeeder::class);
+        // B82: shared global catalogs (idempotent; also wired in TestCase).
+        $this->call(DocumentCategorySeeder::class);
+        $this->call(CrmLeadStatusSeeder::class);
+        $this->call(ThemeSeeder::class);
     }
 }

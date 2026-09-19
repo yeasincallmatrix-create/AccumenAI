@@ -61,10 +61,41 @@ abstract class TestCase extends BaseTestCase
         // institute id — so setUp() never creates orphan tenant rows.
         $this->seedReferenceMasters();
 
+        // B82: global reference rows tests resolve via firstOrFail()
+        // (document categories, lead statuses, themes). Idempotent —
+        // each seeder no-ops when its rows already exist.
+        $this->seedSharedCatalogs();
+
         // Phase 7 STEP 2A: test-only institute fixtures (Tutu Center,
         // Mawa Academy) for tests that hardcode firstOrFail() by name.
         // TEST-ONLY — never runs outside the testing environment.
         $this->seedTestInstitutes();
+    }
+
+    /**
+     * B82: seed shared global catalogs (no institute scope).
+     * Guards keep this cheap on an already-seeded database.
+     */
+    protected function seedSharedCatalogs(): void
+    {
+        // Slug-specific guard: seed when the anchor rows tests resolve
+        // are missing, even if the table already holds other rows.
+        if (Schema::hasTable('document_categories')
+            && \App\Models\DocumentCategory::where('slug', 'photo')->doesntExist()) {
+            (new \Database\Seeders\DocumentCategorySeeder)->run();
+        }
+
+        if (Schema::hasTable('crm_lead_statuses')
+            && \App\Models\CrmLeadStatus::where('is_default', true)->doesntExist()) {
+            (new \Database\Seeders\CrmLeadStatusSeeder)->run();
+        }
+
+        // Slug-specific guard: the themes table ships with committed rows
+        // that lack ocean-blue, so count() === 0 would never fire.
+        if (Schema::hasTable('themes')
+            && \App\Models\Theme::where('slug', 'ocean-blue')->doesntExist()) {
+            (new \Database\Seeders\ThemeSeeder)->run();
+        }
     }
 
     /**
