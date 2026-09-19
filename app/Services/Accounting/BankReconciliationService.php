@@ -5,7 +5,9 @@ namespace App\Services\Accounting;
 use App\Models\BankReconciliation;
 use App\Models\BankStatement;
 use App\Models\BankStatementLine;
+use App\Models\InstituteUser;
 use App\Models\Journal;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -119,11 +121,38 @@ class BankReconciliationService
             'statement_line_id' => $line->id,
             'journal_id' => $journal->id,
             'status' => 'matched',
-            'matched_by' => $actorId,
+            'matched_by' => $this->resolveMatchedBy((int) $line->institute_id, $actorId),
             'matched_at' => now(),
         ]);
 
         return true;
+    }
+
+    /**
+     * Resolve an actor id to a valid institute_users id for matched_by.
+     *
+     * Callers may pass a global users.id (web guard, tests) while the
+     * matched_by FK references institute_users.id. Map via the actor's
+     * email when possible; otherwise NULL (column is nullable, relation
+     * optional) instead of violating the FK.
+     */
+    private function resolveMatchedBy(int $instituteId, int $actorId): ?int
+    {
+        if (InstituteUser::whereKey($actorId)->exists()) {
+            return $actorId;
+        }
+
+        $email = User::whereKey($actorId)->value('email');
+        if (is_string($email) && $email !== '') {
+            $id = InstituteUser::where('institute_id', $instituteId)
+                ->where('email', $email)
+                ->value('id');
+            if ($id !== null) {
+                return (int) $id;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -136,7 +165,7 @@ class BankReconciliationService
             [
                 'institute_id' => $line->institute_id,
                 'status' => 'ignored',
-                'matched_by' => $actorId,
+                'matched_by' => $this->resolveMatchedBy((int) $line->institute_id, $actorId),
                 'matched_at' => now(),
             ]
         );
