@@ -455,6 +455,7 @@ Route::get('admin/packages/{package}/modules', [\App\Http\Controllers\Admin\Modu
 Route::put('admin/packages/{package}/modules', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'updatePackageModules'])->name('admin.packages.modules.update')->middleware(['auth:platform_admin', 'verified'])->whereNumber('package');
 Route::get('admin/institutes/{institute}/modules', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'instituteModules'])->name('admin.institutes.modules')->middleware(['auth:platform_admin', 'verified'])->whereNumber('institute');
 Route::put('admin/institutes/{institute}/modules', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'updateInstituteModules'])->name('admin.institutes.modules.update')->middleware(['auth:platform_admin', 'verified'])->whereNumber('institute');
+Route::delete('admin/institutes/{institute}/modules/{moduleKey}', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'removeOverride'])->name('admin.institutes.modules.remove')->middleware(['auth:platform_admin', 'verified'])->whereNumber('institute');
 
 // ── Admin: Features ──
 Route::get('admin/features', [\App\Http\Controllers\Admin\FeatureAdminController::class, 'index'])->name('admin.features.index')->middleware(['auth:platform_admin', 'verified']);

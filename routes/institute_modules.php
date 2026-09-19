@@ -207,11 +207,17 @@ Route::middleware($tenant)->group(function () {
         Route::get('employee/export', [$hrRep, 'employeeExport'])->name('employee.export');
         Route::get('workforce', [$hrRep, 'workforce'])->name('workforce');
         Route::get('workforce/export', [$hrRep, 'workforceExport'])->name('workforce.export');
+        Route::get('attendance', [$hrRep, 'attendance'])->name('attendance');
         Route::get('attendance/export', [$hrRep, 'attendanceExport'])->name('attendance.export');
+        Route::get('leave', [$hrRep, 'leave'])->name('leave');
         Route::get('leave/export', [$hrRep, 'leaveExport'])->name('leave.export');
+        Route::get('payroll', [$hrRep, 'payroll'])->name('payroll');
         Route::get('payroll/export', [$hrRep, 'payrollExport'])->name('payroll.export');
+        Route::get('performance', [$hrRep, 'performance'])->name('performance');
         Route::get('performance/export', [$hrRep, 'performanceExport'])->name('performance.export');
+        Route::get('recruitment', [$hrRep, 'recruitment'])->name('recruitment');
         Route::get('recruitment/export', [$hrRep, 'recruitmentExport'])->name('recruitment.export');
+        Route::get('training', [$hrRep, 'training'])->name('training');
         Route::get('training/export', [$hrRep, 'trainingExport'])->name('training.export');
     });
 
