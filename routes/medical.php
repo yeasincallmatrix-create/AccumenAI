@@ -533,7 +533,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     });
 
     // Medical Records (EMR) sub-module
-    Route::middleware('medical.module:medical.records')
+    Route::middleware(['medical.module:medical.records', 'feature:medical.records'])
         ->prefix('records')->name('medical.records.')->group(function () {
         Route::get('/', [MedicalRecordsDashboardController::class, 'index'])->name('dashboard');
 
@@ -554,7 +554,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     });
 
     // Diet & Nutrition sub-module
-    Route::middleware('medical.module:medical.diet')
+    Route::middleware(['medical.module:medical.diet', 'feature:medical.diet'])
         ->prefix('diet')->name('medical.diet.')->group(function () {
         Route::get('/', [DietDashboardController::class, 'index'])->name('dashboard');
         Route::get('kitchen/today', [DietDashboardController::class, 'kitchenToday'])->name('kitchen.today');

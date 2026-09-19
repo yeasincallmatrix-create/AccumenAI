@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
-class MedicalBatch3FeatureGateTest extends TestCase
+class MedicalBatch4FeatureGateTest extends TestCase
 {
     use DatabaseTransactions;
 
@@ -43,8 +43,8 @@ class MedicalBatch3FeatureGateTest extends TestCase
     {
         $pkg = SubscriptionPackage::whereRaw('LOWER(slug) = ?', [strtolower($packageSlug)])->firstOrFail();
         $instId = DB::table('institutes')->insertGetId([
-            'name' => 'Batch3 Test '.uniqid(),
-            'slug' => 'batch3-'.uniqid(),
+            'name' => 'Batch4 Test '.uniqid(),
+            'slug' => 'batch4-'.uniqid(),
             'industry' => 'healthcare',
             'sub_industry' => 'hospital',
             'country' => 'Bangladesh',
@@ -88,9 +88,9 @@ class MedicalBatch3FeatureGateTest extends TestCase
         Workspace::set($inst->id);
     }
 
-    // ── Physiotherapy ─────────────────────────────────────
+    // ── Diet ─────────────────────────────────────────────
 
-    public function test_physiotherapy_menu_normal_when_enabled(): void
+    public function test_diet_menu_normal_when_enabled(): void
     {
         $inst = $this->makeInstitute('advanced');
         $user = $this->makeUser($inst);
@@ -98,14 +98,14 @@ class MedicalBatch3FeatureGateTest extends TestCase
 
         $response = $this->get(route('medical.dashboard'));
         $response->assertOk();
-        $response->assertSee('/medical/physiotherapy/plans');
+        $response->assertSee('/medical/diet/plans');
         $response->assertDontSee('menu-item-locked');
     }
 
-    public function test_physiotherapy_menu_locked_when_disabled(): void
+    public function test_diet_menu_locked_when_disabled(): void
     {
         $inst = $this->makeInstitute('advanced');
-        PackageFeature::where('feature_key', 'medical.physiotherapy')
+        PackageFeature::where('feature_key', 'medical.diet')
             ->where('package_id', $inst->package_id)
             ->delete();
 
@@ -115,26 +115,26 @@ class MedicalBatch3FeatureGateTest extends TestCase
         $response = $this->get(route('medical.dashboard'));
         $response->assertOk();
         $response->assertSee('menu-item-locked');
-        $response->assertSee('medical.physiotherapy');
+        $response->assertSee('medical.diet');
     }
 
-    public function test_physiotherapy_route_blocked_when_feature_disabled(): void
+    public function test_diet_route_blocked_when_feature_disabled(): void
     {
         $inst = $this->makeInstitute('advanced');
-        PackageFeature::where('feature_key', 'medical.physiotherapy')
+        PackageFeature::where('feature_key', 'medical.diet')
             ->where('package_id', $inst->package_id)
             ->delete();
 
         $user = $this->makeUser($inst);
         $this->loginAs($user, $inst);
 
-        $response = $this->get(route('medical.physiotherapy.plans.index'));
+        $response = $this->get(route('medical.diet.plans.index'));
         $response->assertStatus(403);
     }
 
-    // ── Dental ────────────────────────────────────────────
+    // ── Records ──────────────────────────────────────────
 
-    public function test_dental_menu_normal_when_enabled(): void
+    public function test_records_menu_normal_when_enabled(): void
     {
         $inst = $this->makeInstitute('advanced');
         $user = $this->makeUser($inst);
@@ -142,14 +142,14 @@ class MedicalBatch3FeatureGateTest extends TestCase
 
         $response = $this->get(route('medical.dashboard'));
         $response->assertOk();
-        $response->assertSee('/medical/dental/procedures');
+        $response->assertSee('/medical/records/documents');
         $response->assertDontSee('menu-item-locked');
     }
 
-    public function test_dental_menu_locked_when_disabled(): void
+    public function test_records_menu_locked_when_disabled(): void
     {
         $inst = $this->makeInstitute('advanced');
-        PackageFeature::where('feature_key', 'medical.dental')
+        PackageFeature::where('feature_key', 'medical.records')
             ->where('package_id', $inst->package_id)
             ->delete();
 
@@ -159,75 +159,31 @@ class MedicalBatch3FeatureGateTest extends TestCase
         $response = $this->get(route('medical.dashboard'));
         $response->assertOk();
         $response->assertSee('menu-item-locked');
-        $response->assertSee('medical.dental');
+        $response->assertSee('medical.records');
     }
 
-    public function test_dental_route_blocked_when_feature_disabled(): void
+    public function test_records_route_blocked_when_feature_disabled(): void
     {
         $inst = $this->makeInstitute('advanced');
-        PackageFeature::where('feature_key', 'medical.dental')
+        PackageFeature::where('feature_key', 'medical.records')
             ->where('package_id', $inst->package_id)
             ->delete();
 
         $user = $this->makeUser($inst);
         $this->loginAs($user, $inst);
 
-        $response = $this->get(route('medical.dental.chart.index'));
+        $response = $this->get(route('medical.records.documents.index'));
         $response->assertStatus(403);
     }
 
-    // ── Vaccination ───────────────────────────────────────
+    // ── Regression ───────────────────────────────────────
 
-    public function test_vaccination_menu_normal_when_enabled(): void
+    public function test_batch_3_children_still_work(): void
     {
         $inst = $this->makeInstitute('advanced');
         $user = $this->makeUser($inst);
         $this->loginAs($user, $inst);
 
-        $response = $this->get(route('medical.dashboard'));
-        $response->assertOk();
-        $response->assertSee('/medical/vaccination/schedules');
-        $response->assertDontSee('menu-item-locked');
-    }
-
-    public function test_vaccination_menu_locked_when_disabled(): void
-    {
-        $inst = $this->makeInstitute('advanced');
-        PackageFeature::where('feature_key', 'medical.vaccination')
-            ->where('package_id', $inst->package_id)
-            ->delete();
-
-        $user = $this->makeUser($inst);
-        $this->loginAs($user, $inst);
-
-        $response = $this->get(route('medical.dashboard'));
-        $response->assertOk();
-        $response->assertSee('menu-item-locked');
-        $response->assertSee('medical.vaccination');
-    }
-
-    public function test_vaccination_route_blocked_when_feature_disabled(): void
-    {
-        $inst = $this->makeInstitute('advanced');
-        PackageFeature::where('feature_key', 'medical.vaccination')
-            ->where('package_id', $inst->package_id)
-            ->delete();
-
-        $user = $this->makeUser($inst);
-        $this->loginAs($user, $inst);
-
-        $response = $this->get(route('medical.vaccination.schedules.index'));
-        $response->assertStatus(403);
-    }
-
-    // ── Regression ──────────────────────────────────────────
-
-    public function test_batch_2_children_still_work(): void
-    {
-        $inst = $this->makeInstitute('advanced');
-        $user = $this->makeUser($inst);
-        $this->loginAs($user, $inst);
-
-        $this->get(route('medical.billing.invoices.index'))->assertOk();
+        $this->get(route('medical.physiotherapy.plans.index'))->assertOk();
     }
 }

@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call(SystemRoleSeeder::class);
         $this->call(ModuleRegistrySeeder::class);
+        $this->call(MedicalSubModuleSeeder::class);
         $this->call(IndustryTaxonomySeeder::class);
         $this->call(AcademicStructureSeeder::class);
         $this->call(GradeScaleSeeder::class);
