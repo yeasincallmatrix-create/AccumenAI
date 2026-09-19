@@ -63,6 +63,28 @@ class LabValidateFixtures extends Command
             $this->report($file, $sysmex->parse(file_get_contents($path), $probe));
         }
 
+        // Phase 8: Mindray BC-5150 fixtures via the registered adapter.
+        $mindray = $registry->resolve('mindray_bc', 'v1');
+        if ($mindray === null) {
+            $this->error('Mindray adapter not registered');
+
+            return 1;
+        }
+        $mindrayProbe = new LabAnalyzer(['institute_id' => 0, 'adapter_key' => 'mindray_bc']);
+        foreach ([
+            'Mindray/bc5150_astm_cbc_3part.txt',
+            'Mindray/bc5150_hl7_cbc_3part.txt',
+            'Mindray/bc5150_astm_with_na_values.txt',
+        ] as $file) {
+            $path = base_path("tests/Fixtures/LabIntegration/{$file}");
+            if (! file_exists($path)) {
+                $this->error("Missing: {$file}");
+
+                continue;
+            }
+            $this->report($file, $mindray->parse(file_get_contents($path), $mindrayProbe));
+        }
+
         return 0;
     }
 

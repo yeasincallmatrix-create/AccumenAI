@@ -332,6 +332,8 @@ class SysmexXnAdapterTest extends TestCase
 
     public function test_registry_does_not_resolve_unknown_key(): void
     {
-        $this->assertNull(app(AnalyzerAdapterRegistry::class)->resolve('mindray_bc', 'v1'));
+        // Phase 8: mindray_bc is now a real adapter, so probe a key that
+        // will never exist instead.
+        $this->assertNull(app(AnalyzerAdapterRegistry::class)->resolve('no_such_vendor', 'v9'));
     }
 }

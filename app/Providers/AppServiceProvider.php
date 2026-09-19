@@ -60,6 +60,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Services\LabIntegration\AnalyzerAdapterRegistry::class, function ($app) {
             $registry = new \App\Services\LabIntegration\AnalyzerAdapterRegistry();
             $registry->register($app->make(\App\Services\LabIntegration\Adapters\SysmexXnAdapter::class));
+            $registry->register($app->make(\App\Services\LabIntegration\Adapters\MindrayBcAdapter::class));
 
             return $registry;
         });
