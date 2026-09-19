@@ -30,6 +30,7 @@ class SystemRoleSeeder extends Seeder
     public static function roles(): array
     {
         return [
+            'institute-owner' => ['name' => 'Institute Owner', 'is_system' => true],
             'institute-admin' => ['name' => 'Institute Admin', 'is_system' => true],
             'branch-manager'  => ['name' => 'Branch Manager', 'is_system' => true],
             'teacher'         => ['name' => 'Teacher', 'is_system' => true],
