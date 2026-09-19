@@ -445,6 +445,12 @@ Route::get('admin/packages/{package}/modules', [\App\Http\Controllers\Admin\Modu
 Route::put('admin/packages/{package}/modules', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'updatePackageModules'])->name('admin.packages.modules.update')->middleware(['auth:platform_admin', 'verified'])->whereNumber('package');
 Route::get('admin/institutes/{institute}/modules', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'instituteModules'])->name('admin.institutes.modules')->middleware(['auth:platform_admin', 'verified'])->whereNumber('institute');
 Route::put('admin/institutes/{institute}/modules', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'updateInstituteModules'])->name('admin.institutes.modules.update')->middleware(['auth:platform_admin', 'verified'])->whereNumber('institute');
+
+// ── Admin: Features ──
+Route::get('admin/features', [\App\Http\Controllers\Admin\FeatureAdminController::class, 'index'])->name('admin.features.index')->middleware(['auth:platform_admin', 'verified']);
+Route::get('admin/features/{feature_key}', [\App\Http\Controllers\Admin\FeatureAdminController::class, 'show'])->name('admin.features.show')->middleware(['auth:platform_admin', 'verified']);
+Route::post('admin/features/{feature_key}/toggle-package/{package_id}', [\App\Http\Controllers\Admin\FeatureAdminController::class, 'togglePackage'])->name('admin.features.toggle-package')->middleware(['auth:platform_admin', 'verified'])->whereNumber('package_id');
+
 Route::get('admin/academic', [\App\Http\Controllers\Admin\AcademicStructureAdminController::class, 'index'])->name('admin.academic.index')->middleware(['auth:platform_admin', 'verified']);
 Route::get('admin/academic/subjects', [\App\Http\Controllers\Admin\AcademicSubjectAdminController::class, 'index'])->name('admin.academic.subjects.index')->middleware(['auth:platform_admin', 'verified']);
 Route::get('admin/academic/grading', [\App\Http\Controllers\Admin\AcademicGradingAdminController::class, 'index'])->name('admin.academic.grading.index')->middleware(['auth:platform_admin', 'verified']);
