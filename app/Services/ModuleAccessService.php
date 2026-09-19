@@ -830,7 +830,18 @@ class ModuleAccessService
         if ($scope) {
             $scopedKeys = $this->getScopedFeatureKeys($scope);
             if (! empty($scopedKeys)) {
-                $packageFeatureKeys = $scopedKeys;
+                $packageId = $institute->package_id ?? SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['free'])->first()?->id;
+                if ($packageId !== null) {
+                    $pkgKeys = PackageFeature::where('package_id', $packageId)
+                        ->where('enabled', true)
+                        ->pluck('feature_key')
+                        ->flip()
+                        ->keys()
+                        ->all();
+                    $packageFeatureKeys = array_values(array_intersect($scopedKeys, $pkgKeys));
+                } else {
+                    $packageFeatureKeys = $scopedKeys;
+                }
             }
         }
 
@@ -917,6 +928,7 @@ class ModuleAccessService
         $candidates = [
             [$countryId, $industryId, $subIndustryId],
             [$countryId, $industryId, null],
+            [$countryId, null, $subIndustryId],
             [$countryId, null, null],
             [null, $industryId, $subIndustryId],
             [null, $industryId, null],
@@ -984,7 +996,7 @@ class ModuleAccessService
     /**
      * Walk one level up the scope hierarchy.
      */
-    private function resolveParentScope(PackageScope $scope): ?PackageScope
+    public function resolveParentScope(PackageScope $scope): ?PackageScope
     {
         $cid = $scope->country_id;
         $iid = $scope->industry_id;
@@ -1016,6 +1028,84 @@ class ModuleAccessService
         }
 
         return null;
+    }
+
+    /**
+     * Ensure a scope row exists for the institute's current
+     * (package, country, industry, sub-industry) combination.
+     * Creates one inheriting from parent if missing.
+     * Idempotent.
+     */
+    public function ensureScopeExistsForInstitute(Institute $institute): ?PackageScope
+    {
+        $packageId = $institute->package_id
+            ?? SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['free'])->value('id');
+        if (! $packageId) {
+            return null;
+        }
+
+        $existing = PackageScope::where('package_id', $packageId)
+            ->where('country_id', $institute->country_id)
+            ->where('industry_id', $institute->industry_id)
+            ->where('sub_industry_id', $institute->sub_industry_id)
+            ->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        return DB::transaction(function () use ($institute, $packageId) {
+            $scope = PackageScope::create([
+                'package_id' => $packageId,
+                'country_id' => $institute->country_id,
+                'industry_id' => $institute->industry_id,
+                'sub_industry_id' => $institute->sub_industry_id,
+                'inherit_from_parent' => true,
+                'status' => 'active',
+            ]);
+
+            if ($scope->country_id || $scope->industry_id || $scope->sub_industry_id) {
+                $parent = $this->resolveParentScope($scope);
+                if ($parent) {
+                    $parentFeatures = PackageScopedFeature::where(
+                        'package_scope_id', $parent->id
+                    )->get();
+                    foreach ($parentFeatures as $pf) {
+                        PackageScopedFeature::create([
+                            'package_scope_id' => $scope->id,
+                            'feature_key' => $pf->feature_key,
+                            'enabled' => $pf->enabled,
+                        ]);
+                    }
+                }
+            }
+
+            return $scope;
+        });
+    }
+
+    /**
+     * Resolve the effective price for an institute.
+     * Uses scope fallback chain. Returns array:
+     *   ['monthly' => float, 'yearly' => float, 'currency' => string]
+     */
+    public function resolveScopedPrice(Institute $institute): array
+    {
+        $scope = $this->resolveScopedPackage($institute);
+        if (! $scope) {
+            $package = SubscriptionPackage::find($institute->package_id);
+            return [
+                'monthly' => (float) ($package?->price_monthly ?? 0),
+                'yearly' => (float) ($package?->price_yearly ?? 0),
+                'currency' => 'BDT',
+            ];
+        }
+
+        return [
+            'monthly' => $scope->effectiveMonthlyPrice(),
+            'yearly' => $scope->effectiveYearlyPrice(),
+            'currency' => $scope->effectiveCurrency() ?? 'BDT',
+        ];
     }
 
     /**

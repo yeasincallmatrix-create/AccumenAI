@@ -78,4 +78,91 @@ class PackageScope extends Model
             && is_null($this->industry_id)
             && is_null($this->sub_industry_id);
     }
+
+    /**
+     * Get the effective monthly price for this scope.
+     * If scope has no price, walk up parent chain.
+     * Falls back to the package's base price.
+     */
+    public function effectiveMonthlyPrice(): ?float
+    {
+        if ($this->price_monthly !== null) {
+            return (float) $this->price_monthly;
+        }
+
+        $parent = app(ModuleAccessService::class)
+            ->resolveParentScope($this);
+
+        if ($parent) {
+            return $parent->effectiveMonthlyPrice();
+        }
+
+        return $this->package?->price_monthly !== null
+            ? (float) $this->package->price_monthly
+            : null;
+    }
+
+    /**
+     * Get the effective yearly price for this scope.
+     * If scope has no price, walk up parent chain.
+     * Falls back to the package's base price.
+     */
+    public function effectiveYearlyPrice(): ?float
+    {
+        if ($this->price_yearly !== null) {
+            return (float) $this->price_yearly;
+        }
+
+        $parent = app(ModuleAccessService::class)
+            ->resolveParentScope($this);
+
+        if ($parent) {
+            return $parent->effectiveYearlyPrice();
+        }
+
+        return $this->package?->price_yearly !== null
+            ? (float) $this->package->price_yearly
+            : null;
+    }
+
+    /**
+     * Get the effective currency for this scope.
+     * If scope has no currency, walk up parent chain.
+     * Falls back to 'BDT' as default.
+     */
+    public function effectiveCurrency(): ?string
+    {
+        if ($this->currency !== null) {
+            return $this->currency;
+        }
+
+        $parent = app(ModuleAccessService::class)
+            ->resolveParentScope($this);
+
+        if ($parent) {
+            return $parent->effectiveCurrency();
+        }
+
+        return 'BDT';
+    }
+
+    /**
+     * Get a formatted price string for this scope.
+     */
+    public function effectivePriceString(): string
+    {
+        $currency = $this->effectiveCurrency() ?? 'BDT';
+        $monthly = $this->effectiveMonthlyPrice();
+        $yearly = $this->effectiveYearlyPrice();
+
+        $parts = [];
+        if ($monthly !== null) {
+            $parts[] = number_format($monthly, 2) . "/month ({$currency})";
+        }
+        if ($yearly !== null) {
+            $parts[] = number_format($yearly, 2) . "/year ({$currency})";
+        }
+
+        return implode(' | ', $parts) ?: 'No pricing set';
+    }
 }

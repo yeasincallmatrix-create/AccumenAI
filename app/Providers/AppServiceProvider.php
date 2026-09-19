@@ -278,6 +278,21 @@ class AppServiceProvider extends ServiceProvider
             }
         });
 
+        // Auto-generate package scope when institute is created or scoped fields change.
+        Institute::created(function (Institute $institute) {
+            app(\App\Services\ModuleAccessService::class)
+                ->ensureScopeExistsForInstitute($institute);
+        });
+
+        Institute::updated(function (Institute $institute) {
+            if ($institute->wasChanged(['country_id', 'industry_id', 'sub_industry_id', 'package_id'])) {
+                app(\App\Services\ModuleAccessService::class)
+                    ->ensureScopeExistsForInstitute($institute);
+                app(\App\Services\ModuleAccessService::class)
+                    ->flushFeatureCache($institute->id);
+            }
+        });
+
         View::composer('*', function ($view) {
             try {
                 $user = Auth::user();
@@ -677,7 +692,7 @@ class AppServiceProvider extends ServiceProvider
             'training_center' => 'training_center',
         ];
 
-        $desiredModule = $industryModuleMap[$institute->industry ?? ''] ?? null;
+        $desiredModule = $industryModuleMap[(string) ($institute->getAttributes()['industry'] ?? '')] ?? null;
 
         // Non-canonical industry (null/legacy/other): do NOT write
         // enabled=false overrides — those would shadow package/entitlement
