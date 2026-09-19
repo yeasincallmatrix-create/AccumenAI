@@ -3,12 +3,19 @@
 namespace App\Models\LabIntegration;
 
 use App\Models\Concerns\TenantScoped;
+use Database\Factories\LabIntegration\LabAnalyzerFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LabAnalyzer extends Model
 {
-    use SoftDeletes, TenantScoped;
+    use HasFactory, SoftDeletes, TenantScoped;
+
+    protected static function newFactory()
+    {
+        return LabAnalyzerFactory::new();
+    }
 
     protected $table = 'lab_analyzers';
     protected $fillable = [

@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Models\LabIntegration\LabAnalyzer;
+use App\Services\LabIntegration\AnalyzerAdapterRegistry;
 use App\Services\LabIntegration\Parsers\AstmParser;
 use App\Services\LabIntegration\Parsers\CsvParser;
 use App\Services\LabIntegration\Parsers\Hl7Parser;
@@ -12,7 +14,7 @@ class LabValidateFixtures extends Command
     protected $signature = 'lab:validate-fixtures';
     protected $description = 'Parse all test fixtures and report any parse errors';
 
-    public function handle(AstmParser $astm, Hl7Parser $hl7, CsvParser $csv): int
+    public function handle(AstmParser $astm, Hl7Parser $hl7, CsvParser $csv, AnalyzerAdapterRegistry $registry): int
     {
         $fixtures = [
             ['astm_cbc_5part.txt', $astm],
@@ -32,14 +34,45 @@ class LabValidateFixtures extends Command
                 continue;
             }
             $result = $parser->parse(file_get_contents($path));
-            $paramCount = count($result['parameters']);
-            $errCount = count($result['parse_errors']);
-            $this->info("{$file}: {$paramCount} params, {$errCount} errors");
-            foreach ($result['parse_errors'] as $err) {
-                $this->warn("  - {$err}");
+            $this->report($file, $result);
+        }
+
+        // Phase 3: Sysmex XN-550 fixtures via the registered adapter.
+        // A transient (unsaved) analyzer is enough: with no parameter maps
+        // the adapter still parses, marking parameters unmapped.
+        $sysmex = $registry->resolve('sysmex_xn', 'v1');
+        if ($sysmex === null) {
+            $this->error('Sysmex adapter not registered');
+
+            return 1;
+        }
+        $probe = new LabAnalyzer(['institute_id' => 0, 'adapter_key' => 'sysmex_xn']);
+        foreach ([
+            'Sysmex/xn550_astm_cbc_5part.txt',
+            'Sysmex/xn550_hl7_cbc_5part.txt',
+            'Sysmex/xn550_astm_retic_mode.txt',
+            'Sysmex/xn550_astm_with_errors.txt',
+            'Sysmex/xn550_hl7_with_blank_params.txt',
+        ] as $file) {
+            $path = base_path("tests/Fixtures/LabIntegration/{$file}");
+            if (! file_exists($path)) {
+                $this->error("Missing: {$file}");
+
+                continue;
             }
+            $this->report($file, $sysmex->parse(file_get_contents($path), $probe));
         }
 
         return 0;
+    }
+
+    protected function report(string $file, array $result): void
+    {
+        $paramCount = count($result['parameters']);
+        $errCount = count($result['parse_errors']);
+        $this->info("{$file}: {$paramCount} params, {$errCount} errors");
+        foreach ($result['parse_errors'] as $err) {
+            $this->warn("  - {$err}");
+        }
     }
 }

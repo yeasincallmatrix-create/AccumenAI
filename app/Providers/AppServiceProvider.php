@@ -55,13 +55,12 @@ class AppServiceProvider extends ServiceProvider
         Fortify::ignoreRoutes();
 
         // Phase 1 lab analyzer integration: adapter registry skeleton.
-        // Concrete adapters arrive in Phase 2/3; the registry resolves them
-        // by adapter_key + adapter_version pinned per analyzer row.
-        $this->app->singleton(\App\Services\LabIntegration\AnalyzerAdapterRegistry::class, function () {
+        // Phase 3: Sysmex XN-550 registered; concrete adapters resolve by
+        // adapter_key + adapter_version pinned per analyzer row.
+        $this->app->singleton(\App\Services\LabIntegration\AnalyzerAdapterRegistry::class, function ($app) {
             $registry = new \App\Services\LabIntegration\AnalyzerAdapterRegistry();
-            // Adapters will be registered in Phase 2/3.
-            // Example (commented):
-            // $registry->register(new \App\Services\LabIntegration\Adapters\SysmexXnAdapter());
+            $registry->register($app->make(\App\Services\LabIntegration\Adapters\SysmexXnAdapter::class));
+
             return $registry;
         });
 

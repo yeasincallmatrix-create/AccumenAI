@@ -1,0 +1,24 @@
+MSH|^~\&|SYSMEX^XN-550|LAB|HIS|HOSPITAL|20260920103000||ORU^R01^ORU_R01|MSG-XN-00001|P|2.5
+PID|1||MRN-12345||DOE^JOHN||19800101|M
+OBR|1|ACC-2026-00001|SAMPLE001|CBC^Complete Blood Count|||20260920103000
+OBX|1|NM|WBC^White Blood Cell||7.2|10^3/uL|4.0-11.0|N|||F
+OBX|2|NM|RBC^Red Blood Cell||4.85|10^6/uL|4.5-5.5|N|||F
+OBX|3|NM|HGB^Hemoglobin||14.1|g/dL|13.0-17.0|N|||F
+OBX|4|NM|HCT^Hematocrit||42.1|%|40-52|N|||F
+OBX|5|NM|MCV^MCV||86.8|fL|80-100|N|||F
+OBX|6|NM|MCH^MCH||29.1|pg|27-33|N|||F
+OBX|7|NM|MCHC^MCHC||33.5|g/dL|32-36|N|||F
+OBX|8|NM|PLT^Platelet||250|10^3/uL|150-450|N|||F
+OBX|9|NM|RDW-SD^RDW-SD||42.1|fL|39-46|N|||F
+OBX|10|NM|RDW-CV^RDW-CV||13.2|%|11.5-14.5|N|||F
+OBX|11|NM|MPV^MPV||9.5|fL|7.5-11.5|N|||F
+OBX|12|NM|NEUT#^Neutrophil Abs||4.50|10^3/uL|2.0-7.5|N|||F
+OBX|13|NM|LYMPH#^Lymphocyte Abs||2.04|10^3/uL|1.0-4.0|N|||F
+OBX|14|NM|MONO#^Monocyte Abs||0.45|10^3/uL|0.2-1.0|N|||F
+OBX|15|NM|EO#^Eosinophil Abs||0.18|10^3/uL|0.02-0.5|N|||F
+OBX|16|NM|BASO#^Basophil Abs||0.04|10^3/uL|0.02-0.1|N|||F
+OBX|17|NM|NEUT%^Neutrophil %||62.5|%|40-70|N|||F
+OBX|18|NM|LYMPH%^Lymphocyte %||28.3|%|20-45|N|||F
+OBX|19|NM|MONO%^Monocyte %||6.2|%|2-10|N|||F
+OBX|20|NM|EO%^Eosinophil %||2.5|%|1-6|N|||F
+OBX|21|NM|BASO%^Basophil %||0.5|%|0-2|N|||F
