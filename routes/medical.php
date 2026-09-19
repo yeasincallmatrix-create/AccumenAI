@@ -316,6 +316,94 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
         Route::get('orders/create', [LabOrderController::class, 'create'])->name('orders.create');
         Route::post('orders', [LabOrderController::class, 'store'])->name('orders.store');
         Route::get('tests', [LabTestController::class, 'index'])->name('tests.index');
+
+        // === Analyzer Registry (Phase 5 lab analyzer integration) ===
+        Route::prefix('analyzers')->name('analyzers.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Medical\LabAnalyzerController::class, 'index'])
+                ->middleware('permission:medical.laboratory.analyzers.view')
+                ->name('index');
+
+            Route::get('create', [\App\Http\Controllers\Medical\LabAnalyzerController::class, 'create'])
+                ->middleware('permission:medical.laboratory.analyzers.create')
+                ->name('create');
+
+            Route::post('/', [\App\Http\Controllers\Medical\LabAnalyzerController::class, 'store'])
+                ->middleware('permission:medical.laboratory.analyzers.create')
+                ->name('store');
+
+            Route::get('{analyzer}', [\App\Http\Controllers\Medical\LabAnalyzerController::class, 'show'])
+                ->middleware('permission:medical.laboratory.analyzers.view')
+                ->name('show');
+
+            Route::get('{analyzer}/edit', [\App\Http\Controllers\Medical\LabAnalyzerController::class, 'edit'])
+                ->middleware('permission:medical.laboratory.analyzers.edit')
+                ->name('edit');
+
+            Route::put('{analyzer}', [\App\Http\Controllers\Medical\LabAnalyzerController::class, 'update'])
+                ->middleware('permission:medical.laboratory.analyzers.edit')
+                ->name('update');
+
+            Route::delete('{analyzer}', [\App\Http\Controllers\Medical\LabAnalyzerController::class, 'destroy'])
+                ->middleware('permission:medical.laboratory.analyzers.delete')
+                ->name('destroy');
+
+            // Credentials
+            Route::post('{analyzer}/credentials/issue', [\App\Http\Controllers\Medical\LabAnalyzerController::class, 'issueCredential'])
+                ->middleware('permission:medical.laboratory.analyzers.manage_credentials')
+                ->name('credentials.issue');
+
+            Route::post('{analyzer}/credentials/rotate', [\App\Http\Controllers\Medical\LabAnalyzerController::class, 'rotateCredential'])
+                ->middleware('permission:medical.laboratory.analyzers.manage_credentials')
+                ->name('credentials.rotate');
+
+            Route::post('{analyzer}/credentials/revoke', [\App\Http\Controllers\Medical\LabAnalyzerController::class, 'revokeCredential'])
+                ->middleware('permission:medical.laboratory.analyzers.manage_credentials')
+                ->name('credentials.revoke');
+
+            // Parameter maps
+            Route::get('{analyzer}/maps', [\App\Http\Controllers\Medical\LabAnalyzerMapController::class, 'index'])
+                ->middleware('permission:medical.laboratory.analyzers.manage_maps')
+                ->name('maps.index');
+
+            Route::post('{analyzer}/maps', [\App\Http\Controllers\Medical\LabAnalyzerMapController::class, 'store'])
+                ->middleware('permission:medical.laboratory.analyzers.manage_maps')
+                ->name('maps.store');
+
+            Route::put('{analyzer}/maps/{map}', [\App\Http\Controllers\Medical\LabAnalyzerMapController::class, 'update'])
+                ->middleware('permission:medical.laboratory.analyzers.manage_maps')
+                ->name('maps.update');
+
+            Route::delete('{analyzer}/maps/{map}', [\App\Http\Controllers\Medical\LabAnalyzerMapController::class, 'destroy'])
+                ->middleware('permission:medical.laboratory.analyzers.manage_maps')
+                ->name('maps.destroy');
+
+            Route::post('{analyzer}/maps/seed-sysmex', [\App\Http\Controllers\Medical\LabAnalyzerMapController::class, 'seedSysmex'])
+                ->middleware('permission:medical.laboratory.analyzers.manage_maps')
+                ->name('maps.seed-sysmex');
+
+            // Messages
+            Route::get('{analyzer}/messages', [\App\Http\Controllers\Medical\LabAnalyzerMessageController::class, 'index'])
+                ->middleware('permission:medical.laboratory.analyzers.view_messages')
+                ->name('messages.index');
+
+            Route::get('{analyzer}/messages/{message}', [\App\Http\Controllers\Medical\LabAnalyzerMessageController::class, 'show'])
+                ->middleware('permission:medical.laboratory.analyzers.view_messages')
+                ->name('messages.show');
+
+            Route::post('{analyzer}/messages/{message}/retry', [\App\Http\Controllers\Medical\LabAnalyzerMessageController::class, 'retry'])
+                ->middleware('permission:medical.laboratory.analyzers.retry_messages')
+                ->name('messages.retry');
+
+            // Worklist
+            Route::get('{analyzer}/worklist', [\App\Http\Controllers\Medical\LabAnalyzerWorklistController::class, 'index'])
+                ->middleware('permission:medical.laboratory.analyzers.view_worklist')
+                ->name('worklist.index');
+        });
+
+        // Status dashboard
+        Route::get('analyzers-dashboard', [\App\Http\Controllers\Medical\LabAnalyzerDashboardController::class, 'index'])
+            ->middleware('permission:medical.laboratory.analyzers.view')
+            ->name('analyzers.dashboard');
     });
 
     // Billing

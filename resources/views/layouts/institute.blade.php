@@ -255,6 +255,9 @@
                                                     <a class="nav-link sub {{ request()->routeIs('medical.lab.tests.*') ? 'active' : '' }}" href="{{ route('medical.lab.tests.index') }}">
                                                         <i class="bi bi-list-ol"></i><span class="sidebar-label">Test Catalog</span>
                                                     </a>
+                                                    <a class="nav-link sub {{ request()->routeIs('medical.laboratory.analyzers.*') ? 'active' : '' }}" href="{{ route('medical.laboratory.analyzers.index') }}">
+                                                        <i class="bi bi-robot"></i><span class="sidebar-label">Lab Analyzers</span>
+                                                    </a>
                                                 @endif
                                             @endfeatureEnabled
                                             @featureLocked('medical.laboratory')

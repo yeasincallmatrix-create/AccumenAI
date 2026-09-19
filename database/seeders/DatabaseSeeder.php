@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
         $this->call(SystemRoleSeeder::class);
         $this->call(RoleSeeder::class);
         $this->call(TaxPermissionSeeder::class);
+        $this->call(LabAnalyzerPermissionSeeder::class);
         $this->call(RolePermissionSeeder::class);
         $this->call(ModuleRegistrySeeder::class);
         $this->call(MedicalSubModuleSeeder::class);
