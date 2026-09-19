@@ -1,0 +1,6 @@
+Sample ID: ACC-2026-00005
+WBC    7.2    10^3/uL    N
+RBC    4.85   10^6/uL    N
+HGB    14.1   g/dL       N
+HCT    42.1   %          N
+PLT    250    10^3/uL    N

@@ -1,0 +1,6 @@
+test_code,value,unit,flag,ref_range
+WBC,7.2,10^3/uL,N,4.0-11.0
+RBC,4.85,10^6/uL,N,4.5-5.5
+HGB,14.1,g/dL,N,13.0-17.0
+HCT,42.1,%,N,40-52
+PLT,250,10^3/uL,N,150-450
