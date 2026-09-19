@@ -1,0 +1,1248 @@
+accounting_audit_trails	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+accounting_audit_trails	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+accounting_audit_trails	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+accounting_audit_trails	actor_type	enum('user','system','ai','cron','import')	NO	'user'	MUL	
+accounting_audit_trails	actor_id	bigint(20) unsigned	YES	NULL		
+accounting_audit_trails	action	enum('create','update','delete','post','reverse','void','waive','lock','close','reopen','import','migrate','export','recurring_fee_generated')	NO	NULL		
+accounting_audit_trails	entity_type	varchar(60)	NO	NULL	MUL	
+accounting_audit_trails	entity_id	bigint(20) unsigned	NO	NULL		
+accounting_audit_trails	before_payload	longtext	YES	NULL		
+accounting_audit_trails	after_payload	longtext	YES	NULL		
+accounting_audit_trails	ip	varchar(45)	YES	NULL		
+accounting_audit_trails	user_agent	varchar(255)	YES	NULL		
+accounting_audit_trails	created_at	timestamp	NO	current_timestamp()		
+accounting_periods	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+accounting_periods	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+accounting_periods	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+accounting_periods	fiscal_year_id	bigint(20) unsigned	NO	NULL	MUL	
+accounting_periods	name	varchar(50)	NO	NULL		
+accounting_periods	start_date	date	NO	NULL		
+accounting_periods	end_date	date	NO	NULL		
+accounting_periods	status	enum('open','closed','locked')	NO	'open'		
+accounting_periods	closed_by	bigint(20) unsigned	YES	NULL		
+accounting_periods	closed_at	timestamp	YES	NULL		
+accounting_periods	created_by	bigint(20) unsigned	YES	NULL		
+accounting_periods	updated_by	bigint(20) unsigned	YES	NULL		
+accounting_periods	created_at	timestamp	YES	NULL		
+accounting_periods	updated_at	timestamp	YES	NULL		
+accounting_periods	deleted_at	timestamp	YES	NULL		
+accounting_settings	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+accounting_settings	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+accounting_settings	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+accounting_settings	settings_key	varchar(80)	NO	NULL		
+accounting_settings	settings_value	longtext	NO	NULL		
+accounting_settings	created_by	bigint(20) unsigned	YES	NULL		
+accounting_settings	updated_by	bigint(20) unsigned	YES	NULL		
+accounting_settings	created_at	timestamp	YES	NULL		
+accounting_settings	updated_at	timestamp	YES	NULL		
+account_groups	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+account_groups	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+account_groups	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+account_groups	parent_id	bigint(20) unsigned	YES	NULL	MUL	
+account_groups	code	varchar(20)	NO	NULL		
+account_groups	name	varchar(150)	NO	NULL		
+account_groups	category	enum('asset','liability','equity','income','expense')	NO	NULL		
+account_groups	is_system	tinyint(1)	NO	0		
+account_groups	sort_order	int(10) unsigned	NO	0		
+account_groups	created_by	bigint(20) unsigned	YES	NULL		
+account_groups	updated_by	bigint(20) unsigned	YES	NULL		
+account_groups	created_at	timestamp	YES	NULL		
+account_groups	updated_at	timestamp	YES	NULL		
+account_groups	deleted_at	timestamp	YES	NULL		
+account_heads	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+account_heads	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+account_heads	name	varchar(100)	NO	NULL		
+account_heads	type	enum('income','expense')	NO	NULL		
+account_heads	status	enum('active','inactive')	NO	'active'		
+asset_audit_logs	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+asset_audit_logs	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+asset_audit_logs	asset_id	bigint(20) unsigned	YES	NULL	MUL	
+asset_audit_logs	event	varchar(60)	NO	NULL		
+asset_audit_logs	actor_id	bigint(20) unsigned	YES	NULL		
+asset_audit_logs	old_value	longtext	YES	NULL		
+asset_audit_logs	new_value	longtext	YES	NULL		
+asset_audit_logs	reason	varchar(255)	YES	NULL		
+asset_audit_logs	created_at	timestamp	YES	NULL		
+asset_categories	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+asset_categories	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+asset_categories	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+asset_categories	name	varchar(100)	NO	NULL		
+asset_categories	code	varchar(40)	YES	NULL		
+asset_categories	asset_account_id	bigint(20) unsigned	YES	NULL	MUL	
+asset_categories	accumulated_depreciation_account_id	bigint(20) unsigned	YES	NULL	MUL	
+asset_categories	depreciation_expense_account_id	bigint(20) unsigned	YES	NULL	MUL	
+asset_categories	disposal_gain_account_id	bigint(20) unsigned	YES	NULL	MUL	
+asset_categories	disposal_loss_account_id	bigint(20) unsigned	YES	NULL	MUL	
+asset_categories	impairment_account_id	bigint(20) unsigned	YES	NULL	MUL	
+asset_categories	default_useful_life_months	smallint(5) unsigned	YES	NULL		
+asset_categories	default_depreciation_method	varchar(40)	YES	NULL		
+asset_categories	is_system	tinyint(1)	NO	0		
+asset_categories	is_active	tinyint(1)	NO	1		
+asset_categories	created_by	bigint(20) unsigned	YES	NULL		
+asset_categories	updated_by	bigint(20) unsigned	YES	NULL		
+asset_categories	created_at	timestamp	YES	NULL		
+asset_categories	updated_at	timestamp	YES	NULL		
+asset_categories	deleted_at	timestamp	YES	NULL		
+asset_cost_components	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+asset_cost_components	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+asset_cost_components	asset_id	bigint(20) unsigned	NO	NULL	MUL	
+asset_cost_components	component_type	varchar(40)	NO	'purchase'		
+asset_cost_components	amount	decimal(19,4)	NO	0.0000		
+asset_cost_components	description	varchar(255)	YES	NULL		
+asset_cost_components	reference	varchar(120)	YES	NULL		
+asset_cost_components	created_by	bigint(20) unsigned	YES	NULL		
+asset_cost_components	created_at	timestamp	YES	NULL		
+asset_cost_components	updated_at	timestamp	YES	NULL		
+asset_cost_components	deleted_at	timestamp	YES	NULL		
+asset_depreciation_entries	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+asset_depreciation_entries	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+asset_depreciation_entries	asset_id	bigint(20) unsigned	NO	NULL	MUL	
+asset_depreciation_entries	run_id	bigint(20) unsigned	YES	NULL	MUL	
+asset_depreciation_entries	period_start	date	NO	NULL		
+asset_depreciation_entries	period_end	date	NO	NULL		
+asset_depreciation_entries	opening_nbv	decimal(19,4)	NO	0.0000		
+asset_depreciation_entries	depreciation_amount	decimal(19,4)	NO	0.0000		
+asset_depreciation_entries	accumulated_depreciation	decimal(19,4)	NO	0.0000		
+asset_depreciation_entries	closing_nbv	decimal(19,4)	NO	0.0000		
+asset_depreciation_entries	method	varchar(40)	YES	NULL		
+asset_depreciation_entries	rate	decimal(10,4)	YES	NULL		
+asset_depreciation_entries	units	decimal(19,4)	YES	NULL		
+asset_depreciation_entries	actor_id	bigint(20) unsigned	YES	NULL		
+asset_depreciation_entries	created_at	timestamp	YES	NULL		
+asset_depreciation_entries	updated_at	timestamp	YES	NULL		
+asset_depreciation_entries	deleted_at	timestamp	YES	NULL		
+asset_depreciation_runs	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+asset_depreciation_runs	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+asset_depreciation_runs	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+asset_depreciation_runs	period_start	date	NO	NULL		
+asset_depreciation_runs	period_end	date	NO	NULL		
+asset_depreciation_runs	status	varchar(20)	NO	'posted'		
+asset_depreciation_runs	journal_id	bigint(20) unsigned	YES	NULL	MUL	
+asset_depreciation_runs	actor_id	bigint(20) unsigned	YES	NULL		
+asset_depreciation_runs	created_at	timestamp	YES	NULL		
+asset_depreciation_runs	updated_at	timestamp	YES	NULL		
+asset_depreciation_runs	deleted_at	timestamp	YES	NULL		
+asset_disposals	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+asset_disposals	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+asset_disposals	asset_id	bigint(20) unsigned	NO	NULL	MUL	
+asset_disposals	disposal_type	varchar(30)	NO	'sale'		
+asset_disposals	disposal_date	date	NO	NULL		
+asset_disposals	sale_proceeds	decimal(19,4)	NO	0.0000		
+asset_disposals	gain_loss	decimal(19,4)	NO	0.0000		
+asset_disposals	reason	varchar(255)	YES	NULL		
+asset_disposals	journal_id	bigint(20) unsigned	YES	NULL	MUL	
+asset_disposals	actor_id	bigint(20) unsigned	YES	NULL		
+asset_disposals	created_at	timestamp	YES	NULL		
+asset_disposals	updated_at	timestamp	YES	NULL		
+asset_disposals	deleted_at	timestamp	YES	NULL		
+asset_impairments	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+asset_impairments	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+asset_impairments	asset_id	bigint(20) unsigned	NO	NULL	MUL	
+asset_impairments	impairment_date	date	NO	NULL		
+asset_impairments	impairment_amount	decimal(19,4)	NO	0.0000		
+asset_impairments	recoverable_amount	decimal(19,4)	YES	NULL		
+asset_impairments	reason	varchar(255)	YES	NULL		
+asset_impairments	journal_id	bigint(20) unsigned	YES	NULL	MUL	
+asset_impairments	actor_id	bigint(20) unsigned	YES	NULL		
+asset_impairments	created_at	timestamp	YES	NULL		
+asset_impairments	updated_at	timestamp	YES	NULL		
+asset_impairments	deleted_at	timestamp	YES	NULL		
+asset_locations	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+asset_locations	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+asset_locations	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+asset_locations	name	varchar(100)	NO	NULL		
+asset_locations	code	varchar(40)	YES	NULL		
+asset_locations	is_active	tinyint(1)	NO	1		
+asset_locations	created_by	bigint(20) unsigned	YES	NULL		
+asset_locations	updated_by	bigint(20) unsigned	YES	NULL		
+asset_locations	created_at	timestamp	YES	NULL		
+asset_locations	updated_at	timestamp	YES	NULL		
+asset_locations	deleted_at	timestamp	YES	NULL		
+asset_method_changes	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+asset_method_changes	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+asset_method_changes	asset_id	bigint(20) unsigned	NO	NULL	MUL	
+asset_method_changes	old_method	varchar(40)	YES	NULL		
+asset_method_changes	new_method	varchar(40)	NO	NULL		
+asset_method_changes	old_useful_life_months	smallint(5) unsigned	YES	NULL		
+asset_method_changes	new_useful_life_months	smallint(5) unsigned	YES	NULL		
+asset_method_changes	old_residual_value	decimal(19,4)	YES	NULL		
+asset_method_changes	new_residual_value	decimal(19,4)	YES	NULL		
+asset_method_changes	reason	varchar(255)	YES	NULL		
+asset_method_changes	status	varchar(20)	NO	'requested'		
+asset_method_changes	effective_date	date	YES	NULL		
+asset_method_changes	approved_by	bigint(20) unsigned	YES	NULL		
+asset_method_changes	approved_at	timestamp	YES	NULL		
+asset_method_changes	actor_id	bigint(20) unsigned	YES	NULL		
+asset_method_changes	created_at	timestamp	YES	NULL		
+asset_method_changes	updated_at	timestamp	YES	NULL		
+asset_method_changes	deleted_at	timestamp	YES	NULL		
+asset_qr_codes	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+asset_qr_codes	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+asset_qr_codes	asset_id	bigint(20) unsigned	NO	NULL	MUL	
+asset_qr_codes	token	varchar(64)	NO	NULL	UNI	
+asset_qr_codes	is_active	tinyint(1)	NO	1		
+asset_qr_codes	generated_at	timestamp	YES	NULL		
+asset_qr_codes	revoked_at	timestamp	YES	NULL		
+asset_qr_codes	created_by	bigint(20) unsigned	YES	NULL		
+asset_qr_codes	created_at	timestamp	YES	NULL		
+asset_qr_codes	updated_at	timestamp	YES	NULL		
+asset_qr_codes	deleted_at	timestamp	YES	NULL		
+asset_revaluations	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+asset_revaluations	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+asset_revaluations	asset_id	bigint(20) unsigned	NO	NULL	MUL	
+asset_revaluations	revaluation_date	date	NO	NULL		
+asset_revaluations	previous_carrying_amount	decimal(19,4)	NO	0.0000		
+asset_revaluations	new_carrying_amount	decimal(19,4)	NO	0.0000		
+asset_revaluations	difference	decimal(19,4)	NO	0.0000		
+asset_revaluations	reason	varchar(255)	YES	NULL		
+asset_revaluations	status	varchar(20)	NO	'requested'		
+asset_revaluations	approved_by	bigint(20) unsigned	YES	NULL		
+asset_revaluations	approved_at	timestamp	YES	NULL		
+asset_revaluations	journal_id	bigint(20) unsigned	YES	NULL	MUL	
+asset_revaluations	actor_id	bigint(20) unsigned	YES	NULL		
+asset_revaluations	created_at	timestamp	YES	NULL		
+asset_revaluations	updated_at	timestamp	YES	NULL		
+asset_revaluations	deleted_at	timestamp	YES	NULL		
+asset_transfers	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+asset_transfers	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+asset_transfers	asset_id	bigint(20) unsigned	NO	NULL	MUL	
+asset_transfers	from_branch_id	bigint(20) unsigned	YES	NULL	MUL	
+asset_transfers	to_branch_id	bigint(20) unsigned	YES	NULL	MUL	
+asset_transfers	from_location_id	bigint(20) unsigned	YES	NULL	MUL	
+asset_transfers	to_location_id	bigint(20) unsigned	YES	NULL	MUL	
+asset_transfers	from_department	varchar(80)	YES	NULL		
+asset_transfers	to_department	varchar(80)	YES	NULL		
+asset_transfers	from_custodian	varchar(120)	YES	NULL		
+asset_transfers	to_custodian	varchar(120)	YES	NULL		
+asset_transfers	transfer_date	date	NO	NULL		
+asset_transfers	reason	varchar(255)	YES	NULL		
+asset_transfers	actor_id	bigint(20) unsigned	YES	NULL		
+asset_transfers	created_at	timestamp	YES	NULL		
+asset_transfers	updated_at	timestamp	YES	NULL		
+asset_transfers	deleted_at	timestamp	YES	NULL		
+bank_reconciliations	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+bank_reconciliations	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+bank_reconciliations	statement_line_id	bigint(20) unsigned	NO	NULL	MUL	
+bank_reconciliations	journal_id	bigint(20) unsigned	NO	NULL	MUL	
+bank_reconciliations	status	enum('matched','unmatched','ignored')	NO	'matched'		
+bank_reconciliations	matched_by	bigint(20) unsigned	YES	NULL	MUL	
+bank_reconciliations	matched_at	timestamp	YES	NULL		
+bank_reconciliations	created_at	timestamp	YES	NULL		
+bank_reconciliations	updated_at	timestamp	YES	NULL		
+bank_statements	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+bank_statements	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+bank_statements	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+bank_statements	bank_account_id	bigint(20) unsigned	NO	NULL	MUL	
+bank_statements	statement_date	date	NO	NULL		
+bank_statements	file_name	varchar(255)	YES	NULL		
+bank_statements	status	enum('imported','reconciled','cancelled')	NO	'imported'		
+bank_statements	created_at	timestamp	YES	NULL		
+bank_statements	updated_at	timestamp	YES	NULL		
+bank_statements	deleted_at	timestamp	YES	NULL		
+bank_statement_lines	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+bank_statement_lines	statement_id	bigint(20) unsigned	NO	NULL	MUL	
+bank_statement_lines	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+bank_statement_lines	transaction_date	date	NO	NULL		
+bank_statement_lines	description	varchar(255)	NO	NULL		
+bank_statement_lines	reference	varchar(255)	YES	NULL		
+bank_statement_lines	amount	decimal(19,4)	NO	NULL		
+bank_statement_lines	type	enum('deposit','withdrawal')	NO	NULL		
+bank_statement_lines	created_at	timestamp	YES	NULL		
+bank_statement_lines	updated_at	timestamp	YES	NULL		
+budgets	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+budgets	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+budgets	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+budgets	fiscal_year_id	bigint(20) unsigned	NO	NULL	MUL	
+budgets	currency_id	bigint(20) unsigned	NO	NULL	MUL	
+budgets	name	varchar(100)	NO	NULL		
+budgets	type	enum('revenue','expense','cost','asset')	NO	'expense'		
+budgets	status	enum('draft','submitted','approved','rejected','locked')	NO	'draft'	MUL	
+budgets	version	int(10) unsigned	NO	1		
+budgets	total_amount	decimal(19,4)	NO	0.0000		
+budgets	notes	text	YES	NULL		
+budgets	submitted_by	bigint(20) unsigned	YES	NULL		
+budgets	submitted_at	timestamp	YES	NULL		
+budgets	approved_by	bigint(20) unsigned	YES	NULL		
+budgets	approved_at	timestamp	YES	NULL		
+budgets	locked_by	bigint(20) unsigned	YES	NULL		
+budgets	locked_at	timestamp	YES	NULL		
+budgets	created_by	bigint(20) unsigned	YES	NULL		
+budgets	updated_by	bigint(20) unsigned	YES	NULL		
+budgets	created_at	timestamp	YES	NULL		
+budgets	updated_at	timestamp	YES	NULL		
+budgets	deleted_at	timestamp	YES	NULL		
+budget_lines	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+budget_lines	budget_version_id	bigint(20) unsigned	NO	NULL	MUL	
+budget_lines	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+budget_lines	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+budget_lines	coa_id	bigint(20) unsigned	NO	NULL	MUL	
+budget_lines	accounting_period_id	bigint(20) unsigned	YES	NULL	MUL	
+budget_lines	month	int(10) unsigned	NO	NULL		
+budget_lines	amount	decimal(19,4)	NO	0.0000		
+budget_lines	notes	text	YES	NULL		
+budget_lines	created_at	timestamp	YES	NULL		
+budget_lines	updated_at	timestamp	YES	NULL		
+budget_versions	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+budget_versions	budget_id	bigint(20) unsigned	NO	NULL	MUL	
+budget_versions	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+budget_versions	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+budget_versions	version	int(10) unsigned	NO	NULL		
+budget_versions	status	enum('draft','submitted','approved','rejected','locked')	NO	'draft'		
+budget_versions	total_amount	decimal(19,4)	NO	0.0000		
+budget_versions	reason	text	YES	NULL		
+budget_versions	notes	text	YES	NULL		
+budget_versions	submitted_by	bigint(20) unsigned	YES	NULL		
+budget_versions	submitted_at	timestamp	YES	NULL		
+budget_versions	approved_by	bigint(20) unsigned	YES	NULL		
+budget_versions	approved_at	timestamp	YES	NULL		
+budget_versions	created_by	bigint(20) unsigned	YES	NULL		
+budget_versions	created_at	timestamp	YES	NULL		
+budget_versions	updated_at	timestamp	YES	NULL		
+cash_memos	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+cash_memos	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+cash_memos	memo_number	varchar(30)	NO	NULL		
+cash_memos	student_id	bigint(20) unsigned	YES	NULL	MUL	
+cash_memos	party_id	bigint(20) unsigned	YES	NULL	MUL	
+cash_memos	journal_id	bigint(20) unsigned	YES	NULL	MUL	
+cash_memos	amount	decimal(10,2)	NO	NULL		
+cash_memos	description	varchar(255)	YES	NULL		
+cash_memos	payment_method	enum('cash','bkash','nagad','bank','other')	NO	'cash'		
+cash_memos	created_by	bigint(20) unsigned	NO	NULL		
+cash_memos	offline_origin_id	bigint(20) unsigned	YES	NULL	MUL	
+cash_memos	created_at	datetime	NO	current_timestamp()		
+chart_of_accounts	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+chart_of_accounts	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+chart_of_accounts	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+chart_of_accounts	account_group_id	bigint(20) unsigned	NO	NULL	MUL	
+chart_of_accounts	parent_id	bigint(20) unsigned	YES	NULL	MUL	
+chart_of_accounts	code	varchar(30)	NO	NULL		
+chart_of_accounts	name	varchar(150)	NO	NULL		
+chart_of_accounts	type	enum('asset','liability','equity','income','expense')	NO	NULL		
+chart_of_accounts	cash_flow_category	enum('operating','investing','financing')	YES	NULL		
+chart_of_accounts	is_cash	tinyint(1)	NO	0		
+chart_of_accounts	is_bank	tinyint(1)	NO	0		
+chart_of_accounts	is_receivable	tinyint(1)	NO	0		
+chart_of_accounts	is_payable	tinyint(1)	NO	0		
+chart_of_accounts	is_active	tinyint(1)	NO	1		
+chart_of_accounts	is_system	tinyint(1)	NO	0		
+chart_of_accounts	currency_id	bigint(20) unsigned	YES	NULL	MUL	
+chart_of_accounts	legacy_head_id	bigint(20) unsigned	YES	NULL	MUL	
+chart_of_accounts	created_by	bigint(20) unsigned	YES	NULL		
+chart_of_accounts	updated_by	bigint(20) unsigned	YES	NULL		
+chart_of_accounts	created_at	timestamp	YES	NULL		
+chart_of_accounts	updated_at	timestamp	YES	NULL		
+chart_of_accounts	deleted_at	timestamp	YES	NULL		
+customer_groups	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+customer_groups	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+customer_groups	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+customer_groups	name	varchar(100)	NO	NULL		
+customer_groups	discount_rate	decimal(10,4)	NO	0.0000		
+customer_groups	is_system	tinyint(1)	NO	0		
+customer_groups	created_by	bigint(20) unsigned	YES	NULL		
+customer_groups	updated_by	bigint(20) unsigned	YES	NULL		
+customer_groups	created_at	timestamp	YES	NULL		
+customer_groups	updated_at	timestamp	YES	NULL		
+customer_groups	deleted_at	timestamp	YES	NULL		
+exchange_rates	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+exchange_rates	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+exchange_rates	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+exchange_rates	from_currency_id	bigint(20) unsigned	NO	NULL	MUL	
+exchange_rates	to_currency_id	bigint(20) unsigned	NO	NULL	MUL	
+exchange_rates	rate	decimal(19,8)	NO	NULL		
+exchange_rates	rate_date	date	NO	NULL		
+exchange_rates	source	varchar(40)	YES	NULL		
+exchange_rates	buy_rate	decimal(19,8)	YES	NULL		
+exchange_rates	sell_rate	decimal(19,8)	YES	NULL		
+exchange_rates	created_by	bigint(20) unsigned	YES	NULL		
+exchange_rates	updated_by	bigint(20) unsigned	YES	NULL		
+exchange_rates	created_at	timestamp	YES	NULL		
+exchange_rates	updated_at	timestamp	YES	NULL		
+exchange_rates	deleted_at	timestamp	YES	NULL		
+fee_heads	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+fee_heads	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+fee_heads	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+fee_heads	name	varchar(150)	NO	NULL		
+fee_heads	code	varchar(40)	YES	NULL		
+fee_heads	type	enum('admission','course_tuition','registration','exam','certificate','other')	NO	'other'		
+fee_heads	default_amount	decimal(10,2)	NO	0.00		
+fee_heads	income_coa_id	bigint(20) unsigned	YES	NULL	MUL	
+fee_heads	description	varchar(255)	YES	NULL		
+fee_heads	is_active	tinyint(1)	NO	1		
+fee_heads	is_recurring	tinyint(1)	NO	0		
+fee_heads	billing_frequency	enum('monthly','quarterly','annually','one_time')	NO	'one_time'		
+fee_heads	sort_order	int(11)	NO	0		
+fee_heads	created_by	bigint(20) unsigned	YES	NULL	MUL	
+fee_heads	updated_by	bigint(20) unsigned	YES	NULL	MUL	
+fee_heads	created_at	timestamp	YES	NULL		
+fee_heads	updated_at	timestamp	YES	NULL		
+fee_structures	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+fee_structures	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+fee_structures	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+fee_structures	course_id	bigint(20) unsigned	YES	NULL	MUL	
+fee_structures	batch_id	bigint(20) unsigned	YES	NULL	MUL	
+fee_structures	academic_year_id	bigint(20) unsigned	YES	NULL	MUL	
+fee_structures	name	varchar(150)	NO	NULL		
+fee_structures	installments_count	tinyint(3) unsigned	NO	1		
+fee_structures	installments_interval_days	smallint(5) unsigned	NO	30		
+fee_structures	status	enum('draft','active','archived')	NO	'draft'		
+fee_structures	billing_frequency	enum('monthly','quarterly','annually','one_time')	NO	'monthly'		
+fee_structures	auto_generate_monthly	tinyint(1)	NO	0		
+fee_structures	created_by	bigint(20) unsigned	YES	NULL	MUL	
+fee_structures	updated_by	bigint(20) unsigned	YES	NULL	MUL	
+fee_structures	created_at	timestamp	YES	NULL		
+fee_structures	updated_at	timestamp	YES	NULL		
+fee_structure_items	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+fee_structure_items	fee_structure_id	bigint(20) unsigned	NO	NULL	MUL	
+fee_structure_items	fee_head_id	bigint(20) unsigned	NO	NULL	MUL	
+fee_structure_items	amount	decimal(10,2)	NO	0.00		
+fee_structure_items	is_optional	tinyint(1)	NO	0		
+fee_structure_items	created_at	timestamp	YES	NULL		
+fee_structure_items	updated_at	timestamp	YES	NULL		
+fiscal_years	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+fiscal_years	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+fiscal_years	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+fiscal_years	name	varchar(50)	NO	NULL		
+fiscal_years	start_date	date	NO	NULL		
+fiscal_years	end_date	date	NO	NULL		
+fiscal_years	status	enum('open','closed','archived')	NO	'open'		
+fiscal_years	is_current	tinyint(1)	NO	0		
+fiscal_years	closed_by	bigint(20) unsigned	YES	NULL		
+fiscal_years	closed_at	timestamp	YES	NULL		
+fiscal_years	created_by	bigint(20) unsigned	YES	NULL		
+fiscal_years	updated_by	bigint(20) unsigned	YES	NULL		
+fiscal_years	created_at	timestamp	YES	NULL		
+fiscal_years	updated_at	timestamp	YES	NULL		
+fiscal_years	deleted_at	timestamp	YES	NULL		
+fixed_assets	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+fixed_assets	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+fixed_assets	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+fixed_assets	category_id	bigint(20) unsigned	YES	NULL	MUL	
+fixed_assets	location_id	bigint(20) unsigned	YES	NULL	MUL	
+fixed_assets	vendor_party_id	bigint(20) unsigned	YES	NULL	MUL	
+fixed_assets	asset_code	varchar(60)	NO	NULL		
+fixed_assets	name	varchar(200)	NO	NULL		
+fixed_assets	description	text	YES	NULL		
+fixed_assets	serial_number	varchar(120)	YES	NULL		
+fixed_assets	manufacturer	varchar(120)	YES	NULL		
+fixed_assets	model	varchar(120)	YES	NULL		
+fixed_assets	purchase_date	date	YES	NULL		
+fixed_assets	capitalization_date	date	YES	NULL		
+fixed_assets	purchase_document_no	varchar(80)	YES	NULL		
+fixed_assets	invoice_reference	varchar(80)	YES	NULL		
+fixed_assets	acquisition_cost	decimal(19,4)	NO	0.0000		
+fixed_assets	additional_capitalized_cost	decimal(19,4)	NO	0.0000		
+fixed_assets	residual_value	decimal(19,4)	NO	0.0000		
+fixed_assets	useful_life_months	smallint(5) unsigned	YES	NULL		
+fixed_assets	depreciation_method	varchar(40)	NO	'straight_line'		
+fixed_assets	depreciation_frequency	varchar(20)	NO	'monthly'		
+fixed_assets	depreciation_convention	varchar(20)	NO	'full_month'		
+fixed_assets	depreciation_rate	decimal(10,4)	YES	NULL		
+fixed_assets	depreciation_start_date	date	YES	NULL		
+fixed_assets	accumulated_depreciation	decimal(19,4)	NO	0.0000		
+fixed_assets	impairment_amount	decimal(19,4)	NO	0.0000		
+fixed_assets	is_depreciable	tinyint(1)	NO	1		
+fixed_assets	unit_of_measure	varchar(40)	YES	NULL		
+fixed_assets	total_units	decimal(19,4)	YES	NULL		
+fixed_assets	status	varchar(30)	NO	'draft'		
+fixed_assets	department	varchar(80)	YES	NULL		
+fixed_assets	responsible_person	varchar(120)	YES	NULL		
+fixed_assets	warranty_provider	varchar(120)	YES	NULL		
+fixed_assets	warranty_start	date	YES	NULL		
+fixed_assets	warranty_end	date	YES	NULL		
+fixed_assets	warranty_reference	varchar(80)	YES	NULL		
+fixed_assets	warranty_notes	text	YES	NULL		
+fixed_assets	notes	text	YES	NULL		
+fixed_assets	created_by	bigint(20) unsigned	YES	NULL		
+fixed_assets	updated_by	bigint(20) unsigned	YES	NULL		
+fixed_assets	created_at	timestamp	YES	NULL		
+fixed_assets	updated_at	timestamp	YES	NULL		
+fixed_assets	deleted_at	timestamp	YES	NULL		
+goods_receipts	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+goods_receipts	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+goods_receipts	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+goods_receipts	receipt_number	varchar(50)	NO	NULL		
+goods_receipts	purchase_order_id	bigint(20) unsigned	YES	NULL		
+goods_receipts	supplier_id	bigint(20) unsigned	NO	NULL	MUL	
+goods_receipts	warehouse_id	bigint(20) unsigned	NO	NULL	MUL	
+goods_receipts	receipt_date	date	NO	NULL		
+goods_receipts	status	enum('draft','confirmed','cancelled')	NO	'draft'		
+goods_receipts	notes	text	YES	NULL		
+goods_receipts	confirmed_by	bigint(20) unsigned	YES	NULL		
+goods_receipts	confirmed_at	timestamp	YES	NULL		
+goods_receipts	cancelled_by	bigint(20) unsigned	YES	NULL		
+goods_receipts	cancelled_at	timestamp	YES	NULL		
+goods_receipts	reversed_at	timestamp	YES	NULL		
+goods_receipts	reversed_by	bigint(20) unsigned	YES	NULL		
+goods_receipts	reversal_reason	text	YES	NULL		
+goods_receipts	cancellation_reason	text	YES	NULL		
+goods_receipts	created_by	bigint(20) unsigned	YES	NULL		
+goods_receipts	created_at	timestamp	YES	NULL		
+goods_receipts	updated_at	timestamp	YES	NULL		
+goods_receipts	deleted_at	timestamp	YES	NULL		
+goods_receipt_items	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+goods_receipt_items	goods_receipt_id	bigint(20) unsigned	NO	NULL	MUL	
+goods_receipt_items	purchase_order_line_id	bigint(20) unsigned	YES	NULL		
+goods_receipt_items	inventory_item_id	bigint(20) unsigned	NO	NULL	MUL	
+goods_receipt_items	batch_id	bigint(20) unsigned	YES	NULL	MUL	
+goods_receipt_items	ordered_quantity	decimal(19,4)	NO	NULL		
+goods_receipt_items	previously_received_quantity	decimal(19,4)	NO	0.0000		
+goods_receipt_items	received_quantity	decimal(19,4)	NO	NULL		
+goods_receipt_items	rejected_quantity	decimal(19,4)	NO	0.0000		
+goods_receipt_items	unit_cost	decimal(19,4)	NO	NULL		
+goods_receipt_items	batch_number	varchar(80)	YES	NULL		
+goods_receipt_items	lot_number	varchar(80)	YES	NULL		
+goods_receipt_items	expiry_date	date	YES	NULL		
+goods_receipt_items	manufacture_date	date	YES	NULL		
+goods_receipt_items	serial_numbers	longtext	YES	NULL		
+goods_receipt_items	received_condition	varchar(30)	YES	NULL		
+goods_receipt_items	notes	text	YES	NULL		
+goods_receipt_items	created_at	timestamp	YES	NULL		
+goods_receipt_items	updated_at	timestamp	YES	NULL		
+institute_payment_gateways	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+institute_payment_gateways	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+institute_payment_gateways	gateway_id	bigint(20) unsigned	NO	NULL	MUL	
+institute_payment_gateways	is_enabled	tinyint(1)	NO	1		
+institute_payment_gateways	credentials	longtext	YES	NULL		
+institute_payment_gateways	settings	longtext	YES	NULL		
+institute_payment_gateways	created_at	timestamp	YES	NULL		
+institute_payment_gateways	updated_at	timestamp	YES	NULL		
+invoices	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+invoices	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+invoices	student_id	bigint(20) unsigned	YES	NULL	MUL	
+invoices	party_id	bigint(20) unsigned	YES	NULL	MUL	
+invoices	enrollment_id	bigint(20) unsigned	YES	NULL	MUL	
+invoices	invoice_number	varchar(50)	NO	NULL		
+invoices	invoice_type	enum('admission','course_fee','exam_fee','certificate_fee','other')	NO	'course_fee'		
+invoices	total_amount	decimal(10,2)	NO	0.00		
+invoices	discount	decimal(10,2)	NO	0.00		
+invoices	payable_amount	decimal(10,2)	NO	0.00		
+invoices	paid_amount	decimal(10,2)	NO	0.00		
+invoices	due_amount	decimal(10,2)	NO	0.00		
+invoices	status	enum('unpaid','partial','paid','cancelled')	NO	'unpaid'		
+invoices	due_date	date	YES	NULL		
+invoices	currency_id	bigint(20) unsigned	YES	NULL	MUL	
+invoices	exchange_rate	decimal(19,8)	YES	NULL		
+invoices	base_payable_amount	decimal(19,4)	YES	NULL		
+invoices	tax_group_id	bigint(20) unsigned	YES	NULL	MUL	
+invoices	journal_id	bigint(20) unsigned	YES	NULL	MUL	
+invoices	sales_order_id	bigint(20) unsigned	YES	NULL	MUL	
+invoices	sales_delivery_id	bigint(20) unsigned	YES	NULL	MUL	
+invoices	invoice_meta	longtext	YES	NULL		
+invoices	created_by	bigint(20) unsigned	YES	NULL	MUL	
+invoices	created_at	datetime	NO	current_timestamp()		
+invoices	updated_at	datetime	NO	current_timestamp()		on update current_timestamp()
+invoice_items	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+invoice_items	invoice_id	bigint(20) unsigned	NO	NULL	MUL	
+invoice_items	description	varchar(200)	NO	NULL		
+invoice_items	amount	decimal(10,2)	NO	0.00		
+invoice_items	quantity	decimal(19,4)	YES	NULL		
+invoice_items	unit_price	decimal(19,4)	YES	NULL		
+invoice_items	discount_amount	decimal(19,4)	NO	0.0000		
+invoice_items	tax_rate	decimal(10,4)	NO	0.0000		
+invoice_items	tax_amount	decimal(19,4)	NO	0.0000		
+invoice_items	coa_id	bigint(20) unsigned	YES	NULL	MUL	
+invoice_items	inventory_item_id	bigint(20) unsigned	YES	NULL	MUL	
+invoice_items	sales_order_line_id	bigint(20) unsigned	YES	NULL	MUL	
+invoice_items	fee_head_id	bigint(20) unsigned	YES	NULL	MUL	
+invoice_items	tax_group_id	bigint(20) unsigned	YES	NULL	MUL	
+journals	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+journals	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+journals	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+journals	journal_no	varchar(30)	NO	NULL	UNI	
+journals	journal_date	date	NO	NULL		
+journals	fiscal_year_id	bigint(20) unsigned	NO	NULL	MUL	
+journals	period_id	bigint(20) unsigned	YES	NULL	MUL	
+journals	type	enum('sale','purchase','receipt','payment','journal','contra','opening','adjustment')	NO	NULL		
+journals	ref_type	varchar(40)	YES	NULL	MUL	
+journals	ref_id	bigint(20) unsigned	YES	NULL		
+journals	currency_id	bigint(20) unsigned	NO	NULL	MUL	
+journals	exchange_rate	decimal(19,8)	NO	1.00000000		
+journals	status	enum('draft','posted','reversed','void')	NO	'draft'	MUL	
+journals	description	varchar(500)	YES	NULL		
+journals	posted_by	bigint(20) unsigned	YES	NULL		
+journals	posted_at	timestamp	YES	NULL		
+journals	reversed_by	bigint(20) unsigned	YES	NULL		
+journals	reversed_at	timestamp	YES	NULL		
+journals	reversal_of	bigint(20) unsigned	YES	NULL	MUL	
+journals	source	enum('app','ai','sync','migration','import')	NO	'app'		
+journals	created_by	bigint(20) unsigned	YES	NULL		
+journals	updated_by	bigint(20) unsigned	YES	NULL		
+journals	created_at	timestamp	YES	NULL		
+journals	updated_at	timestamp	YES	NULL		
+journals	deleted_at	timestamp	YES	NULL		
+journal_entries	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+journal_entries	journal_id	bigint(20) unsigned	NO	NULL	MUL	
+journal_entries	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+journal_entries	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+journal_entries	coa_id	bigint(20) unsigned	NO	NULL	MUL	
+journal_entries	party_id	bigint(20) unsigned	YES	NULL	MUL	
+journal_entries	currency_id	bigint(20) unsigned	YES	NULL	MUL	
+journal_entries	journal_date	date	NO	NULL		
+journal_entries	foreign_debit	decimal(19,4)	NO	0.0000		
+journal_entries	foreign_credit	decimal(19,4)	NO	0.0000		
+journal_entries	exchange_rate	decimal(19,8)	NO	1.00000000		
+journal_entries	debit	decimal(19,4)	NO	0.0000		
+journal_entries	credit	decimal(19,4)	NO	0.0000		
+journal_entries	memo	varchar(255)	YES	NULL		
+journal_entries	line_meta	longtext	YES	NULL		
+journal_entries	created_by	bigint(20) unsigned	YES	NULL		
+journal_entries	updated_by	bigint(20) unsigned	YES	NULL		
+journal_entries	created_at	timestamp	YES	NULL		
+journal_entries	updated_at	timestamp	YES	NULL		
+journal_entries	deleted_at	timestamp	YES	NULL		
+medical_invoices	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+medical_invoices	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+medical_invoices	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+medical_invoices	patient_id	bigint(20) unsigned	NO	NULL	MUL	
+medical_invoices	admission_id	bigint(20) unsigned	YES	NULL	MUL	
+medical_invoices	invoice_number	varchar(50)	NO	NULL	MUL	
+medical_invoices	invoice_date	date	NO	NULL		
+medical_invoices	due_date	date	YES	NULL		
+medical_invoices	type	enum('opd','ipd','pharmacy','lab','surgery')	NO	NULL		
+medical_invoices	subtotal	decimal(15,2)	NO	0.00		
+medical_invoices	tax	decimal(15,2)	NO	0.00		
+medical_invoices	discount	decimal(15,2)	NO	0.00		
+medical_invoices	total	decimal(15,2)	NO	0.00		
+medical_invoices	paid_amount	decimal(15,2)	NO	0.00		
+medical_invoices	due_amount	decimal(15,2)	NO	0.00		
+medical_invoices	status	enum('draft','pending','paid','partial','cancelled')	NO	'pending'	MUL	
+medical_invoices	payment_method	enum('cash','card','bank_transfer','mobile_banking','tpa','other')	YES	NULL		
+medical_invoices	payment_reference	varchar(100)	YES	NULL		
+medical_invoices	notes	text	YES	NULL		
+medical_invoices	items_data	text	YES	NULL		
+medical_invoices	created_at	timestamp	YES	NULL		
+medical_invoices	updated_at	timestamp	YES	NULL		
+monthly_fee_periods	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+monthly_fee_periods	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+monthly_fee_periods	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+monthly_fee_periods	fee_structure_id	bigint(20) unsigned	NO	NULL	MUL	
+monthly_fee_periods	student_id	bigint(20) unsigned	NO	NULL	MUL	
+monthly_fee_periods	enrollment_id	bigint(20) unsigned	NO	NULL	MUL	
+monthly_fee_periods	period_month	date	NO	NULL		
+monthly_fee_periods	invoice_id	bigint(20) unsigned	YES	NULL	MUL	
+monthly_fee_periods	status	enum('pending','generated','paid','overdue')	NO	'pending'		
+monthly_fee_periods	created_at	timestamp	YES	NULL		
+monthly_fee_periods	updated_at	timestamp	YES	NULL		
+online_payment_attempts	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+online_payment_attempts	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+online_payment_attempts	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+online_payment_attempts	gateway_id	bigint(20) unsigned	NO	NULL	MUL	
+online_payment_attempts	invoice_id	bigint(20) unsigned	NO	NULL	MUL	
+online_payment_attempts	installment_id	bigint(20) unsigned	YES	NULL	MUL	
+online_payment_attempts	student_id	bigint(20) unsigned	YES	NULL	MUL	
+online_payment_attempts	amount	decimal(19,4)	NO	NULL		
+online_payment_attempts	base_amount	decimal(19,4)	YES	NULL		
+online_payment_attempts	exchange_rate	decimal(19,8)	YES	NULL		
+online_payment_attempts	currency_code	varchar(10)	YES	NULL		
+online_payment_attempts	status	varchar(30)	NO	'pending'		
+online_payment_attempts	gateway_reference	varchar(255)	YES	NULL	UNI	
+online_payment_attempts	idempotency_key	varchar(255)	YES	NULL	UNI	
+online_payment_attempts	failure_reason	text	YES	NULL		
+online_payment_attempts	gateway_response	longtext	YES	NULL		
+online_payment_attempts	payment_id	bigint(20) unsigned	YES	NULL	MUL	
+online_payment_attempts	journal_id	bigint(20) unsigned	YES	NULL	MUL	
+online_payment_attempts	created_by	bigint(20) unsigned	YES	NULL	MUL	
+online_payment_attempts	initiated_at	timestamp	YES	NULL		
+online_payment_attempts	completed_at	timestamp	YES	NULL		
+online_payment_attempts	created_at	timestamp	YES	NULL		
+online_payment_attempts	updated_at	timestamp	YES	NULL		
+opening_balances	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+opening_balances	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+opening_balances	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+opening_balances	fiscal_year_id	bigint(20) unsigned	NO	NULL	MUL	
+opening_balances	coa_id	bigint(20) unsigned	NO	NULL	MUL	
+opening_balances	debit	decimal(19,4)	NO	0.0000		
+opening_balances	credit	decimal(19,4)	NO	0.0000		
+opening_balances	source	enum('manual','carry_forward','migration')	NO	'manual'		
+opening_balances	created_by	bigint(20) unsigned	YES	NULL		
+opening_balances	updated_by	bigint(20) unsigned	YES	NULL		
+opening_balances	created_at	timestamp	YES	NULL		
+opening_balances	updated_at	timestamp	YES	NULL		
+opening_balances	deleted_at	timestamp	YES	NULL		
+payments	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+payments	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+payments	invoice_id	bigint(20) unsigned	NO	NULL	MUL	
+payments	party_id	bigint(20) unsigned	YES	NULL	MUL	
+payments	installment_id	bigint(20) unsigned	YES	NULL	MUL	
+payments	student_id	bigint(20) unsigned	YES	NULL	MUL	
+payments	currency_id	bigint(20) unsigned	YES	NULL	MUL	
+payments	amount	decimal(10,2)	NO	NULL		
+payments	exchange_rate	decimal(19,8)	YES	NULL		
+payments	base_amount	decimal(19,4)	YES	NULL		
+payments	applied_amount	decimal(19,4)	YES	NULL		
+payments	payment_method	enum('cash','bkash','nagad','rocket','bank','card','online','other')	NO	'cash'		
+payments	payment_method_id	bigint(20) unsigned	YES	NULL	MUL	
+payments	journal_id	bigint(20) unsigned	YES	NULL	MUL	
+payments	transaction_id	varchar(100)	YES	NULL		
+payments	receipt_number	varchar(50)	YES	NULL		
+payments	receipt_printed_at	timestamp	YES	NULL		
+payments	paid_at	datetime	NO	current_timestamp()		
+payments	received_by	bigint(20) unsigned	YES	NULL	MUL	
+payments	created_at	datetime	NO	current_timestamp()		
+payment_gateways	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+payment_gateways	slug	varchar(255)	NO	NULL	UNI	
+payment_gateways	name	varchar(255)	NO	NULL		
+payment_gateways	description	varchar(255)	YES	NULL		
+payment_gateways	is_active	tinyint(1)	NO	1		
+payment_gateways	config_schema	longtext	YES	NULL		
+payment_gateways	created_at	timestamp	YES	NULL		
+payment_gateways	updated_at	timestamp	YES	NULL		
+payment_methods	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+payment_methods	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+payment_methods	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+payment_methods	name	varchar(100)	NO	NULL		
+payment_methods	coa_id	bigint(20) unsigned	YES	NULL	MUL	
+payment_methods	is_system	tinyint(1)	NO	0		
+payment_methods	is_active	tinyint(1)	NO	1		
+payment_methods	created_by	bigint(20) unsigned	YES	NULL		
+payment_methods	updated_by	bigint(20) unsigned	YES	NULL		
+payment_methods	created_at	timestamp	YES	NULL		
+payment_methods	updated_at	timestamp	YES	NULL		
+payment_methods	deleted_at	timestamp	YES	NULL		
+purchase_invoices	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+purchase_invoices	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_invoices	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_invoices	invoice_number	varchar(40)	NO	NULL		
+purchase_invoices	purchase_order_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_invoices	goods_receipt_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_invoices	supplier_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_invoices	invoice_date	date	NO	NULL		
+purchase_invoices	due_date	date	YES	NULL		
+purchase_invoices	currency_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_invoices	payment_terms	varchar(40)	YES	NULL		
+purchase_invoices	notes	text	YES	NULL		
+purchase_invoices	terms_conditions	text	YES	NULL		
+purchase_invoices	subtotal	decimal(19,4)	NO	0.0000		
+purchase_invoices	discount_amount	decimal(19,4)	NO	0.0000		
+purchase_invoices	discount_type	varchar(20)	NO	'fixed'		
+purchase_invoices	tax_amount	decimal(19,4)	NO	0.0000		
+purchase_invoices	grand_total	decimal(19,4)	NO	0.0000		
+purchase_invoices	paid_amount	decimal(19,4)	NO	0.0000		
+purchase_invoices	due_amount	decimal(19,4)	NO	0.0000		
+purchase_invoices	status	varchar(20)	NO	'draft'		
+purchase_invoices	journal_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_invoices	created_by	bigint(20) unsigned	YES	NULL		
+purchase_invoices	updated_by	bigint(20) unsigned	YES	NULL		
+purchase_invoices	created_at	timestamp	YES	NULL		
+purchase_invoices	updated_at	timestamp	YES	NULL		
+purchase_invoices	deleted_at	timestamp	YES	NULL		
+purchase_invoice_items	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+purchase_invoice_items	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_invoice_items	purchase_invoice_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_invoice_items	purchase_order_line_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_invoice_items	goods_receipt_item_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_invoice_items	inventory_item_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_invoice_items	description	varchar(500)	NO	NULL		
+purchase_invoice_items	quantity	decimal(19,4)	NO	NULL		
+purchase_invoice_items	unit	varchar(30)	YES	NULL		
+purchase_invoice_items	unit_price	decimal(19,4)	NO	NULL		
+purchase_invoice_items	discount_amount	decimal(19,4)	NO	0.0000		
+purchase_invoice_items	discount_type	varchar(20)	NO	'fixed'		
+purchase_invoice_items	tax_group_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_invoice_items	tax_rate	decimal(10,4)	NO	0.0000		
+purchase_invoice_items	tax_amount	decimal(19,4)	NO	0.0000		
+purchase_invoice_items	line_total	decimal(19,4)	NO	NULL		
+purchase_invoice_items	sort_order	int(10) unsigned	NO	0		
+purchase_invoice_items	created_at	timestamp	YES	NULL		
+purchase_invoice_items	updated_at	timestamp	YES	NULL		
+purchase_orders	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+purchase_orders	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_orders	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_orders	order_number	varchar(40)	NO	NULL		
+purchase_orders	reference_number	varchar(80)	YES	NULL		
+purchase_orders	supplier_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_orders	warehouse_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_orders	order_date	date	NO	NULL		
+purchase_orders	expected_delivery_date	date	YES	NULL		
+purchase_orders	currency_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_orders	notes	text	YES	NULL		
+purchase_orders	terms_conditions	text	YES	NULL		
+purchase_orders	subtotal	decimal(19,4)	NO	0.0000		
+purchase_orders	discount_amount	decimal(19,4)	NO	0.0000		
+purchase_orders	discount_type	varchar(20)	NO	'fixed'		
+purchase_orders	tax_amount	decimal(19,4)	NO	0.0000		
+purchase_orders	grand_total	decimal(19,4)	NO	0.0000		
+purchase_orders	status	varchar(30)	NO	'draft'		
+purchase_orders	created_by	bigint(20) unsigned	YES	NULL		
+purchase_orders	updated_by	bigint(20) unsigned	YES	NULL		
+purchase_orders	approved_by	bigint(20) unsigned	YES	NULL		
+purchase_orders	approved_at	timestamp	YES	NULL		
+purchase_orders	submitted_at	timestamp	YES	NULL		
+purchase_orders	created_at	timestamp	YES	NULL		
+purchase_orders	updated_at	timestamp	YES	NULL		
+purchase_orders	deleted_at	timestamp	YES	NULL		
+purchase_order_lines	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+purchase_order_lines	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_order_lines	order_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_order_lines	inventory_item_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_order_lines	description	varchar(500)	NO	NULL		
+purchase_order_lines	quantity	decimal(19,4)	NO	NULL		
+purchase_order_lines	received_quantity	decimal(19,4)	YES	0.0000		
+purchase_order_lines	rejected_quantity	decimal(19,4)	YES	0.0000		
+purchase_order_lines	unit	varchar(30)	YES	NULL		
+purchase_order_lines	unit_price	decimal(19,4)	NO	NULL		
+purchase_order_lines	discount_amount	decimal(19,4)	NO	0.0000		
+purchase_order_lines	discount_type	varchar(20)	NO	'fixed'		
+purchase_order_lines	discount_rate	decimal(10,4)	NO	0.0000		
+purchase_order_lines	tax_group_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_order_lines	tax_rate	decimal(10,4)	NO	0.0000		
+purchase_order_lines	tax_amount	decimal(19,4)	NO	0.0000		
+purchase_order_lines	line_total	decimal(19,4)	NO	NULL		
+purchase_order_lines	sort_order	int(10) unsigned	NO	0		
+purchase_order_lines	created_at	timestamp	YES	NULL		
+purchase_order_lines	updated_at	timestamp	YES	NULL		
+purchase_quotations	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+purchase_quotations	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_quotations	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_quotations	quotation_number	varchar(40)	NO	NULL		
+purchase_quotations	supplier_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_quotations	quotation_date	date	NO	NULL		
+purchase_quotations	validity_date	date	YES	NULL		
+purchase_quotations	currency_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_quotations	notes	text	YES	NULL		
+purchase_quotations	terms_conditions	text	YES	NULL		
+purchase_quotations	subtotal	decimal(19,4)	NO	0.0000		
+purchase_quotations	discount_amount	decimal(19,4)	NO	0.0000		
+purchase_quotations	discount_type	varchar(20)	NO	'fixed'		
+purchase_quotations	tax_amount	decimal(19,4)	NO	0.0000		
+purchase_quotations	grand_total	decimal(19,4)	NO	0.0000		
+purchase_quotations	status	varchar(30)	NO	'draft'		
+purchase_quotations	converted_to_order_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_quotations	converted_at	timestamp	YES	NULL		
+purchase_quotations	created_by	bigint(20) unsigned	YES	NULL		
+purchase_quotations	updated_by	bigint(20) unsigned	YES	NULL		
+purchase_quotations	created_at	timestamp	YES	NULL		
+purchase_quotations	updated_at	timestamp	YES	NULL		
+purchase_quotations	deleted_at	timestamp	YES	NULL		
+purchase_quotation_lines	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+purchase_quotation_lines	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_quotation_lines	quotation_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_quotation_lines	inventory_item_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_quotation_lines	description	varchar(500)	NO	NULL		
+purchase_quotation_lines	quantity	decimal(19,4)	NO	NULL		
+purchase_quotation_lines	unit	varchar(30)	YES	NULL		
+purchase_quotation_lines	unit_price	decimal(19,4)	NO	NULL		
+purchase_quotation_lines	discount_amount	decimal(19,4)	NO	0.0000		
+purchase_quotation_lines	discount_type	varchar(20)	NO	'fixed'		
+purchase_quotation_lines	tax_group_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_quotation_lines	tax_rate	decimal(10,4)	NO	0.0000		
+purchase_quotation_lines	tax_amount	decimal(19,4)	NO	0.0000		
+purchase_quotation_lines	line_total	decimal(19,4)	NO	NULL		
+purchase_quotation_lines	sort_order	int(10) unsigned	NO	0		
+purchase_quotation_lines	created_at	timestamp	YES	NULL		
+purchase_quotation_lines	updated_at	timestamp	YES	NULL		
+purchase_requests	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+purchase_requests	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_requests	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_requests	request_number	varchar(40)	NO	NULL		
+purchase_requests	requester_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_requests	request_date	date	NO	NULL		
+purchase_requests	required_by_date	date	YES	NULL		
+purchase_requests	warehouse_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_requests	currency_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_requests	justification	text	YES	NULL		
+purchase_requests	notes	text	YES	NULL		
+purchase_requests	estimated_total	decimal(19,4)	NO	0.0000		
+purchase_requests	status	varchar(30)	NO	'draft'		
+purchase_requests	created_by	bigint(20) unsigned	YES	NULL		
+purchase_requests	updated_by	bigint(20) unsigned	YES	NULL		
+purchase_requests	approved_by	bigint(20) unsigned	YES	NULL		
+purchase_requests	approved_at	timestamp	YES	NULL		
+purchase_requests	converted_by	bigint(20) unsigned	YES	NULL		
+purchase_requests	converted_at	timestamp	YES	NULL		
+purchase_requests	converted_order_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_requests	created_at	timestamp	YES	NULL		
+purchase_requests	updated_at	timestamp	YES	NULL		
+purchase_requests	deleted_at	timestamp	YES	NULL		
+purchase_request_items	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+purchase_request_items	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_request_items	purchase_request_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_request_items	inventory_item_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_request_items	description	varchar(500)	NO	NULL		
+purchase_request_items	quantity	decimal(19,4)	NO	NULL		
+purchase_request_items	unit	varchar(30)	YES	NULL		
+purchase_request_items	estimated_unit_price	decimal(19,4)	NO	0.0000		
+purchase_request_items	line_total	decimal(19,4)	NO	0.0000		
+purchase_request_items	sort_order	int(10) unsigned	NO	0		
+purchase_request_items	created_at	timestamp	YES	NULL		
+purchase_request_items	updated_at	timestamp	YES	NULL		
+purchase_returns	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+purchase_returns	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_returns	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_returns	return_number	varchar(40)	NO	NULL		
+purchase_returns	credit_note_number	varchar(40)	YES	NULL		
+purchase_returns	purchase_order_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_returns	goods_receipt_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_returns	purchase_invoice_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_returns	supplier_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_returns	warehouse_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_returns	return_date	date	NO	NULL		
+purchase_returns	reason	text	YES	NULL		
+purchase_returns	notes	text	YES	NULL		
+purchase_returns	subtotal	decimal(19,4)	NO	0.0000		
+purchase_returns	discount_amount	decimal(19,4)	NO	0.0000		
+purchase_returns	tax_amount	decimal(19,4)	NO	0.0000		
+purchase_returns	grand_total	decimal(19,4)	NO	0.0000		
+purchase_returns	status	varchar(20)	NO	'draft'		
+purchase_returns	journal_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_returns	created_by	bigint(20) unsigned	YES	NULL		
+purchase_returns	updated_by	bigint(20) unsigned	YES	NULL		
+purchase_returns	submitted_at	timestamp	YES	NULL		
+purchase_returns	approved_at	timestamp	YES	NULL		
+purchase_returns	posted_at	timestamp	YES	NULL		
+purchase_returns	created_at	timestamp	YES	NULL		
+purchase_returns	updated_at	timestamp	YES	NULL		
+purchase_returns	deleted_at	timestamp	YES	NULL		
+purchase_return_items	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+purchase_return_items	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_return_items	purchase_return_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_return_items	purchase_order_line_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_return_items	goods_receipt_item_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_return_items	inventory_item_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_return_items	description	varchar(500)	NO	NULL		
+purchase_return_items	quantity	decimal(19,4)	NO	NULL		
+purchase_return_items	unit	varchar(30)	YES	NULL		
+purchase_return_items	unit_price	decimal(19,4)	NO	NULL		
+purchase_return_items	discount_amount	decimal(19,4)	NO	0.0000		
+purchase_return_items	discount_type	varchar(20)	NO	'fixed'		
+purchase_return_items	tax_rate	decimal(10,4)	NO	0.0000		
+purchase_return_items	tax_amount	decimal(19,4)	NO	0.0000		
+purchase_return_items	line_total	decimal(19,4)	NO	NULL		
+purchase_return_items	sort_order	int(10) unsigned	NO	0		
+purchase_return_items	created_at	timestamp	YES	NULL		
+purchase_return_items	updated_at	timestamp	YES	NULL		
+purchase_sequences	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+purchase_sequences	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_sequences	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_sequences	document_type	enum('invoice','quotation','order','return','receipt')	NO	'invoice'		
+purchase_sequences	prefix	varchar(20)	NO	''		
+purchase_sequences	next_number	int(10) unsigned	NO	1		
+purchase_sequences	padding	tinyint(3) unsigned	NO	5		
+purchase_sequences	created_at	timestamp	YES	NULL		
+purchase_sequences	updated_at	timestamp	YES	NULL		
+purchase_supplier_payments	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+purchase_supplier_payments	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_supplier_payments	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_supplier_payments	purchase_invoice_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_supplier_payments	supplier_id	bigint(20) unsigned	NO	NULL	MUL	
+purchase_supplier_payments	amount	decimal(19,4)	NO	NULL		
+purchase_supplier_payments	payment_method	varchar(20)	NO	'cash'		
+purchase_supplier_payments	payment_method_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_supplier_payments	transaction_id	varchar(100)	YES	NULL		
+purchase_supplier_payments	journal_id	bigint(20) unsigned	YES	NULL	MUL	
+purchase_supplier_payments	paid_at	timestamp	NO	current_timestamp()		
+purchase_supplier_payments	created_by	bigint(20) unsigned	YES	NULL		
+purchase_supplier_payments	created_at	timestamp	YES	NULL		
+purchase_supplier_payments	updated_at	timestamp	YES	NULL		
+sales_deliveries	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+sales_deliveries	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_deliveries	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_deliveries	delivery_number	varchar(40)	NO	NULL		
+sales_deliveries	order_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_deliveries	customer_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_deliveries	warehouse_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_deliveries	delivery_date	date	NO	NULL		
+sales_deliveries	shipping_address	text	YES	NULL		
+sales_deliveries	notes	text	YES	NULL		
+sales_deliveries	status	varchar(20)	NO	'draft'		
+sales_deliveries	delivered_by	bigint(20) unsigned	YES	NULL		
+sales_deliveries	delivered_at	timestamp	YES	NULL		
+sales_deliveries	created_by	bigint(20) unsigned	YES	NULL		
+sales_deliveries	updated_by	bigint(20) unsigned	YES	NULL		
+sales_deliveries	created_at	timestamp	YES	NULL		
+sales_deliveries	updated_at	timestamp	YES	NULL		
+sales_deliveries	deleted_at	timestamp	YES	NULL		
+sales_delivery_lines	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+sales_delivery_lines	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_delivery_lines	delivery_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_delivery_lines	order_line_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_delivery_lines	inventory_item_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_delivery_lines	description	varchar(500)	NO	NULL		
+sales_delivery_lines	ordered_quantity	decimal(19,4)	NO	NULL		
+sales_delivery_lines	previously_delivered_quantity	decimal(19,4)	NO	0.0000		
+sales_delivery_lines	delivery_quantity	decimal(19,4)	NO	NULL		
+sales_delivery_lines	unit	varchar(30)	YES	NULL		
+sales_delivery_lines	created_at	timestamp	YES	NULL		
+sales_delivery_lines	updated_at	timestamp	YES	NULL		
+sales_orders	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+sales_orders	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_orders	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_orders	order_number	varchar(40)	NO	NULL		
+sales_orders	quotation_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_orders	customer_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_orders	order_date	date	NO	NULL		
+sales_orders	expected_delivery_date	date	YES	NULL		
+sales_orders	currency_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_orders	payment_terms	varchar(40)	YES	NULL		
+sales_orders	billing_address	text	YES	NULL		
+sales_orders	shipping_address	text	YES	NULL		
+sales_orders	notes	text	YES	NULL		
+sales_orders	terms_conditions	text	YES	NULL		
+sales_orders	subtotal	decimal(19,4)	NO	0.0000		
+sales_orders	discount_amount	decimal(19,4)	NO	0.0000		
+sales_orders	discount_type	varchar(20)	NO	'fixed'		
+sales_orders	tax_amount	decimal(19,4)	NO	0.0000		
+sales_orders	grand_total	decimal(19,4)	NO	0.0000		
+sales_orders	status	varchar(30)	NO	'draft'		
+sales_orders	created_by	bigint(20) unsigned	YES	NULL		
+sales_orders	updated_by	bigint(20) unsigned	YES	NULL		
+sales_orders	approved_by	bigint(20) unsigned	YES	NULL		
+sales_orders	approved_at	timestamp	YES	NULL		
+sales_orders	submitted_at	timestamp	YES	NULL		
+sales_orders	created_at	timestamp	YES	NULL		
+sales_orders	updated_at	timestamp	YES	NULL		
+sales_orders	deleted_at	timestamp	YES	NULL		
+sales_order_lines	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+sales_order_lines	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_order_lines	order_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_order_lines	inventory_item_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_order_lines	description	varchar(500)	NO	NULL		
+sales_order_lines	quantity	decimal(19,4)	NO	NULL		
+sales_order_lines	unit	varchar(30)	YES	NULL		
+sales_order_lines	unit_price	decimal(19,4)	NO	NULL		
+sales_order_lines	discount_amount	decimal(19,4)	NO	0.0000		
+sales_order_lines	discount_type	varchar(20)	NO	'fixed'		
+sales_order_lines	tax_group_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_order_lines	tax_rate	decimal(10,4)	NO	0.0000		
+sales_order_lines	tax_amount	decimal(19,4)	NO	0.0000		
+sales_order_lines	line_total	decimal(19,4)	NO	NULL		
+sales_order_lines	sort_order	int(10) unsigned	NO	0		
+sales_order_lines	created_at	timestamp	YES	NULL		
+sales_order_lines	updated_at	timestamp	YES	NULL		
+sales_quotations	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+sales_quotations	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_quotations	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_quotations	quotation_number	varchar(40)	NO	NULL		
+sales_quotations	customer_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_quotations	quotation_date	date	NO	NULL		
+sales_quotations	validity_date	date	NO	NULL		
+sales_quotations	currency_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_quotations	payment_terms	varchar(40)	YES	NULL		
+sales_quotations	notes	text	YES	NULL		
+sales_quotations	terms_conditions	text	YES	NULL		
+sales_quotations	subtotal	decimal(19,4)	NO	0.0000		
+sales_quotations	discount_amount	decimal(19,4)	NO	0.0000		
+sales_quotations	discount_type	varchar(20)	NO	'fixed'		
+sales_quotations	tax_amount	decimal(19,4)	NO	0.0000		
+sales_quotations	grand_total	decimal(19,4)	NO	0.0000		
+sales_quotations	status	varchar(20)	NO	'draft'		
+sales_quotations	converted_to_order_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_quotations	converted_at	timestamp	YES	NULL		
+sales_quotations	created_by	bigint(20) unsigned	YES	NULL		
+sales_quotations	updated_by	bigint(20) unsigned	YES	NULL		
+sales_quotations	created_at	timestamp	YES	NULL		
+sales_quotations	updated_at	timestamp	YES	NULL		
+sales_quotations	deleted_at	timestamp	YES	NULL		
+sales_quotation_lines	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+sales_quotation_lines	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_quotation_lines	quotation_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_quotation_lines	inventory_item_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_quotation_lines	description	varchar(500)	NO	NULL		
+sales_quotation_lines	quantity	decimal(19,4)	NO	NULL		
+sales_quotation_lines	unit	varchar(30)	YES	NULL		
+sales_quotation_lines	unit_price	decimal(19,4)	NO	NULL		
+sales_quotation_lines	discount_amount	decimal(19,4)	NO	0.0000		
+sales_quotation_lines	discount_type	varchar(20)	NO	'fixed'		
+sales_quotation_lines	tax_group_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_quotation_lines	tax_rate	decimal(10,4)	NO	0.0000		
+sales_quotation_lines	tax_amount	decimal(19,4)	NO	0.0000		
+sales_quotation_lines	line_total	decimal(19,4)	NO	NULL		
+sales_quotation_lines	sort_order	int(10) unsigned	NO	0		
+sales_quotation_lines	created_at	timestamp	YES	NULL		
+sales_quotation_lines	updated_at	timestamp	YES	NULL		
+sales_returns	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+sales_returns	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_returns	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_returns	return_number	varchar(40)	NO	NULL		
+sales_returns	credit_note_number	varchar(40)	YES	NULL		
+sales_returns	invoice_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_returns	order_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_returns	customer_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_returns	warehouse_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_returns	currency_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_returns	return_date	date	NO	NULL		
+sales_returns	status	enum('draft','approved','posted','cancelled','reversed')	NO	'draft'		
+sales_returns	refund_status	enum('none','pending','partial','refunded','credited')	NO	'none'		
+sales_returns	refund_method	enum('credit','cash','bank','other')	YES	NULL		
+sales_returns	reason	varchar(500)	YES	NULL		
+sales_returns	notes	text	YES	NULL		
+sales_returns	subtotal	decimal(19,4)	NO	0.0000		
+sales_returns	discount_amount	decimal(19,4)	NO	0.0000		
+sales_returns	tax_amount	decimal(19,4)	NO	0.0000		
+sales_returns	grand_total	decimal(19,4)	NO	0.0000		
+sales_returns	refundable_amount	decimal(19,4)	NO	0.0000		
+sales_returns	refunded_amount	decimal(19,4)	NO	0.0000		
+sales_returns	journal_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_returns	inventory_journal_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_returns	reversal_of	bigint(20) unsigned	YES	NULL	MUL	
+sales_returns	created_by	bigint(20) unsigned	YES	NULL	MUL	
+sales_returns	approved_by	bigint(20) unsigned	YES	NULL	MUL	
+sales_returns	posted_by	bigint(20) unsigned	YES	NULL	MUL	
+sales_returns	cancelled_by	bigint(20) unsigned	YES	NULL	MUL	
+sales_returns	approved_at	timestamp	YES	NULL		
+sales_returns	posted_at	timestamp	YES	NULL		
+sales_returns	cancelled_at	timestamp	YES	NULL		
+sales_returns	reversed_at	timestamp	YES	NULL		
+sales_returns	meta	longtext	YES	NULL		
+sales_returns	created_at	timestamp	YES	NULL		
+sales_returns	updated_at	timestamp	YES	NULL		
+sales_returns	deleted_at	timestamp	YES	NULL		
+sales_return_items	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+sales_return_items	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_return_items	return_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_return_items	invoice_item_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_return_items	sales_order_line_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_return_items	inventory_item_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_return_items	description	varchar(500)	NO	NULL		
+sales_return_items	quantity	decimal(19,4)	NO	NULL		
+sales_return_items	unit_price	decimal(19,4)	NO	0.0000		
+sales_return_items	discount_amount	decimal(19,4)	NO	0.0000		
+sales_return_items	tax_rate	decimal(8,4)	NO	0.0000		
+sales_return_items	tax_amount	decimal(19,4)	NO	0.0000		
+sales_return_items	line_total	decimal(19,4)	NO	0.0000		
+sales_return_items	created_at	timestamp	YES	NULL		
+sales_return_items	updated_at	timestamp	YES	NULL		
+sales_return_refunds	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+sales_return_refunds	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_return_refunds	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_return_refunds	return_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_return_refunds	method	enum('cash','bank','other','credit')	NO	'credit'		
+sales_return_refunds	amount	decimal(19,4)	NO	NULL		
+sales_return_refunds	reference	varchar(200)	YES	NULL		
+sales_return_refunds	refund_date	date	NO	NULL		
+sales_return_refunds	journal_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_return_refunds	payment_method_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_return_refunds	created_by	bigint(20) unsigned	YES	NULL	MUL	
+sales_return_refunds	created_at	timestamp	YES	NULL		
+sales_return_refunds	updated_at	timestamp	YES	NULL		
+sales_sequences	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+sales_sequences	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+sales_sequences	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+sales_sequences	document_type	enum('quotation','sales_order','delivery','sales_return','credit_note')	NO	NULL		
+sales_sequences	prefix	varchar(20)	NO	''		
+sales_sequences	next_number	int(10) unsigned	NO	1		
+sales_sequences	padding	tinyint(3) unsigned	NO	5		
+sales_sequences	created_at	timestamp	YES	NULL		
+sales_sequences	updated_at	timestamp	YES	NULL		
+statement_snapshots	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+statement_snapshots	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+statement_snapshots	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+statement_snapshots	fiscal_year_id	bigint(20) unsigned	NO	NULL	MUL	
+statement_snapshots	period_id	bigint(20) unsigned	YES	NULL	MUL	
+statement_snapshots	statement_type	enum('trial_balance','balance_sheet','income_statement','cash_flow','ledger','receivables','payables')	NO	NULL		
+statement_snapshots	as_of_date	date	NO	NULL		
+statement_snapshots	payload	longtext	NO	NULL		
+statement_snapshots	checksum	char(64)	NO	NULL		
+statement_snapshots	locked	tinyint(1)	NO	1		
+statement_snapshots	generated_by	bigint(20) unsigned	YES	NULL		
+statement_snapshots	generated_at	timestamp	NO	current_timestamp()		
+statement_snapshots	created_at	timestamp	YES	NULL		
+statement_snapshots	updated_at	timestamp	YES	NULL		
+tax_audit_logs	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+tax_audit_logs	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+tax_audit_logs	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+tax_audit_logs	event	varchar(50)	NO	NULL		
+tax_audit_logs	actor_type	varchar(50)	YES	NULL		
+tax_audit_logs	actor_id	bigint(20) unsigned	YES	NULL		
+tax_audit_logs	entity_type	varchar(50)	NO	NULL		
+tax_audit_logs	entity_id	bigint(20) unsigned	YES	NULL		
+tax_audit_logs	old_value	longtext	YES	NULL		
+tax_audit_logs	new_value	longtext	YES	NULL		
+tax_audit_logs	created_at	timestamp	YES	NULL		
+tax_audit_logs	updated_at	timestamp	YES	NULL		
+tax_groups	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+tax_groups	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+tax_groups	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+tax_groups	name	varchar(100)	NO	NULL		
+tax_groups	type	enum('vat','sales_tax','withholding','custom')	NO	'vat'		
+tax_groups	rate	decimal(10,4)	NO	0.0000		
+tax_groups	is_compound	tinyint(1)	NO	0		
+tax_groups	is_default	tinyint(1)	NO	0		
+tax_groups	is_active	tinyint(1)	NO	1		
+tax_groups	created_by	bigint(20) unsigned	YES	NULL		
+tax_groups	updated_by	bigint(20) unsigned	YES	NULL		
+tax_groups	created_at	timestamp	YES	NULL		
+tax_groups	updated_at	timestamp	YES	NULL		
+tax_groups	deleted_at	timestamp	YES	NULL		
+tax_jurisdictions	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+tax_jurisdictions	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+tax_jurisdictions	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+tax_jurisdictions	name	varchar(150)	NO	NULL		
+tax_jurisdictions	code	varchar(30)	NO	NULL		
+tax_jurisdictions	country_iso2	char(2)	NO	NULL		
+tax_jurisdictions	state_code	varchar(30)	YES	NULL		
+tax_jurisdictions	parent_id	bigint(20) unsigned	YES	NULL	MUL	
+tax_jurisdictions	is_active	tinyint(1)	NO	1		
+tax_jurisdictions	created_at	timestamp	YES	NULL		
+tax_jurisdictions	updated_at	timestamp	YES	NULL		
+tax_jurisdictions	deleted_at	timestamp	YES	NULL		
+tax_rates	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+tax_rates	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+tax_rates	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+tax_rates	jurisdiction_id	bigint(20) unsigned	YES	NULL	MUL	
+tax_rates	tax_group_id	bigint(20) unsigned	YES	NULL	MUL	
+tax_rates	name	varchar(150)	NO	NULL		
+tax_rates	type	enum('vat','sales_tax','withholding','excise','custom')	NO	'vat'		
+tax_rates	rate_type	enum('percentage','fixed')	NO	'percentage'		
+tax_rates	rate	decimal(10,4)	NO	0.0000		
+tax_rates	is_compound	tinyint(1)	NO	0		
+tax_rates	is_inclusive	tinyint(1)	NO	0		
+tax_rates	effective_from	date	NO	NULL		
+tax_rates	effective_to	date	YES	NULL		
+tax_rates	is_active	tinyint(1)	NO	1		
+tax_rates	created_by	bigint(20) unsigned	YES	NULL		
+tax_rates	updated_by	bigint(20) unsigned	YES	NULL		
+tax_rates	created_at	timestamp	YES	NULL		
+tax_rates	updated_at	timestamp	YES	NULL		
+tax_rates	deleted_at	timestamp	YES	NULL		
+tax_rate_history	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+tax_rate_history	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+tax_rate_history	tax_rate_id	bigint(20) unsigned	NO	NULL	MUL	
+tax_rate_history	old_rate	decimal(10,4)	NO	NULL		
+tax_rate_history	new_rate	decimal(10,4)	NO	NULL		
+tax_rate_history	changed_at	date	NO	NULL		
+tax_rate_history	changed_by	bigint(20) unsigned	YES	NULL		
+tax_rate_history	created_at	timestamp	YES	NULL		
+tax_rate_history	updated_at	timestamp	YES	NULL		
+tax_return_lines	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+tax_return_lines	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+tax_return_lines	tax_return_id	bigint(20) unsigned	NO	NULL	MUL	
+tax_return_lines	tax_rate_id	bigint(20) unsigned	YES	NULL	MUL	
+tax_return_lines	description	varchar(200)	NO	NULL		
+tax_return_lines	total_sales	decimal(19,4)	NO	0.0000		
+tax_return_lines	total_purchases	decimal(19,4)	NO	0.0000		
+tax_return_lines	tax_collected	decimal(19,4)	NO	0.0000		
+tax_return_lines	tax_paid	decimal(19,4)	NO	0.0000		
+tax_return_lines	net_tax	decimal(19,4)	NO	0.0000		
+tax_return_lines	created_at	timestamp	YES	NULL		
+tax_return_lines	updated_at	timestamp	YES	NULL		
+tax_return_periods	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+tax_return_periods	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+tax_return_periods	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+tax_return_periods	jurisdiction_id	bigint(20) unsigned	YES	NULL	MUL	
+tax_return_periods	name	varchar(150)	NO	NULL		
+tax_return_periods	period_start	date	NO	NULL		
+tax_return_periods	period_end	date	NO	NULL		
+tax_return_periods	due_date	date	NO	NULL		
+tax_return_periods	status	enum('open','filed','overdue')	NO	'open'		
+tax_return_periods	total_sales	decimal(19,4)	NO	0.0000		
+tax_return_periods	total_purchases	decimal(19,4)	NO	0.0000		
+tax_return_periods	tax_collected	decimal(19,4)	NO	0.0000		
+tax_return_periods	tax_paid	decimal(19,4)	NO	0.0000		
+tax_return_periods	net_tax	decimal(19,4)	NO	0.0000		
+tax_return_periods	journal_id	bigint(20) unsigned	YES	NULL	MUL	
+tax_return_periods	created_by	bigint(20) unsigned	YES	NULL		
+tax_return_periods	created_at	timestamp	YES	NULL		
+tax_return_periods	updated_at	timestamp	YES	NULL		
+tax_rules	id	bigint(20) unsigned	NO	NULL	PRI	auto_increment
+tax_rules	institute_id	bigint(20) unsigned	NO	NULL	MUL	
+tax_rules	branch_id	bigint(20) unsigned	YES	NULL	MUL	
+tax_rules	jurisdiction_id	bigint(20) unsigned	YES	NULL	MUL	
+tax_rules	tax_rate_id	bigint(20) unsigned	NO	NULL	MUL	
+tax_rules	item_type	varchar(50)	NO	'*'		
+tax_rules	product_category	varchar(50)	NO	'*'		
+tax_rules	tax_group_id	bigint(20) unsigned	YES	NULL	MUL	
+tax_rules	priority	int(10) unsigned	NO	0		
+tax_rules	is_active	tinyint(1)	NO	1		
+tax_rules	created_at	timestamp	YES	NULL		
+tax_rules	updated_at	timestamp	YES	NULL		

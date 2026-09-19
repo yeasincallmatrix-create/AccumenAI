@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
+use App\Services\ModuleAccessService;
 
 class PackageScope extends Model
 {
@@ -33,22 +33,17 @@ class PackageScope extends Model
 
     protected static function booted(): void
     {
-        static::saving(function (PackageScope $scope) {
-            $query = self::query()
-                ->where('package_id', $scope->package_id)
-                ->where('country_id', $scope->country_id)
-                ->where('industry_id', $scope->industry_id)
-                ->where('sub_industry_id', $scope->sub_industry_id);
+        static::creating(function (PackageScope $scope) {
+            $scope->scope_hash = implode('-', [
+                $scope->package_id,
+                $scope->country_id ?? 'G',
+                $scope->industry_id ?? 'G',
+                $scope->sub_industry_id ?? 'G',
+            ]);
+        });
 
-            if ($scope->exists) {
-                $query->where('id', '!=', $scope->id);
-            }
-
-            if ($query->exists()) {
-                throw new \RuntimeException(
-                    'A scope for this package and dimension combination already exists.'
-                );
-            }
+        static::updated(function (PackageScope $scope) {
+            app(ModuleAccessService::class)->flushFeatureCacheForScope($scope);
         });
     }
 

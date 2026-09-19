@@ -11,6 +11,8 @@ use App\Models\ModuleAccessLog;
 use App\Models\ModuleRegistry;
 use App\Models\PackageFeature;
 use App\Models\PackageModule;
+use App\Models\PackageScope;
+use App\Models\PackageScopedFeature;
 use App\Models\SubscriptionPackage;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -795,7 +797,9 @@ class ModuleAccessService
      */
     public function getFeatureAccessMap(Institute $institute): array
     {
-        $cacheKey = $this->featureCachePrefix . $institute->id;
+        $scope = $this->resolveScopedPackage($institute);
+        $scopeHash = $scope?->scope_hash ?? 'global';
+        $cacheKey = $this->featureCachePrefix . $institute->id . ':' . $scopeHash;
 
         return Cache::remember($cacheKey, 3600, function () use ($institute) {
             return $this->computeFeatureAccessMap($institute);
@@ -820,20 +824,31 @@ class ModuleAccessService
             ->orderBy('sort_order')
             ->get();
 
-        $packageId = $institute->package_id;
-        if ($packageId === null) {
-            $free = SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['free'])->first();
-            $packageId = $free?->id;
-        }
+        $scope = $this->resolveScopedPackage($institute);
 
         $packageFeatureKeys = [];
-        if ($packageId !== null) {
-            $packageFeatureKeys = PackageFeature::where('package_id', $packageId)
-                ->where('enabled', true)
-                ->pluck('feature_key')
-                ->flip()
-                ->keys()
-                ->all();
+        if ($scope) {
+            $scopedKeys = $this->getScopedFeatureKeys($scope);
+            if (! empty($scopedKeys)) {
+                $packageFeatureKeys = $scopedKeys;
+            }
+        }
+
+        if (empty($packageFeatureKeys)) {
+            $packageId = $institute->package_id;
+            if ($packageId === null) {
+                $free = SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['free'])->first();
+                $packageId = $free?->id;
+            }
+
+            if ($packageId !== null) {
+                $packageFeatureKeys = PackageFeature::where('package_id', $packageId)
+                    ->where('enabled', true)
+                    ->pluck('feature_key')
+                    ->flip()
+                    ->keys()
+                    ->all();
+            }
         }
 
         $overrides = InstituteFeatureOverride::where('institute_id', $institute->id)
@@ -873,5 +888,156 @@ class ModuleAccessService
     public function flushFeatureCache(int $instituteId): void
     {
         Cache::forget($this->featureCachePrefix . $instituteId);
+        // Also flush scope-aware keys (wildcard not possible, but GLOBAL is common)
+        Cache::forget($this->featureCachePrefix . $instituteId . ':global');
+    }
+
+    /**
+     * Resolve the effective package scope for an institute.
+     * Walk fallback chain: exact → broader → GLOBAL.
+     *
+     * Returns the most specific PackageScope row, or null
+     * if no scope exists (fail-closed).
+     */
+    public function resolveScopedPackage(Institute $institute): ?PackageScope
+    {
+        $packageId = $institute->package_id;
+        if ($packageId === null) {
+            $free = SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['free'])->first();
+            $packageId = $free?->id;
+        }
+        if ($packageId === null) {
+            return null;
+        }
+
+        $countryId = $institute->country_id;
+        $industryId = $institute->industry_id;
+        $subIndustryId = $institute->sub_industry_id;
+
+        $candidates = [
+            [$countryId, $industryId, $subIndustryId],
+            [$countryId, $industryId, null],
+            [$countryId, null, null],
+            [null, $industryId, $subIndustryId],
+            [null, $industryId, null],
+            [null, null, null],
+        ];
+
+        $seen = [];
+        $unique = [];
+        foreach ($candidates as $c) {
+            $key = implode('|', array_map(fn ($v) => $v ?? 'G', $c));
+            if (! isset($seen[$key])) {
+                $seen[$key] = true;
+                $unique[] = $c;
+            }
+        }
+
+        foreach ($unique as [$cid, $iid, $sid]) {
+            $scope = PackageScope::where('package_id', $packageId)
+                ->where('country_id', $cid)
+                ->where('industry_id', $iid)
+                ->where('sub_industry_id', $sid)
+                ->where('status', 'active')
+                ->first();
+
+            if ($scope) {
+                return $scope;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Get all enabled feature keys for a scope, with inherit-from-parent logic.
+     */
+    private function getScopedFeatureKeys(PackageScope $scope): array
+    {
+        $directFeatures = PackageScopedFeature::where('package_scope_id', $scope->id)
+            ->where('enabled', true)
+            ->pluck('feature_key')
+            ->toArray();
+
+        if (! $scope->inherit_from_parent) {
+            return $directFeatures;
+        }
+
+        $parent = $this->resolveParentScope($scope);
+        if (! $parent) {
+            return $directFeatures;
+        }
+
+        $parentFeatures = $this->getScopedFeatureKeys($parent);
+
+        $disabled = PackageScopedFeature::where('package_scope_id', $scope->id)
+            ->where('enabled', false)
+            ->pluck('feature_key')
+            ->toArray();
+
+        return array_values(array_diff(
+            array_unique(array_merge($parentFeatures, $directFeatures)),
+            $disabled
+        ));
+    }
+
+    /**
+     * Walk one level up the scope hierarchy.
+     */
+    private function resolveParentScope(PackageScope $scope): ?PackageScope
+    {
+        $cid = $scope->country_id;
+        $iid = $scope->industry_id;
+        $sid = $scope->sub_industry_id;
+
+        $candidates = [];
+        if ($sid !== null) {
+            $candidates[] = [$cid, $iid, null];
+            $candidates[] = [$cid, null, null];
+            $candidates[] = [null, $iid, null];
+            $candidates[] = [null, null, null];
+        } elseif ($iid !== null) {
+            $candidates[] = [$cid, null, null];
+            $candidates[] = [null, null, null];
+        } elseif ($cid !== null) {
+            $candidates[] = [null, null, null];
+        }
+
+        foreach ($candidates as [$c, $i, $s]) {
+            $parent = PackageScope::where('package_id', $scope->package_id)
+                ->where('country_id', $c)
+                ->where('industry_id', $i)
+                ->where('sub_industry_id', $s)
+                ->where('status', 'active')
+                ->first();
+            if ($parent) {
+                return $parent;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Flush feature-access cache for all institutes matching a scope.
+     */
+    public function flushFeatureCacheForScope(PackageScope $scope): void
+    {
+        $query = Institute::where('package_id', $scope->package_id);
+        if ($scope->country_id !== null) {
+            $query->where('country_id', $scope->country_id);
+        }
+        if ($scope->industry_id !== null) {
+            $query->where('industry_id', $scope->industry_id);
+        }
+        if ($scope->sub_industry_id !== null) {
+            $query->where('sub_industry_id', $scope->sub_industry_id);
+        }
+
+        $query->pluck('id')->each(function ($id) use ($scope) {
+            $this->flushFeatureCache($id);
+            Cache::forget($this->featureCachePrefix . $id . ':' . $scope->scope_hash);
+            Cache::forget($this->featureCachePrefix . $id . ':global');
+        });
     }
 }

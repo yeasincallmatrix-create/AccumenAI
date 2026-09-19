@@ -187,4 +187,21 @@ class PackagesGenerateScopesCommandTest extends TestCase
         $remaining = PackageScopedFeature::where('package_scope_id', $scope->id)->count();
         $this->assertEquals(0, $remaining);
     }
+
+    public function test_backfill_creates_scope_hash_for_each_row(): void
+    {
+        Artisan::call('packages:generate-scopes', ['--backfill' => true]);
+
+        $scopes = PackageScope::all();
+        foreach ($scopes as $scope) {
+            $this->assertNotNull($scope->scope_hash, "Scope {$scope->id} should have scope_hash");
+            $expected = implode('-', [
+                $scope->package_id,
+                $scope->country_id ?? 'G',
+                $scope->industry_id ?? 'G',
+                $scope->sub_industry_id ?? 'G',
+            ]);
+            $this->assertEquals($expected, $scope->scope_hash);
+        }
+    }
 }

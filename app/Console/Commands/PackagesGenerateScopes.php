@@ -55,11 +55,8 @@ class PackagesGenerateScopes extends Command
     private function ensureGlobalScopes($packages, bool $dryRun, array &$counters): void
     {
         foreach ($packages as $package) {
-            $exists = PackageScope::where('package_id', $package->id)
-                ->whereNull('country_id')
-                ->whereNull('industry_id')
-                ->whereNull('sub_industry_id')
-                ->exists();
+            $hash = implode('-', [$package->id, 'G', 'G', 'G']);
+            $exists = PackageScope::where('scope_hash', $hash)->exists();
 
             if ($exists) {
                 $counters['skipped']++;
@@ -69,16 +66,21 @@ class PackagesGenerateScopes extends Command
             $this->line("Creating GLOBAL scope for package: {$package->name}");
 
             if (! $dryRun) {
-                $scope = PackageScope::create([
-                    'package_id' => $package->id,
-                    'country_id' => null,
-                    'industry_id' => null,
-                    'sub_industry_id' => null,
-                    'inherit_from_parent' => true,
-                    'status' => 'active',
-                ]);
+                try {
+                    $scope = PackageScope::create([
+                        'package_id' => $package->id,
+                        'country_id' => null,
+                        'industry_id' => null,
+                        'sub_industry_id' => null,
+                        'inherit_from_parent' => true,
+                        'status' => 'active',
+                    ]);
 
-                $counters['features_copied'] += $this->copyFeatures($package->id, $scope->id);
+                    $counters['features_copied'] += $this->copyFeatures($package->id, $scope->id);
+                } catch (\Illuminate\Database\QueryException $e) {
+                    $counters['skipped']++;
+                    continue;
+                }
             }
 
             $counters['global_scopes_created']++;
@@ -96,11 +98,14 @@ class PackagesGenerateScopes extends Command
                     continue;
                 }
 
-                $exists = PackageScope::where('package_id', $packageId)
-                    ->where('country_id', $institute->country_id)
-                    ->where('industry_id', $institute->industry_id)
-                    ->where('sub_industry_id', $institute->sub_industry_id)
-                    ->exists();
+                $hash = implode('-', [
+                    $packageId,
+                    $institute->country_id ?? 'G',
+                    $institute->industry_id ?? 'G',
+                    $institute->sub_industry_id ?? 'G',
+                ]);
+
+                $exists = PackageScope::where('scope_hash', $hash)->exists();
 
                 if ($exists) {
                     $counters['skipped']++;
@@ -110,16 +115,21 @@ class PackagesGenerateScopes extends Command
                 $this->line("Creating scope for institute {$institute->id} ({$institute->name}): package_id={$packageId}, c={$institute->country_id}, i={$institute->industry_id}, s={$institute->sub_industry_id}");
 
                 if (! $dryRun) {
-                    $scope = PackageScope::create([
-                        'package_id' => $packageId,
-                        'country_id' => $institute->country_id,
-                        'industry_id' => $institute->industry_id,
-                        'sub_industry_id' => $institute->sub_industry_id,
-                        'inherit_from_parent' => true,
-                        'status' => 'active',
-                    ]);
+                    try {
+                        $scope = PackageScope::create([
+                            'package_id' => $packageId,
+                            'country_id' => $institute->country_id,
+                            'industry_id' => $institute->industry_id,
+                            'sub_industry_id' => $institute->sub_industry_id,
+                            'inherit_from_parent' => true,
+                            'status' => 'active',
+                        ]);
 
-                    $counters['features_copied'] += $this->copyFeatures($packageId, $scope->id);
+                        $counters['features_copied'] += $this->copyFeatures($packageId, $scope->id);
+                    } catch (\Illuminate\Database\QueryException $e) {
+                        $counters['skipped']++;
+                        continue;
+                    }
                 }
 
                 $counters['institute_scopes_created']++;
