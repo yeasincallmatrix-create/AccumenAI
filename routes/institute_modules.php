@@ -789,8 +789,8 @@ Route::middleware($tenant)->group(function () {
 
     // Accounting Fiscal Years
     Route::prefix('accounting/fiscal-years')->name('accounting.fiscal-years.')->group(function () use ($acctFiscal) {
-        Route::post('{fiscalYear}/close', [$acctFiscal, 'close'])->name('close');
-        Route::post('{fiscalYear}/reopen', [$acctFiscal, 'reopen'])->name('reopen');
+        Route::post('{year}/close', [$acctFiscal, 'close'])->name('close');
+        Route::post('{year}/reopen', [$acctFiscal, 'reopen'])->name('reopen');
     });
 
     // Accounting Payables
