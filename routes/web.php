@@ -245,6 +245,9 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->group(func
     Route::get('settings/currency/rates', [\App\Http\Controllers\Settings\CurrencySettingController::class, 'getExchangeRates'])->middleware('permission:settings.manage')->name('settings.currency.rates');
     Route::post('settings/currency/rates', [\App\Http\Controllers\Settings\CurrencySettingController::class, 'storeExchangeRate'])->middleware('permission:settings.manage')->name('settings.currency.rates.store');
     Route::delete('settings/currency/rates/{rate}', [\App\Http\Controllers\Settings\CurrencySettingController::class, 'destroyExchangeRate'])->middleware('permission:settings.manage')->name('settings.currency.rates.destroy');
+    // Advanced accounting mode toggle
+    Route::get('settings/advanced-accounting', [\App\Http\Controllers\Settings\AdvancedAccountingSettingController::class, 'index'])->middleware('permission:settings.manage')->name('settings.advanced-accounting');
+    Route::post('settings/advanced-accounting/toggle', [\App\Http\Controllers\Settings\AdvancedAccountingSettingController::class, 'toggle'])->middleware('permission:settings.manage')->name('settings.advanced-accounting.toggle');
 });
 
 Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->prefix('staff')->name('staff.')->group(function () {
@@ -575,7 +578,7 @@ Route::middleware(['auth:institute_user,web','tenant', 'deny.teacher.finance', '
     Route::get('accounting/reports/cash-flow', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'cashFlow'])->name('accounting.reports.cash-flow');
     Route::get('accounting/reports/general-ledger', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'generalLedger'])->name('accounting.reports.general-ledger');
     Route::get('accounting/reports/account-ledger', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'accountLedger'])->name('accounting.reports.account-ledger');
-    Route::get('accounting/reports/ratio-analysis', [\App\Http\Controllers\Accounting\RatioAnalysisController::class, 'index'])->name('accounting.reports.ratios');
+    Route::get('accounting/reports/ratio-analysis', [\App\Http\Controllers\Accounting\RatioAnalysisController::class, 'index'])->middleware('advanced.accounting')->name('accounting.reports.ratios');
     Route::get('recycle', [\App\Http\Controllers\RecycleBinController::class, 'index'])->name('recycle.index');
     Route::get('settings', [\App\Http\Controllers\InstituteSettingController::class, 'index'])->name('settings.index');
     Route::get('owner/profile', function () { return redirect()->route('settings.index'); })->name('owner.profile');

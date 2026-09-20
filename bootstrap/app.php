@@ -13,6 +13,7 @@ use App\Http\Middleware\MedicalDomain;
 use App\Http\Middleware\MedicalModuleAccess;
 use App\Http\Middleware\NormalizePersonNames;
 use App\Http\Middleware\PlatformMaintenance;
+use App\Http\Middleware\RequireAdvancedAccounting;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetFortifyGuard;
 use App\Http\Middleware\SetLocale;
@@ -44,6 +45,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant' => SetTenantContext::class,
             'deny.teacher.finance' => DenyTeacherFromFinance::class,
             'finance.write' => FinanceWriteGate::class,
+            'advanced.accounting' => RequireAdvancedAccounting::class,
             'permission' => CheckPermission::class,
             'module_access' => CheckModuleAccess::class,
             'feature' => CheckFeatureAccess::class,

@@ -65,12 +65,23 @@ class RatioAnalysisTest extends TestCase
     public function test_page_renders(): void
     {
         [$institute, $owner] = $this->tenantOwner('ratio-page@example.test');
+        app(\App\Services\Accounting\TenantAccountingModeService::class)->enable($institute->id);
 
         $this->asUser($owner, $institute->id)
             ->get(route('accounting.reports.ratios'))
             ->assertStatus(200)
             ->assertSee('Ratio Analysis')
             ->assertSee('Liquidity');
+    }
+
+    public function test_page_blocked_when_simple_mode(): void
+    {
+        [$institute, $owner] = $this->tenantOwner('ratio-blocked@example.test');
+        app(\App\Services\Accounting\TenantAccountingModeService::class)->disable($institute->id);
+
+        $this->asUser($owner, $institute->id)
+            ->get(route('accounting.reports.ratios'))
+            ->assertStatus(403);
     }
 
     public function test_cross_tenant_data_isolated(): void

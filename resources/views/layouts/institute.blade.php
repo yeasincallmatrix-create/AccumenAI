@@ -882,9 +882,11 @@
                             <a class="nav-link sub {{ request()->routeIs('accounting.dashboard') ? 'active' : '' }}" href="{{ route('accounting.dashboard') }}">
                                 <i class="bi bi-graph-up"></i><span class="sidebar-label">Accounting</span>
                             </a>
+                            @if(advanced_accounting())
                             <a class="nav-link sub {{ request()->routeIs('accounting.reports.trial-balance') ? 'active' : '' }}" href="{{ route('accounting.reports.trial-balance') }}">
                                 <i class="bi bi-balance-scale"></i><span class="sidebar-label">Trial Balance</span>
                             </a>
+                            @endif
                             <a class="nav-link sub {{ request()->routeIs('accounting.reports.profit-loss') ? 'active' : '' }}" href="{{ route('accounting.reports.profit-loss') }}">
                                 <i class="bi bi-graph-up-arrow"></i><span class="sidebar-label">Profit &amp; Loss</span>
                             </a>
@@ -894,18 +896,25 @@
                             <a class="nav-link sub {{ request()->routeIs('accounting.reports.cash-flow') ? 'active' : '' }}" href="{{ route('accounting.reports.cash-flow') }}">
                                 <i class="bi bi-cash"></i><span class="sidebar-label">Cash Flow</span>
                             </a>
+                            @if(advanced_accounting())
                             <a class="nav-link sub {{ request()->routeIs('accounting.reports.general-ledger') ? 'active' : '' }}" href="{{ route('accounting.reports.general-ledger') }}">
                                 <i class="bi bi-journal-text"></i><span class="sidebar-label">General Ledger</span>
                             </a>
                             <a class="nav-link sub {{ request()->routeIs('accounting.reports.account-ledger') ? 'active' : '' }}" href="{{ route('accounting.reports.account-ledger') }}">
                                 <i class="bi bi-journal-arrow-up"></i><span class="sidebar-label">Account Ledger</span>
                             </a>
+                            @endif
                             <a class="nav-link sub {{ request()->routeIs('finance.chart-of-accounts.*') ? 'active' : '' }}" href="{{ route('finance.chart-of-accounts.index') }}">
                                 <i class="bi bi-list-columns-reverse"></i><span class="sidebar-label">Chart of Accounts</span>
                             </a>
+                            @if(advanced_accounting())
                             <a class="nav-link sub {{ request()->routeIs('finance.journals.*') ? 'active' : '' }}" href="{{ route('finance.journals.index') }}">
                                 <i class="bi bi-journal-text"></i><span class="sidebar-label">Journals</span>
                             </a>
+                            <a class="nav-link sub {{ request()->routeIs('accounting.reports.ratios') ? 'active' : '' }}" href="{{ route('accounting.reports.ratios') }}">
+                                <i class="bi bi-pie-chart"></i><span class="sidebar-label">Ratio Analysis</span>
+                            </a>
+                            @endif
                             <a class="nav-link sub {{ request()->routeIs('finance.invoices.*') || request()->routeIs('finance.payments.*') ? 'active' : '' }}" href="{{ route('finance.invoices.index') }}">
                                 <i class="bi bi-receipt-cutoff"></i><span class="sidebar-label">Invoices</span>
                             </a>
@@ -932,9 +941,11 @@
                                     <i class="bi bi-calculator"></i><span class="sidebar-label">FX Revaluation</span>
                                 </a>
                             @endif
+                            @if(advanced_accounting())
                             <a class="nav-link sub {{ request()->routeIs('finance.audit.*') ? 'active' : '' }}" href="{{ route('finance.audit.index') }}">
                                 <i class="bi bi-shield-lock"></i><span class="sidebar-label">Audit Trail</span>
                             </a>
+                            @endif
                             @if ($isEducation)
                                 <a class="nav-link sub {{ request()->routeIs('finance.education.dashboard') ? 'active' : '' }}" href="{{ route('finance.education.dashboard') }}">
                                     <i class="bi bi-mortarboard-fill"></i><span class="sidebar-label">Education Dashboard</span>

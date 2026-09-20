@@ -1327,3 +1327,14 @@ if (! function_exists('selectable_currencies')) {
         return app(\App\Services\CurrencyService::class)->getSelectableCurrencies();
     }
 }
+
+if (! function_exists('advanced_accounting')) {
+    /**
+     * Is advanced accounting mode enabled for current tenant?
+     * Default OFF (simple UI). Toggle in Settings.
+     */
+    function advanced_accounting(): bool
+    {
+        return app(\App\Services\Accounting\TenantAccountingModeService::class)->isAdvancedEnabled();
+    }
+}
