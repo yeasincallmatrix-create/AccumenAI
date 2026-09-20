@@ -16,6 +16,9 @@ Schedule::job(new FxRevaluationJob)->dailyAt('03:00');
 Schedule::command('health:check')->daily();
 Schedule::command('metrics:snapshot')->dailyAt('01:00');
 
+// Phase F follow-up: hourly industry tag verification + self-heal.
+Schedule::command('coa:verify-industry-tags')->hourly()->withoutOverlapping();
+
 // Step 124-L — Safe scheduled monitoring (read-only)
 Schedule::command('database:query-stats --json')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('database:slow-queries --json')->everyFifteenMinutes()->withoutOverlapping();
