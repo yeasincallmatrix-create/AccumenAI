@@ -15,6 +15,7 @@ use App\Models\PackageScope;
 use App\Models\PackageScopedFeature;
 use App\Models\PackageScopedModule;
 use App\Models\SubscriptionPackage;
+use App\Support\AccessDecisionContext;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -304,7 +305,85 @@ class ModuleAccessService
     }
 
     /**
-     * Build map of active entitlements for institute: module_key => latest active entitlement.
+     * Phase 10 — Module resolution with structured decision reasons.
+     *
+     * Same logic as resolveEnabled() but also returns per-module denial reasons.
+     * Used by computeFeatureAccessMapWithMeta() to annotate feature decisions.
+     *
+     * Every module gets a reason (the LAST gate that determined the final state).
+     *
+     * @return array{map: array<string, bool>, reasons: array<string, string>}
+     */
+    public function resolveEnabledWithReasons(Institute $institute): array
+    {
+        $allModules = ModuleRegistry::all()->keyBy('key');
+
+        $packageModules = $this->resolvePackageModules($institute);
+
+        if ($this->isEducationIndustry($institute)) {
+            $packageModules = array_values(array_diff($packageModules, self::EDUCATION_DISABLED_MODULES));
+        }
+
+        $overrides = InstituteModuleOverride::where('institute_id', $institute->id)
+            ->get()
+            ->keyBy('module_key');
+
+        $entitlementMap = $this->getActiveEntitlementMap($institute);
+
+        $result = [];
+        $reasons = [];
+
+        foreach ($allModules as $key => $module) {
+            $baseState = in_array($key, $packageModules, true);
+
+            if ($overrides->has($key)) {
+                $override = $overrides->get($key);
+                $finalState = (bool) $override->enabled;
+                $reasons[$key] = $finalState
+                    ? AccessDecisionContext::REASON_OVERRIDE_ENABLED
+                    : AccessDecisionContext::REASON_OVERRIDE_DISABLED;
+            } else {
+                $finalState = $baseState;
+                $reasons[$key] = $baseState
+                    ? AccessDecisionContext::REASON_PACKAGE_INCLUDED
+                    : AccessDecisionContext::REASON_PACKAGE_FEATURE_NOT_ENTITLED;
+            }
+
+            if (isset($entitlementMap[$key])) {
+                $ent = $entitlementMap[$key];
+                $finalState = (bool) $ent->is_grant;
+                $reasons[$key] = $ent->is_grant
+                    ? AccessDecisionContext::REASON_GRANT_APPLIED
+                    : AccessDecisionContext::REASON_DENIAL_APPLIED;
+            }
+
+            if ($finalState && ! $this->isIndustryCompatible($institute, $key)) {
+                $finalState = false;
+                $reasons[$key] = AccessDecisionContext::REASON_INDUSTRY_VETO;
+            }
+
+            $missingDeps = $this->checkDependencies($key, array_keys(array_filter($result)));
+            if (! empty($missingDeps)) {
+                $finalState = false;
+                $reasons[$key] = AccessDecisionContext::REASON_DEPENDENCY_DISABLED;
+            }
+
+            if ($finalState && ! empty($module->parent_key)) {
+                $parentEnabled = $result[$module->parent_key] ?? false;
+                if (! $parentEnabled) {
+                    $finalState = false;
+                    $reasons[$key] = AccessDecisionContext::REASON_PARENT_DISABLED;
+                }
+            }
+
+            $result[$key] = $finalState;
+        }
+
+        return ['map' => $result, 'reasons' => $reasons];
+    }
+
+    /**
+     * Active entitlement map for an institute.
      * Deterministic: latest updated_at wins, deny wins on tie.
      */
     protected function getActiveEntitlementMap(Institute $institute): array
@@ -420,6 +499,10 @@ class ModuleAccessService
         ?int $packageId,
         ?string $notes,
         ?string $actorType = null,
+        ?string $reason = null,
+        ?string $featureKey = null,
+        ?string $decision = null,
+        ?string $requestId = null,
     ): void {
         $resolvedType = $actorType ?? $this->resolveActorType();
 
@@ -433,6 +516,10 @@ class ModuleAccessService
             'new_state' => $newState,
             'package_id' => $packageId,
             'notes' => $notes,
+            'reason' => $reason,
+            'feature_key' => $featureKey,
+            'decision' => $decision,
+            'request_id' => $requestId,
         ]);
     }
 
@@ -830,6 +917,8 @@ class ModuleAccessService
      * collections that Gate 4 / Gate 5 evaluate (no duplicate queries,
      * no drift between the map and the counts).
      *
+     * Phase 10: also returns per-feature denial reasons for observability.
+     *
      * Uncached by design: meta must reflect current rows. Callers that
      * need the cached map keep using getFeatureAccessMap() (cache shape
      * unchanged); callers that need map + meta use
@@ -838,7 +927,7 @@ class ModuleAccessService
      * Gate order, resolution formula and fail-closed rules are identical
      * to computeFeatureAccessMap() — see its docblock.
      *
-     * @return array{map: array<string, bool>, grants_applied: int, denials_applied: int}
+     * @return array{map: array<string, bool>, grants_applied: int, denials_applied: int, reasons: array<string, string>}
      */
     private function computeFeatureAccessMapWithMeta(Institute $institute): array
     {
@@ -890,6 +979,10 @@ class ModuleAccessService
             ->keyBy('feature_key');
 
         $map = [];
+        $reasons = [];
+
+        // Phase 10: use resolveEnabledWithReasons to get module-level reasons
+        $moduleResolution = $this->resolveEnabledWithReasons($institute);
 
         foreach ($allFeatures as $feature) {
             $key = $feature->feature_key;
@@ -898,6 +991,7 @@ class ModuleAccessService
             // Gate 1: parent module must be enabled
             if (! $this->isEnabled($institute, $moduleKey)) {
                 $map[$key] = false;
+                $reasons[$key] = $moduleResolution['reasons'][$moduleKey] ?? AccessDecisionContext::REASON_MODULE_NOT_ENABLED;
                 continue;
             }
 
@@ -906,11 +1000,20 @@ class ModuleAccessService
 
             // Gate 3.5: institute-level override wins
             if ($overrides->has($key)) {
-                $map[$key] = (bool) $overrides->get($key)->enabled;
+                $overrideVal = (bool) $overrides->get($key)->enabled;
+                $map[$key] = $overrideVal;
+                $reasons[$key] = $overrideVal
+                    ? AccessDecisionContext::REASON_OVERRIDE_ENABLED
+                    : AccessDecisionContext::REASON_OVERRIDE_DISABLED;
                 continue;
             }
 
             $map[$key] = $packageEnabled;
+            if (! $packageEnabled) {
+                $reasons[$key] = AccessDecisionContext::REASON_PACKAGE_FEATURE_NOT_ENTITLED;
+            } else {
+                $reasons[$key] = AccessDecisionContext::REASON_PACKAGE_INCLUDED;
+            }
         }
 
         // Gate 4: Super admin grants (additive — applied after package + institute overrides)
@@ -930,6 +1033,7 @@ class ModuleAccessService
                 }
                 if (array_key_exists($grant->grant_key, $map)) {
                     $map[$grant->grant_key] = true;
+                    $reasons[$grant->grant_key] = AccessDecisionContext::REASON_GRANT_APPLIED;
                 }
             } elseif ($grant->grant_type === 'module') {
                 // B76: respect Gate 1 — the granted module itself must be
@@ -943,6 +1047,7 @@ class ModuleAccessService
                 foreach ($moduleFeatures as $fk) {
                     if (array_key_exists($fk, $map)) {
                         $map[$fk] = true;
+                        $reasons[$fk] = AccessDecisionContext::REASON_GRANT_APPLIED;
                     }
                 }
             } elseif ($grant->grant_type === 'tier') {
@@ -969,6 +1074,7 @@ class ModuleAccessService
                         continue;
                     }
                     $map[$fk] = true;
+                    $reasons[$fk] = AccessDecisionContext::REASON_TIER_GRANT_APPLIED;
                 }
             }
         }
@@ -985,6 +1091,7 @@ class ModuleAccessService
             if ($denial->deny_type === 'feature') {
                 if (array_key_exists($denial->deny_key, $map)) {
                     $map[$denial->deny_key] = false;
+                    $reasons[$denial->deny_key] = AccessDecisionContext::REASON_DENIAL_APPLIED;
                 }
             } elseif ($denial->deny_type === 'module') {
                 $moduleFeatures = \App\Models\FeatureRegistry::where('module_key', $denial->deny_key)
@@ -992,6 +1099,7 @@ class ModuleAccessService
                 foreach ($moduleFeatures as $fk) {
                     if (array_key_exists($fk, $map)) {
                         $map[$fk] = false;
+                        $reasons[$fk] = AccessDecisionContext::REASON_DENIAL_APPLIED;
                     }
                 }
             }
@@ -1005,6 +1113,7 @@ class ModuleAccessService
             'map' => $map,
             'grants_applied' => $grants->count(),
             'denials_applied' => $denials->count(),
+            'reasons' => $reasons,
         ];
     }
 
@@ -1013,7 +1122,9 @@ class ModuleAccessService
      * reflect current rows). The cached map path is untouched:
      * getFeatureAccessMap() keeps its key, TTL and shape.
      *
-     * @return array{map: array<string, bool>, grants_applied: int, denials_applied: int}
+     * Phase 10: also returns per-feature denial reasons.
+     *
+     * @return array{map: array<string, bool>, grants_applied: int, denials_applied: int, reasons: array<string, string>}
      */
     public function getFeatureAccessMapWithMeta(Institute $institute): array
     {

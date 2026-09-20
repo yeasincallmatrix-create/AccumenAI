@@ -21,6 +21,10 @@ class ModuleAccessLog extends Model
         'new_state',
         'package_id',
         'notes',
+        'reason',
+        'feature_key',
+        'decision',
+        'request_id',
     ];
 
     public function getActorTypeLabelAttribute(): string

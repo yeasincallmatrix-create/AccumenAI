@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\CheckFeatureAccess;
 use App\Http\Middleware\CheckModuleAccess;
 use App\Http\Middleware\CheckPermission;
@@ -68,6 +69,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->web(append: [
+            AssignRequestId::class,
             NormalizePersonNames::class,
             SetLocale::class,
             SecurityHeaders::class,

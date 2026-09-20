@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Institute;
 use App\Models\PackageScope;
+use App\Support\AccessDecisionContext;
 
 /**
  * Phase 8 — Effective Resolution Engine (facade).
@@ -46,11 +47,14 @@ class EffectiveEntitlementResolver
     /**
      * Resolve complete access state for an institute.
      *
+     * Phase 10: includes per-feature denial reasons for decision tracing.
+     *
      * @return array{
      *   modules: array<string, bool>,
      *   features: array<string, bool>,
      *   scope: ?PackageScope,
-     *   meta: array{resolution_source: string, grants_applied: int, denials_applied: int}
+     *   meta: array{resolution_source: string, grants_applied: int, denials_applied: int},
+     *   reasons: array<string, string>
      * }
      */
     public function resolveForInstitute(Institute $institute): array
@@ -71,6 +75,7 @@ class EffectiveEntitlementResolver
                 'grants_applied' => $featuresWithMeta['grants_applied'],
                 'denials_applied' => $featuresWithMeta['denials_applied'],
             ],
+            'reasons' => $featuresWithMeta['reasons'] ?? [],
         ];
     }
 
