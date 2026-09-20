@@ -53,6 +53,15 @@
                 <i class="bi bi-cash-coin"></i>
                 <span>Currency</span>
             </a>
+            <a href="{{ route('settings.advanced-accounting') }}" class="settings-nav-item settings-tab-btn">
+                <i class="bi bi-sliders"></i>
+                <span>Advanced Accounting</span>
+                @if(advanced_accounting())
+                    <span class="badge bg-success ms-1">ON</span>
+                @else
+                    <span class="badge bg-secondary ms-1">OFF</span>
+                @endif
+            </a>
         @endif
 <button class="settings-nav-item settings-tab-btn" type="button" data-target="pane-security" aria-selected="false">
                 <i class="bi bi-shield-lock"></i>
