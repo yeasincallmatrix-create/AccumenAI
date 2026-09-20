@@ -73,6 +73,7 @@
                             @if ($account->is_payable)<span class="badge text-bg-warning me-1">Payable</span>@endif
                             @if ($account->is_system)<span class="badge text-bg-secondary">System</span>@endif
                             @if ($account->is_global_flag ?? false)<span class="badge text-bg-dark ms-1">🔒 Global</span>@endif
+                            @if (! empty($account->industries))<span class="badge text-bg-warning ms-1">{{ implode(', ', (array) $account->industries) }}</span>@endif
                         </td>
                         <td>
                             <span class="badge text-bg-{{ $account->is_active ? 'success' : 'secondary' }}">{{ $account->is_active ? 'Active' : 'Inactive' }}</span>
