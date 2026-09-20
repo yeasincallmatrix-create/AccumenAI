@@ -372,9 +372,14 @@ class ChartOfAccountService
 
         // Validate branch (must belong to tenant)
         if (! empty($data['branch_id'])) {
-            \App\Models\Branch::where('id', $data['branch_id'])
+            $branch = \App\Models\Branch::where('id', $data['branch_id'])
                 ->where('institute_id', $instituteId)
-                ->firstOrFail();
+                ->first();
+            if ($branch === null) {
+                throw ValidationException::withMessages([
+                    'branch_id' => 'The selected branch does not belong to this institute.',
+                ]);
+            }
         }
 
         // Validate parent (must be global OR own tenant's)
@@ -386,7 +391,12 @@ class ChartOfAccountService
                         $g->whereNull('institute_id')->where('is_system', 1);
                     })->orWhere('institute_id', $instituteId);
                 })
-                ->firstOrFail();
+                ->first();
+            if ($parent === null) {
+                throw ValidationException::withMessages([
+                    'parent_id' => 'The parent account does not belong to this institute.',
+                ]);
+            }
 
             // Enforce max 2 levels (parent cannot have a parent)
             if ($parent->parent_id !== null) {

@@ -11,6 +11,7 @@ use App\Services\Accounting\ChartOfAccountService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -111,7 +112,7 @@ class FinanceChartOfAccountController extends Controller
         $account = ChartOfAccount::withoutGlobalScope('institute')
             ->findOrFail($chartOfAccount);
 
-        $this->authorize('update', $account);
+        Gate::authorize('update', $account);
 
         $account = $this->service->updateTenantAccount(
             (int) $institute->id,
@@ -128,7 +129,7 @@ class FinanceChartOfAccountController extends Controller
     {
         $this->requireInstitute($request);
 
-        $this->authorize('update', $account);
+        Gate::authorize('update', $account);
 
         $account = $this->service->toggleActive($account, (int) $this->actorId($request));
 
@@ -142,7 +143,7 @@ class FinanceChartOfAccountController extends Controller
         $account = ChartOfAccount::withoutGlobalScope('institute')
             ->findOrFail($chartOfAccount);
 
-        $this->authorize('delete', $account);
+        Gate::authorize('delete', $account);
 
         $code = $account->code;
         $this->service->deleteTenantAccount(
@@ -207,3 +208,5 @@ class FinanceChartOfAccountController extends Controller
             ->get(['id', 'code', 'name', 'type']);
     }
 }
+
+
