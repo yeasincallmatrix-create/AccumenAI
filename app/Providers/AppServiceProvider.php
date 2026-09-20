@@ -72,6 +72,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Phase D.4: explicit policy binding (auto-discovery would also
+        // resolve App\Policies\ChartOfAccountPolicy by convention; the
+        // explicit mapping makes the binding load-bearing and greppable).
+        \Illuminate\Support\Facades\Gate::policy(
+            \App\Models\ChartOfAccount::class,
+            \App\Policies\ChartOfAccountPolicy::class
+        );
+
         // Blade directive: @moduleEnabled('medical.opd') ... @endmoduleEnabled
         \Illuminate\Support\Facades\Blade::directive('moduleEnabled', function (string $expression) {
             return "<?php if(moduleEnabled({$expression})): ?>";
