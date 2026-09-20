@@ -27,6 +27,11 @@ class DatabaseSeeder extends Seeder
         $this->call(RoleSeeder::class);
         $this->call(TaxPermissionSeeder::class);
         $this->call(LabAnalyzerPermissionSeeder::class);
+        // B95: AI tool gating permissions (finance.view / crm.view).
+        // Placed with other permission seeders, before RolePermissionSeeder
+        // so institute-owner grant picks them up (plus AiTool seeder grants
+        // owner/admin/accountant directly). Same namespace — no import needed.
+        $this->call(AiToolPermissionSeeder::class);
         $this->call(RolePermissionSeeder::class);
         $this->call(ModuleRegistrySeeder::class);
         $this->call(MedicalSubModuleSeeder::class);
