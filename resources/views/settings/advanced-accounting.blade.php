@@ -63,4 +63,54 @@
     </ul>
 </div>
 
+@if($enabled)
+<div class="admin-card p-4 mt-3">
+    <h5 class="mb-1">Business Entity Type</h5>
+    <p class="text-muted small">Choose how your business is structured. This affects available accounts, reports and features.</p>
+
+    @if($errors->any())
+        <div class="alert alert-danger"><ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>
+    @endif
+
+    <form method="POST" action="{{ route('settings.advanced-accounting.entity-type.update') }}">
+        @csrf @method('PUT')
+        <div class="mb-3" style="max-width: 420px">
+            <label class="form-label">Entity Type</label>
+            <select name="business_entity_type" class="form-select" onchange="this.form.submit()">
+                @foreach($entityOptions as $value => $label)
+                    <option value="{{ $value }}" {{ $entityType->value === $value ? 'selected' : '' }}>{{ $label }}</option>
+                @endforeach
+            </select>
+        </div>
+    </form>
+
+    <div class="mt-3 p-3 bg-light rounded">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <strong>{{ $entityType->label() }}</strong>
+                <p class="mb-0 text-muted small">{{ $entityType->description() }}</p>
+            </div>
+            @if($entityType->requiresAdvancedMode())
+                <a href="{{ route($entityType->settingsRoute()) }}" class="btn btn-sm btn-primary">Open {{ $entityType->label() }} Settings →</a>
+            @endif
+        </div>
+    </div>
+
+    @if(! empty($suggestedAccounts))
+        <div class="mt-4">
+            <h6>Recommended Accounts for {{ $entityType->label() }}</h6>
+            <p class="text-muted small mb-2">Typical for this entity type. Add them from COA if needed:</p>
+            <table class="table table-sm table-bordered mb-0">
+                <thead class="table-light"><tr><th>Code</th><th>Name</th><th>Category</th></tr></thead>
+                <tbody>
+                    @foreach($suggestedAccounts as $acc)
+                        <tr><td class="font-monospace">{{ $acc['code'] }}</td><td>{{ $acc['name'] }}</td><td>{{ $acc['category'] }}</td></tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
+</div>
+@endif
+
 @endsection

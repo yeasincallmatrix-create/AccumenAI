@@ -21,6 +21,7 @@ class ShareholderCrudTest extends TestCase
             'name' => 'SH Co '.$unique,
             'slug' => 'sh-co-'.$unique,
             'status' => 'active',
+            'business_entity_type' => 'private_limited',
         ]);
         $owner = (new UserAccountService)->registerOwner([
             'name' => 'Shareholder Owner',

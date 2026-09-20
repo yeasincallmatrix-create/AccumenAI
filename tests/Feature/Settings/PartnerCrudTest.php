@@ -20,6 +20,7 @@ class PartnerCrudTest extends TestCase
             'name' => 'Partner Co '.$unique,
             'slug' => 'partner-co-'.$unique,
             'status' => 'active',
+            'business_entity_type' => 'partnership',
         ]);
         $owner = (new UserAccountService)->registerOwner([
             'name' => 'Partner Owner',

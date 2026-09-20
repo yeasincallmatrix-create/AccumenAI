@@ -53,6 +53,7 @@ class Institute extends Model
         'deletion_requested_at',
         'deletion_requested_by',
         'business_entity_type',
+        'advanced_accounting_enabled',
     ];
 
     protected $dates = ['deleted_at', 'deletion_requested_at'];

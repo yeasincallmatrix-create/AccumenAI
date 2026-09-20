@@ -20,6 +20,10 @@ class ShareCapitalController extends Controller
     {
         Gate::authorize('viewAny', \App\Models\ChartOfAccount::class);
 
+        $type = app(\App\Services\Accounting\BusinessEntityService::class)->getType(tenant_id());
+        abort_unless($type === \App\Enums\BusinessEntityType::PRIVATE_LIMITED, 404,
+            'Private Limited module not enabled.');
+
         $summary = $this->service->getCapitalSummary(tenant_id());
 
         $transactions = ShareCapitalTransaction::where('institute_id', tenant_id())

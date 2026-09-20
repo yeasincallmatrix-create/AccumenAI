@@ -18,6 +18,10 @@ class PartnerController extends Controller
     {
         Gate::authorize('viewAny', \App\Models\ChartOfAccount::class);
 
+        $type = app(\App\Services\Accounting\BusinessEntityService::class)->getType(tenant_id());
+        abort_unless($type === \App\Enums\BusinessEntityType::PARTNERSHIP, 404,
+            'Partnership module not enabled.');
+
         $partners = Partner::where('institute_id', tenant_id())
             ->orderBy('name')->paginate(20);
 

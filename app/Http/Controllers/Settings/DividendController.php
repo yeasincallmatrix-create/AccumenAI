@@ -19,6 +19,10 @@ class DividendController extends Controller
     {
         Gate::authorize('viewAny', \App\Models\ChartOfAccount::class);
 
+        $type = app(\App\Services\Accounting\BusinessEntityService::class)->getType(tenant_id());
+        abort_unless($type === \App\Enums\BusinessEntityType::PRIVATE_LIMITED, 404,
+            'Private Limited module not enabled.');
+
         $fy = $request->input('fy');
 
         $dividends = Dividend::where('institute_id', tenant_id())

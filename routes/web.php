@@ -248,8 +248,11 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->group(func
     // Advanced accounting mode toggle
     Route::get('settings/advanced-accounting', [\App\Http\Controllers\Settings\AdvancedAccountingSettingController::class, 'index'])->middleware('permission:settings.manage')->name('settings.advanced-accounting');
     Route::post('settings/advanced-accounting/toggle', [\App\Http\Controllers\Settings\AdvancedAccountingSettingController::class, 'toggle'])->middleware('permission:settings.manage')->name('settings.advanced-accounting.toggle');
+    Route::put('settings/advanced-accounting/entity-type', [\App\Http\Controllers\Settings\AdvancedAccountingSettingController::class, 'updateEntityType'])->middleware('permission:settings.manage')->name('settings.advanced-accounting.entity-type.update');
     // Business entity type selector + entity pages
-    Route::get('settings/business-entity', [\App\Http\Controllers\Settings\BusinessEntityController::class, 'index'])->middleware('permission:settings.manage')->name('settings.business-entity');
+    Route::get('settings/business-entity', function () {
+        return redirect()->route('settings.advanced-accounting');
+    })->middleware('permission:settings.manage')->name('settings.business-entity');
     Route::put('settings/business-entity', [\App\Http\Controllers\Settings\BusinessEntityController::class, 'update'])->middleware('permission:settings.manage')->name('settings.business-entity.update');
     Route::get('settings/business-entity/sole-proprietorship', [\App\Http\Controllers\Settings\BusinessEntityController::class, 'soleProprietorship'])->middleware('permission:settings.manage')->name('settings.entity.sole-proprietorship');
     Route::get('settings/business-entity/partnership', [\App\Http\Controllers\Settings\BusinessEntityController::class, 'partnership'])->middleware('permission:settings.manage')->name('settings.entity.partnership');

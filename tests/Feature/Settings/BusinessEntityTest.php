@@ -37,27 +37,26 @@ class BusinessEntityTest extends TestCase
 
     public function test_selector_page_loads(): void
     {
+        // G.3: standalone selector merged into advanced page → redirect.
         [$institute, $owner] = $this->tenantOwner('entity-sel@example.test');
 
         $this->asUser($owner, $institute->id)
             ->get(route('settings.business-entity'))
-            ->assertStatus(200)
-            ->assertSee('Business Entity Type')
-            ->assertSee('Sole Proprietorship')
-            ->assertSee('Partnership')
-            ->assertSee('Private Limited');
+            ->assertRedirect(route('settings.advanced-accounting'));
     }
 
     public function test_setting_entity_type_redirects_to_specific_page(): void
     {
+        // G.3: entity type now saved from the advanced page.
         [$institute, $owner] = $this->tenantOwner('entity-save@example.test');
+        app(\App\Services\Accounting\TenantAccountingModeService::class)->enable($institute->id);
 
         $response = $this->asUser($owner, $institute->id)
-            ->put(route('settings.business-entity.update'), [
+            ->put(route('settings.advanced-accounting.entity-type.update'), [
                 'business_entity_type' => 'partnership',
             ]);
 
-        $response->assertRedirect(route('settings.entity.partnership'));
+        $response->assertRedirect();
         $this->assertEquals('partnership', $institute->fresh()->business_entity_type);
     }
 

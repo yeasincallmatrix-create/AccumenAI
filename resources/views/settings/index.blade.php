@@ -58,13 +58,15 @@
                 <span>Advanced Accounting</span>
                 @if(advanced_accounting())
                     <span class="badge bg-success ms-1">ON</span>
+                    @php
+                        $etype = app(\App\Services\Accounting\BusinessEntityService::class)->getType(tenant_id());
+                    @endphp
+                    @if($etype->requiresAdvancedMode())
+                        <span class="badge bg-info ms-1">{{ $etype->label() }}</span>
+                    @endif
                 @else
                     <span class="badge bg-secondary ms-1">OFF</span>
                 @endif
-            </a>
-            <a href="{{ route('settings.business-entity') }}" class="settings-nav-item settings-tab-btn">
-                <i class="bi bi-building"></i>
-                <span>Business Entity</span>
             </a>
             <a href="{{ route('settings.share-capital.index') }}" class="settings-nav-item settings-tab-btn">
                 <i class="bi bi-bank"></i>
