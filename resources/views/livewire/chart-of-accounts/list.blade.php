@@ -70,16 +70,21 @@
                             @if ($account->is_receivable)<span class="badge text-bg-warning me-1">Receivable</span>@endif
                             @if ($account->is_payable)<span class="badge text-bg-warning me-1">Payable</span>@endif
                             @if ($account->is_system)<span class="badge text-bg-secondary">System</span>@endif
+                            @if ($account->is_global_flag ?? false)<span class="badge text-bg-dark ms-1">🔒 Global</span>@endif
                         </td>
                         <td>
                             <span class="badge text-bg-{{ $account->is_active ? 'success' : 'secondary' }}">{{ $account->is_active ? 'Active' : 'Inactive' }}</span>
                         </td>
                         @if ($canManage)
                             <td class="text-end">
-                                <a href="{{ route('finance.chart-of-accounts.edit', $account) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></a>
-                                <button class="btn btn-sm btn-outline-{{ $account->is_active ? 'warning' : 'success' }}" wire:click="toggle({{ $account->id }})">
-                                    <i class="bi bi-{{ $account->is_active ? 'pause-circle' : 'play-circle' }}"></i>
-                                </button>
+                                @if ($account->is_editable ?? true)
+                                    <a href="{{ route('finance.chart-of-accounts.edit', $account) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square"></i></a>
+                                    <button class="btn btn-sm btn-outline-{{ $account->is_active ? 'warning' : 'success' }}" wire:click="toggle({{ $account->id }})">
+                                        <i class="bi bi-{{ $account->is_active ? 'pause-circle' : 'play-circle' }}"></i>
+                                    </button>
+                                @else
+                                    <span class="text-muted small">Read-only</span>
+                                @endif
                                 @if (! $account->is_system)
                                     <button class="btn btn-sm btn-outline-danger" wire:confirm="Delete this account?" wire:click="destroy({{ $account->id }})">
                                         <i class="bi bi-trash"></i>

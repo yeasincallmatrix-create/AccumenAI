@@ -83,12 +83,15 @@ class ChartOfAccountList extends DataTable
         }
 
         $user = auth()->user();
-        $account = ChartOfAccount::query()->findOrFail($accountId);
+        $account = ChartOfAccount::withoutGlobalScope('institute')->findOrFail($accountId);
 
         try {
+            $this->authorize('update', $account);
             app(ChartOfAccountService::class)->toggleActive($account, $user?->id);
             session()->flash('status', 'Account "'.$account->code.'" '.($account->is_active ? 'deactivated' : 'activated').'.');
         } catch (ValidationException $e) {
+            session()->flash('error', $e->getMessage());
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
             session()->flash('error', $e->getMessage());
         }
     }
@@ -102,20 +105,34 @@ class ChartOfAccountList extends DataTable
         }
 
         $user = auth()->user();
-        $account = ChartOfAccount::query()->findOrFail($accountId);
+        $account = ChartOfAccount::withoutGlobalScope('institute')->findOrFail($accountId);
 
         try {
+            $this->authorize('delete', $account);
             app(ChartOfAccountService::class)->delete($account, $user?->id);
             session()->flash('status', 'Account "'.$account->code.'" deleted.');
         } catch (ValidationException $e) {
+            session()->flash('error', $e->getMessage());
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
             session()->flash('error', $e->getMessage());
         }
     }
 
     public function render()
     {
+        $accounts = $this->getRows();
+
+        $instituteId = (int) tenant_id();
+        $collection = method_exists($accounts, 'getCollection')
+            ? $accounts->getCollection()
+            : $accounts;
+        foreach ($collection as $account) {
+            $account->is_global_flag = $account->isGlobal();
+            $account->is_editable = $account->isEditableBy($instituteId);
+        }
+
         return view(self::VIEW, [
-            'accounts' => $this->getRows(),
+            'accounts' => $accounts,
             'canManage' => $this->canManage,
         ]);
     }
