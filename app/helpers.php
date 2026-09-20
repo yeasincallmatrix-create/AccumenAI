@@ -267,6 +267,20 @@ if (! function_exists('mawa_currency_symbol')) {
 
         $country = trim((string) $country);
 
+        // B108: accept ISO2 codes — resolve to the canonical name first
+        // so a country rename does not break symbol lookup. Memoized
+        // per request; unknown codes fall through to the map below.
+        if (preg_match('/^[A-Za-z]{2}$/', $country)) {
+            static $isoNames = [];
+            $upper = strtoupper($country);
+            if (! array_key_exists($upper, $isoNames)) {
+                $isoNames[$upper] = \App\Models\Country::where('iso2', $upper)->value('name');
+            }
+            if ($isoNames[$upper]) {
+                $country = $isoNames[$upper];
+            }
+        }
+
         return $currencies[$country] ?? $currencies['Bangladesh'];
     }
 }
@@ -327,6 +341,20 @@ if (! function_exists('mawa_country_flag')) {
         ];
 
         $country = trim((string) $country);
+
+        // B108: accept ISO2 codes directly (rename-safe), validated
+        // against the countries table once per request. Unknown codes
+        // fall through to the name map + placeholder below.
+        if (preg_match('/^[A-Za-z]{2}$/', $country)) {
+            static $isoFlags = [];
+            $upper = strtoupper($country);
+            if (! array_key_exists($upper, $isoFlags)) {
+                $isoFlags[$upper] = \App\Models\Country::where('iso2', $upper)->exists();
+            }
+            if ($isoFlags[$upper]) {
+                return 'https://flagcdn.com/w40/'.strtolower($upper).'.png';
+            }
+        }
 
         $code = $iso2[$country] ?? null;
 

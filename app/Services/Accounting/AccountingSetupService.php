@@ -7,6 +7,7 @@ use App\Models\Currency;
 use App\Models\FiscalYear;
 use App\Models\Institute;
 use App\Models\PaymentMethod;
+use App\Support\CountryConfigResolver;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -23,13 +24,9 @@ use Illuminate\Support\Facades\DB;
  */
 class AccountingSetupService
 {
-    private const COUNTRY_TO_CURRENCY = [
-        'Bangladesh' => 'BDT',
-        'United States' => 'USD',
-        'USA' => 'USD',
-        'India' => 'INR',
-        'Pakistan' => 'PKR',
-    ];
+    // B108: the legacy 5-country name-keyed map was removed; base
+    // currency now resolves via CountryConfigResolver (FK → iso2 →
+    // CountryCurrencyMap → config fallback), a strict superset.
 
     private const DEFAULT_SETTINGS = [
         'ar_ap_mode' => 'derive',
@@ -210,9 +207,15 @@ class AccountingSetupService
 
     private function resolveBaseCurrency(int $instituteId): string
     {
-        $country = Institute::query()->whereKey($instituteId)->value('country');
+        // B108: FK-based resolution via CountryConfigResolver
+        // (country_id → iso2 → CountryCurrencyMap → config fallback).
+        // BD byte-identical (BDT); US/IN/PK identical (USD/INR/PKR);
+        // every other mapped country now resolves instead of USD.
+        $institute = Institute::query()->whereKey($instituteId)->first();
 
-        $code = self::COUNTRY_TO_CURRENCY[$country] ?? 'USD';
+        $code = $institute
+            ? app(CountryConfigResolver::class)->resolve($institute, 'currency.default_code', 'USD')
+            : 'USD';
 
         return Currency::query()->where('code', $code)->value('code') ?? 'USD';
     }

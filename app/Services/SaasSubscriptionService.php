@@ -7,6 +7,7 @@ use App\Models\Invoice;
 use App\Models\OnlinePaymentAttempt;
 use App\Models\SubscriptionPackage;
 use App\Services\PaymentGateway\PaymentGatewayManager;
+use App\Support\CountryConfigResolver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -19,10 +20,18 @@ class SaasSubscriptionService
     ) {}
 
     /**
-     * Bangladesh-only: institute.country must be Bangladesh
+     * Bangladesh-only: institute must resolve to ISO2 BD.
+     *
+     * B108: FK-based primary check (rename-safe via countries.iso2);
+     * legacy name fallback preserved for rows without country_id
+     * (existing SaasCheckoutTest institutes carry the name string only).
+     * Exception message is a caller contract — preserved verbatim.
      */
     public function assertBangladesh(Institute $institute): void
     {
+        if (app(CountryConfigResolver::class)->isCountry($institute, 'BD')) {
+            return;
+        }
         $country = $institute->country ?? $institute->country_name ?? null;
         // institutes.country stores country name such as Bangladesh
         if (strtolower((string) $institute->country) !== 'bangladesh' && strtolower((string) $country) !== 'bangladesh') {

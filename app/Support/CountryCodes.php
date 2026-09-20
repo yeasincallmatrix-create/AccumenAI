@@ -215,6 +215,33 @@ class CountryCodes
     }
 
     /**
+     * B108: FK-backed dial-code lookup (rename-safe). Prefers the
+     * countries.phone_code column; falls back to the locale default.
+     * Existing name-keyed codeFor() is untouched.
+     */
+    public static function codeForCountry(?\App\Models\Country $country): string
+    {
+        if ($country?->phone_code) {
+            return (string) $country->phone_code;
+        }
+
+        return config('locale.phone.default_country_code', '880');
+    }
+
+    /**
+     * B108: ISO2 dial-code lookup via the countries table.
+     */
+    public static function codeForIso2(string $iso2): string
+    {
+        $code = \App\Models\Country::where('iso2', strtoupper($iso2))->value('phone_code');
+        if ($code) {
+            return (string) $code;
+        }
+
+        return config('locale.phone.default_country_code', '880');
+    }
+
+    /**
      * Example national mobile format per country, used as the placeholder
      * suggestion on phone inputs. Formats omit the leading dial code (the
      * input group shows that separately). Countries not listed fall back to a

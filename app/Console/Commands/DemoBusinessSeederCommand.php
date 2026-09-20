@@ -122,15 +122,20 @@ class DemoBusinessSeederCommand extends Command
             $suffix++;
         }
 
-        $countryModel = \App\Models\Country::firstOrCreate(
-            ['name' => $country],
-            ['iso2' => strtoupper(substr($country, 0, 2)), 'iso3' => strtoupper(substr($country, 0, 3)), 'phone_code' => '880', 'status' => true]
-        );
-        // Ensure BD lookup works for Bangladesh
-        if ($country === 'Bangladesh') {
-            $bd = \App\Models\Country::where('iso2', 'BD')->first();
-            if ($bd) {
-                $countryModel = $bd;
+        // B108: resolve by ISO2 first (rename-safe, also honours
+        // --country=BD style codes), then by name, then create.
+        $countryModel = \App\Models\Country::where('iso2', strtoupper($country))->first()
+            ?? \App\Models\Country::where('name', $country)->first()
+            ?? \App\Models\Country::firstOrCreate(
+                ['name' => $country],
+                ['iso2' => strtoupper(substr($country, 0, 2)), 'iso3' => strtoupper(substr($country, 0, 3)), 'phone_code' => '880', 'status' => true]
+            );
+        // Converge duplicates onto the canonical row for the resolved
+        // ISO code (keyed on iso2, not the name string).
+        if ($countryModel->iso2) {
+            $canonical = \App\Models\Country::where('iso2', $countryModel->iso2)->orderBy('id')->first();
+            if ($canonical) {
+                $countryModel = $canonical;
             }
         }
 

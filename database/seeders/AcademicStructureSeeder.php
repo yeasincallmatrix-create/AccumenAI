@@ -40,7 +40,7 @@ class AcademicStructureSeeder extends Seeder
 
     private function seedBangladesh(): void
     {
-        $country = Country::where('name', 'Bangladesh')->first();
+        $country = Country::where('iso2', 'BD')->first();
         if ($country === null) {
             $this->command?->warn('AcademicStructureSeeder: Bangladesh not found — skipping.');
 
@@ -146,7 +146,7 @@ class AcademicStructureSeeder extends Seeder
 
     private function seedUnitedStates(): void
     {
-        $country = Country::where('name', 'United States')->first();
+        $country = Country::where('iso2', 'US')->first();
         if ($country === null) {
             $this->command?->warn('AcademicStructureSeeder: United States not found — skipping.');
 
@@ -217,7 +217,7 @@ class AcademicStructureSeeder extends Seeder
 
     private function seedUnitedKingdom(): void
     {
-        $country = Country::where('name', 'United Kingdom')->first();
+        $country = Country::where('iso2', 'GB')->first();
         if ($country === null) {
             $this->command?->warn('AcademicStructureSeeder: United Kingdom not found — skipping.');
 

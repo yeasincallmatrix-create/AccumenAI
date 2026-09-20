@@ -27,19 +27,20 @@ class GradeScaleSeeder extends Seeder
     public function run(): void
     {
         $this->seedGlobalDefault();
-        $this->seedCountry('Bangladesh', $this->bangladeshScale());
-        $this->seedCountry('United States', $this->usaScale());
-        $this->seedCountry('United Kingdom', $this->ukScale());
+        $this->seedCountry('BD', $this->bangladeshScale(), 'Bangladesh');
+        $this->seedCountry('US', $this->usaScale(), 'United States');
+        $this->seedCountry('GB', $this->ukScale(), 'United Kingdom');
     }
 
     // ------------------------------------------------------------------ Country
 
-    private function seedCountry(string $countryName, array $definition): void
+    private function seedCountry(string $iso2, array $definition, string $label): void
     {
-        $country = Country::where('name', $countryName)->first();
+        // B108: ISO2 lookup (rename-safe).
+        $country = Country::where('iso2', $iso2)->first();
 
         if ($country === null) {
-            $this->command?->warn("GradeScaleSeeder: country '{$countryName}' not found — skipping.");
+            $this->command?->warn("GradeScaleSeeder: country '{$label}' not found — skipping.");
 
             return;
         }
