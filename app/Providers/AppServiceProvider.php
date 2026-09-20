@@ -80,6 +80,12 @@ class AppServiceProvider extends ServiceProvider
             \App\Policies\ChartOfAccountPolicy::class
         );
 
+        // Invoices: explicit tenant-isolation binding.
+        \Illuminate\Support\Facades\Gate::policy(
+            \App\Models\Invoice::class,
+            \App\Policies\InvoicePolicy::class
+        );
+
         // Blade directive: @moduleEnabled('medical.opd') ... @endmoduleEnabled
         \Illuminate\Support\Facades\Blade::directive('moduleEnabled', function (string $expression) {
             return "<?php if(moduleEnabled({$expression})): ?>";

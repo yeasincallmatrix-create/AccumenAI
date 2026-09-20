@@ -11,6 +11,7 @@ use App\Models\PaymentMethod;
 use App\Services\Accounting\InvoiceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -28,6 +29,7 @@ class FinanceInvoiceController extends Controller
     public function index(Request $request): View
     {
         $institute = $this->requireInstitute($request);
+        Gate::authorize('viewAny', Invoice::class);
 
         $query = Invoice::query()->with(['party', 'student', 'currency']);
 
@@ -65,6 +67,7 @@ class FinanceInvoiceController extends Controller
     public function create(Request $request): View
     {
         $institute = $this->requireInstitute($request);
+        Gate::authorize('create', Invoice::class);
 
         return view('institute.finance.invoices.form', [
             'institute' => $institute,
@@ -84,6 +87,7 @@ class FinanceInvoiceController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $institute = $this->requireInstitute($request);
+        Gate::authorize('create', Invoice::class);
 
         $data = $this->validated($request);
         $data['items'] = $this->normalizeItems($data['items'] ?? []);
@@ -103,6 +107,7 @@ class FinanceInvoiceController extends Controller
     public function show(Request $request, Invoice $invoice): View
     {
         $institute = $this->requireInstitute($request);
+        Gate::authorize('view', $invoice);
 
         $invoice->load(['party', 'student', 'items', 'installments', 'payments.journal', 'currency', 'journal']);
 
@@ -120,6 +125,7 @@ class FinanceInvoiceController extends Controller
     public function cancel(Request $request, Invoice $invoice): RedirectResponse
     {
         $institute = $this->requireInstitute($request);
+        Gate::authorize('cancel', $invoice);
 
         $this->service->cancel($invoice, $institute->id, (int) $this->actorId($request));
 
