@@ -22,6 +22,7 @@ use Database\Seeders\CurrencySeeder;
 use Database\Seeders\IndustryTaxonomyTestSeeder;
 use Database\Seeders\RoleSeeder;
 use Database\Seeders\SystemRoleSeeder;
+use Database\Seeders\AccountingPermissionSeeder;
 use Database\Seeders\TaxPermissionSeeder;
 use Database\Seeders\TestInstituteFixtureSeeder;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
@@ -147,6 +148,12 @@ abstract class TestCase extends BaseTestCase
         $existingPerms = Permission::whereIn('slug', $requiredPerms)->pluck('slug')->toArray();
         if (count(array_diff($requiredPerms, $existingPerms)) > 0) {
             (new TaxPermissionSeeder)->run();
+        }
+
+        $requiredAccountingPerms = ['accounts.view', 'journals.post', 'reports.financial.view', 'settings.accounting.manage'];
+        $existingAccountingPerms = Permission::whereIn('slug', $requiredAccountingPerms)->pluck('slug')->toArray();
+        if (count(array_diff($requiredAccountingPerms, $existingAccountingPerms)) > 0) {
+            (new AccountingPermissionSeeder)->run();
         }
     }
 
