@@ -78,11 +78,12 @@ class AccountingSetupCountryTest extends TestCase
 
     public function test_accounting_setup_null_country_falls_back_to_platform_default(): void
     {
-        // No FK and no usable name: platform default (BDT) applies.
+        // No FK and no usable name: platform base (USD) applies —
+        // B112 restores the exact pre-9b-2 fallback.
         // (institutes.country is non-nullable, so empty string stands
         // in for "no name".)
         $inst = $this->institute('', null);
 
-        $this->assertSame('BDT', $this->baseCurrency($inst));
+        $this->assertSame('USD', $this->baseCurrency($inst));
     }
 }

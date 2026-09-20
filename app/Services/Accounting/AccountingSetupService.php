@@ -213,9 +213,14 @@ class AccountingSetupService
         // every other mapped country now resolves instead of USD.
         $institute = Institute::query()->whereKey($instituteId)->first();
 
-        $code = $institute
-            ? app(CountryConfigResolver::class)->resolve($institute, 'currency.default_code', 'USD')
-            : 'USD';
+        // B112: null country → platform base (USD), exactly as pre-9b-2.
+        // The resolver must be bypassed here: its config fallback would
+        // otherwise yield BDT for country-less institutes.
+        if ($institute === null || $institute->country_id === null) {
+            return 'USD';
+        }
+
+        $code = app(CountryConfigResolver::class)->resolve($institute, 'currency.default_code', 'USD');
 
         return Currency::query()->where('code', $code)->value('code') ?? 'USD';
     }
