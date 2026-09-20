@@ -62,6 +62,10 @@
                     <span class="badge bg-secondary ms-1">OFF</span>
                 @endif
             </a>
+            <a href="{{ route('settings.business-entity') }}" class="settings-nav-item settings-tab-btn">
+                <i class="bi bi-building"></i>
+                <span>Business Entity</span>
+            </a>
         @endif
 <button class="settings-nav-item settings-tab-btn" type="button" data-target="pane-security" aria-selected="false">
                 <i class="bi bi-shield-lock"></i>
