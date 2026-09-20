@@ -39,6 +39,9 @@ class DatabaseSeeder extends Seeder
         $this->call(CertificateSeeder::class);
         $this->call(FeatureRegistrySeeder::class);
         $this->call(PackageFeatureSeeder::class);
+        // Hybrid COA Phase C: global groups BEFORE global accounts.
+        $this->call(GlobalAccountGroupsSeeder::class);
+        $this->call(GlobalChartOfAccountsSeeder::class);
         // B82: shared global catalogs (idempotent; also wired in TestCase).
         $this->call(DocumentCategorySeeder::class);
         $this->call(CrmLeadStatusSeeder::class);
