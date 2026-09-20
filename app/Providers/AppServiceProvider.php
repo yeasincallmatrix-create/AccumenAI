@@ -86,6 +86,12 @@ class AppServiceProvider extends ServiceProvider
             \App\Policies\InvoicePolicy::class
         );
 
+        // Payments: explicit tenant-isolation binding.
+        \Illuminate\Support\Facades\Gate::policy(
+            \App\Models\Payment::class,
+            \App\Policies\PaymentPolicy::class
+        );
+
         // Blade directive: @moduleEnabled('medical.opd') ... @endmoduleEnabled
         \Illuminate\Support\Facades\Blade::directive('moduleEnabled', function (string $expression) {
             return "<?php if(moduleEnabled({$expression})): ?>";

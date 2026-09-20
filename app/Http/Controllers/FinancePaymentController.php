@@ -7,6 +7,7 @@ use App\Models\Payment;
 use App\Services\Accounting\PaymentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -23,6 +24,7 @@ class FinancePaymentController extends Controller
     public function index(Request $request): View
     {
         $institute = $this->requireInstitute($request);
+        Gate::authorize('viewAny', Payment::class);
 
         $query = Payment::query()->with(['invoice', 'party', 'paymentMethod', 'receivedBy']);
 
@@ -50,6 +52,7 @@ class FinancePaymentController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $institute = $this->requireInstitute($request);
+        Gate::authorize('create', Payment::class);
 
         $data = $this->validated($request);
 
@@ -68,6 +71,7 @@ class FinancePaymentController extends Controller
     public function reverse(Request $request, Payment $payment): RedirectResponse
     {
         $institute = $this->requireInstitute($request);
+        Gate::authorize('reverse', $payment);
 
         $this->service->reverse(
             $payment,
