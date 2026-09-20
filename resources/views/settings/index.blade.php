@@ -70,6 +70,10 @@
                 <i class="bi bi-bank"></i>
                 <span>Share Capital</span>
             </a>
+            <a href="{{ route('settings.dividend.index') }}" class="settings-nav-item settings-tab-btn">
+                <i class="bi bi-cash-coin"></i>
+                <span>Dividends</span>
+            </a>
         @endif
 <button class="settings-nav-item settings-tab-btn" type="button" data-target="pane-security" aria-selected="false">
                 <i class="bi bi-shield-lock"></i>

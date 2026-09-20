@@ -281,6 +281,18 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->group(func
         Route::post('/transfer', [\App\Http\Controllers\Settings\ShareCapitalController::class, 'transfer'])->middleware('permission:settings.manage')->name('transfer');
         Route::get('/certificates', [\App\Http\Controllers\Settings\ShareCapitalController::class, 'certificates'])->middleware('permission:settings.manage')->name('certificates');
     });
+    // Dividends
+    Route::prefix('settings/dividend')->name('settings.dividend.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Settings\DividendController::class, 'index'])->middleware('permission:settings.manage')->name('index');
+        Route::get('/register', [\App\Http\Controllers\Settings\DividendController::class, 'register'])->middleware('permission:settings.manage')->name('register');
+        Route::get('/create', [\App\Http\Controllers\Settings\DividendController::class, 'create'])->middleware('permission:settings.manage')->name('create');
+        Route::post('/', [\App\Http\Controllers\Settings\DividendController::class, 'store'])->middleware('permission:settings.manage')->name('store');
+        Route::get('/{dividend}', [\App\Http\Controllers\Settings\DividendController::class, 'show'])->middleware('permission:settings.manage')->name('show');
+        Route::post('/{dividend}/mark-declared', [\App\Http\Controllers\Settings\DividendController::class, 'markDeclared'])->middleware('permission:settings.manage')->name('mark-declared');
+        Route::post('/{dividend}/pay-all', [\App\Http\Controllers\Settings\DividendController::class, 'payAll'])->middleware('permission:settings.manage')->name('pay-all');
+        Route::post('/{dividend}/payouts/{payout}/pay', [\App\Http\Controllers\Settings\DividendController::class, 'payPayout'])->middleware('permission:settings.manage')->name('payouts.pay');
+        Route::delete('/{dividend}', [\App\Http\Controllers\Settings\DividendController::class, 'cancel'])->middleware('permission:settings.manage')->name('cancel');
+    });
 });
 
 Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->prefix('staff')->name('staff.')->group(function () {
