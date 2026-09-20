@@ -254,6 +254,24 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->group(func
     Route::get('settings/business-entity/sole-proprietorship', [\App\Http\Controllers\Settings\BusinessEntityController::class, 'soleProprietorship'])->middleware('permission:settings.manage')->name('settings.entity.sole-proprietorship');
     Route::get('settings/business-entity/partnership', [\App\Http\Controllers\Settings\BusinessEntityController::class, 'partnership'])->middleware('permission:settings.manage')->name('settings.entity.partnership');
     Route::get('settings/business-entity/private-limited', [\App\Http\Controllers\Settings\BusinessEntityController::class, 'privateLimited'])->middleware('permission:settings.manage')->name('settings.entity.private-limited');
+    // Partner CRUD (URIs under partners/ to avoid colliding with entity landing pages)
+    Route::prefix('settings/business-entity/partners')->name('settings.business-entity.partnership.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Settings\PartnerController::class, 'index'])->middleware('permission:settings.manage')->name('index');
+        Route::get('/create', [\App\Http\Controllers\Settings\PartnerController::class, 'create'])->middleware('permission:settings.manage')->name('create');
+        Route::post('/', [\App\Http\Controllers\Settings\PartnerController::class, 'store'])->middleware('permission:settings.manage')->name('store');
+        Route::get('/{partner}/edit', [\App\Http\Controllers\Settings\PartnerController::class, 'edit'])->middleware('permission:settings.manage')->name('edit');
+        Route::put('/{partner}', [\App\Http\Controllers\Settings\PartnerController::class, 'update'])->middleware('permission:settings.manage')->name('update');
+        Route::delete('/{partner}', [\App\Http\Controllers\Settings\PartnerController::class, 'destroy'])->middleware('permission:settings.manage')->name('destroy');
+    });
+    // Shareholder CRUD
+    Route::prefix('settings/business-entity/shareholders')->name('settings.business-entity.private-limited.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Settings\ShareholderController::class, 'index'])->middleware('permission:settings.manage')->name('index');
+        Route::get('/create', [\App\Http\Controllers\Settings\ShareholderController::class, 'create'])->middleware('permission:settings.manage')->name('create');
+        Route::post('/', [\App\Http\Controllers\Settings\ShareholderController::class, 'store'])->middleware('permission:settings.manage')->name('store');
+        Route::get('/{shareholder}/edit', [\App\Http\Controllers\Settings\ShareholderController::class, 'edit'])->middleware('permission:settings.manage')->name('edit');
+        Route::put('/{shareholder}', [\App\Http\Controllers\Settings\ShareholderController::class, 'update'])->middleware('permission:settings.manage')->name('update');
+        Route::delete('/{shareholder}', [\App\Http\Controllers\Settings\ShareholderController::class, 'destroy'])->middleware('permission:settings.manage')->name('destroy');
+    });
 });
 
 Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->prefix('staff')->name('staff.')->group(function () {

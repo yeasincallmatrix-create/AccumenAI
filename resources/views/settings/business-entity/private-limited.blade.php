@@ -23,8 +23,8 @@
 
 <div class="admin-card p-4 mb-3">
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <h5 class="mb-0">Shareholders</h5>
-        <span class="badge bg-secondary">Shareholder CRUD coming in G.2</span>
+        <h5 class="mb-0">Shareholders ({{ $shareholders->count() }})</h5>
+        <a href="{{ route('settings.business-entity.private-limited.index') }}" class="btn btn-sm btn-primary">Manage Shareholders →</a>
     </div>
     @if($shareholders->isEmpty())
         <p class="text-muted small mb-0">No shareholders configured yet.</p>
