@@ -287,8 +287,13 @@ class AppServiceProvider extends ServiceProvider
 
         // Testing helper: auto-assign PREMIUM package to institutes created without package so legacy sales tests remain green
         // Production: CheckModuleAccess treats null as FREE (not bypass), but tests need sales enabled.
+        // B17: flag-controlled via config('testing.auto_premium', true) so tests that need an explicit
+        // null package_id can opt out with config(['testing.auto_premium' => false]) instead of
+        // Institute::withoutEvents(). Default true = backward compatible.
         Institute::creating(function (Institute $institute) {
-            if (app()->environment('testing') && empty($institute->package_id)) {
+            if (app()->environment('testing')
+                && config('testing.auto_premium', true)
+                && empty($institute->package_id)) {
                 $premiumId = \Illuminate\Support\Facades\DB::table('subscription_packages')->where('slug', 'PREMIUM')->value('id');
                 if ($premiumId) {
                     $institute->package_id = $premiumId;
