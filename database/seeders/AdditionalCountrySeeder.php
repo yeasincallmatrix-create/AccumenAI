@@ -13,13 +13,14 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Seed 20 additional countries with:
+ * Seed 23 countries with:
  *  - Country row (if missing)
  *  - One National Education System + 4 levels + 16 classes + groups
  *  - One country-default GradeScale
  *
  * Idempotent via updateOrCreate / row reconciliation.
- * Does NOT touch existing BD/US/UK data (different country_id).
+ * Existing rows converge by iso2 (no duplicates); US/GB/BD added
+ * in 9b-5c (their bespoke BD/US/UK seeders attach to the same rows).
  */
 class AdditionalCountrySeeder extends Seeder
 {
@@ -47,6 +48,14 @@ class AdditionalCountrySeeder extends Seeder
         ['name' => 'Laos', 'iso2' => 'LA', 'iso3' => 'LAO', 'phone' => '856'],
         ['name' => 'Cambodia', 'iso2' => 'KH', 'iso3' => 'KHM', 'phone' => '855'],
         ['name' => 'Maldives', 'iso2' => 'MV', 'iso3' => 'MDV', 'phone' => '960'],
+        // B121/B126/B125 (9b-5c): US + GB were missing (dormant US/UK
+        // structures); BD had no seeder at all (dump lineage only —
+        // fresh installs lacked the platform's home country). Appended
+        // (display order after the regional groups); field names match
+        // the list above ('phone', not 'phone_code').
+        ['name' => 'United States', 'iso2' => 'US', 'iso3' => 'USA', 'phone' => '1'],
+        ['name' => 'United Kingdom', 'iso2' => 'GB', 'iso3' => 'GBR', 'phone' => '44'],
+        ['name' => 'Bangladesh', 'iso2' => 'BD', 'iso3' => 'BGD', 'phone' => '880'],
     ];
 
     public function run(): void
