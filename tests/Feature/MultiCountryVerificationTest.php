@@ -325,4 +325,81 @@ class MultiCountryVerificationTest extends TestCase
         $this->assertFalse($this->resolver()->isCountry($in, 'BD'));
         $this->assertFalse($this->resolver()->isCountry($none, 'BD'));
     }
+
+    // -----------------------------------------------------------------
+    // H) US + GB addendum (9b-5d). US/GB rows are ensured in-transaction
+    // via the idempotent seeder (rolls back; nothing persists).
+    // -----------------------------------------------------------------
+
+    private function usId(): int
+    {
+        $row = Country::where('iso2', 'US')->first();
+        if (! $row) {
+            (new \Database\Seeders\AdditionalCountrySeeder)->run();
+            $row = Country::where('iso2', 'US')->firstOrFail();
+        }
+
+        return (int) $row->id;
+    }
+
+    private function gbId(): int
+    {
+        $row = Country::where('iso2', 'GB')->first();
+        if (! $row) {
+            (new \Database\Seeders\AdditionalCountrySeeder)->run();
+            $row = Country::where('iso2', 'GB')->firstOrFail();
+        }
+
+        return (int) $row->id;
+    }
+
+    public function test_US_institute_resolves_phone_1(): void
+    {
+        $inst = $this->institute($this->usId(), 'United States');
+
+        $this->assertSame('1', $this->resolver()->resolve($inst, 'phone.default_country_code'));
+    }
+
+    public function test_GB_institute_resolves_phone_44(): void
+    {
+        $inst = $this->institute($this->gbId(), 'United Kingdom');
+
+        $this->assertSame('44', $this->resolver()->resolve($inst, 'phone.default_country_code'));
+    }
+
+    public function test_US_institute_resolves_USD(): void
+    {
+        $inst = $this->institute($this->usId(), 'United States');
+
+        $this->assertSame('USD', $this->resolver()->resolve($inst, 'currency.default_code'));
+    }
+
+    public function test_GB_institute_resolves_GBP(): void
+    {
+        $inst = $this->institute($this->gbId(), 'United Kingdom');
+
+        $this->assertSame('GBP', $this->resolver()->resolve($inst, 'currency.default_code'));
+    }
+
+    public function test_bkash_rejected_for_US(): void
+    {
+        $inst = $this->checkoutInstitute('United States', $this->usId());
+        $u = $this->ownerOf($inst);
+        $pkg = SubscriptionPackage::whereRaw('LOWER(slug)=?', ['basic'])->firstOrFail();
+
+        $this->actingAs($u, 'institute_user')
+            ->post(route('saas.checkout'), ['package_id' => $pkg->id, 'billing_cycle' => 'monthly'])
+            ->assertSessionHasErrors('country');
+    }
+
+    public function test_bkash_rejected_for_GB(): void
+    {
+        $inst = $this->checkoutInstitute('United Kingdom', $this->gbId());
+        $u = $this->ownerOf($inst);
+        $pkg = SubscriptionPackage::whereRaw('LOWER(slug)=?', ['basic'])->firstOrFail();
+
+        $this->actingAs($u, 'institute_user')
+            ->post(route('saas.checkout'), ['package_id' => $pkg->id, 'billing_cycle' => 'monthly'])
+            ->assertSessionHasErrors('country');
+    }
 }
