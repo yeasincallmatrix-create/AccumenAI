@@ -2,85 +2,108 @@
 
 namespace Tests\Feature\Accounting;
 
+use App\Models\AccountGroup;
 use App\Models\ChartOfAccount;
 use App\Models\Industry;
 use App\Models\Institute;
+use App\Models\InstituteUser;
+use App\Models\Role;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
+/**
+ * Phase F - industry-scoped COA (visibleTo-only).
+ *
+ * Locked decisions:
+ * - 4001/4002 tagged ["education","training_center"]; 4010/5007 universal.
+ * - Only visibleTo()/visible() filter; TenantScoped default path untouched.
+ * - Institute::create + InstituteUser::create (no factories exist).
+ */
 class IndustryScopedCoaTest extends TestCase
 {
-    protected function setUp(): void
-    {
-        parent::setUp();
+    use DatabaseTransactions;
 
-        // Hermetic tags: shared test DB may be touched by parallel lanes.
-        $tags = [
-            '4001' => ['education', 'training_center'],
-            '4002' => ['education', 'training_center'],
-            '4003' => ['retail'],
-            '5007' => ['retail', 'manufacturing'],
-        ];
-        foreach ($tags as $code => $industries) {
-            \DB::table('chart_of_accounts')
-                ->whereNull('institute_id')
-                ->where('code', $code)
-                ->update(['industries' => json_encode($industries)]);
-        }
-    }
-
-    protected function instituteWithIndustry(string $slug): Institute
+    protected function tenantWithIndustry(string $slug): Institute
     {
+        ChartOfAccount::clearIndustrySlugCache();
+
         $industry = Industry::where('slug', $slug)->firstOrFail();
 
-        return Institute::create([
-            'name' => 'Ind Test '.Str::random(8),
-            'slug' => 'ind-test-'.Str::random(8),
+        $institute = Institute::create([
+            'name' => 'PhaseF '.Str::random(8),
+            'slug' => 'phase-f-'.Str::lower(Str::random(8)),
             'status' => 'active',
+            'industry' => $slug,
             'industry_id' => $industry->id,
+            'advanced_accounting_enabled' => true,
         ]);
+
+        InstituteUser::create([
+            'institute_id' => $institute->id,
+            'role_id' => Role::where('slug', 'institute-owner')->firstOrFail()->id,
+            'first_name' => 'Phase',
+            'last_name' => 'F',
+            'email' => 'phasef-'.Str::random(8).'@test.test',
+            'phone' => '017'.rand(10000000, 99999999),
+            'password_hash' => bcrypt('password'),
+            'status' => 'active',
+            'email_verified_at' => now(),
+        ]);
+
+        return $institute;
     }
 
-    public function test_healthcare_does_not_see_education_accounts(): void
+    protected function tenantGroupId(int $instituteId, string $type): ?int
     {
-        $hospital = $this->instituteWithIndustry('healthcare');
-        $visible = ChartOfAccount::visibleTo($hospital->id)->pluck('code')->toArray();
+        return AccountGroup::withoutGlobalScope('institute')
+            ->where('institute_id', $instituteId)
+            ->where('category', $type)
+            ->value('id')
+            ?? AccountGroup::withoutGlobalScope('institute')
+                ->whereNull('institute_id')
+                ->where('is_system', 1)
+                ->where('category', $type)
+                ->value('id');
+    }
+
+    public function test_school_sees_tuition_via_training_center_slug(): void
+    {
+        $tenant = $this->tenantWithIndustry('training_center');
+        $visible = ChartOfAccount::visibleTo($tenant->id)->pluck('code')->toArray();
+
+        // Critical: training_center slug passes (name collision-safe resolver).
+        $this->assertContains('4001', $visible);
+        $this->assertContains('4002', $visible);
+    }
+
+    public function test_hospital_does_not_see_tuition(): void
+    {
+        $tenant = $this->tenantWithIndustry('healthcare');
+        $visible = ChartOfAccount::visibleTo($tenant->id)->pluck('code')->toArray();
 
         $this->assertNotContains('4001', $visible);
         $this->assertNotContains('4002', $visible);
-        $this->assertContains('1000', $visible);
     }
 
-    public function test_education_does_not_see_retail_only(): void
+    public function test_universal_still_visible(): void
     {
-        $school = $this->instituteWithIndustry('education');
-        $visible = ChartOfAccount::visibleTo($school->id)->pluck('code')->toArray();
+        $tenant = $this->tenantWithIndustry('healthcare');
+        $visible = ChartOfAccount::visibleTo($tenant->id)->pluck('code')->toArray();
 
-        $this->assertContains('4001', $visible);
-        $this->assertContains('4002', $visible);
-        $this->assertNotContains('4003', $visible);
-        $this->assertNotContains('5007', $visible);
-    }
-
-    public function test_universal_visible_to_all(): void
-    {
-        $school = $this->instituteWithIndustry('education');
-        $visible = ChartOfAccount::visibleTo($school->id)->pluck('code')->toArray();
-
-        foreach (['1000', '1100', '1200', '2000', '2100', '3000', '4000', '5000', '4010'] as $universal) {
-            $this->assertContains($universal, $visible, "Universal {$universal} missing");
+        foreach (['1000', '1100', '1200', '2000', '2100', '3000', '4000', '4010', '5007', '5000'] as $code) {
+            $this->assertContains($code, $visible, "Universal {$code} missing");
         }
     }
 
-    public function test_tenant_custom_always_visible(): void
+    public function test_tenant_custom_visible(): void
     {
-        $school = $this->instituteWithIndustry('education');
+        $tenant = $this->tenantWithIndustry('healthcare');
+
         $custom = ChartOfAccount::withoutGlobalScope('institute')->create([
-            'institute_id' => $school->id,
-            'account_group_id' => \App\Models\AccountGroup::withoutGlobalScope('institute')
-                ->where('institute_id', $school->id)->value('id')
-                ?? \App\Models\AccountGroup::withoutGlobalScope('institute')
-                    ->whereNull('institute_id')->value('id'),
+            'institute_id' => $tenant->id,
+            'branch_id' => null,
+            'account_group_id' => $this->tenantGroupId($tenant->id, 'asset'),
             'code' => '9999',
             'name' => 'Custom',
             'type' => 'asset',
@@ -88,20 +111,7 @@ class IndustryScopedCoaTest extends TestCase
             'is_active' => 1,
         ]);
 
-        $visible = ChartOfAccount::visibleTo($school->id)->pluck('id')->toArray();
-        $this->assertContains($custom->id, $visible);
-    }
-
-    public function test_default_scope_filters_by_industry(): void
-    {
-        $hospital = $this->instituteWithIndustry('healthcare');
-        \App\Support\TenantContext::set($hospital->id);
-
-        $codes = ChartOfAccount::query()->pluck('code')->toArray();
-
-        $this->assertNotContains('4001', $codes);
-        $this->assertContains('1000', $codes);
-
-        \App\Support\TenantContext::clear();
+        $visibleIds = ChartOfAccount::visibleTo($tenant->id)->pluck('id')->toArray();
+        $this->assertContains($custom->id, $visibleIds);
     }
 }

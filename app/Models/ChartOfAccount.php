@@ -41,76 +41,49 @@ class ChartOfAccount extends Model
     }
 
     /**
-     * Phase F — industry enforcement on the DEFAULT query path.
+     * Per-request cache of institute industry slugs (Phase F).
      *
-     * TenantScoped's 'institute' scope allows all global rows; this second
-     * scope narrows globals to universal (industries NULL) + the tenant's
-     * own industry slug. Tenant rows always pass. Skipped when there is no
-     * tenant context (admin/system) or the column hasn't migrated yet.
+     * Avoids N+1 when scopeVisible() resolves the tenant's industry on
+     * every COA query within the same request.
      *
-     * SPLIT (documented): resolvers (accountByCode) match tenant copies
-     * first and are unaffected; browsing (list UI) and visibleTo() callers
-     * see the industry-filtered global set.
+     * @var array<int, string|null>
      */
-    protected static function booted(): void
-    {
-        static::addGlobalScope('industry', function ($builder) {
-            $instituteId = \App\Support\TenantContext::id();
-            if (! $instituteId) {
-                return;
-            }
-
-            try {
-                if (! \Illuminate\Support\Facades\Schema::hasColumn('chart_of_accounts', 'industries')) {
-                    return;
-                }
-            } catch (\Throwable) {
-                return;
-            }
-
-            $slug = static::industrySlugFor($instituteId);
-
-            // Constrain ONLY global rows; every tenant row passes here and
-            // stays governed by the 'institute' scope. This preserves
-            // explicit cross-tenant lookups that bypass 'institute'
-            // (policy then answers 403 instead of binding 404).
-            $builder->where(function ($q) use ($slug) {
-                $q->whereNotNull('chart_of_accounts.institute_id')
-                    ->orWhere(function ($g) use ($slug) {
-                        $g->whereNull('chart_of_accounts.institute_id')
-                            ->where(function ($inner) use ($slug) {
-                                $inner->whereNull('chart_of_accounts.industries');
-                                if ($slug) {
-                                    $inner->orWhereJsonContains('chart_of_accounts.industries', $slug);
-                                }
-                            });
-                    });
-            });
-        });
-    }
+    protected static array $industrySlugCache = [];
 
     /**
-     * Cached industry slug for an institute (per request).
+     * Resolve an institute's industry slug (Phase F - industry-scoped COA).
      *
-     * NOTE: Institute has a string `industry` column that shadows the
-     * `industry()` relation — query Industry directly by industry_id.
+     * IMPORTANT: never use `$institute->industry->slug` - the `industry`
+     * string column shadows the `industry()` BelongsTo, so `->industry`
+     * returns a string, not the related model. Resolve via the FK first
+     * with fallback to the string column (covers rows with NULL FK).
      */
-    public static function industrySlugFor(int $instituteId): ?string
+    public static function resolveIndustrySlug(int $instituteId): ?string
     {
-        static $cache = [];
-
-        if (! array_key_exists($instituteId, $cache)) {
-            try {
-                $industryId = Institute::whereKey($instituteId)->value('industry_id');
-                $cache[$instituteId] = $industryId
-                    ? \App\Models\Industry::whereKey($industryId)->value('slug')
-                    : null;
-            } catch (\Throwable) {
-                $cache[$instituteId] = null;
-            }
+        if (array_key_exists($instituteId, self::$industrySlugCache)) {
+            return self::$industrySlugCache[$instituteId];
         }
 
-        return $cache[$instituteId];
+        $slug = null;
+        try {
+            // withTrashed: soft-deleted institutes (e.g. debug rows with NULL
+            // FK) still resolve via the string-column fallback.
+            $institute = Institute::withTrashed()->find($instituteId, ['id', 'industry_id', 'industry']);
+            if ($institute) {
+                $slug = \App\Models\Industry::where('id', $institute->industry_id)->value('slug')
+                    ?? ($institute->getAttribute('industry') ?: null);
+            }
+        } catch (\Throwable) {
+            $slug = null;
+        }
+
+        return self::$industrySlugCache[$instituteId] = $slug;
+    }
+
+    /** Clear the per-request industry slug cache (tests). */
+    public static function clearIndustrySlugCache(): void
+    {
+        self::$industrySlugCache = [];
     }
 
     public function institute(): BelongsTo
@@ -191,12 +164,11 @@ class ChartOfAccount extends Model
     }
 
     /**
-     * Scope: only global rows (administrative — bypasses industry filter).
+     * Scope: only global rows (administrative - bypasses industry filter).
      */
     public function scopeGlobalOnly($query)
     {
         return $query->withoutGlobalScope('institute')
-            ->withoutGlobalScope('industry')
             ->whereNull('institute_id')
             ->where('is_system', 1);
     }
@@ -214,13 +186,18 @@ class ChartOfAccount extends Model
      * Scope: everything visible to a tenant (globals + own).
      * Same as default scope but explicit for readability.
      *
+     * Phase F: global system rows are narrowed to universal
+     * (industries NULL) + the tenant's own industry slug. Tenant-owned
+     * rows are always visible. The default TenantScoped hybrid branch is
+     * intentionally untouched - reports/postings keep unfiltered access.
+     *
      * NOTE: scope name is 'institute' (per TenantScoped).
      * `visibleTo` is the canonical Phase-D name; `visible` is kept
      * as an alias (service layer already calls ::visible()).
      */
     public function scopeVisible($query, int $instituteId)
     {
-        $slug = static::industrySlugFor($instituteId);
+        $slug = static::resolveIndustrySlug($instituteId);
 
         try {
             $hasIndustries = \Illuminate\Support\Facades\Schema::hasColumn('chart_of_accounts', 'industries');
@@ -231,7 +208,6 @@ class ChartOfAccount extends Model
         // Pre-Phase-F schema: no industry filtering possible.
         if (! $hasIndustries) {
             return $query->withoutGlobalScope('institute')
-                ->withoutGlobalScope('industry')
                 ->where(function ($q) use ($instituteId) {
                     $q->where(function ($g) {
                         $g->whereNull('institute_id')->where('is_system', 1);
@@ -240,7 +216,6 @@ class ChartOfAccount extends Model
         }
 
         return $query->withoutGlobalScope('institute')
-            ->withoutGlobalScope('industry')
             ->where(function ($q) use ($instituteId, $slug) {
                 $q->where(function ($g) use ($slug) {
                     $g->whereNull('institute_id')->where('is_system', 1)
