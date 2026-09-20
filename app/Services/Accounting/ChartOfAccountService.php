@@ -359,6 +359,132 @@ class ChartOfAccountService
     }
 
     /**
+     * Create a tenant-owned account (Hybrid COA write isolation).
+     * Globals stay read-only; ownership is forced to the tenant.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function createTenantAccount(int $instituteId, array $data): ChartOfAccount
+    {
+        // Force tenant ownership — ignore any incoming institute_id
+        $data['institute_id'] = $instituteId;
+        $data['is_system'] = false;
+
+        // Validate branch (must belong to tenant)
+        if (! empty($data['branch_id'])) {
+            \App\Models\Branch::where('id', $data['branch_id'])
+                ->where('institute_id', $instituteId)
+                ->firstOrFail();
+        }
+
+        // Validate parent (must be global OR own tenant's)
+        if (! empty($data['parent_id'])) {
+            $parent = ChartOfAccount::withoutGlobalScope('institute')
+                ->where('id', $data['parent_id'])
+                ->where(function ($q) use ($instituteId) {
+                    $q->where(function ($g) {
+                        $g->whereNull('institute_id')->where('is_system', 1);
+                    })->orWhere('institute_id', $instituteId);
+                })
+                ->firstOrFail();
+
+            // Enforce max 2 levels (parent cannot have a parent)
+            if ($parent->parent_id !== null) {
+                throw new \InvalidArgumentException(
+                    'Maximum sub-account depth is 2 levels.'
+                );
+            }
+        }
+
+        // Validate code uniqueness within visible namespace
+        $exists = ChartOfAccount::visible($instituteId)
+            ->where('code', $data['code'])
+            ->exists();
+        if ($exists) {
+            throw new \InvalidArgumentException(
+                "Account code {$data['code']} already exists."
+            );
+        }
+
+        return ChartOfAccount::create($data);
+    }
+
+    /**
+     * Update a tenant-owned account. Globals and other tenants' rows
+     * throw AuthorizationException (HTTP 403).
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function updateTenantAccount(int $instituteId, int $accountId, array $data): ChartOfAccount
+    {
+        // Bypass scope to see if it exists at all
+        $account = ChartOfAccount::withoutGlobalScope('institute')->findOrFail($accountId);
+
+        // SECURITY: only own tenant's custom rows
+        if (! $account->isEditableBy($instituteId)) {
+            throw new \Illuminate\Auth\Access\AuthorizationException(
+                'You can only modify your own custom accounts.'
+            );
+        }
+
+        // Prevent changing ownership
+        unset($data['institute_id'], $data['is_system'], $data['branch_id']);
+
+        // Validate code uniqueness if changing
+        if (isset($data['code']) && $data['code'] !== $account->code) {
+            $exists = ChartOfAccount::visible($instituteId)
+                ->where('code', $data['code'])
+                ->where('id', '!=', $account->id)
+                ->exists();
+            if ($exists) {
+                throw new \InvalidArgumentException(
+                    "Account code {$data['code']} already exists."
+                );
+            }
+        }
+
+        $account->update($data);
+
+        return $account->fresh();
+    }
+
+    /**
+     * Delete a tenant-owned account. Globals, other tenants' rows,
+     * accounts with sub-accounts or journal entries are protected.
+     */
+    public function deleteTenantAccount(int $instituteId, int $accountId): void
+    {
+        $account = ChartOfAccount::withoutGlobalScope('institute')->findOrFail($accountId);
+
+        if (! $account->isEditableBy($instituteId)) {
+            throw new \Illuminate\Auth\Access\AuthorizationException(
+                'You can only delete your own custom accounts.'
+            );
+        }
+
+        if ($account->children()->exists()) {
+            throw new \InvalidArgumentException(
+                'Cannot delete account with sub-accounts.'
+            );
+        }
+
+        if ($this->isAccountInUse($accountId)) {
+            throw new \InvalidArgumentException(
+                'Cannot delete account with journal entries.'
+            );
+        }
+
+        $account->delete();
+    }
+
+    protected function isAccountInUse(int $accountId): bool
+    {
+        return JournalEntry::query()
+            ->where('coa_id', $accountId)
+            ->exists();
+    }
+
+    /**
      * Find an installed account by code within an institute.
      */
     public function accountByCode(int $instituteId, string $code, ?int $branchId = null): ?ChartOfAccount

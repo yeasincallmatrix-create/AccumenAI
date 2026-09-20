@@ -66,4 +66,20 @@ class AccountGroup extends Model
     {
         return $this->belongsTo(InstituteUser::class, 'updated_by');
     }
+
+    public static function hasGlobalRows(): bool
+    {
+        return true;
+    }
+
+    public function isGlobal(): bool
+    {
+        return is_null($this->institute_id) && (bool) $this->is_system;
+    }
+
+    public function isEditableBy(int $instituteId): bool
+    {
+        return ! $this->isGlobal()
+            && (int) $this->institute_id === $instituteId;
+    }
 }

@@ -17,12 +17,30 @@ trait TenantScoped
     public static function bootTenantScoped(): void
     {
         static::addGlobalScope('institute', function (Builder $builder) {
-            if (TenantContext::enabled()) {
-                $builder->where(
-                    $builder->getModel()->qualifyColumn('institute_id'),
-                    TenantContext::id()
-                );
+            if (! TenantContext::enabled()) {
+                return;
             }
+
+            $model = $builder->getModel();
+
+            // Hybrid scope (Phase D — Hybrid COA): models that declare
+            // hasGlobalRows() expose shared global rows
+            // (institute_id NULL + is_system) alongside the tenant's own.
+            if (method_exists($model, 'hasGlobalRows') && $model::hasGlobalRows()) {
+                $builder->where(function ($q) use ($model) {
+                    $q->where(function ($g) use ($model) {
+                        $g->whereNull($model->qualifyColumn('institute_id'))
+                            ->where($model->qualifyColumn('is_system'), 1);
+                    })->orWhere($model->qualifyColumn('institute_id'), TenantContext::id());
+                });
+
+                return;
+            }
+
+            $builder->where(
+                $model->qualifyColumn('institute_id'),
+                TenantContext::id()
+            );
         });
 
         // Mass-assignment / IDOR hardening: institute ownership is always from TenantContext

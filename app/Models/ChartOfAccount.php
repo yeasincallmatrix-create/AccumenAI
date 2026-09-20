@@ -107,4 +107,56 @@ class ChartOfAccount extends Model
     {
         return in_array($this->type, ['asset', 'expense'], true);
     }
+
+    /**
+     * Enable hybrid scope — globals (institute_id NULL) + tenant rows.
+     */
+    public static function hasGlobalRows(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Scope: only global rows.
+     */
+    public function scopeGlobalOnly($query)
+    {
+        return $query->withoutGlobalScope('institute')
+            ->whereNull('institute_id')
+            ->where('is_system', 1);
+    }
+
+    /**
+     * Scope: only tenant rows (excludes globals).
+     */
+    public function scopeTenantOnly($query, int $instituteId)
+    {
+        return $query->withoutGlobalScope('institute')
+            ->where('institute_id', $instituteId);
+    }
+
+    /**
+     * Scope: everything visible to a tenant (globals + own).
+     * Same as default scope but explicit for readability.
+     */
+    public function scopeVisible($query, int $instituteId)
+    {
+        return $query->withoutGlobalScope('institute')
+            ->where(function ($q) use ($instituteId) {
+                $q->where(function ($g) {
+                    $g->whereNull('institute_id')->where('is_system', 1);
+                })->orWhere('institute_id', $instituteId);
+            });
+    }
+
+    public function isGlobal(): bool
+    {
+        return is_null($this->institute_id) && (bool) $this->is_system;
+    }
+
+    public function isEditableBy(int $instituteId): bool
+    {
+        return ! $this->isGlobal()
+            && (int) $this->institute_id === $instituteId;
+    }
 }
