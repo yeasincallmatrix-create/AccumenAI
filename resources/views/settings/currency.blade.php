@@ -2,6 +2,15 @@
 
 @section('title', 'Currency Settings — AccumenAI')
 
+@push('styles')
+<style>
+  /* Match settings index: hide navbar/sidebar on settings sub-pages */
+  .topbar, .sidebar, .sidebar-backdrop { display: none !important; }
+  .layout { display: block !important; }
+  .content { margin-left: 0 !important; padding-top: 1.25rem !important; max-width: 100% !important; }
+</style>
+@endpush
+
 @section('content')
 
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2">
