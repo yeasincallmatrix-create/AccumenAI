@@ -821,6 +821,27 @@ class ModuleAccessService
      */
     private function computeFeatureAccessMap(Institute $institute): array
     {
+        return $this->computeFeatureAccessMapWithMeta($institute)['map'];
+    }
+
+    /**
+     * B100: single computation returning the feature-access map PLUS
+     * the meta counts, derived from the SAME loaded grant/denial
+     * collections that Gate 4 / Gate 5 evaluate (no duplicate queries,
+     * no drift between the map and the counts).
+     *
+     * Uncached by design: meta must reflect current rows. Callers that
+     * need the cached map keep using getFeatureAccessMap() (cache shape
+     * unchanged); callers that need map + meta use
+     * getFeatureAccessMapWithMeta().
+     *
+     * Gate order, resolution formula and fail-closed rules are identical
+     * to computeFeatureAccessMap() — see its docblock.
+     *
+     * @return array{map: array<string, bool>, grants_applied: int, denials_applied: int}
+     */
+    private function computeFeatureAccessMapWithMeta(Institute $institute): array
+    {
         $allFeatures = FeatureRegistry::where('status', 'active')
             ->orderBy('module_key')
             ->orderBy('sort_order')
@@ -976,7 +997,27 @@ class ModuleAccessService
             }
         }
 
-        return $map;
+        // B100: meta counts come from the SAME loaded collections Gate 4
+        // / Gate 5 just evaluated — these queries already filter to
+        // status='active' and unexpired rows, so the counts are exactly
+        // the applicable rows by construction.
+        return [
+            'map' => $map,
+            'grants_applied' => $grants->count(),
+            'denials_applied' => $denials->count(),
+        ];
+    }
+
+    /**
+     * B100: map + meta in a single computation (uncached — meta must
+     * reflect current rows). The cached map path is untouched:
+     * getFeatureAccessMap() keeps its key, TTL and shape.
+     *
+     * @return array{map: array<string, bool>, grants_applied: int, denials_applied: int}
+     */
+    public function getFeatureAccessMapWithMeta(Institute $institute): array
+    {
+        return $this->computeFeatureAccessMapWithMeta($institute);
     }
 
     /**
@@ -1011,6 +1052,11 @@ class ModuleAccessService
         $industryId = $institute->industry_id;
         $subIndustryId = $institute->sub_industry_id;
 
+        // B101: [null, null, S] (sub-only) sits between the
+        // industry-level candidates and GLOBAL, so sub-only scopes are
+        // reachable for country-carrying institutes. Purely additive:
+        // every pre-existing candidate keeps its position, and when the
+        // sub id is null the new row dedup-collapses into GLOBAL below.
         $candidates = [
             [$countryId, $industryId, $subIndustryId],
             [$countryId, $industryId, null],
@@ -1018,6 +1064,7 @@ class ModuleAccessService
             [$countryId, null, null],
             [null, $industryId, $subIndustryId],
             [null, $industryId, null],
+            [null, null, $subIndustryId],
             [null, null, null],
         ];
 
@@ -1052,8 +1099,9 @@ class ModuleAccessService
      * explicit tier package (B75 — tier grants).
      *
      * Same fallback chain as resolveScopedPackage() (exact → broader →
-     * GLOBAL) but keyed on the tier package id, using the institute's
-     * own country/industry/sub-industry for scope matching.
+     * GLOBAL, B101 sub-only step included) but keyed on the tier
+     * package id, using the institute's own country/industry/sub-industry
+     * for scope matching.
      *
      * Returns null when no scope row exists (caller falls back to
      * legacy package_features).
@@ -1064,6 +1112,7 @@ class ModuleAccessService
         $industryId = $institute->industry_id;
         $subIndustryId = $institute->sub_industry_id;
 
+        // B101: kept in lockstep with resolveScopedPackage().
         $candidates = [
             [$countryId, $industryId, $subIndustryId],
             [$countryId, $industryId, null],
@@ -1071,6 +1120,7 @@ class ModuleAccessService
             [$countryId, null, null],
             [null, $industryId, $subIndustryId],
             [null, $industryId, null],
+            [null, null, $subIndustryId],
             [null, null, null],
         ];
 

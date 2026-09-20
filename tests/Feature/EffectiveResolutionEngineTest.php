@@ -576,22 +576,25 @@ class EffectiveResolutionEngineTest extends TestCase
         $this->assertNotSame($global->id, $resolved['scope']->id);
     }
 
-    public function test_c04_sub_only_scope_unreachable_resolves_global(): void
+    public function test_c04_sub_only_scope_resolves_for_country_institute(): void
     {
+        // B101: the [null, null, S] candidate sits ahead of GLOBAL, so a
+        // sub-only scope now wins for country-carrying institutes
+        // (previously fell through to GLOBAL).
         [, , $subId] = $this->localeIds();
         $pkg = $this->freshPackage();
         $global = $this->globalScope($pkg);
-        // The 7-step chain never queries (null,null,sub) when the
-        // institute itself carries a country+industry: sub-only rows
-        // cannot win there; GLOBAL is the deterministic outcome.
-        PackageScope::create([
+        $subOnly = PackageScope::create([
             'package_id' => $pkg->id, 'country_id' => null,
             'industry_id' => null, 'sub_industry_id' => $subId, 'status' => 'active',
         ]);
 
         $inst = $this->makeInstitute($pkg);
 
-        $this->assertSame($global->id, $this->resolver->resolveForInstitute($inst)['scope']->id);
+        $resolved = $this->resolver->resolveForInstitute($inst);
+        $this->assertSame($subOnly->id, $resolved['scope']->id);
+        $this->assertNotSame($global->id, $resolved['scope']->id);
+        $this->assertSame(EffectiveEntitlementResolver::SOURCE_SCOPE, $resolved['meta']['resolution_source']);
     }
 
     public function test_c05_global_only(): void
@@ -747,6 +750,126 @@ class EffectiveResolutionEngineTest extends TestCase
             $this->service->isFeatureEnabled($inst, 'medical.pharmacy'),
             $this->resolver->isFeatureEnabled($inst, 'medical.pharmacy')
         );
+    }
+
+    public function test_c13_sub_only_scope_takes_priority_over_global(): void
+    {
+        // B101: with more-specific scopes absent, the sub-only row beats
+        // GLOBAL for a country-carrying institute.
+        [, , $subId] = $this->localeIds();
+        $pkg = $this->freshPackage();
+        $global = $this->globalScope($pkg);
+        $subOnly = PackageScope::create([
+            'package_id' => $pkg->id, 'country_id' => null,
+            'industry_id' => null, 'sub_industry_id' => $subId, 'status' => 'active',
+        ]);
+
+        $inst = $this->makeInstitute($pkg);
+
+        $this->assertSame($subOnly->id, $this->service->resolveScopedPackage($inst)->id);
+        $this->assertNotSame($global->id, $this->service->resolveScopedPackage($inst)->id);
+    }
+
+    public function test_c14_sub_only_scope_dedup_when_sub_null(): void
+    {
+        // B101: when the institute has no sub-industry, the new
+        // [null, null, S] row dedup-collapses into GLOBAL — resolution
+        // still lands on GLOBAL with source 'global'.
+        $pkg = $this->freshPackage();
+        $global = $this->globalScope($pkg);
+
+        $inst = $this->makeInstitute($pkg, ['sub_industry_id' => null]);
+
+        $resolved = $this->resolver->resolveForInstitute($inst);
+        $this->assertSame($global->id, $resolved['scope']->id);
+        $this->assertSame(EffectiveEntitlementResolver::SOURCE_GLOBAL, $resolved['meta']['resolution_source']);
+    }
+
+    public function test_c15_parent_scope_walks_from_sub_only_to_global(): void
+    {
+        // B101: inheritance above a sub-only scope needs no new step —
+        // its parent walk already lands on GLOBAL.
+        [, , $subId] = $this->localeIds();
+        $pkg = $this->freshPackage();
+        $global = $this->globalScope($pkg);
+        $subOnly = PackageScope::create([
+            'package_id' => $pkg->id, 'country_id' => null,
+            'industry_id' => null, 'sub_industry_id' => $subId, 'status' => 'active',
+        ]);
+
+        $parent = $this->service->resolveParentScope($subOnly);
+
+        $this->assertNotNull($parent);
+        $this->assertSame($global->id, $parent->id);
+    }
+
+    public function test_c16_sub_only_scope_tier_path(): void
+    {
+        // B101: the tier-grant chain (resolveScopedPackageForPackage) is
+        // kept in lockstep — a sub-only scope on the tier package wins
+        // for a country-carrying institute.
+        [, , $subId] = $this->localeIds();
+        $tier = $this->freshPackage();
+        $global = PackageScope::create([
+            'package_id' => $tier->id, 'country_id' => null,
+            'industry_id' => null, 'sub_industry_id' => null, 'status' => 'active',
+        ]);
+        $subOnly = PackageScope::create([
+            'package_id' => $tier->id, 'country_id' => null,
+            'industry_id' => null, 'sub_industry_id' => $subId, 'status' => 'active',
+        ]);
+
+        $inst = $this->makeInstitute($this->package('advanced'));
+
+        $resolved = $this->service->resolveScopedPackageForPackage($inst, $tier);
+        $this->assertNotNull($resolved);
+        $this->assertSame($subOnly->id, $resolved->id);
+        $this->assertNotSame($global->id, $resolved->id);
+    }
+
+    public function test_c17_resolver_meta_matches_service_meta(): void
+    {
+        // B100: resolver meta must equal the service's single-computation
+        // meta (same rows, no drift).
+        $inst = $this->makeInstitute($this->package('advanced'));
+        $this->grant($inst, 'feature', 'medical.pharmacy');
+        $this->grant($inst, 'module', 'medical');
+        $this->deny($inst, 'feature', 'medical.laboratory');
+        $this->grant($inst, 'feature', 'medical.laboratory', ['expires_at' => now()->subDay()]);
+
+        $serviceMeta = $this->service->getFeatureAccessMapWithMeta($inst);
+        $resolverMeta = $this->resolver->resolveForInstitute($inst)['meta'];
+
+        $this->assertSame(2, $serviceMeta['grants_applied']);
+        $this->assertSame(1, $serviceMeta['denials_applied']);
+        $this->assertSame($serviceMeta['grants_applied'], $resolverMeta['grants_applied']);
+        $this->assertSame($serviceMeta['denials_applied'], $resolverMeta['denials_applied']);
+        $this->assertSame($serviceMeta['map'], $this->resolver->resolveForInstitute($inst)['features']);
+    }
+
+    public function test_c18_single_computation_queries_grants_denials_once(): void
+    {
+        // B100: one computation → tenant_access_grants and
+        // tenant_access_denials are each queried EXACTLY once (before:
+        // once inside computeFeatureAccessMap plus once per resolver
+        // count query).
+        $inst = $this->makeInstitute($this->package('advanced'));
+        $this->grant($inst, 'feature', 'medical.pharmacy');
+        $this->deny($inst, 'feature', 'medical.laboratory');
+
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+        $withMeta = $this->service->getFeatureAccessMapWithMeta($inst);
+        $log = DB::getQueryLog();
+        DB::disableQueryLog();
+
+        $grantQueries = array_filter($log, fn ($q) => str_contains($q['query'], 'tenant_access_grants'));
+        $denialQueries = array_filter($log, fn ($q) => str_contains($q['query'], 'tenant_access_denials'));
+
+        $this->assertCount(1, $grantQueries);
+        $this->assertCount(1, $denialQueries);
+        $this->assertSame(1, $withMeta['grants_applied']);
+        $this->assertSame(1, $withMeta['denials_applied']);
     }
 
     // -----------------------------------------------------------------

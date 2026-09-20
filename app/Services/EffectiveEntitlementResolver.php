@@ -4,8 +4,6 @@ namespace App\Services;
 
 use App\Models\Institute;
 use App\Models\PackageScope;
-use App\Models\TenantAccessDenial;
-use App\Models\TenantAccessGrant;
 
 /**
  * Phase 8 — Effective Resolution Engine (facade).
@@ -24,12 +22,10 @@ use App\Models\TenantAccessGrant;
  *   - a unified return shape with meta information (resolution_source,
  *     grants_applied, denials_applied).
  *
- * Meta-count exception: ModuleAccessService exposes no accessor for the
- * number of applied grant/denial rows, so grants_applied/denials_applied
- * are read-only counts of active, unexpired rows via the existing
- * TenantAccessGrant / TenantAccessDenial models (same applicability
- * predicate as Gate 4 / Gate 5 in computeFeatureAccessMap()). No
- * resolution logic is duplicated.
+ * B100: meta counts come from getFeatureAccessMapWithMeta() — the SAME
+ * single computation that builds the map — so the counts can never
+ * drift from the rows Gate 4 / Gate 5 evaluated. The resolver issues
+ * NO direct DB queries at all.
  *
  * Stateless: no instance state is kept between calls. All caching stays
  * inside ModuleAccessService (module_access:{id},
@@ -61,14 +57,19 @@ class EffectiveEntitlementResolver
     {
         $scope = $this->access->resolveScopedPackage($institute);
 
+        // B100: one computation yields both the map and the meta counts —
+        // grants/denials are loaded exactly once, by the same code path
+        // that evaluates Gate 4 / Gate 5.
+        $featuresWithMeta = $this->access->getFeatureAccessMapWithMeta($institute);
+
         return [
             'modules' => $this->resolveModules($institute),
-            'features' => $this->resolveFeatures($institute),
+            'features' => $featuresWithMeta['map'],
             'scope' => $scope,
             'meta' => [
                 'resolution_source' => $this->resolutionSource($scope),
-                'grants_applied' => $this->countApplicableGrants($institute),
-                'denials_applied' => $this->countApplicableDenials($institute),
+                'grants_applied' => $featuresWithMeta['grants_applied'],
+                'denials_applied' => $featuresWithMeta['denials_applied'],
             ],
         ];
     }
@@ -136,33 +137,5 @@ class EffectiveEntitlementResolver
         }
 
         return self::SOURCE_SCOPE;
-    }
-
-    /**
-     * Count of grant rows that participate in Gate 4
-     * (status active, expires_at null/future).
-     */
-    protected function countApplicableGrants(Institute $institute): int
-    {
-        return TenantAccessGrant::where('institute_id', $institute->id)
-            ->where('status', 'active')
-            ->where(function ($q) {
-                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
-            })
-            ->count();
-    }
-
-    /**
-     * Count of denial rows that participate in Gate 5
-     * (status active, expires_at null/future).
-     */
-    protected function countApplicableDenials(Institute $institute): int
-    {
-        return TenantAccessDenial::where('institute_id', $institute->id)
-            ->where('status', 'active')
-            ->where(function ($q) {
-                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
-            })
-            ->count();
     }
 }
