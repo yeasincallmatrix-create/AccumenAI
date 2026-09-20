@@ -34,13 +34,14 @@ class GlobalChartOfAccountsSeeder extends Seeder
 
         // [code, name, type, flags?] — verbatim from TEMPLATE const.
         $accounts = [
-            ['1001', 'Cash in Hand', 'asset', ['is_cash' => true]],
-            ['1002', 'Bank Account', 'asset', ['is_bank' => true]],
-            ['1100', 'Accounts Receivable', 'asset', ['is_receivable' => true, 'cash_flow_category' => 'operating']],
-            ['1200', 'Inventory Asset', 'asset', ['cash_flow_category' => 'operating']],
+            ['1000', 'Cash', 'asset', ['is_cash' => true]],
+            ['1100', 'Bank', 'asset', ['is_bank' => true]],
+            ['1200', 'Accounts Receivable', 'asset', ['is_receivable' => true, 'cash_flow_category' => 'operating']],
+            ['1300', 'Inventory Asset', 'asset', ['cash_flow_category' => 'operating']],
             ['1201', 'Input VAT / Tax Receivable', 'asset', ['cash_flow_category' => 'operating']],
-            ['1300', 'Fixed Assets', 'asset', ['cash_flow_category' => 'investing']],
+            ['1500', 'Fixed Assets', 'asset', ['cash_flow_category' => 'investing']],
             ['1301', 'Accumulated Depreciation', 'asset', ['cash_flow_category' => 'investing']],
+            ['1400', 'Prepaid Expenses', 'asset', ['cash_flow_category' => 'operating']],
             ['2001', 'Accounts Payable', 'liability', ['is_payable' => true, 'cash_flow_category' => 'operating']],
             ['2002', 'Unearned Revenue', 'liability', ['cash_flow_category' => 'operating']],
             ['2003', 'Loans Payable', 'liability', ['cash_flow_category' => 'financing']],

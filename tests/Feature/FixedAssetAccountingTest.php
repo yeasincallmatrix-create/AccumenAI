@@ -111,7 +111,7 @@ class FixedAssetAccountingTest extends TestCase
         $asset = $service->capitalize($asset, $supplier->id);
 
         $this->assertSame('active', $asset->status);
-        $this->assertSame(1000000.0, $this->ledgerBalance($institute, '1300', $branch->id));
+        $this->assertSame(1000000.0, $this->ledgerBalance($institute, '1500', $branch->id));
         $this->assertSame(-1000000.0, $this->ledgerBalance($institute, '2001', $branch->id));
     }
 

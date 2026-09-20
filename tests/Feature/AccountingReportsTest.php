@@ -142,7 +142,7 @@ class AccountingReportsTest extends TestCase
             'type' => 'journal',
             'currency_id' => $this->currencyId(),
             'entries' => [
-                ['coa_id' => $this->coaId((int) $institute->id, $branchId, '1001'), 'debit' => $amount, 'credit' => 0],
+                ['coa_id' => $this->coaId((int) $institute->id, $branchId, '1000'), 'debit' => $amount, 'credit' => 0],
                 ['coa_id' => $this->coaId((int) $institute->id, $branchId, '4001'), 'debit' => 0, 'credit' => $amount],
             ],
         ]);
@@ -159,7 +159,7 @@ class AccountingReportsTest extends TestCase
 
         $rows = $this->reports()->trialBalance((int) $mawa->id, null, now()->toDateString());
 
-        $cash = $rows->firstWhere('code', '1001');
+        $cash = $rows->firstWhere('code', '1000');
         $tuition = $rows->firstWhere('code', '4001');
 
         $this->assertNotNull($cash);
@@ -216,7 +216,7 @@ class AccountingReportsTest extends TestCase
             'type' => 'journal',
             'currency_id' => $this->currencyId(),
             'entries' => [
-                ['coa_id' => $this->coaId((int) $mawa->id, null, '1001'), 'debit' => 9000, 'credit' => 0],
+                ['coa_id' => $this->coaId((int) $mawa->id, null, '1000'), 'debit' => 9000, 'credit' => 0],
                 ['coa_id' => $this->coaId((int) $mawa->id, null, '4001'), 'debit' => 0, 'credit' => 9000],
             ],
         ], null, false);
@@ -225,7 +225,7 @@ class AccountingReportsTest extends TestCase
 
         $rows = $this->reports()->trialBalance((int) $mawa->id, null, now()->toDateString());
 
-        $cash = $rows->firstWhere('code', '1001');
+        $cash = $rows->firstWhere('code', '1000');
         $this->assertNotNull($cash);
         $this->assertSame(10000.0, $cash->balance);
     }
@@ -238,12 +238,12 @@ class AccountingReportsTest extends TestCase
         $journal = $this->postCashToIncome($mawa, null, 5000);
 
         $rows = $this->reports()->trialBalance((int) $mawa->id, null, now()->toDateString());
-        $this->assertSame(5000.0, $rows->firstWhere('code', '1001')->balance);
+        $this->assertSame(5000.0, $rows->firstWhere('code', '1000')->balance);
 
         $this->posting()->reverse($journal, (int) $mawa->id, 1, 'cancel');
 
         $rows = $this->reports()->trialBalance((int) $mawa->id, null, now()->toDateString());
-        $cash = $rows->firstWhere('code', '1001');
+        $cash = $rows->firstWhere('code', '1000');
         $this->assertNull($cash);
         $this->assertTrue($rows->isEmpty());
     }
@@ -259,7 +259,7 @@ class AccountingReportsTest extends TestCase
             'institute_id' => $mawa->id,
             'branch_id' => null,
             'fiscal_year_id' => $year->id,
-            'coa_id' => $this->coaId((int) $mawa->id, null, '1001'),
+            'coa_id' => $this->coaId((int) $mawa->id, null, '1000'),
             'debit' => 2000,
             'credit' => 0,
         ]);
@@ -274,7 +274,7 @@ class AccountingReportsTest extends TestCase
 
         $rows = $this->reports()->trialBalance((int) $mawa->id, null, now()->toDateString(), (int) $year->id);
 
-        $this->assertSame(2000.0, $rows->firstWhere('code', '1001')->balance);
+        $this->assertSame(2000.0, $rows->firstWhere('code', '1000')->balance);
         $this->assertSame(-2000.0, $rows->firstWhere('code', '3001')->balance);
     }
 
@@ -288,7 +288,7 @@ class AccountingReportsTest extends TestCase
         $this->postCashToIncome($mawa, null, 100);
         $this->postCashToIncome($mawa, null, 250);
 
-        $cashId = $this->coaId((int) $mawa->id, null, '1001');
+        $cashId = $this->coaId((int) $mawa->id, null, '1000');
         $ledger = $this->reports()->generalLedger((int) $mawa->id, null, $cashId, null, null, null);
 
         $this->assertCount(2, $ledger);
@@ -304,7 +304,7 @@ class AccountingReportsTest extends TestCase
         $this->postCashToIncome($mawa, null, 100);
         $this->postCashToIncome($mawa, null, 250);
 
-        $cashId = $this->coaId((int) $mawa->id, null, '1001');
+        $cashId = $this->coaId((int) $mawa->id, null, '1000');
         $ledger = $this->reports()->generalLedger((int) $mawa->id, null, $cashId, null, null);
 
         $this->assertTrue($ledger->isNotEmpty());
@@ -320,7 +320,7 @@ class AccountingReportsTest extends TestCase
         $this->setupAccounting($mawa);
 
         $year = FiscalYear::query()->where('institute_id', $mawa->id)->whereNull('branch_id')->firstOrFail();
-        $cashId = $this->coaId((int) $mawa->id, null, '1001');
+        $cashId = $this->coaId((int) $mawa->id, null, '1000');
 
         OpeningBalance::create([
             'institute_id' => $mawa->id,
@@ -351,7 +351,7 @@ class AccountingReportsTest extends TestCase
         $this->setupAccounting($mawa);
         $this->setupAccounting($tutu);
 
-        $foreignCash = $this->coaId((int) $tutu->id, null, '1001');
+        $foreignCash = $this->coaId((int) $tutu->id, null, '1000');
 
         $this->expectException(ModelNotFoundException::class);
         $this->reports()->accountLedger((int) $mawa->id, null, $foreignCash, null, null);
@@ -386,7 +386,7 @@ class AccountingReportsTest extends TestCase
             'currency_id' => $this->currencyId(),
             'entries' => [
                 ['coa_id' => $this->coaId((int) $mawa->id, null, '5006'), 'debit' => 4000, 'credit' => 0],
-                ['coa_id' => $this->coaId((int) $mawa->id, null, '1001'), 'debit' => 0, 'credit' => 4000],
+                ['coa_id' => $this->coaId((int) $mawa->id, null, '1000'), 'debit' => 0, 'credit' => 4000],
             ],
         ]);
 
@@ -455,8 +455,8 @@ class AccountingReportsTest extends TestCase
 
         $rows = $this->reports()->cashBankSummary((int) $mawa->id, null, now()->toDateString());
 
-        $cash = $rows->firstWhere('code', '1001');
-        $bank = $rows->firstWhere('code', '1002');
+        $cash = $rows->firstWhere('code', '1000');
+        $bank = $rows->firstWhere('code', '1100');
 
         $this->assertNotNull($cash);
         $this->assertNotNull($bank);
@@ -486,7 +486,7 @@ class AccountingReportsTest extends TestCase
             'type' => 'sale',
             'currency_id' => $this->currencyId(),
             'entries' => [
-                ['coa_id' => $this->coaId((int) $mawa->id, null, '1100'), 'debit' => 5000, 'credit' => 0, 'party_id' => $customer->id],
+                ['coa_id' => $this->coaId((int) $mawa->id, null, '1200'), 'debit' => 5000, 'credit' => 0, 'party_id' => $customer->id],
                 ['coa_id' => $this->coaId((int) $mawa->id, null, '4001'), 'debit' => 0, 'credit' => 5000],
             ],
         ]);
@@ -563,7 +563,7 @@ class AccountingReportsTest extends TestCase
                 'type' => 'sale',
                 'currency_id' => $this->currencyId(),
                 'entries' => [
-                    ['coa_id' => $this->coaId((int) $institute->id, null, '1100'), 'debit' => $amount, 'credit' => 0, 'party_id' => $customer->id],
+                    ['coa_id' => $this->coaId((int) $institute->id, null, '1200'), 'debit' => $amount, 'credit' => 0, 'party_id' => $customer->id],
                     ['coa_id' => $this->coaId((int) $institute->id, null, $incomeCode), 'debit' => 0, 'credit' => $amount],
                 ],
             ]);
@@ -659,7 +659,7 @@ class AccountingReportsTest extends TestCase
         $owner = $this->owner('step11-al-route@example.test');
         $this->assign($owner, $mawa, 'institute-owner');
 
-        $cashId = $this->coaId((int) $mawa->id, null, '1001');
+        $cashId = $this->coaId((int) $mawa->id, null, '1000');
 
         $this->asUser($owner, (int) $mawa->id)
             ->get(route('accounting.reports.account-ledger', ['account_id' => $cashId]))

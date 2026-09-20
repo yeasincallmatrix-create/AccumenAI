@@ -365,7 +365,7 @@ class PaymentService
     {
         $coaService = app(ChartOfAccountService::class);
 
-        $receivable = $coaService->accountByCode($invoice->institute_id, '1100', $branchId)
+        $receivable = $coaService->accountByCode($invoice->institute_id, '1200', $branchId)
             ?? ChartOfAccount::query()
                 ->where('institute_id', $invoice->institute_id)
                 ->where('branch_id', $branchId)

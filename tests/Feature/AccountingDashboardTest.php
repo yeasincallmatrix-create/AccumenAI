@@ -146,7 +146,7 @@ class AccountingDashboardTest extends TestCase
             'type' => 'journal',
             'currency_id' => $this->currencyId(),
             'entries' => [
-                ['coa_id' => $this->coaId((int) $institute->id, $branchId, '1001'), 'debit' => $amount, 'credit' => 0],
+                ['coa_id' => $this->coaId((int) $institute->id, $branchId, '1000'), 'debit' => $amount, 'credit' => 0],
                 ['coa_id' => $this->coaId((int) $institute->id, $branchId, '4001'), 'debit' => 0, 'credit' => $amount],
             ],
         ]);
@@ -162,7 +162,7 @@ class AccountingDashboardTest extends TestCase
             'currency_id' => $this->currencyId(),
             'entries' => [
                 ['coa_id' => $this->coaId((int) $institute->id, $branchId, '5006'), 'debit' => $amount, 'credit' => 0],
-                ['coa_id' => $this->coaId((int) $institute->id, $branchId, '1001'), 'debit' => 0, 'credit' => $amount],
+                ['coa_id' => $this->coaId((int) $institute->id, $branchId, '1000'), 'debit' => 0, 'credit' => $amount],
             ],
         ]);
     }
@@ -182,7 +182,7 @@ class AccountingDashboardTest extends TestCase
             'type' => 'sale',
             'currency_id' => $this->currencyId(),
             'entries' => [
-                ['coa_id' => $this->coaId((int) $institute->id, $branchId, '1100'), 'debit' => $amount, 'credit' => 0, 'party_id' => $customer->id],
+                ['coa_id' => $this->coaId((int) $institute->id, $branchId, '1200'), 'debit' => $amount, 'credit' => 0, 'party_id' => $customer->id],
                 ['coa_id' => $this->coaId((int) $institute->id, $branchId, '4001'), 'debit' => 0, 'credit' => $amount],
             ],
         ])->id;
@@ -367,7 +367,7 @@ class AccountingDashboardTest extends TestCase
             'type' => 'journal',
             'currency_id' => $this->currencyId(),
             'entries' => [
-                ['coa_id' => $this->coaId((int) $mawa->id, null, '1001'), 'debit' => 7000, 'credit' => 0],
+                ['coa_id' => $this->coaId((int) $mawa->id, null, '1000'), 'debit' => 7000, 'credit' => 0],
                 ['coa_id' => $this->coaId((int) $mawa->id, null, '4001'), 'debit' => 0, 'credit' => 7000],
             ],
         ]);
@@ -475,7 +475,7 @@ class AccountingDashboardTest extends TestCase
             'type' => 'journal',
             'currency_id' => $this->currencyId(),
             'entries' => [
-                ['coa_id' => $this->coaId((int) $mawa->id, null, '1001'), 'debit' => 555, 'credit' => 0],
+                ['coa_id' => $this->coaId((int) $mawa->id, null, '1000'), 'debit' => 555, 'credit' => 0],
                 ['coa_id' => $this->coaId((int) $mawa->id, null, '4001'), 'debit' => 0, 'credit' => 555],
             ],
         ], null, false);

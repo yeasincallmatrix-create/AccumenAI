@@ -117,7 +117,7 @@ class BudgetVarianceTest extends \Tests\TestCase
 
         $fy = $this->createFiscalYear($mawa, '2026-01-01', '2026-12-31');
         $expense = $this->coa($mawa, '5001');
-        $cash = $this->coa($mawa, '1001');
+        $cash = $this->coa($mawa, '1000');
 
         // Budget: 60000 expense for the year
         $budgetSvc = app(BudgetService::class);
@@ -158,7 +158,7 @@ class BudgetVarianceTest extends \Tests\TestCase
 
         $fy = $this->createFiscalYear($mawa, '2026-01-01', '2026-12-31');
         $expense = $this->coa($mawa, '5001');
-        $cash = $this->coa($mawa, '1001');
+        $cash = $this->coa($mawa, '1000');
 
         $budgetSvc = app(BudgetService::class);
         $budget = $budgetSvc->create($mawa->id, null, [
@@ -198,7 +198,7 @@ class BudgetVarianceTest extends \Tests\TestCase
 
         $fy = $this->createFiscalYear($mawa, '2026-01-01', '2026-12-31');
         $expense = $this->coa($mawa, '5001');
-        $cash = $this->coa($mawa, '1001');
+        $cash = $this->coa($mawa, '1000');
 
         $budgetSvc = app(BudgetService::class);
         $budget = $budgetSvc->create($mawa->id, null, [
@@ -246,7 +246,7 @@ class BudgetVarianceTest extends \Tests\TestCase
         $cash = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)
             ->where('branch_id', $branchA->id)
-            ->where('code', '1001')
+            ->where('code', '1000')
             ->firstOrFail();
 
         $budgetSvc = app(BudgetService::class);
@@ -292,7 +292,7 @@ class BudgetVarianceTest extends \Tests\TestCase
         $fyB = $this->createFiscalYear($other, '2026-01-01', '2026-12-31');
 
         $expenseA = $this->coa($mawa, '5001');
-        $cashA = $this->coa($mawa, '1001');
+        $cashA = $this->coa($mawa, '1000');
         $expenseB = $this->coa($other, '5001');
 
         $budgetSvc = app(BudgetService::class);

@@ -105,7 +105,7 @@ class AccountingReconciliationTest extends \Tests\TestCase
         $owner = $this->owner('recon-cf@example.test');
         (new MembershipService)->assign($owner, $mawa->id, $this->roleId('institute-owner'));
 
-        $cash = $this->coa($mawa, '1001');
+        $cash = $this->coa($mawa, '1000');
         $revenue = $this->coa($mawa, '4001');
 
         // DR Cash, CR Revenue — fully classified
@@ -134,8 +134,8 @@ class AccountingReconciliationTest extends \Tests\TestCase
         $owner = $this->owner('recon-accrual@example.test');
         (new MembershipService)->assign($owner, $mawa->id, $this->roleId('institute-owner'));
 
-        $cash = $this->coa($mawa, '1001');
-        $ar = $this->coa($mawa, '1100');
+        $cash = $this->coa($mawa, '1000');
+        $ar = $this->coa($mawa, '1200');
         $revenue = $this->coa($mawa, '4001');
 
         // Step 1: Invoice sale — DR AR, CR Revenue (no cash movement)
@@ -166,7 +166,7 @@ class AccountingReconciliationTest extends \Tests\TestCase
         $owner = $this->owner('recon-plbs@example.test');
         (new MembershipService)->assign($owner, $mawa->id, $this->roleId('institute-owner'));
 
-        $cash = $this->coa($mawa, '1001');
+        $cash = $this->coa($mawa, '1000');
         $revenue = $this->coa($mawa, '4001');
         $expense = $this->coa($mawa, '5001');
 
@@ -211,7 +211,7 @@ class AccountingReconciliationTest extends \Tests\TestCase
         $cashA = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)
             ->where('branch_id', $branchA->id)
-            ->where('code', '1001')
+            ->where('code', '1000')
             ->firstOrFail();
         $revenueA = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)

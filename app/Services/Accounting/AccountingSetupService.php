@@ -65,8 +65,8 @@ class AccountingSetupService
      */
     private function seedPaymentMethods(int $instituteId, ?int $branchId, ?int $createdBy): void
     {
-        $cash = $this->coaService->accountByCode($instituteId, '1001', $branchId);
-        $bank = $this->coaService->accountByCode($instituteId, '1002', $branchId);
+        $cash = $this->coaService->accountByCode($instituteId, '1000', $branchId);
+        $bank = $this->coaService->accountByCode($instituteId, '1100', $branchId);
 
         $methods = [
             ['name' => 'Cash', 'coa_id' => $cash?->id],

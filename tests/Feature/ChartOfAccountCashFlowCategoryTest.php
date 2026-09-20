@@ -174,14 +174,14 @@ class ChartOfAccountCashFlowCategoryTest extends TestCase
 
         $cash = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)
-            ->where('code', '1001')
+            ->where('code', '1000')
             ->firstOrFail();
 
         $this->assertNull($cash->cash_flow_category);
 
         $bank = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)
-            ->where('code', '1002')
+            ->where('code', '1100')
             ->firstOrFail();
 
         $this->assertNull($bank->cash_flow_category);

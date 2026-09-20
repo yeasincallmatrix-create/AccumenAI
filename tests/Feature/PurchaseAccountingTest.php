@@ -299,7 +299,7 @@ class PurchaseAccountingTest extends TestCase
         $this->service()->postSupplierPayment($institute->id, null, $supplier, 3000, null, 'cash', (int) $owner->id);
 
         $this->assertSame(7000.0, round($this->service()->supplierBalance($supplier)['payable'], 4));
-        $this->assertSame(-3000.0, round((float) app(FinancialReportService::class)->cashBankSummary($institute->id, null)->firstWhere('code', '1001')->balance, 4));
+        $this->assertSame(-3000.0, round((float) app(FinancialReportService::class)->cashBankSummary($institute->id, null)->firstWhere('code', '1000')->balance, 4));
     }
 
     public function test_full_supplier_payment_zeroes_ap(): void
@@ -313,7 +313,7 @@ class PurchaseAccountingTest extends TestCase
         $this->service()->postSupplierPayment($institute->id, null, $supplier, 7777, null, 'bank', (int) $owner->id);
 
         $this->assertSame(0.0, round($this->service()->supplierBalance($supplier)['payable'], 4));
-        $this->assertSame(-7777.0, round((float) app(FinancialReportService::class)->cashBankSummary($institute->id, null)->firstWhere('code', '1002')->balance, 4));
+        $this->assertSame(-7777.0, round((float) app(FinancialReportService::class)->cashBankSummary($institute->id, null)->firstWhere('code', '1100')->balance, 4));
     }
 
     public function test_overpayment_of_supplier_is_rejected(): void
@@ -351,7 +351,7 @@ class PurchaseAccountingTest extends TestCase
         $this->service()->postPurchase($institute->id, null, $supplier, 900, null, null, null, (int) $owner->id);
         $payment = $this->service()->postSupplierPayment($institute->id, null, $supplier, 900, null, 'cash', (int) $owner->id);
 
-        $cashId = (int) $this->coaId($institute, '1001');
+        $cashId = (int) $this->coaId($institute, '1000');
         $this->assertSame(900.0, round((float) $payment->entries->firstWhere('coa_id', $cashId)->credit, 4));
     }
 
@@ -365,7 +365,7 @@ class PurchaseAccountingTest extends TestCase
         $this->service()->postPurchase($institute->id, null, $supplier, 900, null, null, null, (int) $owner->id);
         $payment = $this->service()->postSupplierPayment($institute->id, null, $supplier, 900, null, 'bank', (int) $owner->id);
 
-        $bankId = (int) $this->coaId($institute, '1002');
+        $bankId = (int) $this->coaId($institute, '1100');
         $this->assertSame(900.0, round((float) $payment->entries->firstWhere('coa_id', $bankId)->credit, 4));
     }
 
@@ -376,7 +376,7 @@ class PurchaseAccountingTest extends TestCase
         $owner = $this->user($institute, 'institute-owner', 'owner');
         $supplier = $this->supplier($institute, (int) $owner->id);
 
-        $cashId = (int) $this->coaId($institute, '1001');
+        $cashId = (int) $this->coaId($institute, '1000');
         $method = PaymentMethod::query()->create([
             'institute_id' => $institute->id,
             'name' => 'Custom Cash Desk',
@@ -665,7 +665,7 @@ class PurchaseAccountingTest extends TestCase
 
         $sheet = app(FinancialReportService::class)->balanceSheet($institute->id, null);
         $this->assertSame(round($sheet['total_assets'], 4), round($sheet['total_liabilities'] + $sheet['total_equity'], 4), 'Assets must equal liabilities plus equity.');
-        $this->assertSame(10000.0, round((float) $sheet['assets']->firstWhere('code', '1001')->balance, 4) * -1);
+        $this->assertSame(10000.0, round((float) $sheet['assets']->firstWhere('code', '1000')->balance, 4) * -1);
     }
 
     // --------------------------------------------------------------- Expenses
@@ -693,7 +693,7 @@ class PurchaseAccountingTest extends TestCase
         $this->assertSame('expense', $journal->ref_type);
 
         $expenseId = (int) $this->coaId($institute, '5001');
-        $cashId = (int) $this->coaId($institute, '1001');
+        $cashId = (int) $this->coaId($institute, '1000');
         $this->assertSame(750.0, round((float) $journal->entries->firstWhere('coa_id', $expenseId)->debit, 4));
         $this->assertSame(750.0, round((float) $journal->entries->firstWhere('coa_id', $cashId)->credit, 4));
 

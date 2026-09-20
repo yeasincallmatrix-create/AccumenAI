@@ -17,7 +17,7 @@ use Illuminate\Validation\ValidationException;
  * Fixed Asset <-> Accounting bridge (STEP 17).
  *
  * Resolves CoA accounts (category override wins, otherwise the TEMPLATE code
- * 1300/1301/5010/4010/5011/5012/4011) and posts every asset journal through
+ * 1500/1301/5010/4010/5011/5012/4011) and posts every asset journal through
  * JournalPostingService so balance, ownership, fiscal-period locking,
  * immutability and duplicate-posting rules apply unchanged. Never hard-code ids.
  */
@@ -33,7 +33,7 @@ class FixedAssetAccountingService
 
     public function assetAccount(FixedAsset $asset, int $instituteId, ?int $branchId): ChartOfAccount
     {
-        return $this->resolveAccount($instituteId, $branchId, $asset->category?->asset_account_id, '1300', 'fixed asset account');
+        return $this->resolveAccount($instituteId, $branchId, $asset->category?->asset_account_id, '1500', 'fixed asset account');
     }
 
     public function accumulatedDepreciationAccount(FixedAsset $asset, int $instituteId, ?int $branchId): ChartOfAccount

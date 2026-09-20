@@ -166,7 +166,7 @@ class InventoryStockEngineTest extends TestCase
         $this->assertSame(10.0, (float) $this->level($warehouse, $item)->quantity);
         $this->assertSame(25.0, (float) $this->level($warehouse, $item)->avg_cost);
 
-        $invDebit = $journal->entries()->where('coa_id', $this->coaId($institute, '1200'))->sum('debit');
+        $invDebit = $journal->entries()->where('coa_id', $this->coaId($institute, '1300'))->sum('debit');
         $apCredit = $journal->entries()->where('coa_id', $this->coaId($institute, '2001'))->sum('credit');
         $this->assertSame(250.0, round((float) $invDebit, 4));
         $this->assertSame(250.0, round((float) $apCredit, 4));
@@ -216,7 +216,7 @@ class InventoryStockEngineTest extends TestCase
         $this->assertSame(6.0, (float) $this->level($warehouse, $item)->quantity);
 
         $cogsDebit = $journal->entries()->where('coa_id', $this->coaId($institute, '5007'))->sum('debit');
-        $invCredit = $journal->entries()->where('coa_id', $this->coaId($institute, '1200'))->sum('credit');
+        $invCredit = $journal->entries()->where('coa_id', $this->coaId($institute, '1300'))->sum('credit');
         $this->assertSame(80.0, round((float) $cogsDebit, 4));
         $this->assertSame(80.0, round((float) $invCredit, 4));
     }

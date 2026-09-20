@@ -113,7 +113,7 @@ class ReceivableAgingTest extends \Tests\TestCase
         (new MembershipService)->assign($owner, $mawa->id, $this->roleId('institute-owner'));
 
         $customer = $this->createCustomer($mawa, 'Student Alpha');
-        $ar = $this->coa($mawa, '1100');
+        $ar = $this->coa($mawa, '1200');
         $revenue = $this->coa($mawa, '4001');
 
         $this->postJournal($mawa, null, '2026-12-01', [
@@ -137,7 +137,7 @@ class ReceivableAgingTest extends \Tests\TestCase
         (new MembershipService)->assign($owner, $mawa->id, $this->roleId('institute-owner'));
 
         $customer = $this->createCustomer($mawa, 'Student Beta');
-        $ar = $this->coa($mawa, '1100');
+        $ar = $this->coa($mawa, '1200');
         $revenue = $this->coa($mawa, '4001');
 
         // Invoice 40 days old
@@ -183,7 +183,7 @@ class ReceivableAgingTest extends \Tests\TestCase
         $ar = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)
             ->where('branch_id', $branchA->id)
-            ->where('code', '1100')
+            ->where('code', '1200')
             ->firstOrFail();
         $revenue = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)
@@ -215,7 +215,7 @@ class ReceivableAgingTest extends \Tests\TestCase
         (new MembershipService)->assign($ownerB, $other->id, $this->roleId('institute-owner'));
 
         $customerA = $this->createCustomer($mawa, 'Student Epsilon');
-        $ar = $this->coa($mawa, '1100');
+        $ar = $this->coa($mawa, '1200');
         $revenue = $this->coa($mawa, '4001');
 
         $this->postJournal($mawa, null, '2026-12-01', [

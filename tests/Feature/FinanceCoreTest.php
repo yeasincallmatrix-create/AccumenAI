@@ -193,7 +193,7 @@ class FinanceCoreTest extends TestCase
         $this->assertSame('posted', $invoice->journal->status);
 
         $arDebit = $invoice->journal->entries()
-            ->where('coa_id', $this->coaId($institute, '1100'))
+            ->where('coa_id', $this->coaId($institute, '1200'))
             ->sum('debit');
         $this->assertSame(150.0, round((float) $arDebit, 4));
     }
@@ -212,7 +212,7 @@ class FinanceCoreTest extends TestCase
         $this->assertSame(120.0, round((float) $invoice->due_amount, 4));
 
         $arDebit = $invoice->journal->entries()
-            ->where('coa_id', $this->coaId($institute, '1100'))
+            ->where('coa_id', $this->coaId($institute, '1200'))
             ->sum('debit');
         $this->assertSame(120.0, round((float) $arDebit, 4));
     }
@@ -366,7 +366,7 @@ class FinanceCoreTest extends TestCase
         $this->setupAccounting($institute);
         $owner = $this->user($institute, 'institute-owner', 'owner');
         $service = new ChartOfAccountService;
-        $cash = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '1001')->firstOrFail();
+        $cash = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '1000')->firstOrFail();
 
         try {
             $service->delete($cash, (int) $owner->id);
@@ -392,7 +392,7 @@ class FinanceCoreTest extends TestCase
             'type' => 'expense',
         ], (int) $owner->id);
 
-        $cash = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '1001')->firstOrFail();
+        $cash = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '1000')->firstOrFail();
 
         app(JournalPostingService::class)->create($this->journalPayload($institute, null, $cash->id, $account->id, 5), (int) $owner->id);
 
@@ -499,8 +499,8 @@ class FinanceCoreTest extends TestCase
 
         $sheet = app(FinancialReportService::class)->balanceSheet($institute->id, null);
 
-        $cash = $sheet['assets']->firstWhere('code', '1001');
-        $ar = $sheet['assets']->firstWhere('code', '1100');
+        $cash = $sheet['assets']->firstWhere('code', '1000');
+        $ar = $sheet['assets']->firstWhere('code', '1200');
 
         $this->assertNotNull($cash, 'Cash account expected on the balance sheet.');
         $this->assertSame(50.0, round((float) $cash->balance, 4));
@@ -547,7 +547,7 @@ class FinanceCoreTest extends TestCase
 
         $summary = app(FinancialReportService::class)->cashBankSummary($institute->id, null);
 
-        $cash = $summary->firstWhere('code', '1001');
+        $cash = $summary->firstWhere('code', '1000');
         $this->assertNotNull($cash);
         $this->assertSame(150.0, round((float) $cash->balance, 4));
     }
@@ -558,7 +558,7 @@ class FinanceCoreTest extends TestCase
         $this->setupAccounting($institute);
         $owner = $this->user($institute, 'institute-owner', 'owner');
 
-        $cash = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '1001')->firstOrFail();
+        $cash = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '1000')->firstOrFail();
         $tuition = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '4001')->firstOrFail();
 
         $journal = app(JournalPostingService::class)->create($this->journalPayload($institute, null, $cash->id, $tuition->id, 100), (int) $owner->id);
@@ -587,7 +587,7 @@ class FinanceCoreTest extends TestCase
         app(AccountingPeriodService::class)->closePeriod($period, $institute->id, (int) $owner->id);
         $this->assertFalse($period->refresh()->isOpen());
 
-        $cash = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '1001')->firstOrFail();
+        $cash = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '1000')->firstOrFail();
         $tuition = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '4001')->firstOrFail();
 
         try {
@@ -610,7 +610,7 @@ class FinanceCoreTest extends TestCase
         $this->setupAccounting($institute);
         $owner = $this->user($institute, 'institute-owner', 'owner');
 
-        $cash = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '1001')->firstOrFail();
+        $cash = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '1000')->firstOrFail();
         $tuition = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '4001')->firstOrFail();
 
         $journal = app(JournalPostingService::class)->create($this->journalPayload($institute, null, $cash->id, $tuition->id, 25), (int) $owner->id);
@@ -693,7 +693,7 @@ class FinanceCoreTest extends TestCase
             ->get(route('finance.journals.create'))
             ->assertOk();
 
-        $cash = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '1001')->firstOrFail();
+        $cash = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '1000')->firstOrFail();
         $tuition = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '4001')->firstOrFail();
 
         $this->actingAs($receptionist, 'institute_user')
@@ -776,7 +776,7 @@ class FinanceCoreTest extends TestCase
         $ownerA = $this->user($a, 'institute-owner', 'owner-a');
         $ownerB = $this->user($b, 'institute-owner', 'owner-b');
 
-        $cash = ChartOfAccount::query()->where('institute_id', $a->id)->where('code', '1001')->firstOrFail();
+        $cash = ChartOfAccount::query()->where('institute_id', $a->id)->where('code', '1000')->firstOrFail();
         $tuition = ChartOfAccount::query()->where('institute_id', $a->id)->where('code', '4001')->firstOrFail();
         $journal = app(JournalPostingService::class)->create($this->journalPayload($a, null, $cash->id, $tuition->id, 10), (int) $ownerA->id);
 
@@ -802,7 +802,7 @@ class FinanceCoreTest extends TestCase
         $managerA = $this->user($institute, 'branch-manager', 'manager-a', $branchA);
         $managerB = $this->user($institute, 'branch-manager', 'manager-b', $branchB);
 
-        $cash = ChartOfAccount::query()->where('institute_id', $institute->id)->where('branch_id', $branchA->id)->where('code', '1001')->firstOrFail();
+        $cash = ChartOfAccount::query()->where('institute_id', $institute->id)->where('branch_id', $branchA->id)->where('code', '1000')->firstOrFail();
         $tuition = ChartOfAccount::query()->where('institute_id', $institute->id)->where('branch_id', $branchA->id)->where('code', '4001')->firstOrFail();
 
         $journal = app(JournalPostingService::class)->create($this->journalPayload($institute, $branchA->id, $cash->id, $tuition->id, 10), (int) $owner->id);

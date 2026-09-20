@@ -106,7 +106,7 @@ class LedgerReconciliationTest extends \Tests\TestCase
         $owner = $this->owner('ledger-dr@example.test');
         (new MembershipService)->assign($owner, $mawa->id, $this->roleId('institute-owner'));
 
-        $cash = $this->coa($mawa, '1001');
+        $cash = $this->coa($mawa, '1000');
         $revenue = $this->coa($mawa, '4001');
 
         $this->postJournal($mawa, null, '2026-10-01', [
@@ -128,7 +128,7 @@ class LedgerReconciliationTest extends \Tests\TestCase
         $owner = $this->owner('ledger-cr@example.test');
         (new MembershipService)->assign($owner, $mawa->id, $this->roleId('institute-owner'));
 
-        $ar = $this->coa($mawa, '1100');
+        $ar = $this->coa($mawa, '1200');
         $revenue = $this->coa($mawa, '4001');
 
         $this->postJournal($mawa, null, '2026-10-01', [
@@ -150,7 +150,7 @@ class LedgerReconciliationTest extends \Tests\TestCase
         $owner = $this->owner('ledger-ob@example.test');
         (new MembershipService)->assign($owner, $mawa->id, $this->roleId('institute-owner'));
 
-        $cash = $this->coa($mawa, '1001');
+        $cash = $this->coa($mawa, '1000');
         $revenue = $this->coa($mawa, '4001');
 
         // Opening balance: DR Cash 10000, CR Revenue 10000
@@ -186,7 +186,7 @@ class LedgerReconciliationTest extends \Tests\TestCase
         $cashA = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)
             ->where('branch_id', $branchA->id)
-            ->where('code', '1001')
+            ->where('code', '1000')
             ->firstOrFail();
         $revenueA = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)
@@ -228,7 +228,7 @@ class LedgerReconciliationTest extends \Tests\TestCase
         (new MembershipService)->assign($ownerMawa, $mawa->id, $this->roleId('institute-owner'));
         (new MembershipService)->assign($ownerOther, $other->id, $this->roleId('institute-owner'));
 
-        $cash = $this->coa($mawa, '1001');
+        $cash = $this->coa($mawa, '1000');
         $revenue = $this->coa($mawa, '4001');
 
         // Transaction in Tenant A
@@ -247,7 +247,7 @@ class LedgerReconciliationTest extends \Tests\TestCase
         // Verify Tenant B does NOT see Tenant A's transactions
         $reports = app(AccountingReportService::class);
         $tbB = $reports->trialBalance($other->id, null, '2026-10-31');
-        $cashRowB = $tbB->firstWhere('code', '1001');
+        $cashRowB = $tbB->firstWhere('code', '1000');
         if ($cashRowB !== null) {
             $this->assertEqualsWithDelta(0.0, (float) $cashRowB->debit, 0.001);
         }

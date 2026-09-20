@@ -195,7 +195,7 @@ class AccountingPeriodClosingTest extends TestCase
             'type' => 'journal',
             'currency_id' => $this->currencyId(),
             'entries' => [
-                ['coa_id' => $this->coaId((int) $institute->id, $branchId, '1001'), 'debit' => $amount, 'credit' => 0],
+                ['coa_id' => $this->coaId((int) $institute->id, $branchId, '1000'), 'debit' => $amount, 'credit' => 0],
                 ['coa_id' => $this->coaId((int) $institute->id, $branchId, '4001'), 'debit' => 0, 'credit' => $amount],
             ],
         ]);
@@ -211,7 +211,7 @@ class AccountingPeriodClosingTest extends TestCase
             'currency_id' => $this->currencyId(),
             'entries' => [
                 ['coa_id' => $this->coaId((int) $institute->id, $branchId, '5006'), 'debit' => $amount, 'credit' => 0],
-                ['coa_id' => $this->coaId((int) $institute->id, $branchId, '1001'), 'debit' => 0, 'credit' => $amount],
+                ['coa_id' => $this->coaId((int) $institute->id, $branchId, '1000'), 'debit' => 0, 'credit' => $amount],
             ],
         ]);
     }
@@ -289,7 +289,7 @@ class AccountingPeriodClosingTest extends TestCase
             'type' => 'journal',
             'currency_id' => $this->currencyId(),
             'entries' => [
-                ['coa_id' => $this->coaId((int) $mawa->id, null, '1001'), 'debit' => 10, 'credit' => 0],
+                ['coa_id' => $this->coaId((int) $mawa->id, null, '1000'), 'debit' => 10, 'credit' => 0],
                 ['coa_id' => $this->coaId((int) $mawa->id, null, '4001'), 'debit' => 0, 'credit' => 10],
             ],
         ], null, false);
@@ -314,7 +314,7 @@ class AccountingPeriodClosingTest extends TestCase
             'type' => 'journal',
             'currency_id' => $this->currencyId(),
             'entries' => [
-                ['coa_id' => $this->coaId((int) $mawa->id, null, '1001'), 'debit' => 100, 'credit' => 0],
+                ['coa_id' => $this->coaId((int) $mawa->id, null, '1000'), 'debit' => 100, 'credit' => 0],
                 ['coa_id' => $this->coaId((int) $mawa->id, null, '4001'), 'debit' => 0, 'credit' => 100],
             ],
         ]));
@@ -332,7 +332,7 @@ class AccountingPeriodClosingTest extends TestCase
             'type' => 'journal',
             'currency_id' => $this->currencyId(),
             'entries' => [
-                ['coa_id' => $this->coaId((int) $mawa->id, null, '1001'), 'debit' => 10, 'credit' => 0],
+                ['coa_id' => $this->coaId((int) $mawa->id, null, '1000'), 'debit' => 10, 'credit' => 0],
                 ['coa_id' => $this->coaId((int) $mawa->id, null, '4001'), 'debit' => 0, 'credit' => 10],
             ],
         ], null, false);
@@ -431,7 +431,7 @@ class AccountingPeriodClosingTest extends TestCase
         $income = $this->tbRow($year, $mawa, '4001');
         $expense = $this->tbRow($year, $mawa, '5006');
         $retained = $this->tbRow($year, $mawa, '3002');
-        $cash = $this->tbRow($year, $mawa, '1001');
+        $cash = $this->tbRow($year, $mawa, '1000');
 
         $this->assertEqualsWithDelta(0.0, $income->balance, 0.0001);
         $this->assertEqualsWithDelta(0.0, $expense->balance, 0.0001);
@@ -470,7 +470,7 @@ class AccountingPeriodClosingTest extends TestCase
             ->where('institute_id', $mawa->id)
             ->where('branch_id', null)
             ->where('fiscal_year_id', $nextYear->id)
-            ->where('coa_id', $this->coaId((int) $mawa->id, null, '1001'))
+            ->where('coa_id', $this->coaId((int) $mawa->id, null, '1000'))
             ->first();
         $reOpen = OpeningBalance::query()
             ->where('institute_id', $mawa->id)

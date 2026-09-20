@@ -240,9 +240,9 @@ class HrPayrollFinanceService
             return (int) $coa->id;
         }
 
-        // Fallback to cash 1001 or bank 1002 via ensure
+        // Fallback to cash 1000 or bank 1100 via ensure
         try {
-            $cash = $this->accountByCode($instituteId, $branchId, '1001', 'Cash in Hand', 'asset');
+            $cash = $this->accountByCode($instituteId, $branchId, '1000', 'Cash', 'asset');
 
             return (int) $cash->id;
         } catch (\Throwable $e) {

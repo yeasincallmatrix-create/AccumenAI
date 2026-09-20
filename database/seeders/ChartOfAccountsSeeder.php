@@ -32,7 +32,7 @@ class ChartOfAccountsSeeder extends Seeder
             return;
         }
 
-        $this->account('1001', 'Cash in Hand', 'asset', ['is_cash' => true]);
+        $this->account('1000', 'Cash', 'asset', ['is_cash' => true]);
         $this->account('4001', 'Tuition Income', 'income');
     }
 

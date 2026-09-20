@@ -33,7 +33,7 @@ class PaymentMethodSeeder extends Seeder
         (new ChartOfAccountsSeeder($this->instituteId, $this->branchId))->run();
 
         $cashCoaId = ChartOfAccount::where('institute_id', $this->instituteId)
-            ->where('code', '1001')
+            ->where('code', '1000')
             ->value('id');
 
         foreach ([

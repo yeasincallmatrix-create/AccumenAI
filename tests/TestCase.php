@@ -387,7 +387,7 @@ abstract class TestCase extends BaseTestCase
 
     /**
      * OPT-IN: seed a minimal chart of accounts for one institute.
-     * Creates the codes AccountingIntegrationTest looks up (1001 cash,
+     * Creates the codes AccountingIntegrationTest looks up (1000 cash,
      * 4001 tuition income). No-op when $instituteId is null.
      */
     protected function seedChartOfAccounts(?int $instituteId = null, ?int $branchId = null): void
@@ -401,7 +401,7 @@ abstract class TestCase extends BaseTestCase
         }
 
         $defaults = [
-            ['code' => '1001', 'name' => 'Cash in Hand', 'type' => 'asset', 'is_cash' => true],
+            ['code' => '1000', 'name' => 'Cash', 'type' => 'asset', 'is_cash' => true],
             ['code' => '4001', 'name' => 'Tuition Income', 'type' => 'income'],
         ];
 

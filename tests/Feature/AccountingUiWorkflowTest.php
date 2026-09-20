@@ -227,7 +227,7 @@ class AccountingUiWorkflowTest extends TestCase
             'journal_date' => now()->toDateString(),
             'type' => 'journal',
             'currency_id' => $this->currencyId(),
-            'entries' => $this->balancedEntries($mawa, $this->coaId((int) $mawa->id, (int) $branchA->id, '1001'), $this->coaId((int) $mawa->id, (int) $branchA->id, '4001'), 10),
+            'entries' => $this->balancedEntries($mawa, $this->coaId((int) $mawa->id, (int) $branchA->id, '1000'), $this->coaId((int) $mawa->id, (int) $branchA->id, '4001'), 10),
         ]);
         $this->posting()->create([
             'institute_id' => $mawa->id,
@@ -235,7 +235,7 @@ class AccountingUiWorkflowTest extends TestCase
             'journal_date' => now()->toDateString(),
             'type' => 'journal',
             'currency_id' => $this->currencyId(),
-            'entries' => $this->balancedEntries($mawa, $this->coaId((int) $mawa->id, (int) $branchB->id, '1001'), $this->coaId((int) $mawa->id, (int) $branchB->id, '4001'), 20),
+            'entries' => $this->balancedEntries($mawa, $this->coaId((int) $mawa->id, (int) $branchB->id, '1000'), $this->coaId((int) $mawa->id, (int) $branchB->id, '4001'), 20),
         ]);
 
         $manager = $this->staff('step9-jlist@example.test');
@@ -272,7 +272,7 @@ class AccountingUiWorkflowTest extends TestCase
         $owner = $this->owner('step9-junbal@example.test');
         $this->assign($owner, $mawa, 'institute-owner');
 
-        $cash = $this->coaId((int) $mawa->id, null, '1001');
+        $cash = $this->coaId((int) $mawa->id, null, '1000');
         $income = $this->coaId((int) $mawa->id, null, '4001');
 
         $this->asUser($owner, (int) $mawa->id)
@@ -298,7 +298,7 @@ class AccountingUiWorkflowTest extends TestCase
         $owner = $this->owner('step9-jvalid@example.test');
         $this->assign($owner, $mawa, 'institute-owner');
 
-        $cash = $this->coaId((int) $mawa->id, null, '1001');
+        $cash = $this->coaId((int) $mawa->id, null, '1000');
         $income = $this->coaId((int) $mawa->id, null, '4001');
 
         $this->asUser($owner, (int) $mawa->id)
@@ -334,7 +334,7 @@ class AccountingUiWorkflowTest extends TestCase
         $owner = $this->owner('step9-jforeigncoa@example.test');
         $this->assign($owner, $mawa, 'institute-owner');
 
-        $cashM = $this->coaId((int) $mawa->id, null, '1001');
+        $cashM = $this->coaId((int) $mawa->id, null, '1000');
         $incomeT = $this->coaId((int) $tutu->id, (int) $tb->id, '4001');
 
         $this->asUser($owner, (int) $mawa->id)
@@ -360,7 +360,7 @@ class AccountingUiWorkflowTest extends TestCase
         $owner = $this->owner('step9-jforeignparty@example.test');
         $this->assign($owner, $mawa, 'institute-owner');
 
-        $ar = $this->coaId((int) $mawa->id, null, '1100');
+        $ar = $this->coaId((int) $mawa->id, null, '1200');
         $income = $this->coaId((int) $mawa->id, null, '4001');
 
         $foreign = app(PartyService::class)->create($tutu->id, (int) $tb->id, [
@@ -405,7 +405,7 @@ class AccountingUiWorkflowTest extends TestCase
             'journal_date' => now()->toDateString(),
             'type' => 'journal',
             'currency_id' => $this->currencyId(),
-            'entries' => $this->balancedEntries($mawa, $this->coaId((int) $mawa->id, (int) $mb->id, '1001'), $this->coaId((int) $mawa->id, (int) $mb->id, '4001'), 10),
+            'entries' => $this->balancedEntries($mawa, $this->coaId((int) $mawa->id, (int) $mb->id, '1000'), $this->coaId((int) $mawa->id, (int) $mb->id, '4001'), 10),
         ]));
     }
 
@@ -421,7 +421,7 @@ class AccountingUiWorkflowTest extends TestCase
             'journal_date' => now()->toDateString(),
             'type' => 'journal',
             'currency_id' => $this->currencyId(),
-            'entries' => $this->balancedEntries($mawa, $this->coaId((int) $mawa->id, (int) $mb->id, '1001'), $this->coaId((int) $mawa->id, (int) $mb->id, '4001'), 10),
+            'entries' => $this->balancedEntries($mawa, $this->coaId((int) $mawa->id, (int) $mb->id, '1000'), $this->coaId((int) $mawa->id, (int) $mb->id, '4001'), 10),
         ]);
 
         $owner = $this->owner('step9-jreverse@example.test');
@@ -446,7 +446,7 @@ class AccountingUiWorkflowTest extends TestCase
             'journal_date' => now()->toDateString(),
             'type' => 'journal',
             'currency_id' => $this->currencyId(),
-            'entries' => $this->balancedEntries($mawa, $this->coaId((int) $mawa->id, (int) $mb->id, '1001'), $this->coaId((int) $mawa->id, (int) $mb->id, '4001'), 10),
+            'entries' => $this->balancedEntries($mawa, $this->coaId((int) $mawa->id, (int) $mb->id, '1000'), $this->coaId((int) $mawa->id, (int) $mb->id, '4001'), 10),
         ], null, false);
 
         $owner = $this->owner('step9-jvoid@example.test');
@@ -492,7 +492,7 @@ class AccountingUiWorkflowTest extends TestCase
                 'type' => 'sale',
                 'currency_id' => $this->currencyId(),
                 'entries' => [
-                    ['coa_id' => $this->coaId((int) $institute->id, (int) $branch->id, '1100'), 'debit' => 500, 'credit' => 0, 'party_id' => $customer->id],
+                    ['coa_id' => $this->coaId((int) $institute->id, (int) $branch->id, '1200'), 'debit' => 500, 'credit' => 0, 'party_id' => $customer->id],
                     ['coa_id' => $this->coaId((int) $institute->id, (int) $branch->id, '4001'), 'debit' => 0, 'credit' => 500],
                 ],
             ]);
@@ -521,7 +521,7 @@ class AccountingUiWorkflowTest extends TestCase
             'journal_date' => now()->toDateString(),
             'type' => 'journal',
             'currency_id' => $this->currencyId(),
-            'entries' => $this->balancedEntries($mawa, $this->coaId((int) $mawa->id, (int) $mb->id, '1001'), $this->coaId((int) $mawa->id, (int) $mb->id, '4001'), 250),
+            'entries' => $this->balancedEntries($mawa, $this->coaId((int) $mawa->id, (int) $mb->id, '1000'), $this->coaId((int) $mawa->id, (int) $mb->id, '4001'), 250),
         ]);
 
         $owner = $this->owner('step9-tb@example.test');
@@ -547,7 +547,7 @@ class AccountingUiWorkflowTest extends TestCase
             'journal_date' => now()->toDateString(),
             'type' => 'journal',
             'currency_id' => $this->currencyId(),
-            'entries' => $this->balancedEntries($mawa, $this->coaId((int) $mawa->id, (int) $mb->id, '1001'), $this->coaId((int) $mawa->id, (int) $mb->id, '4001'), 10),
+            'entries' => $this->balancedEntries($mawa, $this->coaId((int) $mawa->id, (int) $mb->id, '1000'), $this->coaId((int) $mawa->id, (int) $mb->id, '4001'), 10),
         ]);
 
         $this->assertGreaterThan(0, AccountingAuditTrail::withoutGlobalScopes()
@@ -658,7 +658,7 @@ class AccountingUiWorkflowTest extends TestCase
             ->assertOk();
 
         $year = FiscalYear::query()->where('institute_id', $mawa->id)->whereNull('branch_id')->firstOrFail();
-        $cash = $this->coaId((int) $mawa->id, null, '1001');
+        $cash = $this->coaId((int) $mawa->id, null, '1000');
         $equity = $this->coaId((int) $mawa->id, null, '3001');
 
         $this->asUser($owner, (int) $mawa->id)
@@ -690,7 +690,7 @@ class AccountingUiWorkflowTest extends TestCase
         $this->assign($owner, $mawa, 'institute-owner');
 
         $year = FiscalYear::query()->where('institute_id', $mawa->id)->whereNull('branch_id')->firstOrFail();
-        $cash = $this->coaId((int) $mawa->id, null, '1001');
+        $cash = $this->coaId((int) $mawa->id, null, '1000');
         $equity = $this->coaId((int) $mawa->id, null, '3001');
 
         $this->asUser($owner, (int) $mawa->id)
@@ -726,7 +726,7 @@ class AccountingUiWorkflowTest extends TestCase
             'journal_date' => now()->toDateString(),
             'type' => 'journal',
             'currency_id' => $this->currencyId(),
-            'entries' => $this->balancedEntries($mawa, $this->coaId((int) $mawa->id, (int) $mb->id, '1001'), $this->coaId((int) $mawa->id, (int) $mb->id, '4001'), 30),
+            'entries' => $this->balancedEntries($mawa, $this->coaId((int) $mawa->id, (int) $mb->id, '1000'), $this->coaId((int) $mawa->id, (int) $mb->id, '4001'), 30),
         ]);
 
         $owner = $this->owner('step9-ws@example.test');

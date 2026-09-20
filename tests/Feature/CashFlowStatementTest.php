@@ -118,7 +118,7 @@ class CashFlowStatementTest extends \Tests\TestCase
         $owner = $this->owner('cf-op-in@example.test');
         (new MembershipService)->assign($owner, $mawa->id, $this->roleId('institute-owner'));
 
-        $cash = $this->coa($mawa, '1001');
+        $cash = $this->coa($mawa, '1000');
         $revenue = $this->coa($mawa, '4001');
 
         // Tag revenue as operating
@@ -145,7 +145,7 @@ class CashFlowStatementTest extends \Tests\TestCase
         $owner = $this->owner('cf-op-out@example.test');
         (new MembershipService)->assign($owner, $mawa->id, $this->roleId('institute-owner'));
 
-        $cash = $this->coa($mawa, '1001');
+        $cash = $this->coa($mawa, '1000');
         $expense = $this->coa($mawa, '5001');
 
         ChartOfAccount::withoutGlobalScopes()->where('id', $expense->id)->update(['cash_flow_category' => 'operating']);
@@ -172,8 +172,8 @@ class CashFlowStatementTest extends \Tests\TestCase
         $owner = $this->owner('cf-inv-out@example.test');
         (new MembershipService)->assign($owner, $mawa->id, $this->roleId('institute-owner'));
 
-        $cash = $this->coa($mawa, '1001');
-        $fixedAssets = $this->coa($mawa, '1300');
+        $cash = $this->coa($mawa, '1000');
+        $fixedAssets = $this->coa($mawa, '1500');
 
         ChartOfAccount::withoutGlobalScopes()->where('id', $fixedAssets->id)->update(['cash_flow_category' => 'investing']);
 
@@ -198,7 +198,7 @@ class CashFlowStatementTest extends \Tests\TestCase
         $owner = $this->owner('cf-fin-in@example.test');
         (new MembershipService)->assign($owner, $mawa->id, $this->roleId('institute-owner'));
 
-        $cash = $this->coa($mawa, '1001');
+        $cash = $this->coa($mawa, '1000');
         $loan = $this->coa($mawa, '2003');
 
         ChartOfAccount::withoutGlobalScopes()->where('id', $loan->id)->update(['cash_flow_category' => 'financing']);
@@ -224,7 +224,7 @@ class CashFlowStatementTest extends \Tests\TestCase
         $owner = $this->owner('cf-fin-out@example.test');
         (new MembershipService)->assign($owner, $mawa->id, $this->roleId('institute-owner'));
 
-        $cash = $this->coa($mawa, '1001');
+        $cash = $this->coa($mawa, '1000');
         $loan = $this->coa($mawa, '2003');
 
         ChartOfAccount::withoutGlobalScopes()->where('id', $loan->id)->update(['cash_flow_category' => 'financing']);
@@ -250,10 +250,10 @@ class CashFlowStatementTest extends \Tests\TestCase
         $owner = $this->owner('cf-mixed@example.test');
         (new MembershipService)->assign($owner, $mawa->id, $this->roleId('institute-owner'));
 
-        $cash = $this->coa($mawa, '1001');
+        $cash = $this->coa($mawa, '1000');
         $revenue = $this->coa($mawa, '4001');
         $expense = $this->coa($mawa, '5001');
-        $fixedAssets = $this->coa($mawa, '1300');
+        $fixedAssets = $this->coa($mawa, '1500');
         $loan = $this->coa($mawa, '2003');
 
         ChartOfAccount::withoutGlobalScopes()->where('id', $revenue->id)->update(['cash_flow_category' => 'operating']);
@@ -301,7 +301,7 @@ class CashFlowStatementTest extends \Tests\TestCase
         $owner = $this->owner('cf-net@example.test');
         (new MembershipService)->assign($owner, $mawa->id, $this->roleId('institute-owner'));
 
-        $cash = $this->coa($mawa, '1001');
+        $cash = $this->coa($mawa, '1000');
         $revenue = $this->coa($mawa, '4001');
 
         ChartOfAccount::withoutGlobalScopes()->where('id', $revenue->id)->update(['cash_flow_category' => 'operating']);
@@ -327,7 +327,7 @@ class CashFlowStatementTest extends \Tests\TestCase
         $owner = $this->owner('cf-date@example.test');
         (new MembershipService)->assign($owner, $mawa->id, $this->roleId('institute-owner'));
 
-        $cash = $this->coa($mawa, '1001');
+        $cash = $this->coa($mawa, '1000');
         $revenue = $this->coa($mawa, '4001');
 
         ChartOfAccount::withoutGlobalScopes()->where('id', $revenue->id)->update(['cash_flow_category' => 'operating']);
@@ -363,7 +363,7 @@ class CashFlowStatementTest extends \Tests\TestCase
         $cash = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)
             ->where('branch_id', $branch->id)
-            ->where('code', '1001')
+            ->where('code', '1000')
             ->firstOrFail();
         $revenue = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)

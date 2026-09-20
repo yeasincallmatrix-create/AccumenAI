@@ -450,7 +450,7 @@ class AccountingMultiCurrencyTest extends TestCase
         $owner = $this->owner('step19-rev-post@example.test');
         $this->assign($owner, $mawa, 'institute-owner');
 
-        $arId = $this->coaId((int) $mawa->id, null, '1100');
+        $arId = $this->coaId((int) $mawa->id, null, '1200');
         $incomeId = $this->coaId((int) $mawa->id, null, '4001');
 
         $customer = app(\App\Services\Accounting\PartyService::class)->create($mawa->id, null, [
@@ -516,7 +516,7 @@ class AccountingMultiCurrencyTest extends TestCase
         $owner = $this->owner('step19-rev-idemp@example.test');
         $this->assign($owner, $mawa, 'institute-owner');
 
-        $arId = $this->coaId((int) $mawa->id, null, '1100');
+        $arId = $this->coaId((int) $mawa->id, null, '1200');
         $incomeId = $this->coaId((int) $mawa->id, null, '4001');
 
         $customer = app(\App\Services\Accounting\PartyService::class)->create($mawa->id, null, [
@@ -586,7 +586,7 @@ class AccountingMultiCurrencyTest extends TestCase
             'rate_date' => now()->toDateString(),
         ]);
 
-        $arId = $this->coaId((int) $mawa->id, (int) $mb->id, '1100');
+        $arId = $this->coaId((int) $mawa->id, (int) $mb->id, '1200');
         $incomeId = $this->coaId((int) $mawa->id, (int) $mb->id, '4001');
 
         $customer = app(\App\Services\Accounting\PartyService::class)->create($mawa->id, (int) $mb->id, [
@@ -687,7 +687,7 @@ class AccountingMultiCurrencyTest extends TestCase
             'phone' => '0193'.rand(100000, 999999),
         ]);
 
-        $arId = $this->coaId((int) $mawa->id, null, '1100');
+        $arId = $this->coaId((int) $mawa->id, null, '1200');
         $incomeId = $this->coaId((int) $mawa->id, null, '4001');
 
         $j1 = $this->posting()->create([
@@ -762,7 +762,7 @@ class AccountingMultiCurrencyTest extends TestCase
             'phone' => '0191'.rand(100000, 999999),
         ]);
 
-        $arId = $this->coaId((int) $mawa->id, null, '1100');
+        $arId = $this->coaId((int) $mawa->id, null, '1200');
         $apId = $this->coaId((int) $mawa->id, null, '2001');
         $incomeId = $this->coaId((int) $mawa->id, null, '4001');
         $expenseId = $this->coaId((int) $mawa->id, null, '5006');
@@ -867,7 +867,7 @@ class AccountingMultiCurrencyTest extends TestCase
             'phone' => '0190'.rand(100000, 999999),
         ]);
 
-        $arId = $this->coaId((int) $mawa->id, null, '1100');
+        $arId = $this->coaId((int) $mawa->id, null, '1200');
         $incomeId = $this->coaId((int) $mawa->id, null, '4001');
 
         $journal = $this->posting()->create([
@@ -924,7 +924,7 @@ class AccountingMultiCurrencyTest extends TestCase
             'type' => 'journal',
             'currency_id' => $usdId,
             'entries' => [
-                ['coa_id' => $this->coaId((int) $mawa->id, null, '1001'), 'debit' => 2000, 'credit' => 0, 'party_id' => $customer->id],
+                ['coa_id' => $this->coaId((int) $mawa->id, null, '1000'), 'debit' => 2000, 'credit' => 0, 'party_id' => $customer->id],
                 ['coa_id' => $gainAccount->id, 'debit' => 0, 'credit' => 2000],
             ],
         ]);
@@ -1097,7 +1097,7 @@ class AccountingMultiCurrencyTest extends TestCase
         $owner = $this->owner('step19-route-rev-reverse@example.test');
         $this->assign($owner, $mawa, 'institute-owner');
 
-        $arId = $this->coaId((int) $mawa->id, null, '1100');
+        $arId = $this->coaId((int) $mawa->id, null, '1200');
         $incomeId = $this->coaId((int) $mawa->id, null, '4001');
 
         $customer = app(\App\Services\Accounting\PartyService::class)->create($mawa->id, null, [

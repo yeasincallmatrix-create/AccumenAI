@@ -118,7 +118,7 @@ class AccountingReconciliationService
 
     public function inventoryValuation(int $instituteId, ?int $branchId, ?string $asOfDate = null): array
     {
-        $glTotal = $this->glBalanceForCode($instituteId, $branchId, '1200', $asOfDate);
+        $glTotal = $this->glBalanceForCode($instituteId, $branchId, '1300', $asOfDate);
 
         $subledgerTotal = 0.0;
         try {

@@ -416,7 +416,7 @@ class FxRevaluationService
 
     private function receivableAccount(int $instituteId, ?int $branchId): ChartOfAccount
     {
-        $account = app(ChartOfAccountService::class)->accountByCode($instituteId, '1100', $branchId)
+        $account = app(ChartOfAccountService::class)->accountByCode($instituteId, '1200', $branchId)
             ?? ChartOfAccount::query()
                 ->where('institute_id', $instituteId)
                 ->where(fn ($query) => $query

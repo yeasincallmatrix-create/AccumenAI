@@ -105,7 +105,7 @@ class BankReconciliationTest extends \Tests\TestCase
         $owner = $this->owner('bank-ref@example.test');
         (new MembershipService)->assign($owner, $mawa->id, $this->roleId('institute-owner'));
 
-        $bank = $this->coa($mawa, '1002');
+        $bank = $this->coa($mawa, '1100');
         $revenue = $this->coa($mawa, '4001');
 
         $journal = $this->postJournal($mawa, null, '2026-11-01', [
@@ -150,7 +150,7 @@ class BankReconciliationTest extends \Tests\TestCase
         $owner = $this->owner('bank-amt@example.test');
         (new MembershipService)->assign($owner, $mawa->id, $this->roleId('institute-owner'));
 
-        $bank = $this->coa($mawa, '1002');
+        $bank = $this->coa($mawa, '1100');
         $revenue = $this->coa($mawa, '4001');
 
         $journal = $this->postJournal($mawa, null, '2026-11-01', [
@@ -189,7 +189,7 @@ class BankReconciliationTest extends \Tests\TestCase
         $owner = $this->owner('bank-unmatch@example.test');
         (new MembershipService)->assign($owner, $mawa->id, $this->roleId('institute-owner'));
 
-        $bank = $this->coa($mawa, '1002');
+        $bank = $this->coa($mawa, '1100');
 
         $statement = BankStatement::create([
             'institute_id' => $mawa->id,
@@ -223,7 +223,7 @@ class BankReconciliationTest extends \Tests\TestCase
         $owner = $this->owner('bank-sum@example.test');
         (new MembershipService)->assign($owner, $mawa->id, $this->roleId('institute-owner'));
 
-        $bank = $this->coa($mawa, '1002');
+        $bank = $this->coa($mawa, '1100');
         $revenue = $this->coa($mawa, '4001');
 
         $journal = $this->postJournal($mawa, null, '2026-11-01', [
@@ -281,7 +281,7 @@ class BankReconciliationTest extends \Tests\TestCase
         $bankA = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)
             ->where('branch_id', $branchA->id)
-            ->where('code', '1002')
+            ->where('code', '1100')
             ->firstOrFail();
         $revenueA = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)
@@ -320,7 +320,7 @@ class BankReconciliationTest extends \Tests\TestCase
         $bankB = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)
             ->where('branch_id', $branchB->id)
-            ->where('code', '1002')
+            ->where('code', '1100')
             ->firstOrFail();
 
         $stmtB = BankStatement::create([
@@ -358,7 +358,7 @@ class BankReconciliationTest extends \Tests\TestCase
         (new MembershipService)->assign($ownerA, $mawa->id, $this->roleId('institute-owner'));
         (new MembershipService)->assign($ownerB, $other->id, $this->roleId('institute-owner'));
 
-        $bank = $this->coa($mawa, '1002');
+        $bank = $this->coa($mawa, '1100');
         $revenue = $this->coa($mawa, '4001');
 
         $journal = $this->postJournal($mawa, null, '2026-11-01', [
@@ -385,7 +385,7 @@ class BankReconciliationTest extends \Tests\TestCase
         ]);
 
         // Tenant B statement with same reference should NOT match Tenant A journal
-        $bankB = $this->coa($other, '1002');
+        $bankB = $this->coa($other, '1100');
         $stmtB = BankStatement::create([
             'institute_id' => $other->id,
             'bank_account_id' => $bankB->id,

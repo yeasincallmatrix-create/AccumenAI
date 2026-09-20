@@ -153,7 +153,7 @@ class InventoryAccountingTest extends TestCase
             options: ['paid_immediately' => true, 'payment_method' => 'cash'],
         );
 
-        $cashCredit = $journal->entries()->where('coa_id', $this->coaId($institute, '1001'))->sum('credit');
+        $cashCredit = $journal->entries()->where('coa_id', $this->coaId($institute, '1000'))->sum('credit');
         $apCredit = $journal->entries()->where('coa_id', $this->coaId($institute, '2001'))->sum('credit');
         $this->assertSame(200.0, round((float) $cashCredit, 4));
         $this->assertSame(0.0, round((float) $apCredit, 4));
@@ -165,7 +165,7 @@ class InventoryAccountingTest extends TestCase
         $this->setupAccounting($institute);
         $customInventory = ChartOfAccount::query()
             ->where('institute_id', $institute->id)
-            ->where('code', '1200')
+            ->where('code', '1300')
             ->firstOrFail();
 
         $category = app(InventoryItemService::class)->createCategory($institute->id, null, [
@@ -204,11 +204,11 @@ class InventoryAccountingTest extends TestCase
         ]);
 
         $rows = app(FinancialReportService::class)->trialBalance($institute->id, null);
-        $this->assertSame(120.0, round((float) $rows->firstWhere('code', '1200')->balance, 4));
+        $this->assertSame(120.0, round((float) $rows->firstWhere('code', '1300')->balance, 4));
         $this->assertSame(80.0, round((float) $rows->firstWhere('code', '5007')->balance, 4));
 
         $sheet = app(FinancialReportService::class)->balanceSheet($institute->id, null);
-        $this->assertSame(120.0, round((float) $sheet['assets']->firstWhere('code', '1200')->balance, 4));
+        $this->assertSame(120.0, round((float) $sheet['assets']->firstWhere('code', '1300')->balance, 4));
     }
 
     // ------------------------------------------------------------ Invoice hook

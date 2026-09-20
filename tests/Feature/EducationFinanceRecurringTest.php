@@ -125,7 +125,7 @@ class EducationFinanceRecurringTest extends TestCase
         );
 
         ChartOfAccount::firstOrCreate(
-            ['institute_id' => $this->institute->id, 'code' => '1100'],
+            ['institute_id' => $this->institute->id, 'code' => '1200'],
             ['name' => 'Accounts Receivable Recurring', 'type' => 'asset', 'is_active' => true, 'is_receivable' => true, 'account_group_id' => $this->getOrCreateAccountGroup($this->institute->id, 'asset'), 'branch_id' => $this->branch->id]
         );
 

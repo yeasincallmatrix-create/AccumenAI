@@ -231,7 +231,7 @@ class AccountingOwnerStaffTenantSafetyTest extends TestCase
         $accountant = $this->staff('step8-accountant-branch@example.test');
         $this->assign($accountant, $mawa, 'accountant', ['branch_id' => $branchA->id]);
 
-        $cash = $this->coaId((int) $mawa->id, (int) $branchA->id, '1001');
+        $cash = $this->coaId((int) $mawa->id, (int) $branchA->id, '1000');
         $tuition = $this->coaId((int) $mawa->id, (int) $branchA->id, '4001');
 
         $this->asUser($accountant, (int) $mawa->id)
@@ -271,7 +271,7 @@ class AccountingOwnerStaffTenantSafetyTest extends TestCase
         $journal = $this->posting()->create($this->journalPayload(
             $mawa,
             (int) $mb->id,
-            $this->coaId((int) $mawa->id, (int) $mb->id, '1001'),
+            $this->coaId((int) $mawa->id, (int) $mb->id, '1000'),
             $this->coaId((int) $mawa->id, (int) $mb->id, '4001'),
             10
         ));
@@ -298,7 +298,7 @@ class AccountingOwnerStaffTenantSafetyTest extends TestCase
         $journal = $this->posting()->create($this->journalPayload(
             $tutu,
             (int) $tb->id,
-            $this->coaId((int) $tutu->id, (int) $tb->id, '1001'),
+            $this->coaId((int) $tutu->id, (int) $tb->id, '1000'),
             $this->coaId((int) $tutu->id, (int) $tb->id, '4001'),
             10
         ));
@@ -327,7 +327,7 @@ class AccountingOwnerStaffTenantSafetyTest extends TestCase
         $this->setupAccounting($mawa, (int) $mb->id);
         $this->setupAccounting($tutu, (int) $tb->id);
 
-        $cashM = $this->coaId((int) $mawa->id, (int) $mb->id, '1001');
+        $cashM = $this->coaId((int) $mawa->id, (int) $mb->id, '1000');
         $tuitionT = $this->coaId((int) $tutu->id, (int) $tb->id, '4001');
 
         $this->assertRejected(ValidationException::class, fn () => $this->posting()->create([
@@ -352,7 +352,7 @@ class AccountingOwnerStaffTenantSafetyTest extends TestCase
         $this->setupAccounting($mawa, (int) $mb->id);
         $this->setupAccounting($tutu, (int) $tb->id);
 
-        $arM = $this->coaId((int) $mawa->id, (int) $mb->id, '1100');
+        $arM = $this->coaId((int) $mawa->id, (int) $mb->id, '1200');
         $tuitionM = $this->coaId((int) $mawa->id, (int) $mb->id, '4001');
 
         $partyT = app(PartyService::class)->create($tutu->id, (int) $tb->id, [
@@ -434,7 +434,7 @@ class AccountingOwnerStaffTenantSafetyTest extends TestCase
         $this->setupAccounting($mawa, (int) $mb2->id);
         $this->setupAccounting($tutu, (int) $tb->id);
 
-        $cashM = $this->coaId((int) $mawa->id, (int) $mb->id, '1001');
+        $cashM = $this->coaId((int) $mawa->id, (int) $mb->id, '1000');
         $tuitionM = $this->coaId((int) $mawa->id, (int) $mb->id, '4001');
 
         foreach ([$mb, $mb2, $tb] as $branchRef) {
@@ -473,7 +473,7 @@ class AccountingOwnerStaffTenantSafetyTest extends TestCase
         $this->setupAccounting($mawa, (int) $mb->id);
         $this->setupAccounting($tutu, (int) $tb->id);
 
-        $cashM = $this->coaId((int) $mawa->id, (int) $mb->id, '1001');
+        $cashM = $this->coaId((int) $mawa->id, (int) $mb->id, '1000');
         $tuitionM = $this->coaId((int) $mawa->id, (int) $mb->id, '4001');
 
         // A date outside MAWA's fiscal year is rejected even though Tutu has
@@ -498,7 +498,7 @@ class AccountingOwnerStaffTenantSafetyTest extends TestCase
         $mb = $this->branch($mawa, 'Branch A');
         $this->setupAccounting($mawa, (int) $mb->id);
 
-        $cash = $this->coaId((int) $mawa->id, (int) $mb->id, '1001');
+        $cash = $this->coaId((int) $mawa->id, (int) $mb->id, '1000');
         $tuition = $this->coaId((int) $mawa->id, (int) $mb->id, '4001');
 
         $posted = $this->posting()->create($this->journalPayload($mawa, (int) $mb->id, $cash, $tuition, 10));
@@ -522,7 +522,7 @@ class AccountingOwnerStaffTenantSafetyTest extends TestCase
         $tb = $this->branch($tutu, 'Tutu Branch');
         $this->setupAccounting($mawa, (int) $mb->id);
 
-        $cash = $this->coaId((int) $mawa->id, (int) $mb->id, '1001');
+        $cash = $this->coaId((int) $mawa->id, (int) $mb->id, '1000');
         $tuition = $this->coaId((int) $mawa->id, (int) $mb->id, '4001');
 
         $this->assertRejected(ValidationException::class, fn () => $this->posting()->create([
@@ -546,9 +546,9 @@ class AccountingOwnerStaffTenantSafetyTest extends TestCase
         $this->setupAccounting($mawa, (int) $branchA->id);
         $this->setupAccounting($mawa, (int) $branchB->id);
 
-        $cashA = $this->coaId((int) $mawa->id, (int) $branchA->id, '1001');
+        $cashA = $this->coaId((int) $mawa->id, (int) $branchA->id, '1000');
         $tuitionA = $this->coaId((int) $mawa->id, (int) $branchA->id, '4001');
-        $cashB = $this->coaId((int) $mawa->id, (int) $branchB->id, '1001');
+        $cashB = $this->coaId((int) $mawa->id, (int) $branchB->id, '1000');
         $tuitionB = $this->coaId((int) $mawa->id, (int) $branchB->id, '4001');
 
         $journalA = $this->posting()->create($this->journalPayload($mawa, (int) $branchA->id, $cashA, $tuitionA, 50));
@@ -617,14 +617,14 @@ class AccountingOwnerStaffTenantSafetyTest extends TestCase
         $journalM = $this->posting()->create($this->journalPayload(
             $mawa,
             (int) $mb->id,
-            $this->coaId((int) $mawa->id, (int) $mb->id, '1001'),
+            $this->coaId((int) $mawa->id, (int) $mb->id, '1000'),
             $this->coaId((int) $mawa->id, (int) $mb->id, '4001'),
             10
         ));
         $journalT = $this->posting()->create($this->journalPayload(
             $tutu,
             (int) $tb->id,
-            $this->coaId((int) $tutu->id, (int) $tb->id, '1001'),
+            $this->coaId((int) $tutu->id, (int) $tb->id, '1000'),
             $this->coaId((int) $tutu->id, (int) $tb->id, '4001'),
             20
         ));
@@ -671,7 +671,7 @@ class AccountingOwnerStaffTenantSafetyTest extends TestCase
             'type' => 'sale',
             'currency_id' => $this->currencyId(),
             'entries' => [
-                ['coa_id' => $this->coaId((int) $mawa->id, (int) $mb->id, '1100'), 'debit' => 500, 'credit' => 0, 'party_id' => $customerM->id],
+                ['coa_id' => $this->coaId((int) $mawa->id, (int) $mb->id, '1200'), 'debit' => 500, 'credit' => 0, 'party_id' => $customerM->id],
                 ['coa_id' => $this->coaId((int) $mawa->id, (int) $mb->id, '4001'), 'debit' => 0, 'credit' => 500],
             ],
         ]);
@@ -683,7 +683,7 @@ class AccountingOwnerStaffTenantSafetyTest extends TestCase
             'type' => 'sale',
             'currency_id' => $this->currencyId(),
             'entries' => [
-                ['coa_id' => $this->coaId((int) $tutu->id, (int) $tb->id, '1100'), 'debit' => 250, 'credit' => 0, 'party_id' => $customerT->id],
+                ['coa_id' => $this->coaId((int) $tutu->id, (int) $tb->id, '1200'), 'debit' => 250, 'credit' => 0, 'party_id' => $customerT->id],
                 ['coa_id' => $this->coaId((int) $tutu->id, (int) $tb->id, '4001'), 'debit' => 0, 'credit' => 250],
             ],
         ]);
@@ -712,7 +712,7 @@ class AccountingOwnerStaffTenantSafetyTest extends TestCase
         $journal = $this->posting()->create($this->journalPayload(
             $mawa,
             (int) $mb->id,
-            $this->coaId((int) $mawa->id, (int) $mb->id, '1001'),
+            $this->coaId((int) $mawa->id, (int) $mb->id, '1000'),
             $this->coaId((int) $mawa->id, (int) $mb->id, '4001'),
             10
         ));
@@ -746,7 +746,7 @@ class AccountingOwnerStaffTenantSafetyTest extends TestCase
             'institute_id' => $mawa->id,
             'branch_id' => $mb->id,
             'fiscal_year_id' => $fyM->id,
-            'coa_id' => $this->coaId((int) $mawa->id, (int) $mb->id, '1001'),
+            'coa_id' => $this->coaId((int) $mawa->id, (int) $mb->id, '1000'),
             'debit' => 100,
             'credit' => 0,
         ]);
@@ -754,7 +754,7 @@ class AccountingOwnerStaffTenantSafetyTest extends TestCase
             'institute_id' => $tutu->id,
             'branch_id' => $tb->id,
             'fiscal_year_id' => $fyT->id,
-            'coa_id' => $this->coaId((int) $tutu->id, (int) $tb->id, '1001'),
+            'coa_id' => $this->coaId((int) $tutu->id, (int) $tb->id, '1000'),
             'debit' => 200,
             'credit' => 0,
         ]);

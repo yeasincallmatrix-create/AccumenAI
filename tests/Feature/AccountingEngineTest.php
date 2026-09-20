@@ -110,7 +110,7 @@ class AccountingEngineTest extends TestCase
         $branch = $this->branch($institute);
         $this->setupAccounting($institute, $branch);
 
-        $cash = $this->coaId($institute, '1001');
+        $cash = $this->coaId($institute, '1000');
         $tuition = $this->coaId($institute, '4001');
 
         $journal = $this->posting()->create([
@@ -138,7 +138,7 @@ class AccountingEngineTest extends TestCase
         $branch = $this->branch($institute);
         $this->setupAccounting($institute, $branch);
 
-        $cash = $this->coaId($institute, '1001');
+        $cash = $this->coaId($institute, '1000');
         $tuition = $this->coaId($institute, '4001');
 
         $this->expectException(ValidationException::class);
@@ -162,7 +162,7 @@ class AccountingEngineTest extends TestCase
         $branch = $this->branch($institute);
         $this->setupAccounting($institute, $branch);
 
-        $cash = $this->coaId($institute, '1001');
+        $cash = $this->coaId($institute, '1000');
         $tuition = $this->coaId($institute, '4001');
 
         $this->expectException(ValidationException::class);
@@ -186,7 +186,7 @@ class AccountingEngineTest extends TestCase
         $branch = $this->branch($institute);
         $this->setupAccounting($institute, $branch);
 
-        $ar = $this->coaId($institute, '1100');
+        $ar = $this->coaId($institute, '1200');
         $tuition = $this->coaId($institute, '4001');
 
         $customer = Party::create([
@@ -225,7 +225,7 @@ class AccountingEngineTest extends TestCase
         $branch = $this->branch($institute);
         $this->setupAccounting($institute, $branch);
 
-        $cash = $this->coaId($institute, '1001');
+        $cash = $this->coaId($institute, '1000');
         $tuition = $this->coaId($institute, '4001');
 
         $draft = $this->posting()->create([
@@ -253,8 +253,8 @@ class AccountingEngineTest extends TestCase
         $branch = $this->branch($institute);
         $this->setupAccounting($institute, $branch);
 
-        $cash = $this->coaId($institute, '1001');
-        $ar = $this->coaId($institute, '1100');
+        $cash = $this->coaId($institute, '1000');
+        $ar = $this->coaId($institute, '1200');
         $ap = $this->coaId($institute, '2001');
         $tuition = $this->coaId($institute, '4001');
         $misc = $this->coaId($institute, '5006');

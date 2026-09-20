@@ -44,7 +44,7 @@ class InventoryAccountingService
             ? $holder->inventory_account_id ?? ($holder->category?->inventory_account_id ?? null)
             : $holder->inventory_account_id;
 
-        return $this->resolveAccount($instituteId, $branchId, $override, '1200', 'inventory account');
+        return $this->resolveAccount($instituteId, $branchId, $override, '1300', 'inventory account');
     }
 
     public function cogsAccount(InventoryItem|InventoryCategory $holder, int $instituteId, ?int $branchId): ChartOfAccount
