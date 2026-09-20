@@ -86,6 +86,10 @@ return Application::configure(basePath: dirname(__DIR__))
                 return route('admin.login');
             }
 
+            if ($request->routeIs('accounting.dashboard')) {
+                return route('admin.login');
+            }
+
             return route('login');
         });
 
