@@ -7,15 +7,16 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Narrow teacher-deny gate for the finance module (Phase 7 STEP 3C).
+ * Narrow teacher-deny gate for the finance + accounting modules
+ * (Phase 7 STEP 3C, extended 3H.3).
  *
  * Teachers have no finance function: any teacher-role actor gets 403 on
- * finance/* URIs. All other roles pass through untouched (the
- * role→permission grant matrix is empty in seeded data, so a broad
+ * finance/* and accounting/* URIs. All other roles pass through untouched
+ * (the role→permission grant matrix is empty in seeded data, so a broad
  * permission middleware would 403 accountants/receptionists too).
  *
- * URI-scoped internally ($request->is('finance*')) so the middleware can
- * sit on shared route groups (web.php institute group,
+ * URI-scoped internally ($request->is('finance*', 'accounting*')) so the
+ * middleware can sit on shared route groups (web.php institute group,
  * institute_modules.php tenant group) without affecting non-finance
  * routes like /teachers or /crm.
  *
@@ -27,14 +28,14 @@ class DenyTeacherFromFinance
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->is('finance*')) {
+        if (! $request->is('finance*', 'accounting*')) {
             return $next($request);
         }
 
         $user = $request->user();
 
         if ($user !== null && method_exists($user, 'hasRole') && $user->hasRole('teacher')) {
-            abort(403, 'Teachers do not have access to the finance module.');
+            abort(403, 'Teachers do not have access to the finance and accounting modules.');
         }
 
         return $next($request);
