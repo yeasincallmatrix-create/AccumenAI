@@ -220,6 +220,12 @@ if (! function_exists('mawa_fix_mojibake')) {
 if (! function_exists('mawa_currency_symbol')) {
     /**
      * Native currency symbol for a given country. Defaults to Bangladeshi Taka.
+     *
+     * Accepts country names and ISO2 codes (9b-2). Signature frozen —
+     * views depend on it.
+     *
+     * @deprecated Phase 9b-4 — for institute-aware callers prefer
+     * App\Support\CountryConfigResolver. Removal in Phase 11+.
      */
     function mawa_currency_symbol(?string $country = null): string
     {
@@ -644,6 +650,10 @@ if (! function_exists('mawa_tenant_country')) {
     /**
      * Current tenant (institute) country name, or null when unresolvable.
      * Chain: TenantContext → Workspace → authenticated user institute.
+     *
+     * @deprecated Phase 9b-4 — for institute-aware callers use the
+     * institute's country_id FK (see CountryConfigResolver::countryFor
+     * pattern). Removal in Phase 11+.
      */
     function mawa_tenant_country(): ?string
     {
@@ -753,10 +763,15 @@ if (! function_exists('mawa_date_placeholder')) {
 if (! function_exists('mawa_is_bangladesh')) {
     /**
      * Whether the current tenant is Bangladeshi (date/number localization switch).
+     *
+     * @deprecated Phase 9b-4 — name-string coupling. For institute-aware
+     * checks use App\Support\CountryConfigResolver::isCountry($institute, 'BD');
+     * for the platform default compare against
+     * config('locale.country.default_name'). Removal in Phase 11+.
      */
     function mawa_is_bangladesh(?string $country = null): bool
     {
-        return ($country ?? mawa_tenant_country()) === 'Bangladesh';
+        return ($country ?? mawa_tenant_country()) === config('locale.country.default_name', 'Bangladesh');
     }
 }
 
@@ -765,7 +780,10 @@ if (! function_exists('mawa_date_format')) {
      * Tenant-aware PHP date format driven by Settings → General → Date Format.
      * dmy → d/m/Y (DD/MM/YYYY), mdy → m/d/Y (MM/DD/YYYY), ymd → Y/m/d (YYYY/MM/DD).
      * $fallback is used only when the setting column is unavailable (legacy path:
-     * Bangladesh → d/m/Y, others → $fallback).
+     * default-country → d/m/Y, others → $fallback).
+     *
+     * @deprecated Phase 9b-4 — prefer mawa_date_format_key() (kept) with an
+     * explicit match at the call site. Removal in Phase 11+.
      */
     function mawa_date_format(?string $country = null, string $fallback = 'Y-m-d'): string
     {
@@ -781,13 +799,20 @@ if (! function_exists('mawa_date_format')) {
             // fall through to legacy country logic
         }
 
-        return mawa_is_bangladesh($country) ? 'd/m/Y' : $fallback;
+        // 9b-4: legacy branch without the mawa_is_bangladesh() coupling —
+        // null still resolves via mawa_tenant_country(), exactly as before.
+        $defaultCountry = config('locale.country.default_name', 'Bangladesh');
+
+        return ($country ?? mawa_tenant_country()) === $defaultCountry ? 'd/m/Y' : $fallback;
     }
 }
 
 if (! function_exists('mawa_datetime_format')) {
     /**
      * Tenant-aware PHP datetime format (date part follows Date Format setting).
+     *
+     * @deprecated Phase 9b-4 — prefer mawa_date_format_key() (kept) with an
+     * explicit match at the call site. Removal in Phase 11+.
      */
     function mawa_datetime_format(?string $country = null, string $fallback = 'Y-m-d H:i'): string
     {
@@ -803,7 +828,11 @@ if (! function_exists('mawa_datetime_format')) {
             // fall through to legacy country logic
         }
 
-        return mawa_is_bangladesh($country) ? 'd/m/Y h:i A' : $fallback;
+        // 9b-4: legacy branch without the mawa_is_bangladesh() coupling —
+        // null still resolves via mawa_tenant_country(), exactly as before.
+        $defaultCountry = config('locale.country.default_name', 'Bangladesh');
+
+        return ($country ?? mawa_tenant_country()) === $defaultCountry ? 'd/m/Y h:i A' : $fallback;
     }
 }
 
