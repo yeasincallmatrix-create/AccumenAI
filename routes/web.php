@@ -272,6 +272,15 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->group(func
         Route::put('/{shareholder}', [\App\Http\Controllers\Settings\ShareholderController::class, 'update'])->middleware('permission:settings.manage')->name('update');
         Route::delete('/{shareholder}', [\App\Http\Controllers\Settings\ShareholderController::class, 'destroy'])->middleware('permission:settings.manage')->name('destroy');
     });
+    // Share Capital (private limited)
+    Route::prefix('settings/business-entity/share-capital')->name('settings.share-capital.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Settings\ShareCapitalController::class, 'index'])->middleware('permission:settings.manage')->name('index');
+        Route::get('/settings', [\App\Http\Controllers\Settings\ShareCapitalController::class, 'settings'])->middleware('permission:settings.manage')->name('settings');
+        Route::put('/settings', [\App\Http\Controllers\Settings\ShareCapitalController::class, 'updateSettings'])->middleware('permission:settings.manage')->name('settings.update');
+        Route::post('/issue', [\App\Http\Controllers\Settings\ShareCapitalController::class, 'issue'])->middleware('permission:settings.manage')->name('issue');
+        Route::post('/transfer', [\App\Http\Controllers\Settings\ShareCapitalController::class, 'transfer'])->middleware('permission:settings.manage')->name('transfer');
+        Route::get('/certificates', [\App\Http\Controllers\Settings\ShareCapitalController::class, 'certificates'])->middleware('permission:settings.manage')->name('certificates');
+    });
 });
 
 Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->prefix('staff')->name('staff.')->group(function () {

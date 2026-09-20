@@ -101,6 +101,10 @@ class AppServiceProvider extends ServiceProvider
             \App\Models\Shareholder::class,
             \App\Policies\ShareholderPolicy::class
         );
+        \Illuminate\Support\Facades\Gate::policy(
+            \App\Models\ShareCapitalTransaction::class,
+            \App\Policies\ShareCapitalTransactionPolicy::class
+        );
 
         // Blade directive: @moduleEnabled('medical.opd') ... @endmoduleEnabled
         \Illuminate\Support\Facades\Blade::directive('moduleEnabled', function (string $expression) {

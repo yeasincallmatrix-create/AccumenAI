@@ -66,6 +66,10 @@
                 <i class="bi bi-building"></i>
                 <span>Business Entity</span>
             </a>
+            <a href="{{ route('settings.share-capital.index') }}" class="settings-nav-item settings-tab-btn">
+                <i class="bi bi-bank"></i>
+                <span>Share Capital</span>
+            </a>
         @endif
 <button class="settings-nav-item settings-tab-btn" type="button" data-target="pane-security" aria-selected="false">
                 <i class="bi bi-shield-lock"></i>

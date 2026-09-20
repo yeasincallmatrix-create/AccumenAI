@@ -167,6 +167,16 @@ class Institute extends Model
         return $this->hasMany(Shareholder::class);
     }
 
+    public function shareCapitalTransactions(): HasMany
+    {
+        return $this->hasMany(ShareCapitalTransaction::class);
+    }
+
+    public function shareCertificates(): HasMany
+    {
+        return $this->hasMany(ShareCertificate::class);
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
