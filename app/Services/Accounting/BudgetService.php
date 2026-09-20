@@ -340,7 +340,7 @@ class BudgetService
 
     public function defaultCurrency(int $instituteId): ?Currency
     {
-        $code = app(AccountingSetupService::class)->getSetting($instituteId, 'base_currency', 'BDT');
+        $code = app(AccountingSetupService::class)->getSetting($instituteId, 'base_currency', config('locale.currency.default_code', 'BDT'));
         return Currency::where('code', $code)->first();
     }
 

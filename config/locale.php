@@ -39,4 +39,9 @@ return [
         // previously hardcoded 'Bangladesh'.
         'default_name' => env('LOCALE_COUNTRY_DEFAULT_NAME', 'Bangladesh'),
     ],
+
+    'geo' => [
+        'default_lat' => env('LOCALE_DEFAULT_LAT', '23.8103'),
+        'default_lng' => env('LOCALE_DEFAULT_LNG', '90.4125'),
+    ],
 ];

@@ -60,6 +60,9 @@
             "@php artisan config:clear --ansi",
             "@php artisan test"
         ],
+        "test:setup": [
+            "@php artisan migrate --env=testing --force"
+        ],
         "test:parallel": "@php artisan test --parallel",
         "ci:test": "@php artisan test --parallel --processes=4",
         "test:para": "paratest -p 4 --no-coverage",
