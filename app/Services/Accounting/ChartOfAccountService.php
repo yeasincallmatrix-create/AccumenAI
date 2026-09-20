@@ -406,6 +406,36 @@ class ChartOfAccountService
             );
         }
 
+        // Resolve group: explicit must be visible; otherwise prefer the
+        // tenant's own group, falling back to the matching global group.
+        if (! empty($data['account_group_id'])) {
+            $group = AccountGroup::query()
+                ->where('id', $data['account_group_id'])
+                ->where(function ($q) use ($instituteId) {
+                    $q->where(function ($g) {
+                        $g->whereNull('institute_id')->where('is_system', 1);
+                    })->orWhere('institute_id', $instituteId);
+                })
+                ->first();
+            if ($group === null) {
+                throw new \InvalidArgumentException(
+                    'The selected group does not belong to this institute.'
+                );
+            }
+            $data['account_group_id'] = $group->id;
+        } else {
+            $data['account_group_id'] = AccountGroup::query()
+                ->where('institute_id', $instituteId)
+                ->where('branch_id', $data['branch_id'] ?? null)
+                ->where('category', $data['type'])
+                ->value('id')
+                ?? AccountGroup::query()
+                    ->whereNull('institute_id')
+                    ->where('is_system', 1)
+                    ->where('category', $data['type'])
+                    ->value('id');
+        }
+
         return ChartOfAccount::create($data);
     }
 

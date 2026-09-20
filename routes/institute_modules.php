@@ -577,9 +577,9 @@ Route::middleware($tenant)->group(function () {
         Route::get('create', [$finCoA, 'create'])->name('create');
         Route::post('/', [$finCoA, 'store'])->name('store');
         Route::get('{account}/edit', [$finCoA, 'edit'])->name('edit');
-        Route::put('{account}', [$finCoA, 'update'])->name('update');
+        Route::put('{chartOfAccount}', [$finCoA, 'update'])->name('update');
         Route::post('{account}/toggle', [$finCoA, 'toggle'])->name('toggle');
-        Route::delete('{account}', [$finCoA, 'destroy'])->name('destroy');
+        Route::delete('{chartOfAccount}', [$finCoA, 'destroy'])->name('destroy');
     });
 
     // Finance Journals

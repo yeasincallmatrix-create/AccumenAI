@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\ResolvesInstitute;
+use App\Http\Requests\StoreTenantAccountRequest;
+use App\Http\Requests\UpdateTenantAccountRequest;
 use App\Models\AccountGroup;
 use App\Models\ChartOfAccount;
 use App\Services\Accounting\ChartOfAccountService;
@@ -46,6 +48,11 @@ class FinanceChartOfAccountController extends Controller
 
         $accounts = $query->orderBy('code')->paginate(25)->withQueryString();
 
+        $accounts->getCollection()->each(function ($a) use ($institute) {
+            $a->is_editable = $a->isEditableBy((int) $institute->id);
+            $a->is_global_flag = $a->isGlobal();
+        });
+
         return view('institute.finance.chart-of-accounts.index', [
             'institute' => $institute,
             'accounts' => $accounts,
@@ -67,15 +74,16 @@ class FinanceChartOfAccountController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreTenantAccountRequest $request): RedirectResponse
     {
         $institute = $this->requireInstitute($request);
 
-        $account = $this->service->createAccount(
-            $institute->id,
-            $this->actingBranchId($request),
-            $this->validated($request),
-            (int) $this->actorId($request),
+        $account = $this->service->createTenantAccount(
+            (int) $institute->id,
+            array_merge(
+                $request->validated(),
+                ['branch_id' => $this->actingBranchId($request)],
+            ),
         );
 
         return redirect()
@@ -96,14 +104,19 @@ class FinanceChartOfAccountController extends Controller
         ]);
     }
 
-    public function update(Request $request, ChartOfAccount $account): RedirectResponse
+    public function update(UpdateTenantAccountRequest $request, int $chartOfAccount): RedirectResponse
     {
-        $this->requireInstitute($request);
+        $institute = $this->requireInstitute($request);
 
-        $account = $this->service->updateAccount(
-            $account,
-            $this->validated($request),
-            (int) $this->actorId($request),
+        $account = ChartOfAccount::withoutGlobalScope('institute')
+            ->findOrFail($chartOfAccount);
+
+        $this->authorize('update', $account);
+
+        $account = $this->service->updateTenantAccount(
+            (int) $institute->id,
+            $account->id,
+            $request->validated(),
         );
 
         return redirect()
@@ -115,20 +128,31 @@ class FinanceChartOfAccountController extends Controller
     {
         $this->requireInstitute($request);
 
+        $this->authorize('update', $account);
+
         $account = $this->service->toggleActive($account, (int) $this->actorId($request));
 
         return back()->with('status', 'Account "'.$account->code.'" '.($account->is_active ? 'activated' : 'deactivated').'.');
     }
 
-    public function destroy(Request $request, ChartOfAccount $account): RedirectResponse
+    public function destroy(Request $request, int $chartOfAccount): RedirectResponse
     {
         $this->requireInstitute($request);
 
-        $this->service->delete($account, (int) $this->actorId($request));
+        $account = ChartOfAccount::withoutGlobalScope('institute')
+            ->findOrFail($chartOfAccount);
+
+        $this->authorize('delete', $account);
+
+        $code = $account->code;
+        $this->service->deleteTenantAccount(
+            (int) tenant_id(),
+            $account->id,
+        );
 
         return redirect()
             ->route('finance.chart-of-accounts.index')
-            ->with('status', 'Account "'.$account->code.'" deleted.');
+            ->with('status', 'Account "'.$code.'" deleted.');
     }
 
     // ------------------------------------------------------------- Internals
@@ -161,7 +185,11 @@ class FinanceChartOfAccountController extends Controller
     private function groups(int $instituteId): Collection
     {
         return AccountGroup::query()
-            ->where('institute_id', $instituteId)
+            ->where(function ($q) use ($instituteId) {
+                $q->where(function ($g) {
+                    $g->whereNull('institute_id')->where('is_system', 1);
+                })->orWhere('institute_id', $instituteId);
+            })
             ->orderBy('sort_order')
             ->get(['id', 'name', 'category', 'code']);
     }
@@ -169,7 +197,11 @@ class FinanceChartOfAccountController extends Controller
     private function parents(int $instituteId): Collection
     {
         return ChartOfAccount::query()
-            ->where('institute_id', $instituteId)
+            ->where(function ($q) use ($instituteId) {
+                $q->where(function ($g) {
+                    $g->whereNull('institute_id')->where('is_system', 1);
+                })->orWhere('institute_id', $instituteId);
+            })
             ->where('is_active', true)
             ->orderBy('code')
             ->get(['id', 'code', 'name', 'type']);
