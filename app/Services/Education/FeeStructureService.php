@@ -8,6 +8,7 @@ use App\Models\Course;
 use App\Models\FeeHead;
 use App\Models\FeeStructure;
 use App\Models\InstituteCourse;
+use App\Models\StudentEnrollment;
 use App\Models\Training\Enrollment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -101,7 +102,7 @@ class FeeStructureService
      * Structures that explicitly target a different batch/course/branch/year
      * are excluded; the remainder is ranked by specificity.
      */
-    public function resolveForEnrollment(Enrollment $enrollment, ?int $branchId = null, ?int $actorId = null): ?FeeStructure
+    public function resolveForEnrollment(Enrollment|StudentEnrollment $enrollment, ?int $branchId = null, ?int $actorId = null): ?FeeStructure
     {
         $instituteId = (int) $enrollment->institute_id;
         $student = $enrollment->student;

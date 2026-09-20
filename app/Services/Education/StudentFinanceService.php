@@ -9,6 +9,7 @@ use App\Models\Invoice;
 use App\Models\MonthlyFeePeriod;
 use App\Models\Payment;
 use App\Models\Student;
+use App\Models\StudentEnrollment;
 use App\Models\Training\Enrollment;
 use App\Models\StudentWaiver;
 use App\Services\Accounting\AccountingAuditService;
@@ -52,7 +53,7 @@ class StudentFinanceService
      *
      * @param  array<string, mixed>  $options
      */
-    public function generateInvoice(Enrollment $enrollment, ?FeeStructure $structure = null, array $options = [], ?int $actorId = null): Invoice
+    public function generateInvoice(Enrollment|StudentEnrollment $enrollment, ?FeeStructure $structure = null, array $options = [], ?int $actorId = null): Invoice
     {
         $instituteId = (int) $enrollment->institute_id;
         $branchId = $options['branch_id'] ?? $enrollment->batch?->branch_id;
@@ -118,7 +119,7 @@ class StudentFinanceService
      * Re-issue an invoice for an enrollment after it was cancelled, using the
      * same targeting and amounts.
      */
-    public function regenerateInvoice(Enrollment $enrollment, array $options = [], ?int $actorId = null): Invoice
+    public function regenerateInvoice(Enrollment|StudentEnrollment $enrollment, array $options = [], ?int $actorId = null): Invoice
     {
         $structure = $this->structures->resolveForEnrollment($enrollment, $options['branch_id'] ?? null, $actorId);
 
@@ -597,7 +598,7 @@ class StudentFinanceService
         return null;
     }
 
-    private function assertNoDuplicateBilling(Enrollment $enrollment, ?FeeStructure $structure, bool $allowDuplicate): void
+    private function assertNoDuplicateBilling(Enrollment|StudentEnrollment $enrollment, ?FeeStructure $structure, bool $allowDuplicate): void
     {
         if ($allowDuplicate) {
             return;
@@ -656,7 +657,7 @@ class StudentFinanceService
     /**
      * @return array<int, array<string, mixed>>
      */
-    private function itemsFromCourseDefaults(Enrollment $enrollment, ?int $branchId): array
+    private function itemsFromCourseDefaults(Enrollment|StudentEnrollment $enrollment, ?int $branchId): array
     {
         $course = $enrollment->batch?->course;
 
