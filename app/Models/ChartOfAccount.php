@@ -138,6 +138,10 @@ class ChartOfAccount extends Model
     /**
      * Scope: everything visible to a tenant (globals + own).
      * Same as default scope but explicit for readability.
+     *
+     * NOTE: scope name is 'institute' (per TenantScoped).
+     * `visibleTo` is the canonical Phase-D name; `visible` is kept
+     * as an alias (service layer already calls ::visible()).
      */
     public function scopeVisible($query, int $instituteId)
     {
@@ -147,6 +151,16 @@ class ChartOfAccount extends Model
                     $g->whereNull('institute_id')->where('is_system', 1);
                 })->orWhere('institute_id', $instituteId);
             });
+    }
+
+    /**
+     * Canonical alias of scopeVisible().
+     *
+     * Usage: ChartOfAccount::visibleTo($tenantId)->...
+     */
+    public function scopeVisibleTo($query, int $instituteId)
+    {
+        return $this->scopeVisible($query, $instituteId);
     }
 
     public function isGlobal(): bool

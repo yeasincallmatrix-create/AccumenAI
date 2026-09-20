@@ -46,9 +46,5 @@ class DatabaseSeeder extends Seeder
         $this->call(DocumentCategorySeeder::class);
         $this->call(CrmLeadStatusSeeder::class);
         $this->call(ThemeSeeder::class);
-        // Hybrid COA: global account groups + chart of accounts template
-        // (institute_id NULL, is_system=1). Idempotent; groups first.
-        $this->call(GlobalAccountGroupsSeeder::class);
-        $this->call(GlobalChartOfAccountsSeeder::class);
     }
 }

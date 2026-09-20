@@ -82,4 +82,47 @@ class AccountGroup extends Model
         return ! $this->isGlobal()
             && (int) $this->institute_id === $instituteId;
     }
+
+    /**
+     * Scope: only global rows.
+     */
+    public function scopeGlobalOnly($query)
+    {
+        return $query->withoutGlobalScope('institute')
+            ->whereNull('institute_id')
+            ->where('is_system', 1);
+    }
+
+    /**
+     * Scope: only tenant rows (excludes globals).
+     */
+    public function scopeTenantOnly($query, int $instituteId)
+    {
+        return $query->withoutGlobalScope('institute')
+            ->where('institute_id', $instituteId);
+    }
+
+    /**
+     * Scope: everything visible to a tenant (globals + own).
+     *
+     * Usage: AccountGroup::visibleTo($tenantId)->...
+     * NOTE: scope name is 'institute' (per TenantScoped).
+     */
+    public function scopeVisible($query, int $instituteId)
+    {
+        return $query->withoutGlobalScope('institute')
+            ->where(function ($q) use ($instituteId) {
+                $q->where(function ($g) {
+                    $g->whereNull('institute_id')->where('is_system', 1);
+                })->orWhere('institute_id', $instituteId);
+            });
+    }
+
+    /**
+     * Canonical alias of scopeVisible().
+     */
+    public function scopeVisibleTo($query, int $instituteId)
+    {
+        return $this->scopeVisible($query, $instituteId);
+    }
 }
