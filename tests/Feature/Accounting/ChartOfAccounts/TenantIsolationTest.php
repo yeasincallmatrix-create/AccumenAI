@@ -191,10 +191,12 @@ class TenantIsolationTest extends TestCase
         $parent = ChartOfAccount::withoutGlobalScope('institute')
             ->whereNull('institute_id')
             ->where('is_system', 1)
+            ->whereNull('parent_id')
+            ->orderBy('code')
             ->first();
 
         if (! $parent) {
-            $this->markTestSkipped('No global account seeded');
+            $this->markTestSkipped('Top-level global anchor not seeded');
         }
 
         $owner = $this->owner('iso-a-sub@example.test');
