@@ -250,6 +250,30 @@ abstract class TestCase extends BaseTestCase
         if (count(array_diff($requiredAccountingPerms, $existingAccountingPerms)) > 0) {
             (new AccountingPermissionSeeder)->run();
         }
+
+        // B92: AI core tool gating permissions (finance.view gates
+        // get_financial_summary, crm.view gates get_crm_summary).
+        // AiToolPermissionSeeder is idempotent via firstOrCreate +
+        // insertOrIgnore — safe to call repeatedly. Guarded to avoid
+        // re-running once both slugs exist. B79: race-tolerant for
+        // paratest workers sharing monetix_test — concurrent firstOrCreate
+        // on the unique slug index can deadlock (SQLSTATE 40001); when a
+        // parallel worker won the race the rows exist now, so swallow,
+        // otherwise rethrow (same pattern as B87 crm_lead_sources above).
+        // DeadlockException must be listed explicitly: it extends
+        // PDOException directly (sibling of QueryException), so catching
+        // QueryException alone misses MySQL 1213 deadlocks.
+        if (Permission::where('slug', 'finance.view')->doesntExist()
+            || Permission::where('slug', 'crm.view')->doesntExist()) {
+            try {
+                (new \Database\Seeders\AiToolPermissionSeeder)->run();
+            } catch (\Illuminate\Database\QueryException | \Illuminate\Database\DeadlockException $e) {
+                if (Permission::where('slug', 'finance.view')->doesntExist()
+                    || Permission::where('slug', 'crm.view')->doesntExist()) {
+                    throw $e;
+                }
+            }
+        }
     }
 
     /**

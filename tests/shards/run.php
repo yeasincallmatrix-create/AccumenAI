@@ -20,6 +20,12 @@
  *
  * Shard filters live in shard1.txt … shard6.txt (PHPUnit --filter regexes
  * over test class names; tests/Feature is flat so shards are alphabetical).
+ *
+ * B79 deadlock mitigation: parallel workers share one MySQL test DB, so a
+ * shard can fail with transient DeadlockException (SQLSTATE 40001) even
+ * when every test is correct. Each shard is therefore retried ONCE when —
+ * and only when — its JUnit report contains deadlock evidence. Backoff is a
+ * short sleep between attempts. Non-deadlock failures are never retried.
  */
 
 $processes = 4;
@@ -36,6 +42,10 @@ $dir = __DIR__;
 $shards = $only !== [] ? $only : range(1, 6);
 $exit = 0;
 
+// B79: retry ONLY on deadlock evidence, max 2 attempts per shard, 2s backoff.
+$maxAttempts = 2;
+$backoffSeconds = 2;
+
 foreach ($shards as $i) {
     $filterFile = $dir . "/shard{$i}.txt";
     if (! file_exists($filterFile)) {
@@ -51,14 +61,47 @@ foreach ($shards as $i) {
         escapeshellarg($junit),
         escapeshellarg($filter)
     );
-    $start = microtime(true);
-    echo "=== shard{$i} started " . date('H:i:s') . " ===\n";
-    passthru('cd ' . escapeshellarg(dirname($dir, 2)) . ' && ' . $cmd, $code);
-    $dur = round(microtime(true) - $start);
-    echo "=== shard{$i} finished in {$dur}s (exit {$code}) ===\n";
+    $attempt = 0;
+    do {
+        $attempt++;
+        if ($attempt > 1) {
+            echo "=== shard{$i} retry attempt {$attempt}/{$maxAttempts} after DeadlockException (backoff {$backoffSeconds}s) ===\n";
+            sleep($backoffSeconds);
+        }
+        $start = microtime(true);
+        echo "=== shard{$i} started " . date('H:i:s') . " (attempt {$attempt}) ===\n";
+        passthru('cd ' . escapeshellarg(dirname($dir, 2)) . ' && ' . $cmd, $code);
+        $dur = round(microtime(true) - $start);
+        echo "=== shard{$i} finished in {$dur}s (exit {$code}) ===\n";
+        $deadlocked = ($code !== 0) && shardHitDeadlock($junit);
+        if ($deadlocked && $attempt < $maxAttempts) {
+            echo "=== shard{$i} hit DeadlockException — will retry ===\n";
+        }
+    } while ($deadlocked && $attempt < $maxAttempts);
     if ($code !== 0) {
         $exit = $code;
     }
 }
 
 exit($exit);
+
+/**
+ * B79: true when the shard's JUnit report contains deadlock evidence.
+ *
+ * Scans for the Laravel DeadlockException class name and the MySQL
+ * deadlock SQLSTATE. Any other failure (assertion, error, crash without
+ * JUnit output) returns false and is never retried.
+ */
+function shardHitDeadlock(string $junitPath): bool
+{
+    if (! is_file($junitPath)) {
+        return false;
+    }
+    $xml = @file_get_contents($junitPath);
+    if ($xml === false || $xml === '') {
+        return false;
+    }
+
+    return str_contains($xml, 'DeadlockException')
+        || str_contains($xml, 'SQLSTATE[40001]');
+}
