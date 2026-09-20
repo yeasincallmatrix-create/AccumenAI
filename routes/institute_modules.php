@@ -644,7 +644,7 @@ Route::middleware($tenant)->group(function () {
     // Finance FX Revaluations
     Route::prefix('finance/fx-revaluations')->name('finance.fx-revaluations.')->group(function () use ($finReval) {
         Route::post('/', [$finReval, 'store'])->name('store');
-        Route::post('{revaluation}/reverse', [$finReval, 'reverse'])->name('reverse');
+        Route::post('{fxRevaluation}/reverse', [$finReval, 'reverse'])->name('reverse');
     });
 
     // Finance Online Payments

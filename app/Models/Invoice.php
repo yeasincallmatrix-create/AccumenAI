@@ -25,6 +25,7 @@ class Invoice extends Model
         'invoice_type',
         'due_date',
         'currency_id',
+        'exchange_rate',
         'tax_group_id',
         'sales_order_id',
         'sales_delivery_id',
