@@ -70,6 +70,31 @@
             </dl>
         </div>
     </div>
+    <div class="col-md-6">
+        <div class="admin-card p-3">
+            <h5 class="text-warning">Market / Investor Ratios</h5>
+            <dl class="row mb-0">
+                @foreach($market as $key => $value)
+                    <dt class="col-7 text-muted">{{ ucwords(str_replace('_', ' ', $key)) }}</dt>
+                    <dd class="col-5 text-end fw-semibold">{{ is_numeric($value) ? number_format($value, 2) : '—' }}</dd>
+                @endforeach
+            </dl>
+            @if(collect($market)->filter()->isEmpty())
+                <p class="text-muted small mt-2 mb-0">Market ratios need shares outstanding configured.</p>
+            @endif
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="admin-card p-3">
+            <h5 class="text-info">Cash Flow Ratios</h5>
+            <dl class="row mb-0">
+                @foreach($cash_flow as $key => $value)
+                    <dt class="col-7 text-muted">{{ ucwords(str_replace('_', ' ', $key)) }}</dt>
+                    <dd class="col-5 text-end fw-semibold">{{ is_numeric($value) ? number_format($value, 2) : '—' }}</dd>
+                @endforeach
+            </dl>
+        </div>
+    </div>
 </div>
 
 @endsection

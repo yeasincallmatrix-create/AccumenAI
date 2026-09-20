@@ -13,7 +13,7 @@ class RatioAnalysisTest extends TestCase
 {
     protected function tenantOwner(string $email): array
     {
-        $unique = strtolower(preg_replace('/[^a-z]/i', '', uniqid()));
+        $unique = strtolower(\Illuminate\Support\Str::random(10));
         $email = str_replace('@', "+{$unique}@", $email);
         $institute = Institute::where('name', 'MAWA ACADEMY')->firstOrFail();
         $owner = (new UserAccountService)->registerOwner([
@@ -95,5 +95,71 @@ class RatioAnalysisTest extends TestCase
         $this->assertIsArray($a);
         $this->assertIsArray($b);
         $this->assertSame(array_keys($a), array_keys($b));
+    }
+
+    public function test_all_six_categories_returned(): void
+    {
+        [$institute] = $this->tenantOwner('ratio-six@example.test');
+        $data = app(RatioAnalysisService::class)
+            ->computeAll($institute->id, now()->format('Y-m-d'));
+
+        foreach (['liquidity', 'profitability', 'leverage', 'efficiency', 'market', 'cash_flow'] as $cat) {
+            $this->assertArrayHasKey($cat, $data);
+        }
+    }
+
+    public function test_total_ratio_count(): void
+    {
+        [$institute] = $this->tenantOwner('ratio-count@example.test');
+        $data = app(RatioAnalysisService::class)
+            ->computeAll($institute->id, now()->format('Y-m-d'));
+
+        $total = 0;
+        foreach (['liquidity', 'profitability', 'leverage', 'efficiency', 'market', 'cash_flow'] as $cat) {
+            $total += count($data[$cat]);
+        }
+
+        $this->assertSame(34, $total);
+    }
+
+    public function test_new_ratios_present(): void
+    {
+        [$institute] = $this->tenantOwner('ratio-new@example.test');
+        $data = app(RatioAnalysisService::class)
+            ->computeAll($institute->id, now()->format('Y-m-d'));
+
+        $this->assertArrayHasKey('net_working_capital_ratio', $data['liquidity']);
+        $this->assertArrayHasKey('cash_conversion_cycle', $data['liquidity']);
+        $this->assertArrayHasKey('operating_profit_margin', $data['profitability']);
+        $this->assertArrayHasKey('ebitda_margin', $data['profitability']);
+        $this->assertArrayHasKey('roce', $data['profitability']);
+        $this->assertArrayHasKey('interest_coverage', $data['leverage']);
+        $this->assertArrayHasKey('debt_service_coverage', $data['leverage']);
+        $this->assertArrayHasKey('days_sales_outstanding', $data['efficiency']);
+        $this->assertArrayHasKey('days_payable_outstanding', $data['efficiency']);
+        $this->assertArrayHasKey('days_inventory_outstanding', $data['efficiency']);
+        $this->assertArrayHasKey('earnings_per_share', $data['market']);
+        $this->assertArrayHasKey('operating_cash_flow_ratio', $data['cash_flow']);
+        $this->assertArrayHasKey('free_cash_flow', $data['cash_flow']);
+
+        // Graceful nulls: no shares column, no interest COA, no transactions.
+        $this->assertNull($data['market']['earnings_per_share']);
+        $this->assertNull($data['leverage']['interest_coverage']);
+    }
+
+    public function test_page_renders_all_six_cards(): void
+    {
+        [$institute, $owner] = $this->tenantOwner('ratio-cards@example.test');
+        app(\App\Services\Accounting\TenantAccountingModeService::class)->enable($institute->id);
+
+        $this->asUser($owner, $institute->id)
+            ->get(route('accounting.reports.ratios'))
+            ->assertStatus(200)
+            ->assertSee('Liquidity')
+            ->assertSee('Profitability')
+            ->assertSee('Leverage')
+            ->assertSee('Efficiency')
+            ->assertSee('Market')
+            ->assertSee('Cash Flow');
     }
 }
