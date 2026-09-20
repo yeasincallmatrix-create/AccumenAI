@@ -797,16 +797,25 @@ class ModuleAccessService
      * Compute the full feature-access map for an institute.
      *
      * For each feature in feature_registry:
-     *   Gate 1: parent module enabled (isEnabled)
+     *   Gate 1: parent module enabled (isEnabled — includes industry veto)
      *   Gate 2: feature registry active
      *   Gate 3: package_feature enabled
      *   Gate 3.5: institute_feature_override wins
-     *   Gate 4: tenant_access_grants (additive, after overrides)
+     *   Gate 4: tenant_access_grants (additive, after overrides,
+     *           B76: respects Gate 1 — a grant never enables a feature
+     *           whose parent module is disabled)
      *   Gate 5: tenant_access_denials (subtractive, wins over everything)
      *
      * Resolution: (Base ∪ Overrides ∪ Grants) − Denials.
      * Only rows with status='active' and expires_at NULL/future apply.
-     * 'tier' grant_type is skipped with a warning log (Phase 7 refines).
+     * Tier grants (B75) resolve tier slug → tier package features
+     * (scope-aware with legacy fallback); unknown tier slugs log
+     * a warning and have no effect. Unknown feature keys not in
+     * the registry are skipped (Gate 2 preserved — never invented).
+     *
+     * B77: empty scoped feature set falls back to legacy
+     * package_features (documented limitation — scope is additive;
+     * there is no "explicitly empty" scope).
      *
      * @return array<string, bool>
      */
@@ -893,10 +902,20 @@ class ModuleAccessService
 
         foreach ($grants as $grant) {
             if ($grant->grant_type === 'feature') {
+                // B76: respect Gate 1 — parent module must be enabled.
+                $moduleKey = explode('.', (string) $grant->grant_key, 2)[0];
+                if (! $this->isEnabled($institute, $moduleKey)) {
+                    continue;
+                }
                 if (array_key_exists($grant->grant_key, $map)) {
                     $map[$grant->grant_key] = true;
                 }
             } elseif ($grant->grant_type === 'module') {
+                // B76: respect Gate 1 — the granted module itself must be
+                // enabled for this institute (industry veto included).
+                if (! $this->isEnabled($institute, (string) $grant->grant_key)) {
+                    continue;
+                }
                 // All features in this module
                 $moduleFeatures = \App\Models\FeatureRegistry::where('module_key', $grant->grant_key)
                     ->pluck('feature_key');
@@ -906,12 +925,30 @@ class ModuleAccessService
                     }
                 }
             } elseif ($grant->grant_type === 'tier') {
-                // Tier grants skipped for now (product decision — Phase 7 refines).
-                \Illuminate\Support\Facades\Log::warning('TenantAccessGrant tier grant skipped in runtime resolution', [
-                    'institute_id' => $institute->id,
-                    'grant_id' => $grant->id,
-                    'grant_key' => $grant->grant_key,
-                ]);
+                // B75: tier grant = unlock all features the tier package
+                // provides (scope-aware, legacy fallback). Additive, Gate 2
+                // preserved (unknown keys skipped), B76: each feature still
+                // requires its parent module to be enabled.
+                $tierPackage = SubscriptionPackage::whereRaw('LOWER(slug) = ?', [strtolower((string) $grant->grant_key)])->first();
+                if (! $tierPackage) {
+                    \Illuminate\Support\Facades\Log::warning('TenantAccessGrant tier grant skipped: unknown tier package', [
+                        'institute_id' => $institute->id,
+                        'grant_id' => $grant->id,
+                        'grant_key' => $grant->grant_key,
+                    ]);
+                    continue;
+                }
+
+                foreach ($this->getTierFeatureKeys($institute, $tierPackage) as $fk) {
+                    if (! array_key_exists($fk, $map)) {
+                        continue;
+                    }
+                    $parentModule = explode('.', (string) $fk, 2)[0];
+                    if (! $this->isEnabled($institute, $parentModule)) {
+                        continue;
+                    }
+                    $map[$fk] = true;
+                }
             }
         }
 
@@ -1008,6 +1045,86 @@ class ModuleAccessService
         }
 
         return null;
+    }
+
+    /**
+     * Resolve the effective package scope for an institute against an
+     * explicit tier package (B75 — tier grants).
+     *
+     * Same fallback chain as resolveScopedPackage() (exact → broader →
+     * GLOBAL) but keyed on the tier package id, using the institute's
+     * own country/industry/sub-industry for scope matching.
+     *
+     * Returns null when no scope row exists (caller falls back to
+     * legacy package_features).
+     */
+    public function resolveScopedPackageForPackage(Institute $institute, SubscriptionPackage $tierPackage): ?PackageScope
+    {
+        $countryId = $institute->country_id;
+        $industryId = $institute->industry_id;
+        $subIndustryId = $institute->sub_industry_id;
+
+        $candidates = [
+            [$countryId, $industryId, $subIndustryId],
+            [$countryId, $industryId, null],
+            [$countryId, null, $subIndustryId],
+            [$countryId, null, null],
+            [null, $industryId, $subIndustryId],
+            [null, $industryId, null],
+            [null, null, null],
+        ];
+
+        $seen = [];
+        $unique = [];
+        foreach ($candidates as $c) {
+            $key = implode('|', array_map(fn ($v) => $v ?? 'G', $c));
+            if (! isset($seen[$key])) {
+                $seen[$key] = true;
+                $unique[] = $c;
+            }
+        }
+
+        foreach ($unique as [$cid, $iid, $sid]) {
+            $scope = PackageScope::where('package_id', $tierPackage->id)
+                ->where('country_id', $cid)
+                ->where('industry_id', $iid)
+                ->where('sub_industry_id', $sid)
+                ->where('status', 'active')
+                ->first();
+
+            if ($scope) {
+                return $scope;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * All feature keys a tier package provides for an institute (B75).
+     *
+     * Scope-aware: when a scope resolves for (tier package × institute
+     * locale) and holds scoped features, those win (with parent
+     * inheritance). Otherwise legacy package_features for the tier
+     * package is the source of truth.
+     *
+     * @return array<int, string>
+     */
+    public function getTierFeatureKeys(Institute $institute, SubscriptionPackage $tierPackage): array
+    {
+        $scope = $this->resolveScopedPackageForPackage($institute, $tierPackage);
+
+        if ($scope) {
+            $scoped = $this->getScopedFeatureKeys($scope);
+            if (! empty($scoped)) {
+                return $scoped;
+            }
+        }
+
+        return PackageFeature::where('package_id', $tierPackage->id)
+            ->where('enabled', true)
+            ->pluck('feature_key')
+            ->toArray();
     }
 
     /**

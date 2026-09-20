@@ -47,3 +47,6 @@ Schedule::command('medical:medicine-code-capacity --warn=80')->daily()->withoutO
 // P1 — Automated database backups (RPO < 24h)
 Schedule::command('database:backup --type=daily --verify')->dailyAt('01:00');
 Schedule::command('database:backup --type=weekly --verify')->weeklyOn(0, '02:00');
+
+// Phase 7b — tenant grant/denial expiry (idempotent, cache-flushing).
+Schedule::command('grants:process-expired')->hourly()->withoutOverlapping();
