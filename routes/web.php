@@ -575,6 +575,7 @@ Route::middleware(['auth:institute_user,web','tenant', 'deny.teacher.finance', '
     Route::get('accounting/reports/cash-flow', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'cashFlow'])->name('accounting.reports.cash-flow');
     Route::get('accounting/reports/general-ledger', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'generalLedger'])->name('accounting.reports.general-ledger');
     Route::get('accounting/reports/account-ledger', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'accountLedger'])->name('accounting.reports.account-ledger');
+    Route::get('accounting/reports/ratio-analysis', [\App\Http\Controllers\Accounting\RatioAnalysisController::class, 'index'])->name('accounting.reports.ratios');
     Route::get('recycle', [\App\Http\Controllers\RecycleBinController::class, 'index'])->name('recycle.index');
     Route::get('settings', [\App\Http\Controllers\InstituteSettingController::class, 'index'])->name('settings.index');
     Route::get('owner/profile', function () { return redirect()->route('settings.index'); })->name('owner.profile');
