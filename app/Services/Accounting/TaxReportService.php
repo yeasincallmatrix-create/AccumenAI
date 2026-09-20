@@ -2,7 +2,10 @@
 
 namespace App\Services\Accounting;
 
+use App\Models\AdvanceTaxPayment;
 use App\Models\ChartOfAccount;
+use App\Models\CorporateTaxComputation;
+use App\Models\TdsDeduction;
 use App\Models\TaxReturnPeriod;
 use App\Models\TaxReturnLine;
 use Illuminate\Support\Facades\DB;
@@ -200,5 +203,107 @@ class TaxReportService
             ->whereDate('je.journal_date', '>=', $from)
             ->whereDate('je.journal_date', '<=', $to)
             ->count('je.id');
+    }
+
+    // ── Phase J: Country-Scoped TDS + Corporate Tax Reports ──
+
+    public function tdsSummary(int $instituteId, string $period, ?string $country = null): array
+    {
+        $country = $country ?? tenant_country($instituteId);
+
+        $deductions = TdsDeduction::where('institute_id', $instituteId)
+            ->whereYear('deduction_date', $period)
+            ->get();
+
+        return [
+            'country_code' => $country,
+            'period' => $period,
+            'total_deductions' => $deductions->count(),
+            'total_gross' => $deductions->sum('gross_amount'),
+            'total_tax' => $deductions->sum('tax_amount'),
+            'pending_deposit' => $deductions->where('status', 'pending')->sum('tax_amount'),
+            'deposited' => $deductions->where('status', 'deposited')->sum('tax_amount'),
+            'certificates_issued' => $deductions->where('status', 'certificate_issued')->sum('tax_amount'),
+            'by_type' => $deductions->groupBy('type')->map(fn ($items) => [
+                'count' => $items->count(),
+                'gross' => $items->sum('gross_amount'),
+                'tax' => $items->sum('tax_amount'),
+            ])->toArray(),
+            'by_month' => $deductions->groupBy(fn ($d) => $d->deduction_date->format('Y-m'))
+                ->map(fn ($items) => [
+                    'count' => $items->count(),
+                    'tax' => $items->sum('tax_amount'),
+                ])->toArray(),
+        ];
+    }
+
+    public function advanceTaxRegister(int $instituteId, string $fy, ?string $country = null): array
+    {
+        $country = $country ?? tenant_country($instituteId);
+
+        $payments = AdvanceTaxPayment::where('institute_id', $instituteId)
+            ->where('financial_year', $fy)
+            ->get();
+
+        return [
+            'country_code' => $country,
+            'financial_year' => $fy,
+            'total_payments' => $payments->count(),
+            'total_amount' => $payments->sum('tax_amount'),
+            'paid_amount' => $payments->where('status', 'paid')->sum('tax_amount'),
+            'due_amount' => $payments->where('status', 'due')->sum('tax_amount'),
+            'overdue_amount' => $payments->where('status', 'overdue')->sum('tax_amount'),
+            'payments' => $payments,
+            'by_quarter' => $payments->groupBy('quarter')->map(fn ($items) => [
+                'count' => $items->count(),
+                'amount' => $items->sum('tax_amount'),
+                'paid' => $items->where('status', 'paid')->sum('tax_amount'),
+            ])->toArray(),
+        ];
+    }
+
+    public function corporateTaxReturnData(int $instituteId, string $fy, ?string $country = null): array
+    {
+        $country = $country ?? tenant_country($instituteId);
+
+        $computations = CorporateTaxComputation::where('institute_id', $instituteId)
+            ->where('financial_year', $fy)
+            ->get();
+
+        $advancePayments = AdvanceTaxPayment::where('institute_id', $instituteId)
+            ->where('financial_year', $fy)
+            ->get();
+
+        return [
+            'country_code' => $country,
+            'financial_year' => $fy,
+            'computations' => $computations,
+            'total_tax_computed' => $computations->sum('final_tax'),
+            'total_advance_paid' => $advancePayments->where('status', 'paid')->sum('tax_amount'),
+            'net_tax_payable' => max(0, $computations->sum('final_tax') - $advancePayments->where('status', 'paid')->sum('tax_amount')),
+            'advance_payments' => $advancePayments,
+        ];
+    }
+
+    public function tdsDepositStatus(int $instituteId, string $period, ?string $country = null): array
+    {
+        $country = $country ?? tenant_country($instituteId);
+
+        $deductions = TdsDeduction::where('institute_id', $instituteId)
+            ->whereYear('deduction_date', $period)
+            ->get();
+
+        return [
+            'country_code' => $country,
+            'period' => $period,
+            'total_deducted' => $deductions->sum('tax_amount'),
+            'total_deposited' => $deductions->where('status', 'deposited')->sum('tax_amount')
+                + $deductions->where('status', 'certificate_issued')->sum('tax_amount'),
+            'pending_deposit' => $deductions->where('status', 'pending')->sum('tax_amount'),
+            'deposit_count' => $deductions->where('status', 'deposited')->count()
+                + $deductions->where('status', 'certificate_issued')->count(),
+            'pending_count' => $deductions->where('status', 'pending')->count(),
+            'items' => $deductions,
+        ];
     }
 }

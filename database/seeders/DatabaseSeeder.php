@@ -53,5 +53,6 @@ class DatabaseSeeder extends Seeder
         $this->call(DocumentCategorySeeder::class);
         $this->call(CrmLeadStatusSeeder::class);
         $this->call(ThemeSeeder::class);
+        $this->call(TaxDeductionRuleSeeder::class);
     }
 }

@@ -183,6 +183,21 @@ class Institute extends Model
         return $this->hasMany(Dividend::class);
     }
 
+    public function tdsDeductions(): HasMany
+    {
+        return $this->hasMany(TdsDeduction::class);
+    }
+
+    public function advanceTaxPayments(): HasMany
+    {
+        return $this->hasMany(AdvanceTaxPayment::class);
+    }
+
+    public function corporateTaxComputations(): HasMany
+    {
+        return $this->hasMany(CorporateTaxComputation::class);
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);

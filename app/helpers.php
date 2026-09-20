@@ -1338,3 +1338,92 @@ if (! function_exists('advanced_accounting')) {
         return app(\App\Services\Accounting\TenantAccountingModeService::class)->isAdvancedEnabled();
     }
 }
+
+if (! function_exists('tenant_country')) {
+    /**
+     * Resolve tenant's country code (ISO 3166-1 alpha-2 — 2 chars).
+     *
+     * Priority:
+     *   1. institutes.country_id → countries.iso2
+     *   2. institutes.country (full name) → countries.name lookup → iso2
+     *   3. static map fallback (BANGLADESH → BD)
+     *   4. Default: 'BD'
+     */
+    function tenant_country(?int $instituteId = null): string
+    {
+        $id = $instituteId ?? tenant_id();
+        if (! $id) {
+            return 'BD';
+        }
+
+        $institute = \App\Models\Institute::find($id, ['id', 'country_id', 'country']);
+        if (! $institute) {
+            return 'BD';
+        }
+
+        // 1st: FK → countries.iso2
+        if ($institute->country_id && \Schema::hasTable('countries')) {
+            $iso2 = \DB::table('countries')->where('id', $institute->country_id)->value('iso2');
+            if ($iso2 && strlen($iso2) === 2) {
+                return strtoupper($iso2);
+            }
+        }
+
+        // 2nd: name → iso2 lookup
+        $countryValue = trim((string) $institute->country);
+        if ($countryValue !== '') {
+            if (strlen($countryValue) === 2) {
+                return strtoupper($countryValue);
+            }
+
+            if (\Schema::hasTable('countries')) {
+                $iso2 = \DB::table('countries')
+                    ->whereRaw('UPPER(name) = ?', [strtoupper($countryValue)])
+                    ->value('iso2');
+                if ($iso2 && strlen($iso2) === 2) {
+                    return strtoupper($iso2);
+                }
+            }
+
+            $staticMap = [
+                'BANGLADESH' => 'BD',
+                'INDIA' => 'IN',
+                'UNITED STATES' => 'US',
+                'USA' => 'US',
+                'UNITED KINGDOM' => 'GB',
+                'UK' => 'GB',
+            ];
+            $upper = strtoupper($countryValue);
+            if (isset($staticMap[$upper])) {
+                return $staticMap[$upper];
+            }
+        }
+
+        return 'BD';
+    }
+}
+
+if (! function_exists('tenant_currency')) {
+    /**
+     * Resolve tenant's currency code. Falls back to CountryCurrencyMap.
+     */
+    function tenant_currency(?int $instituteId = null): string
+    {
+        $country = tenant_country($instituteId);
+
+        if (class_exists(\App\Models\CountryCurrencyMap::class)) {
+            $currency = \App\Models\CountryCurrencyMap::currencyForCountry($country);
+            if ($currency) {
+                return $currency;
+            }
+        }
+
+        return match ($country) {
+            'BD' => 'BDT',
+            'IN' => 'INR',
+            'US' => 'USD',
+            'GB' => 'GBP',
+            default => 'USD',
+        };
+    }
+}

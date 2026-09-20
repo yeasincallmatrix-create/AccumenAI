@@ -109,6 +109,14 @@ class AppServiceProvider extends ServiceProvider
             \App\Models\Dividend::class,
             \App\Policies\DividendPolicy::class
         );
+        \Illuminate\Support\Facades\Gate::policy(
+            \App\Models\TdsDeduction::class,
+            \App\Policies\TdsDeductionPolicy::class
+        );
+        \Illuminate\Support\Facades\Gate::policy(
+            \App\Models\CorporateTaxComputation::class,
+            \App\Policies\CorporateTaxComputationPolicy::class
+        );
 
         // Blade directive: @moduleEnabled('medical.opd') ... @endmoduleEnabled
         \Illuminate\Support\Facades\Blade::directive('moduleEnabled', function (string $expression) {

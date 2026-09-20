@@ -296,6 +296,27 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->group(func
         Route::post('/{dividend}/payouts/{payout}/pay', [\App\Http\Controllers\Settings\DividendController::class, 'payPayout'])->middleware('permission:settings.manage')->name('payouts.pay');
         Route::delete('/{dividend}', [\App\Http\Controllers\Settings\DividendController::class, 'cancel'])->middleware('permission:settings.manage')->name('cancel');
     });
+    // TDS
+    Route::prefix('settings/tds')->name('settings.tds.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Settings\TdsController::class, 'index'])->middleware('permission:settings.manage')->name('index');
+        Route::get('/create', [\App\Http\Controllers\Settings\TdsController::class, 'create'])->middleware('permission:settings.manage')->name('create');
+        Route::post('/', [\App\Http\Controllers\Settings\TdsController::class, 'store'])->middleware('permission:settings.manage')->name('store');
+        Route::post('/{tds}/deposit', [\App\Http\Controllers\Settings\TdsController::class, 'deposit'])->middleware('permission:settings.manage')->name('deposit');
+        Route::get('/certificates', [\App\Http\Controllers\Settings\TdsController::class, 'certificates'])->middleware('permission:settings.manage')->name('certificates');
+        Route::post('/certificates/generate/{tds}', [\App\Http\Controllers\Settings\TdsController::class, 'generateCertificate'])->middleware('permission:settings.manage')->name('certificates.generate');
+    });
+    // Corporate Tax
+    Route::prefix('settings/corporate-tax')->name('settings.corporate-tax.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Settings\CorporateTaxController::class, 'index'])->middleware('permission:settings.manage')->name('index');
+        Route::post('/compute', [\App\Http\Controllers\Settings\CorporateTaxController::class, 'compute'])->middleware('permission:settings.manage')->name('compute');
+        Route::post('/advance', [\App\Http\Controllers\Settings\CorporateTaxController::class, 'recordAdvance'])->middleware('permission:settings.manage')->name('advance');
+    });
+    // Tax Reports
+    Route::prefix('settings/tax-reports')->name('settings.tax-reports.')->group(function () {
+        Route::get('/tds-summary', [\App\Http\Controllers\Settings\TaxReportController::class, 'tdsSummary'])->middleware('permission:settings.manage')->name('tds-summary');
+        Route::get('/advance-tax', [\App\Http\Controllers\Settings\TaxReportController::class, 'advanceTax'])->middleware('permission:settings.manage')->name('advance-tax');
+        Route::get('/corporate-return', [\App\Http\Controllers\Settings\TaxReportController::class, 'corporateReturn'])->middleware('permission:settings.manage')->name('corporate-return');
+    });
 });
 
 Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->prefix('staff')->name('staff.')->group(function () {
