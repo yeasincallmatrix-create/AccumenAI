@@ -85,3 +85,13 @@ To complete:
 - Hybrid COA: FUNCTIONALLY COMPLETE
 - Formal baseline: run when coordination window available
 - Next: Phase 9 infrastructure improvements
+
+## V2 Migration — 100s-Pattern Completion (2026-09-20, LIVE in prod)
+- Change: Added 5 anchors (1000, 2000, 3000, 4000, 5000), re-parented 31 children (25 new-family + 6 existing-anchor-family)
+- Result: 43 globals, 12 parents, 31 linked children, 0 orphans, 0 cross-type links, tenant rows 0
+- Childless anchors: 1100 (AR), 3100 (Revaluation Surplus) — genuine, left bare
+- Migration: `2026_09_20_143959_complete_global_coa_100s_pattern` (45ms prod, idempotent + reversible, zero downtime)
+- Test fix: `TenantIsolationTest` selector now picks top-level anchor (`whereNull('parent_id')`) — 9/9, 166/166 core, 19/19 OwnerStaff, 8/8 Engine, 0 regressions
+- Backup: `backup_prod_coa_100s_20260920_154231.sql` (3.6 MB)
+- Commits: `8806437d` (migration + test fix)
+- Reference: `docs/COA_STRUCTURE.md`
