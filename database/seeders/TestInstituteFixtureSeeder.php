@@ -29,6 +29,7 @@ class TestInstituteFixtureSeeder extends Seeder
         foreach ([
             ['name' => 'Tutu Center', 'slug' => 'tutu-center'],
             ['name' => 'Mawa Academy', 'slug' => 'mawa-academy'],
+            ['name' => 'Halumoni Computer training center', 'slug' => 'halumoni-computer-training-center'],
         ] as $row) {
             Institute::withoutEvents(function () use ($row) {
                 try {
