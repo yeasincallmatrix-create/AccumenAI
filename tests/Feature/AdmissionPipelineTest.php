@@ -153,12 +153,31 @@ class AdmissionPipelineTest extends TestCase
 
     protected function statusId(string $slug): int
     {
-        return (int) CrmLeadStatus::where('slug', $slug)->value('id');
+        // B87: statuses are seeded via TestCase guard, but fall back to the
+        // default stage instead of returning 0 (FK violation) if missing.
+        return (int) (CrmLeadStatus::where('slug', $slug)->value('id')
+            ?? CrmLeadStatus::where('is_default', true)->value('id')
+            ?? CrmLeadStatus::where('slug', 'new')->value('id'));
     }
 
-    protected function sourceId(string $slug): int
+    protected function sourceId(string $slug): ?int
     {
-        return (int) CrmLeadSource::where('slug', $slug)->value('id');
+        // B87: crm_lead_sources has no dedicated seeder; TestCase now
+        // ensures walk_in/referral, but firstOrCreate here keeps this
+        // helper race-tolerant and avoids source_id=0 FK violations.
+        // Returns null (NULLABLE column) when creation fails, never 0.
+        try {
+            $row = CrmLeadSource::firstOrCreate(
+                ['slug' => $slug],
+                ['name' => ucwords(str_replace('_', ' ', $slug)), 'display_order' => 1, 'status' => 'active'],
+            );
+
+            return (int) $row->id;
+        } catch (\Illuminate\Database\QueryException $e) {
+            $id = CrmLeadSource::where('slug', $slug)->value('id');
+
+            return $id !== null ? (int) $id : null;
+        }
     }
 
     protected function lead(Institute $institute, ?Branch $branch, string $name = 'New Lead', string $status = 'new', array $extra = []): CrmLead

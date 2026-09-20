@@ -164,6 +164,31 @@ abstract class TestCase extends BaseTestCase
             (new \Database\Seeders\CrmLeadStatusSeeder)->run();
         }
 
+        // B87: ensure CRM lead sources tests resolve by slug exist
+        // (walk_in, referral). Shared global catalog, no institute scope.
+        // Inline firstOrCreate (no dedicated seeder file) — idempotent,
+        // race-tolerant for paratest workers sharing monetix_test.
+        if (Schema::hasTable('crm_lead_sources')) {
+            foreach ([
+                ['slug' => 'walk_in', 'name' => 'Walk-in', 'display_order' => 1],
+                ['slug' => 'referral', 'name' => 'Referral', 'display_order' => 2],
+            ] as $row) {
+                if (\App\Models\CrmLeadSource::where('slug', $row['slug'])->doesntExist()) {
+                    try {
+                        \App\Models\CrmLeadSource::firstOrCreate(
+                            ['slug' => $row['slug']],
+                            ['name' => $row['name'], 'display_order' => $row['display_order'], 'status' => 'active'],
+                        );
+                    } catch (\Illuminate\Database\QueryException $e) {
+                        // Parallel worker won the race — row exists now.
+                        if (\App\Models\CrmLeadSource::where('slug', $row['slug'])->doesntExist()) {
+                            throw $e;
+                        }
+                    }
+                }
+            }
+        }
+
         // Slug-specific guard: the themes table ships with committed rows
         // that lack ocean-blue, so count() === 0 would never fire.
         if (Schema::hasTable('themes')

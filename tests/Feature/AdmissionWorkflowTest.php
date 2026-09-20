@@ -41,25 +41,42 @@ class AdmissionWorkflowTest extends TestCase
         TenantContext::clear();
 
         $this->institute = Institute::where('name', 'MAWA ACADEMY')->firstOrFail();
-        $this->owner = $this->makeStaff('institute-owner', 'admissions-owner@example.test');
+        $this->owner = $this->makeStaff('institute-owner', 'admissions-owner-'.uniqid().'@example.test');
         $this->branch = Branch::create([
             'institute_id' => $this->institute->id,
-            'name' => 'Head Office',
+            'name' => 'Head Office '.uniqid(),
         ]);
-        $this->course = Course::findOrFail(
-            InstituteCourse::where('institute_id', $this->institute->id)->firstOrFail()->course_id
-        );
+        // B87: MAWA ships with zero institute_courses in monetix_test, so
+        // firstOrFail() failed every test (42 errors). Ensure one linkage
+        // exists (FK parent fixture) instead of asserting on seed data.
+        $link = InstituteCourse::where('institute_id', $this->institute->id)->first();
+        if ($link === null) {
+            $course = Course::create([
+                'course_code' => 'MAWA-'.uniqid(),
+                'name' => 'Mawa Admission Course',
+            ]);
+            $link = InstituteCourse::create([
+                'institute_id' => $this->institute->id,
+                'course_id' => $course->id,
+            ]);
+        }
+        $this->course = Course::findOrFail($link->course_id);
     }
 
     protected function makeStaff(string $roleSlug, string $email): InstituteUser
     {
         $role = Role::where('slug', $roleSlug)->firstOrFail();
 
+        // B87: uniqify fixtures to avoid (institute_id,email) + global
+        // phone unique collisions across paratest workers. Assertions
+        // never check these values, only roles/permissions.
+        $uniqueEmail = preg_replace('/@/', '-'.uniqid().'@', $email, 1);
+
         return InstituteUser::create([
             'institute_id' => $this->institute->id,
             'role_id' => $role->id,
-            'email' => $email,
-            'phone' => '0170000'.substr(md5($email), 0, 4),
+            'email' => $uniqueEmail,
+            'phone' => '017'.rand(10000000, 99999999),
             'password_hash' => bcrypt($this->password),
             'status' => 'active',
         ]);

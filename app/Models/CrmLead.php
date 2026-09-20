@@ -28,6 +28,23 @@ class CrmLead extends Model
 
     public const CRM_SUBJECT_TYPE = 'lead';
 
+    /**
+     * B87: semantic default lead stage (slug in crm_lead_statuses).
+     * Mirrors CrmLeadService::defaultStatusId() for direct
+     * CrmLead::create() calls that bypass the service.
+     */
+    public const DEFAULT_STATUS = 'new';
+
+    protected static function booted(): void
+    {
+        static::creating(function ($lead) {
+            if (empty($lead->status_id)) {
+                $lead->status_id = CrmLeadStatus::where('is_default', true)->value('id')
+                    ?? CrmLeadStatus::where('slug', self::DEFAULT_STATUS)->value('id');
+            }
+        });
+    }
+
     protected function casts(): array
     {
         return [

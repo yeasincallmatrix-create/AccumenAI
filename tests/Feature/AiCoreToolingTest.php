@@ -48,40 +48,68 @@ class AiCoreToolingTest extends TestCase
 
     protected function freshInstitute(string $industry = 'education'): Institute
     {
+        // B87: isolate creation from an active tenant context so
+        // TenantScoped::creating does not force the new institute's setting
+        // onto a previously-set institute id
+        // (uq_institute_settings_institute duplicate). Preserve + restore
+        // the caller's context. Uses uniqid slugs to avoid
+        // parallel-worker collisions. Assertions untouched.
+        $previousTenantId = \App\Support\TenantContext::id();
+        \App\Support\TenantContext::clear();
+
         $country = Country::withoutGlobalScopes()->firstOrCreate(
             ['iso2' => 'BD'],
             ['name' => 'Bangladesh', 'iso3' => 'BDR', 'phone_code' => '880', 'status' => true]
         );
 
+        $suffix = uniqid();
+
         $institute = Institute::create([
-            'name' => 'Fixture '.ucfirst($industry).' '.mt_rand(1000, 9999),
-            'slug' => $industry.'-'.mt_rand(1000, 9999),
+            'name' => 'Fixture '.ucfirst($industry).' '.$suffix,
+            'slug' => $industry.'-'.$suffix,
             'industry' => $industry,
             'country' => $country->name,
             'country_id' => $country->id,
             'status' => 'active',
         ]);
 
-        InstituteSetting::withoutGlobalScopes()->create([
-            'institute_id' => $institute->id,
-            'ai_config' => [
-                'enabled' => true,
-                'features' => ['assistant'],
-                'daily_limit' => 0,
-                'monthly_limit' => 0,
+        InstituteSetting::withoutGlobalScopes()->firstOrCreate(
+            ['institute_id' => $institute->id],
+            [
+                'ai_config' => [
+                    'enabled' => true,
+                    'features' => ['assistant'],
+                    'daily_limit' => 0,
+                    'monthly_limit' => 0,
+                ],
             ],
-        ]);
+        );
+
+        if ($previousTenantId !== null) {
+            \App\Support\TenantContext::set($previousTenantId);
+        }
 
         return $institute;
     }
 
     protected function branch(Institute $institute, string $name): Branch
     {
-        return Branch::create([
-            'institute_id' => $institute->id,
-            'name' => $name,
-            'status' => 'active',
-        ]);
+        // B87: create with cleared context so TenantScoped does not force
+        // the branch onto a previously-set tenant; restore afterwards.
+        $previousTenantId = \App\Support\TenantContext::id();
+        \App\Support\TenantContext::clear();
+
+        try {
+            return Branch::create([
+                'institute_id' => $institute->id,
+                'name' => $name.' '.uniqid(),
+                'status' => 'active',
+            ]);
+        } finally {
+            if ($previousTenantId !== null) {
+                \App\Support\TenantContext::set($previousTenantId);
+            }
+        }
     }
 
     protected function userFor(Institute $institute, string $roleSlug, string $prefix, ?Branch $branch = null): InstituteUser
@@ -420,6 +448,9 @@ class AiCoreToolingTest extends TestCase
 
         $other = $this->freshInstitute('education');
         $otherBranch = $this->branch($other, 'Other');
+        // B87: TenantScoped forces institute_id to active context; set to
+        // other before creating its rows, then restore for assertions.
+        TenantContext::set($other->id);
         CrmLead::create([
             'institute_id' => $other->id,
             'branch_id' => $otherBranch->id,
@@ -428,6 +459,7 @@ class AiCoreToolingTest extends TestCase
             'status_id' => $this->leadStatus('won'),
             'value_amount' => 999999,
         ]);
+        TenantContext::set($institute->id);
 
         $owner = $this->ownerFor($institute, 'crm-tenant');
         $ctx = $this->contextFor($owner, $institute);
