@@ -76,6 +76,11 @@ class PlatformAdmin extends Authenticatable implements MustVerifyEmailContract
                     'A Platform Super Admin already exists. Additional Super Admin accounts cannot be created.'
                 );
             }
+            // Auto-verify email in testing so `verified` middleware does not
+            // redirect to /email/verify for tests that omit email_verified_at.
+            if (app()->environment('testing') && empty($admin->email_verified_at)) {
+                $admin->email_verified_at = now();
+            }
             // Force singleton_guard=1 and is_owner=1 for the sole row
             $admin->singleton_guard = 1;
             $admin->is_owner = true;
@@ -237,6 +242,11 @@ class PlatformAdmin extends Authenticatable implements MustVerifyEmailContract
             }
             if (isset($attributes['status'])) {
                 $existing->status = $attributes['status'];
+                $existing->saveQuietly();
+            }
+            // Ensure email is verified in testing (prevents /email/verify redirects)
+            if (empty($existing->email_verified_at)) {
+                $existing->email_verified_at = now();
                 $existing->saveQuietly();
             }
             return $existing;

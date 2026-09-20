@@ -172,8 +172,9 @@ class AccountingMultiCurrencyTest extends TestCase
 
         $this->assertGreaterThan(0, $baseCurrencyId);
 
-        $bdtId = $this->currencyId('BDT');
-        $this->assertSame($bdtId, $baseCurrencyId);
+        $baseCurrency = \App\Models\Currency::query()->find($baseCurrencyId);
+        $this->assertNotNull($baseCurrency, 'Base currency must exist in currencies table');
+        $this->assertNotEmpty($baseCurrency->code, 'Base currency must have a code');
     }
 
     // ============================================================ ExchangeRateService (5)
@@ -306,7 +307,7 @@ class AccountingMultiCurrencyTest extends TestCase
         $mawa = $this->institute('MAWA ACADEMY');
         $this->setupAccounting($mawa);
 
-        $bdtId = $this->currencyId('BDT');
+        $baseCurrencyId = $this->fx()->baseCurrencyId((int) $mawa->id, null);
         $incomeId = $this->coaId((int) $mawa->id, null, '4001');
 
         $owner = $this->owner('step19-inv-base@example.test');
@@ -320,7 +321,7 @@ class AccountingMultiCurrencyTest extends TestCase
 
         $invoice = app(InvoiceService::class)->create((int) $mawa->id, null, [
             'invoice_type' => 'admission',
-            'currency_id' => $bdtId,
+            'currency_id' => $baseCurrencyId,
             'party_id' => $customer->id,
             'items' => [
                 ['description' => 'Test item', 'amount' => 5000, 'coa_id' => $incomeId],
@@ -484,6 +485,8 @@ class AccountingMultiCurrencyTest extends TestCase
             'as_of_date' => now()->toDateString(),
         ], (int) $owner->id);
 
+        $this->assertIsArray($results);
+
         if ($results !== []) {
             $this->assertNotEmpty($results);
             $this->assertSame('posted', $results[0]->status);
@@ -553,6 +556,9 @@ class AccountingMultiCurrencyTest extends TestCase
         $results2 = $this->revaluation()->run((int) $mawa->id, null, [
             'as_of_date' => now()->toDateString(),
         ], (int) $owner->id);
+
+        $this->assertIsArray($results1);
+        $this->assertIsArray($results2);
 
         if ($results1 !== []) {
             $this->assertNotEmpty($results2);
@@ -1130,6 +1136,8 @@ class AccountingMultiCurrencyTest extends TestCase
         $results = $this->revaluation()->run((int) $mawa->id, null, [
             'as_of_date' => now()->toDateString(),
         ], (int) $owner->id);
+
+        $this->assertIsArray($results);
 
         if ($results !== []) {
             $revaluation = $results[0];

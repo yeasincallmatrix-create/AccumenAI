@@ -99,7 +99,7 @@ class AiAssistantAjaxTest extends TestCase
         $owner = $this->makeStaff('institute-owner', 'chat-ok@example.test');
 
         $this->actingAs($owner, 'institute_user')
-            ->postJson('/ai/assistant', ['message' => 'how many students?'])
+            ->postJson('/ai/assistant/send', ['message' => 'how many students?'])
             ->assertOk()
             ->assertJsonStructure(['success', 'message', 'data' => ['answer', 'status', 'tools', 'tool_used'], 'errors'])
             ->assertJsonPath('success', true)
@@ -124,7 +124,7 @@ class AiAssistantAjaxTest extends TestCase
         $owner = $this->makeStaff('institute-owner', 'chat-tool@example.test');
 
         $response = $this->actingAs($owner, 'institute_user')
-            ->postJson('/ai/assistant', ['message' => 'list students'])
+            ->postJson('/ai/assistant/send', ['message' => 'list students'])
             ->assertOk();
 
         $response->assertJsonPath('success', true)
@@ -140,13 +140,13 @@ class AiAssistantAjaxTest extends TestCase
         $owner = $this->makeStaff('institute-owner', 'chat-validate@example.test');
 
         $this->actingAs($owner, 'institute_user')
-            ->postJson('/ai/assistant', ['message' => ''])
+            ->postJson('/ai/assistant/send', ['message' => ''])
             ->assertStatus(422)
             ->assertJsonPath('success', false)
             ->assertJsonStructure(['errors' => ['message']]);
 
         $this->actingAs($owner, 'institute_user')
-            ->postJson('/ai/assistant', ['message' => str_repeat('a', 4001)])
+            ->postJson('/ai/assistant/send', ['message' => str_repeat('a', 4001)])
             ->assertStatus(422)
             ->assertJsonPath('success', false);
     }
@@ -161,7 +161,7 @@ class AiAssistantAjaxTest extends TestCase
         $history = array_fill(0, 21, ['role' => 'user', 'content' => 'x']);
 
         $this->actingAs($owner, 'institute_user')
-            ->postJson('/ai/assistant', ['message' => 'hi', 'history' => $history])
+            ->postJson('/ai/assistant/send', ['message' => 'hi', 'history' => $history])
             ->assertStatus(422)
             ->assertJsonPath('success', false)
             ->assertJsonStructure(['errors' => ['history']]);
@@ -192,7 +192,7 @@ class AiAssistantAjaxTest extends TestCase
         ));
 
         $response = $this->actingAs($owner, 'institute_user')
-            ->postJson('/ai/assistant', ['message' => 'anything'])
+            ->postJson('/ai/assistant/send', ['message' => 'anything'])
             ->assertOk();
 
         $response->assertJsonPath('success', false)
@@ -212,7 +212,7 @@ class AiAssistantAjaxTest extends TestCase
         $owner = $this->makeStaff('institute-owner', 'chat-fail@example.test');
 
         $response = $this->actingAs($owner, 'institute_user')
-            ->postJson('/ai/assistant', ['message' => 'hello'])
+            ->postJson('/ai/assistant/send', ['message' => 'hello'])
             ->assertOk();
 
         $response->assertJsonPath('success', false)
@@ -228,7 +228,7 @@ class AiAssistantAjaxTest extends TestCase
 
     public function test_send_requires_authentication(): void
     {
-        $this->postJson('/ai/assistant', ['message' => 'hello'])->assertUnauthorized();
+        $this->postJson('/ai/assistant/send', ['message' => 'hello'])->assertUnauthorized();
     }
 
     public function test_send_blocked_when_platform_disabled(): void
@@ -239,7 +239,7 @@ class AiAssistantAjaxTest extends TestCase
         $owner = $this->makeStaff('institute-owner', 'chat-platform@example.test');
 
         $this->actingAs($owner, 'institute_user')
-            ->postJson('/ai/assistant', ['message' => 'hello'])
+            ->postJson('/ai/assistant/send', ['message' => 'hello'])
             ->assertForbidden();
     }
 
@@ -250,7 +250,7 @@ class AiAssistantAjaxTest extends TestCase
         $owner = $this->makeStaff('institute-owner', 'chat-institute@example.test');
 
         $this->actingAs($owner, 'institute_user')
-            ->postJson('/ai/assistant', ['message' => 'hello'])
+            ->postJson('/ai/assistant/send', ['message' => 'hello'])
             ->assertForbidden();
     }
 
@@ -262,7 +262,7 @@ class AiAssistantAjaxTest extends TestCase
         $owner = $this->makeStaff('institute-owner', 'chat-feature@example.test');
 
         $this->actingAs($owner, 'institute_user')
-            ->postJson('/ai/assistant', ['message' => 'hello'])
+            ->postJson('/ai/assistant/send', ['message' => 'hello'])
             ->assertForbidden();
     }
 
@@ -274,7 +274,7 @@ class AiAssistantAjaxTest extends TestCase
         $teacher = $this->makeStaff('teacher', 'chat-noperm@example.test');
 
         $this->actingAs($teacher, 'institute_user')
-            ->postJson('/ai/assistant', ['message' => 'hello'])
+            ->postJson('/ai/assistant/send', ['message' => 'hello'])
             ->assertForbidden();
     }
 
@@ -301,7 +301,7 @@ class AiAssistantAjaxTest extends TestCase
         $owner = $this->makeStaff('institute-owner', 'chat-context@example.test');
 
         $this->actingAs($owner, 'institute_user')
-            ->postJson('/ai/assistant', ['message' => 'hi', 'institute_id' => $other->id])
+            ->postJson('/ai/assistant/send', ['message' => 'hi', 'institute_id' => $other->id])
             ->assertOk()
             ->assertJsonPath('success', true);
 
