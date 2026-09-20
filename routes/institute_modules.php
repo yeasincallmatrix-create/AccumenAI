@@ -583,7 +583,7 @@ Route::middleware($tenant)->group(function () {
     });
 
     // Finance Journals
-    Route::prefix('finance/journals')->name('finance.journals.')->group(function () use ($finJour) {
+    Route::prefix('finance/journals')->name('finance.journals.')->middleware('advanced.accounting')->group(function () use ($finJour) {
         Route::get('create', [$finJour, 'create'])->name('create');
         Route::post('/', [$finJour, 'store'])->name('store');
         Route::get('{journal}', [$finJour, 'show'])->name('show');
@@ -626,8 +626,8 @@ Route::middleware($tenant)->group(function () {
     // Finance Periods
     Route::prefix('finance/periods')->name('finance.periods.')->group(function () use ($finPer) {
         Route::post('/', [$finPer, 'store'])->name('store');
-        Route::post('{period}/close', [$finPer, 'closePeriod'])->name('close');
-        Route::post('{period}/reopen', [$finPer, 'reopenPeriod'])->name('reopen');
+        Route::post('{period}/close', [$finPer, 'closePeriod'])->middleware('advanced.accounting')->name('close');
+        Route::post('{period}/reopen', [$finPer, 'reopenPeriod'])->middleware('advanced.accounting')->name('reopen');
     });
 
     // Finance Opening Balances
@@ -788,7 +788,7 @@ Route::middleware($tenant)->group(function () {
     });
 
     // Accounting Fiscal Years
-    Route::prefix('accounting/fiscal-years')->name('accounting.fiscal-years.')->group(function () use ($acctFiscal) {
+    Route::prefix('accounting/fiscal-years')->name('accounting.fiscal-years.')->middleware('advanced.accounting')->group(function () use ($acctFiscal) {
         Route::post('{year}/close', [$acctFiscal, 'close'])->name('close');
         Route::post('{year}/reopen', [$acctFiscal, 'reopen'])->name('reopen');
     });
@@ -823,7 +823,7 @@ Route::middleware($tenant)->group(function () {
     });
 
     // Accounting Periods
-    Route::prefix('accounting/periods')->name('accounting.periods.')->group(function () use ($acctPeriod) {
+    Route::prefix('accounting/periods')->name('accounting.periods.')->middleware('advanced.accounting')->group(function () use ($acctPeriod) {
         Route::post('{period}/close', [$acctPeriod, 'close'])->name('close');
         Route::post('{period}/reopen', [$acctPeriod, 'reopen'])->name('reopen');
     });

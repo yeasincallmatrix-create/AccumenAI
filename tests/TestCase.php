@@ -81,6 +81,18 @@ abstract class TestCase extends BaseTestCase
         // scope_key collides with every test-created global scale.
         // TEST-ONLY via setUp(); idempotent no-op on a clean database.
         $this->cleanupOrphanGradeScale();
+
+        // Phase E.2: enable advanced accounting on seeded institutes so
+        // gated advanced routes (TB/GL/AL/journals/audit/periods) resolve
+        // without per-file edits. Toggle tests set explicit state.
+        if (Schema::hasColumn('institutes', 'advanced_accounting_enabled')) {
+            DB::table('institutes')->update(['advanced_accounting_enabled' => true]);
+            Institute::creating(function ($institute) {
+                if ($institute->advanced_accounting_enabled === null) {
+                    $institute->advanced_accounting_enabled = true;
+                }
+            });
+        }
     }
 
     /**

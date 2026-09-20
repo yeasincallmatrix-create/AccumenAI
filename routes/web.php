@@ -548,7 +548,7 @@ Route::middleware(['auth:institute_user,web','tenant', 'deny.teacher.finance', '
     Route::get('finance', [\App\Http\Controllers\FinanceDashboardController::class, 'index'])->name('finance.dashboard');
     Route::get('finance/budgets/dashboard', [\App\Http\Controllers\FinanceBudgetController::class, 'index'])->name('finance.budgets.dashboard');
     Route::get('finance/chart-of-accounts', [\App\Http\Controllers\FinanceChartOfAccountController::class, 'index'])->name('finance.chart-of-accounts.index');
-    Route::get('finance/journals', [\App\Http\Controllers\FinanceJournalController::class, 'index'])->name('finance.journals.index');
+    Route::get('finance/journals', [\App\Http\Controllers\FinanceJournalController::class, 'index'])->middleware('advanced.accounting')->name('finance.journals.index');
     Route::get('finance/invoices', [\App\Http\Controllers\FinanceInvoiceController::class, 'index'])->name('finance.invoices.index');
     Route::get('finance/payments', [\App\Http\Controllers\FinancePaymentController::class, 'index'])->name('finance.payments.index');
     Route::get('finance/parties', [\App\Http\Controllers\FinancePartyController::class, 'index'])->name('finance.parties.index');
@@ -559,7 +559,7 @@ Route::middleware(['auth:institute_user,web','tenant', 'deny.teacher.finance', '
     Route::get('finance/opening-balances/create', [\App\Http\Controllers\FinanceOpeningBalanceController::class, 'create'])->name('finance.opening-balances.create');
     Route::get('finance/exchange-rates', [\App\Http\Controllers\FinanceExchangeRateController::class, 'index'])->name('finance.exchange-rates.index');
     Route::get('finance/fx-revaluations', [\App\Http\Controllers\FinanceFxRevaluationController::class, 'index'])->name('finance.fx-revaluations.index');
-    Route::get('finance/audit', [\App\Http\Controllers\FinanceAuditController::class, 'index'])->name('finance.audit.index');
+    Route::get('finance/audit', [\App\Http\Controllers\FinanceAuditController::class, 'index'])->middleware('advanced.accounting')->name('finance.audit.index');
     Route::get('finance/education/dashboard', function () { return redirect()->route('finance.dashboard'); })->name('finance.education.dashboard');
     Route::get('finance/education/fee-structures', [\App\Http\Controllers\FeeStructureController::class, 'index'])
         ->middleware(['permission:finance.view', 'module_access:finance'])
@@ -572,12 +572,12 @@ Route::middleware(['auth:institute_user,web','tenant', 'deny.teacher.finance', '
     Route::get('finance/reports/receivables', [\App\Http\Controllers\FinanceReportController::class, 'receivables'])->name('finance.reports.receivables');
     Route::get('finance/reports/payables', [\App\Http\Controllers\FinanceReportController::class, 'payables'])->name('finance.reports.payables');
     Route::get('accounting', [\App\Http\Controllers\Accounting\AccountingDashboardController::class, 'index'])->name('accounting.dashboard');
-    Route::get('accounting/reports/trial-balance', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'trialBalance'])->name('accounting.reports.trial-balance');
+    Route::get('accounting/reports/trial-balance', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'trialBalance'])->middleware('advanced.accounting')->name('accounting.reports.trial-balance');
     Route::get('accounting/reports/profit-loss', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'profitAndLoss'])->name('accounting.reports.profit-loss');
     Route::get('accounting/reports/balance-sheet', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'balanceSheet'])->name('accounting.reports.balance-sheet');
     Route::get('accounting/reports/cash-flow', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'cashFlow'])->name('accounting.reports.cash-flow');
-    Route::get('accounting/reports/general-ledger', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'generalLedger'])->name('accounting.reports.general-ledger');
-    Route::get('accounting/reports/account-ledger', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'accountLedger'])->name('accounting.reports.account-ledger');
+    Route::get('accounting/reports/general-ledger', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'generalLedger'])->middleware('advanced.accounting')->name('accounting.reports.general-ledger');
+    Route::get('accounting/reports/account-ledger', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'accountLedger'])->middleware('advanced.accounting')->name('accounting.reports.account-ledger');
     Route::get('accounting/reports/ratio-analysis', [\App\Http\Controllers\Accounting\RatioAnalysisController::class, 'index'])->middleware('advanced.accounting')->name('accounting.reports.ratios');
     Route::get('recycle', [\App\Http\Controllers\RecycleBinController::class, 'index'])->name('recycle.index');
     Route::get('settings', [\App\Http\Controllers\InstituteSettingController::class, 'index'])->name('settings.index');
