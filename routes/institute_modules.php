@@ -1057,10 +1057,10 @@ Route::middleware($tenant)->group(function () {
         // Pipeline (must come BEFORE {admission} wildcard)
         Route::get('pipeline', [$admPipe, 'index'])->name('pipeline');
         Route::get('pipeline/report', [$admPipe, 'report'])->name('pipeline.report');
-        Route::post('pipeline', [$admPipe, 'store'])->name('pipeline.store');
-        Route::post('pipeline/convert', [$admPipe, 'convert'])->name('pipeline.convert');
+        Route::post('pipeline/{lead}', [$admPipe, 'store'])->name('pipeline.store');
+        Route::get('pipeline/convert/{lead}', [$admPipe, 'convert'])->name('pipeline.convert');
         Route::get('pipeline/students', [$admPipe, 'searchStudents'])->name('pipeline.students');
-        Route::post('pipeline/link', [$admPipe, 'link'])->name('pipeline.link');
+        Route::post('pipeline/link/{lead}', [$admPipe, 'link'])->name('pipeline.link');
         // Approval workflow (must come BEFORE {admission} wildcard)
         Route::get('pending', [$adm, 'pending'])->middleware('permission:admission.approve')->name('pending');
         Route::get('{student}/review', [$adm, 'review'])->middleware('permission:admission.approve')->name('review');
