@@ -80,7 +80,8 @@ class Guardian extends Authenticatable implements CanResetPasswordContract
                 if ($norm !== null) $g->email = $norm;
             }
             if ($g->isDirty('phone') && $g->phone !== null && $g->phone !== '') {
-                $norm = \App\Support\PhoneNormalizer::toE164($g->phone, 'Bangladesh');
+                // 9b-3: default via locale config (default 'Bangladesh', unchanged).
+                $norm = \App\Support\PhoneNormalizer::toE164($g->phone, config('locale.country.default_name', 'Bangladesh'));
                 if ($norm !== null) $g->phone = $norm;
             }
         });

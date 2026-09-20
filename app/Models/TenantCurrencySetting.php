@@ -59,7 +59,8 @@ class TenantCurrencySetting extends Model
             ? CountryCurrencyMap::currencyForCountry($countryCode)
             : null;
 
-        $baseCurrency = $baseCurrency ?? 'BDT';
+        // 9b-3: fallback via locale config (default 'BDT', unchanged).
+        $baseCurrency = $baseCurrency ?? config('locale.currency.default_code', 'BDT');
 
         return [
             'country_code' => $countryCode,

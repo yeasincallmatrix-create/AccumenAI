@@ -91,12 +91,15 @@ class PaymentGatewayManager
 
         $gateway = $this->resolveGateway($gatewayConfig->gateway->slug);
 
+        // 9b-3: fallback via locale config (default 'BDT', unchanged).
+        // bKash-pinned literals elsewhere in this file (attempt
+        // creation, SaaS initiate) stay literal — bKash enforces BDT.
         $result = $gateway->initiatePayment(
             $gatewayConfig,
             $invoice,
             $attempt,
             $amount,
-            $invoice->currency?->code ?? 'BDT',
+            $invoice->currency?->code ?? config('locale.currency.default_code', 'BDT'),
             $installmentId,
             $idempotencyKey,
         );

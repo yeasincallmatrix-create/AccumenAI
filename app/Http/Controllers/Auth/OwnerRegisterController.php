@@ -93,7 +93,8 @@ class OwnerRegisterController extends Controller
 
         $normalizedEmail = \App\Support\EmailNormalizer::normalize($data['email']);
         $rawPhone = $data['phone'];
-        $country = $selection['country'] ?? 'Bangladesh';
+        // 9b-3: default via locale config (default 'Bangladesh', unchanged).
+        $country = $selection['country'] ?? config('locale.country.default_name', 'Bangladesh');
         $normalizedPhone = \App\Support\PhoneNormalizer::toE164($rawPhone, $country);
         if ($normalizedPhone === null) {
             return back()->withErrors(['phone' => 'Invalid phone number.'])->withInput();

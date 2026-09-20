@@ -119,7 +119,8 @@ class PhoneNormalizer
         }
 
         // National format - convert using country code
-        $dial = $code ?? '880'; // fallback to BD if no country
+        // 9b-3: fallback via locale config (default '880', unchanged).
+        $dial = $code ?? config('locale.phone.default_country_code', '880');
         // Respect trunk: if national starts with 0, strip leading zeros before prefixing
         $nationalCore = $digits;
         if (str_starts_with($nationalCore, '0')) {

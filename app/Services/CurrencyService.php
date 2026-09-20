@@ -168,6 +168,7 @@ class CurrencyService
      */
     public function detectCurrencyForCountry(string $countryCode): string
     {
-        return CountryCurrencyMap::currencyForCountry($countryCode) ?? 'BDT';
+        // 9b-3: fallback via locale config (default 'BDT', unchanged).
+        return CountryCurrencyMap::currencyForCountry($countryCode) ?? config('locale.currency.default_code', 'BDT');
     }
 }

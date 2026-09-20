@@ -34,5 +34,9 @@ return [
 
     'country' => [
         'default_iso2' => env('LOCALE_COUNTRY_DEFAULT', 'BD'),
+        // Display-name fallback for pre-FK code paths (registration,
+        // phone normalization defaults). Value identical to the
+        // previously hardcoded 'Bangladesh'.
+        'default_name' => env('LOCALE_COUNTRY_DEFAULT_NAME', 'Bangladesh'),
     ],
 ];

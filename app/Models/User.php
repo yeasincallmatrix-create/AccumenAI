@@ -163,13 +163,15 @@ class User extends Authenticatable implements MustVerifyEmailContract
             }
             // Phone normalization: canonical E164 via PhoneNormalizer where dirty
             if ($user->isDirty('phone') && $user->phone !== null && $user->phone !== '') {
-                $norm = \App\Support\PhoneNormalizer::toE164($user->phone, 'Bangladesh');
+                // 9b-3: default via locale config (default 'Bangladesh', unchanged).
+                $norm = \App\Support\PhoneNormalizer::toE164($user->phone, config('locale.country.default_name', 'Bangladesh'));
                 if ($norm !== null) {
                     $user->phone = $norm;
                 }
             }
             if ($user->isDirty('pending_phone') && $user->pending_phone !== null && $user->pending_phone !== '') {
-                $norm = \App\Support\PhoneNormalizer::toE164($user->pending_phone, 'Bangladesh');
+                // 9b-3: default via locale config (default 'Bangladesh', unchanged).
+                $norm = \App\Support\PhoneNormalizer::toE164($user->pending_phone, config('locale.country.default_name', 'Bangladesh'));
                 if ($norm !== null) {
                     $user->pending_phone = $norm;
                 }

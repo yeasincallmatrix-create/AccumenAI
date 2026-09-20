@@ -20,7 +20,7 @@ class PhonePasswordRecoveryService
      */
     public function request(string $rawPhone, ?string $country, ?string $ip = null): void
     {
-        $normalized = PhoneNormalizer::toE164($rawPhone, $country ?? 'Bangladesh');
+        $normalized = PhoneNormalizer::toE164($rawPhone, $country ?? config('locale.country.default_name', 'Bangladesh'));
         if ($normalized === null) {
             // Invalid phone - still generic, rate limit IP
             $this->hitRateLimit($ip);
@@ -96,7 +96,7 @@ class PhonePasswordRecoveryService
      */
     public function verify(string $rawPhone, string $otp, ?string $country = null): bool
     {
-        $normalized = PhoneNormalizer::toE164($rawPhone, $country ?? 'Bangladesh');
+        $normalized = PhoneNormalizer::toE164($rawPhone, $country ?? config('locale.country.default_name', 'Bangladesh'));
         if ($normalized === null) {
             throw ValidationException::withMessages(['phone' => ['Invalid phone number.']]);
         }
@@ -156,7 +156,7 @@ class PhonePasswordRecoveryService
      */
     public function reset(string $rawPhone, string $newPassword, ?string $country = null): User
     {
-        $normalized = PhoneNormalizer::toE164($rawPhone, $country ?? 'Bangladesh');
+        $normalized = PhoneNormalizer::toE164($rawPhone, $country ?? config('locale.country.default_name', 'Bangladesh'));
         if ($normalized === null) {
             throw ValidationException::withMessages(['phone' => ['Invalid phone number.']]);
         }

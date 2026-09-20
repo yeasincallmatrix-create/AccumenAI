@@ -340,7 +340,8 @@ class InstituteSettingController extends Controller
                 'theme' => 'default',
                 'primary_color' => '#0D6EFD',
                 'secondary_color' => '#FFC107',
-                'timezone' => 'Asia/Dhaka',
+                // 9b-3: timezone via locale config (default 'Asia/Dhaka', unchanged).
+                'timezone' => config('locale.date.timezone', 'Asia/Dhaka'),
                 'language' => 'bn',
                 'date_format' => 'dmy',
             ];

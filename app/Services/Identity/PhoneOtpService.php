@@ -215,7 +215,7 @@ class PhoneOtpService
         if (! $rawPhone) {
             throw \Illuminate\Validation\ValidationException::withMessages(['phone' => ['No phone on file.']]);
         }
-        $normalized = PhoneNormalizer::toE164($rawPhone, $country ?? 'Bangladesh');
+        $normalized = PhoneNormalizer::toE164($rawPhone, $country ?? config('locale.country.default_name', 'Bangladesh'));
         if ($normalized === null) {
             throw \Illuminate\Validation\ValidationException::withMessages(['phone' => ['Invalid phone number.']]);
         }
@@ -273,7 +273,7 @@ class PhoneOtpService
         if (! $rawPhone) {
             throw ValidationException::withMessages(['otp' => ['Invalid or expired code.']]);
         }
-        $normalized = PhoneNormalizer::toE164($rawPhone, $country ?? 'Bangladesh');
+        $normalized = PhoneNormalizer::toE164($rawPhone, $country ?? config('locale.country.default_name', 'Bangladesh'));
         if ($normalized === null) {
             throw ValidationException::withMessages(['otp' => ['Invalid or expired code.']]);
         }

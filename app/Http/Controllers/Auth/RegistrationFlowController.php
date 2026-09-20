@@ -297,7 +297,8 @@ class RegistrationFlowController extends Controller
             return redirect()->route('register.organization');
         }
         $org = $pending->organization_data;
-        $geoAddress = $this->geoAddress($org['country'] ?? 'Bangladesh');
+        // 9b-3: default via locale config (default 'Bangladesh', unchanged).
+        $geoAddress = $this->geoAddress($org['country'] ?? config('locale.country.default_name', 'Bangladesh'));
         return view('auth.register-address', [
             'geoAddress' => $geoAddress,
             'selection' => $org,

@@ -73,7 +73,8 @@ class PatientRequest extends FormRequest
             }
         }
 
-        return 'Bangladesh';
+        // 9b-3: terminal fallback via locale config (default 'Bangladesh', unchanged).
+        return config('locale.country.default_name', 'Bangladesh');
     }
 
     public function rules(): array

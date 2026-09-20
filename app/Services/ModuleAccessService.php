@@ -1402,14 +1402,16 @@ class ModuleAccessService
             return [
                 'monthly' => (float) ($package?->price_monthly ?? 0),
                 'yearly' => (float) ($package?->price_yearly ?? 0),
-                'currency' => 'BDT',
+                // 9b-3: fallback via locale config (default 'BDT', unchanged).
+                'currency' => config('locale.currency.default_code', 'BDT'),
             ];
         }
 
         return [
             'monthly' => $scope->effectiveMonthlyPrice(),
             'yearly' => $scope->effectiveYearlyPrice(),
-            'currency' => $scope->effectiveCurrency() ?? 'BDT',
+            // 9b-3: fallback via locale config (default 'BDT', unchanged).
+            'currency' => $scope->effectiveCurrency() ?? config('locale.currency.default_code', 'BDT'),
         ];
     }
 

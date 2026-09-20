@@ -34,7 +34,16 @@ class SalesSettingsService
         $setting = InstituteSetting::withoutGlobalScopes()->where('institute_id', $instituteId)->first();
         $config = $setting?->sales_config ?? [];
 
-        return array_replace_recursive(self::DEFAULTS, is_array($config) ? $config : []);
+        $merged = array_replace_recursive(self::DEFAULTS, is_array($config) ? $config : []);
+
+        // 9b-3: default currency via locale config (default 'BDT',
+        // unchanged). The DEFAULTS const keeps its literal for the
+        // numbering refs elsewhere; only the resolved value floats.
+        if (! isset($config['default_currency'])) {
+            $merged['default_currency'] = config('locale.currency.default_code', 'BDT');
+        }
+
+        return $merged;
     }
 
     public function update(int $instituteId, array $data, ?int $actorId = null): array

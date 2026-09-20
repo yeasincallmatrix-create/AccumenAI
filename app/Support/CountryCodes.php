@@ -211,7 +211,8 @@ class CountryCodes
             return self::CODES[$country];
         }
 
-        return '880';
+        // 9b-3: fallback via locale config (default '880', unchanged).
+        return config('locale.phone.default_country_code', '880');
     }
 
     /**
@@ -313,7 +314,14 @@ class CountryCodes
 
         $code = self::codeFor($country);
 
-        return $code === '880' ? '017XXXXXXXX' : $code.' XXX XXXXX';
+        // 9b-3: the BD-curated example applies only while the platform
+        // default is still BD (defaults unchanged when env not set).
+        if ($code === config('locale.phone.default_country_code', '880')
+            && config('locale.phone.default_iso2', 'BD') === 'BD') {
+            return '017XXXXXXXX';
+        }
+
+        return $code.' XXX XXXXX';
     }
 
     /**

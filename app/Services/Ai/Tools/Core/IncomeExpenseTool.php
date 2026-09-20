@@ -84,7 +84,9 @@ class IncomeExpenseTool extends AbstractAiTool
             'total_income' => $income,
             'total_expense' => $expense,
             'net' => round($income - $expense, 2),
-            'currency' => 'BDT',
+            // 9b-3: previously hardcoded with no fallback; now via
+            // locale config (default 'BDT', unchanged).
+            'currency' => config('locale.currency.default_code', 'BDT'),
         ];
 
         if (($from = $this->dateArg($args, 'from')) !== null || ($to = $this->dateArg($args, 'to')) !== null) {

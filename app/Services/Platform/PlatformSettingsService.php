@@ -28,23 +28,34 @@ class PlatformSettingsService
         'bkash.webhook_secret',
     ];
 
-    public const GENERAL_DEFAULTS = [
-        'app.name' => 'Accumen AI',
-        'app.short_name' => 'AccumenAI',
-        'app.url' => 'http://localhost',
-        'app.timezone' => 'Asia/Dhaka',
-        'app.country' => 'BD',
-        'app.currency' => 'BDT',
-        'app.language' => 'en',
-        'app.date_format' => 'd M Y',
-        'app.time_format' => 'H:i',
-        'app.pagination' => '15',
-        'app.contact_email' => '',
-        'app.support_phone' => '',
-        'app.support_url' => '',
-        'app.maintenance' => '0',
-        'app.maintenance_message' => '',
-    ];
+    /**
+     * 9b-3: defaults as a method (not const) so the locale values can
+     * come from config/locale.php. Every default is identical to the
+     * previous literal when env is unset. No external references to
+     * the old GENERAL_DEFAULTS const exist repo-wide.
+     *
+     * @return array<string, string>
+     */
+    public static function generalDefaults(): array
+    {
+        return [
+            'app.name' => 'Accumen AI',
+            'app.short_name' => 'AccumenAI',
+            'app.url' => 'http://localhost',
+            'app.timezone' => config('locale.date.timezone', 'Asia/Dhaka'),
+            'app.country' => config('locale.country.default_iso2', 'BD'),
+            'app.currency' => config('locale.currency.default_code', 'BDT'),
+            'app.language' => 'en',
+            'app.date_format' => 'd M Y',
+            'app.time_format' => 'H:i',
+            'app.pagination' => '15',
+            'app.contact_email' => '',
+            'app.support_phone' => '',
+            'app.support_url' => '',
+            'app.maintenance' => '0',
+            'app.maintenance_message' => '',
+        ];
+    }
 
     public static function get(string $key, mixed $default = null): mixed
     {
@@ -52,8 +63,9 @@ class PlatformSettingsService
         if ($db !== null && $db !== '') {
             return $db;
         }
-        if (array_key_exists($key, self::GENERAL_DEFAULTS)) {
-            return self::GENERAL_DEFAULTS[$key];
+        $defaults = self::generalDefaults();
+        if (array_key_exists($key, $defaults)) {
+            return $defaults[$key];
         }
         // fallback to env/config for legacy keys
         return $default ?? self::envFallback($key);

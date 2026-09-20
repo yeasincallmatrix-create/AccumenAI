@@ -179,7 +179,8 @@ class PatientController extends MedicalController implements HasMiddleware
         $raw = trim((string) $request->input('phone'));
 
         $countryId = Institute::whereKey($instituteId)->value('country_id');
-        $country = $countryId ? Country::whereKey($countryId)->value('name') : 'Bangladesh';
+        // 9b-3: fallback via locale config (default 'Bangladesh', unchanged).
+        $country = $countryId ? Country::whereKey($countryId)->value('name') : config('locale.country.default_name', 'Bangladesh');
 
         $normalized = PhoneNormalizer::toE164($raw, $country);
         $digits = preg_replace('/\D/', '', $raw) ?? '';
@@ -327,7 +328,8 @@ class PatientController extends MedicalController implements HasMiddleware
         $presentAddress = $this->addressData($patient);
 
         // Country-parameter phone meta for realtime length check (server: PhoneRule).
-        $phoneCountry = $presentAddress['country']->name ?? 'Bangladesh';
+        // 9b-3: fallback via locale config (default 'Bangladesh', unchanged).
+        $phoneCountry = $presentAddress['country']->name ?? config('locale.country.default_name', 'Bangladesh');
         $phoneCode = CountryCodes::codeFor($phoneCountry);
         [$phoneMin, $phoneMax] = CountryCodes::nationalLengthFor($phoneCountry);
         $phoneExample = CountryCodes::phoneExampleFor($phoneCountry);

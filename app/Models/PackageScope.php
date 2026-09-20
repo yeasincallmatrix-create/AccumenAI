@@ -134,7 +134,7 @@ class PackageScope extends Model
     /**
      * Get the effective currency for this scope.
      * If scope has no currency, walk up parent chain.
-     * Falls back to 'BDT' as default.
+     * Falls back to the locale default currency ('BDT' unless configured).
      */
     public function effectiveCurrency(): ?string
     {
@@ -149,7 +149,8 @@ class PackageScope extends Model
             return $parent->effectiveCurrency();
         }
 
-        return 'BDT';
+        // 9b-3: fallback via locale config (default 'BDT', unchanged).
+        return config('locale.currency.default_code', 'BDT');
     }
 
     /**
@@ -157,7 +158,8 @@ class PackageScope extends Model
      */
     public function effectivePriceString(): string
     {
-        $currency = $this->effectiveCurrency() ?? 'BDT';
+        // 9b-3: fallback via locale config (default 'BDT', unchanged).
+        $currency = $this->effectiveCurrency() ?? config('locale.currency.default_code', 'BDT');
         $monthly = $this->effectiveMonthlyPrice();
         $yearly = $this->effectiveYearlyPrice();
 

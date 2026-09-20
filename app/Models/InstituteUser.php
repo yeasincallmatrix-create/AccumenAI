@@ -96,7 +96,8 @@ class InstituteUser extends Authenticatable implements MustVerifyEmailContract
                 if ($norm !== null) $user->email = $norm;
             }
             if ($user->isDirty('phone') && $user->phone !== null && $user->phone !== '') {
-                $norm = \App\Support\PhoneNormalizer::toE164($user->phone, 'Bangladesh');
+                // 9b-3: default via locale config (default 'Bangladesh', unchanged).
+                $norm = \App\Support\PhoneNormalizer::toE164($user->phone, config('locale.country.default_name', 'Bangladesh'));
                 if ($norm !== null) $user->phone = $norm;
             }
             // Mass assignment protection: block is_owner/super_admin escalation vectors

@@ -59,7 +59,8 @@ class UserLoginController extends Controller
         if ($isEmail) {
             $normalizedEmail = EmailNormalizer::normalize($identifier);
         } else {
-            $normalizedPhone = PhoneNormalizer::toE164($identifier, 'Bangladesh');
+            // 9b-3: default via locale config (default 'Bangladesh', unchanged).
+            $normalizedPhone = PhoneNormalizer::toE164($identifier, config('locale.country.default_name', 'Bangladesh'));
             // Fallback: if phone normalization fails, treat as email attempt to keep generic error
             if ($normalizedPhone === null) {
                 $normalizedEmail = EmailNormalizer::normalize($identifier);
