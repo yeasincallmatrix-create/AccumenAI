@@ -198,6 +198,21 @@ class CountryCodes
     private static ?array $codesByLength = null;
 
     /**
+     * B122: hardened config read. config() requires a booted Laravel
+     * app; raw-PHPUnit (and any other non-app) contexts have no
+     * 'config' binding, so fall back to the provided default there.
+     * Production (HTTP/queue/console) always boots the app.
+     */
+    private static function cfg(string $key, mixed $fallback): mixed
+    {
+        if (function_exists('config') && app()->bound('config')) {
+            return config($key, $fallback);
+        }
+
+        return $fallback;
+    }
+
+    /**
      * @return array<string,string>
      */
     public static function all(): array
@@ -212,7 +227,7 @@ class CountryCodes
         }
 
         // 9b-3: fallback via locale config (default '880', unchanged).
-        return config('locale.phone.default_country_code', '880');
+        return self::cfg('locale.phone.default_country_code', '880');
     }
 
     /**
@@ -226,7 +241,7 @@ class CountryCodes
             return (string) $country->phone_code;
         }
 
-        return config('locale.phone.default_country_code', '880');
+        return self::cfg('locale.phone.default_country_code', '880');
     }
 
     /**
@@ -239,7 +254,7 @@ class CountryCodes
             return (string) $code;
         }
 
-        return config('locale.phone.default_country_code', '880');
+        return self::cfg('locale.phone.default_country_code', '880');
     }
 
     /**
@@ -316,8 +331,8 @@ class CountryCodes
 
         // 9b-3: the BD-curated example applies only while the platform
         // default is still BD (defaults unchanged when env not set).
-        if ($code === config('locale.phone.default_country_code', '880')
-            && config('locale.phone.default_iso2', 'BD') === 'BD') {
+        if ($code === self::cfg('locale.phone.default_country_code', '880')
+            && self::cfg('locale.phone.default_iso2', 'BD') === 'BD') {
             return '017XXXXXXXX';
         }
 

@@ -3,8 +3,11 @@
 namespace Tests\Unit;
 
 use App\Support\CountryCodes;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
+// B122: extends the Laravel TestCase (was raw PHPUnit) so the
+// config binding exists for the locale-config reads. No test
+// method or assertion changed.
 class CountryCodesTest extends TestCase
 {
     public function test_known_country_returns_curated_example(): void
