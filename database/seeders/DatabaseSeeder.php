@@ -47,6 +47,8 @@ class DatabaseSeeder extends Seeder
         // Hybrid COA Phase C: global groups BEFORE global accounts.
         $this->call(GlobalAccountGroupsSeeder::class);
         $this->call(GlobalChartOfAccountsSeeder::class);
+        // Phase F follow-up: canonical industry tags (self-healing).
+        $this->call(IndustryTagSeeder::class);
         // B82: shared global catalogs (idempotent; also wired in TestCase).
         $this->call(DocumentCategorySeeder::class);
         $this->call(CrmLeadStatusSeeder::class);
