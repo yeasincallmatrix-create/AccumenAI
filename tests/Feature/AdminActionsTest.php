@@ -8,8 +8,10 @@ use App\Models\Course;
 use App\Models\CourseCategory;
 use App\Models\CourseRequest;
 use App\Models\Institute;
+use App\Models\InstituteUser;
 use App\Models\Notification;
 use App\Models\PlatformAdmin;
+use App\Models\Role;
 use App\Models\Student;
 use App\Models\StudentEnrollment;
 use App\Models\Subject;
@@ -45,6 +47,20 @@ class AdminActionsTest extends TestCase
             'name' => 'Action Test Institute',
             'slug' => 'action-test-'.uniqid(),
             'status' => $status,
+        ]);
+    }
+
+    protected function requesterFor(Institute $institute): InstituteUser
+    {
+        return InstituteUser::query()->create([
+            'institute_id' => $institute->id,
+            'role_id' => Role::where('slug', 'teacher')->firstOrFail()->id,
+            'first_name' => 'Requester',
+            'last_name' => 'User',
+            'email' => 'requester-'.uniqid().'@example.test',
+            'phone' => '017'.mt_rand(10000000, 99999999),
+            'password_hash' => bcrypt('password'),
+            'status' => 'active',
         ]);
     }
 
@@ -111,7 +127,7 @@ class AdminActionsTest extends TestCase
         $request = CourseRequest::query()->create([
             'institute_id' => $institute->id,
             'course_id' => $course->id,
-            'requested_by' => 1,
+            'requested_by' => $this->requesterFor($institute)->id,
             'status' => 'pending',
         ]);
         $this->actingAs($this->admin, 'platform_admin');
@@ -134,7 +150,7 @@ class AdminActionsTest extends TestCase
         $request = CourseRequest::query()->create([
             'institute_id' => $institute->id,
             'course_id' => $course->id,
-            'requested_by' => 1,
+            'requested_by' => $this->requesterFor($institute)->id,
             'status' => 'pending',
         ]);
         $this->actingAs($this->admin, 'platform_admin');
@@ -152,7 +168,7 @@ class AdminActionsTest extends TestCase
         CourseRequest::query()->create([
             'institute_id' => $institute->id,
             'course_id' => $course->id,
-            'requested_by' => 1,
+            'requested_by' => $this->requesterFor($institute)->id,
             'status' => 'pending',
         ]);
         $this->actingAs($this->admin, 'platform_admin');
@@ -431,16 +447,17 @@ class AdminActionsTest extends TestCase
         $institute = $this->makeInstitute('active');
         $pendingCourse = Course::query()->create(['name' => 'Request Filter Pending', 'course_code' => 'RFP-'.uniqid(), 'status' => 'active']);
         $approvedCourse = Course::query()->create(['name' => 'Request Filter Approved', 'course_code' => 'RFA-'.uniqid(), 'status' => 'active']);
+        $requester = $this->requesterFor($institute);
         CourseRequest::query()->create([
             'institute_id' => $institute->id,
             'course_id' => $pendingCourse->id,
-            'requested_by' => 1,
+            'requested_by' => $requester->id,
             'status' => 'pending',
         ]);
         CourseRequest::query()->create([
             'institute_id' => $institute->id,
             'course_id' => $approvedCourse->id,
-            'requested_by' => 1,
+            'requested_by' => $requester->id,
             'status' => 'approved',
         ]);
         $this->actingAs($this->admin, 'platform_admin');
