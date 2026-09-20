@@ -99,7 +99,8 @@ class AccountingEngineTest extends TestCase
         $this->setupAccounting($institute, $branch);
 
         $this->assertSame(5, \DB::table('account_groups')->where('institute_id', $institute->id)->count());
-        $this->assertSame(38, ChartOfAccount::query()->where('institute_id', $institute->id)->count());
+        // TEMPLATE is 39 accounts (38 − 1001/1002 + 1000/1100/1400).
+        $this->assertSame(39, ChartOfAccount::query()->where('institute_id', $institute->id)->count());
         $this->assertSame(4, PaymentMethod::query()->where('institute_id', $institute->id)->count());
         $this->assertSame(1, FiscalYear::query()->where('institute_id', $institute->id)->count());
     }
