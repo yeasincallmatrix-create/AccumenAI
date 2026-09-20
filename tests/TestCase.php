@@ -139,7 +139,9 @@ abstract class TestCase extends BaseTestCase
      * TEST-ONLY fixture seed: institutes hardcoded by name in feature tests.
      * Guarded to the testing environment so production rows are never
      * touched (the user explicitly deleted "Tutu Center" from production).
-     * Idempotent via firstOrCreate inside the seeder.
+     * No per-name early return (B83b): the seeder is fully idempotent
+     * (firstOrCreate + race-tolerant), so always run it — a stale
+     * existence guard would silently skip newly added fixtures.
      */
     protected function seedTestInstitutes(): void
     {
@@ -148,11 +150,6 @@ abstract class TestCase extends BaseTestCase
         }
 
         if (! Schema::hasTable('institutes')) {
-            return;
-        }
-
-        if (Institute::where('name', 'Tutu Center')->exists()
-            && Institute::where('name', 'Mawa Academy')->exists()) {
             return;
         }
 
@@ -259,12 +256,11 @@ abstract class TestCase extends BaseTestCase
             );
         }
 
-        if (Schema::hasTable('grade_scales') && DB::table('grade_scales')->count() === 0) {
-            GradeScale::firstOrCreate(
-                ['name' => 'Global Default Grade Scale', 'institute_id' => null],
-                ['status' => true, 'display_order' => 0],
-            );
-        }
+        // B85: no global grade-scale seed. grade_scales.scope_key is unique
+        // on (institute, country, system, level) with NULLs as 0, so a single
+        // pre-seeded all-NULL row collides with every test-created global
+        // scale (32 dup-key errors). Tests that need a global scale create
+        // their own; no test references a harness-seeded default by name.
     }
 
     /**
