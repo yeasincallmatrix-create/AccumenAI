@@ -71,6 +71,42 @@ abstract class TestCase extends BaseTestCase
         // Mawa Academy) for tests that hardcode firstOrFail() by name.
         // TEST-ONLY — never runs outside the testing environment.
         $this->seedTestInstitutes();
+
+        // Phase 8 FIX 4B: remove orphaned institute-scoped roles that break
+        // firstOrFail() lookups (e.g. scoped receptionist rows shadowing
+        // the global one). TEST-ONLY via setUp().
+        $this->cleanupOrphanedRoles();
+    }
+
+    /**
+     * Remove orphaned institute-scoped roles not referenced by any
+     * membership (institution_user) or institute_user. These break
+     * firstOrFail() lookups (scoped row wins over the global row).
+     * Idempotent; only deletes demonstrably unreferenced rows.
+     */
+    protected function cleanupOrphanedRoles(): void
+    {
+        if (! Schema::hasTable('roles')) {
+            return;
+        }
+
+        $orphanedIds = DB::table('roles')
+            ->whereNotNull('institute_id')
+            ->whereNotExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('institution_user')
+                    ->whereColumn('institution_user.role_id', 'roles.id');
+            })
+            ->whereNotExists(function ($q) {
+                $q->select(DB::raw(1))
+                    ->from('institute_users')
+                    ->whereColumn('institute_users.role_id', 'roles.id');
+            })
+            ->pluck('id');
+
+        if ($orphanedIds->isNotEmpty()) {
+            DB::table('roles')->whereIn('id', $orphanedIds)->delete();
+        }
     }
 
     /**

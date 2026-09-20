@@ -32,6 +32,11 @@ class FinanceWriteGate
 
     /**
      * URI patterns that require manage access.
+     *
+     * Value forms:
+     *   'pattern'                        → gate default denied roles
+     *   'pattern' => ['except' => [...]] → gate except listed GET|HEAD URIs
+     *   'pattern' => ['roles' => [...]]  → gate only these roles
      */
     protected array $gatedPatterns = [
         // Chart of Accounts writes (create form GET included; index open).
@@ -63,6 +68,13 @@ class FinanceWriteGate
                 'finance/payment-methods/create',
             ],
         ],
+
+        // Accounting dashboard (URI /accounting): denied to receptionist
+        // only — branch-manager keeps branch-scoped view (Phase 8 FIX 4B).
+        // No other suite references this route with these roles.
+        'accounting' => [
+            'roles' => ['receptionist'],
+        ],
     ];
 
     public function handle(Request $request, Closure $next): Response
@@ -86,22 +98,10 @@ class FinanceWriteGate
             return false;
         }
 
-        $hasDeniedRole = false;
-        foreach ($this->deniedRoles as $role) {
-            if ($user->hasRole($role)) {
-                $hasDeniedRole = true;
-                break;
-            }
-        }
-
-        if (! $hasDeniedRole) {
-            return false;
-        }
-
-        return $this->matchesGatedUri($request);
+        return $this->matchesGatedUri($request, $user);
     }
 
-    protected function matchesGatedUri(Request $request): bool
+    protected function matchesGatedUri(Request $request, $user): bool
     {
         $path = $request->path();
         // Index/create-form URIs are open for GET|HEAD only. The same URI
@@ -110,6 +110,8 @@ class FinanceWriteGate
         $isSafeMethod = $request->isMethod('get') || $request->isMethod('head');
 
         foreach ($this->gatedPatterns as $key => $value) {
+            $roles = $this->deniedRoles;
+
             if (is_array($value)) {
                 $pattern = $key;
                 $except = $value['except'] ?? [];
@@ -117,11 +119,26 @@ class FinanceWriteGate
                 if ($isSafeMethod && in_array($path, $except, true)) {
                     continue;
                 }
+
+                if (! empty($value['roles'])) {
+                    $roles = $value['roles'];
+                }
             } else {
                 $pattern = $value;
             }
 
-            if ($this->uriMatches($path, $pattern)) {
+            if ($this->uriMatches($path, $pattern) && $this->userHasAnyRole($user, $roles)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected function userHasAnyRole($user, array $roles): bool
+    {
+        foreach ($roles as $role) {
+            if ($user->hasRole($role)) {
                 return true;
             }
         }
