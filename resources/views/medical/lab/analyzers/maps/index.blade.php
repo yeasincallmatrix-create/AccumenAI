@@ -9,6 +9,9 @@
     </div>
     <div class="page-header-actions">
         <a class="btn btn-secondary" href="{{ route('medical.laboratory.analyzers.show', $analyzer) }}">Back</a>
+        <a class="btn btn-info" href="{{ route('medical.laboratory.analyzers.maps.import.form', $analyzer) }}">
+            <i class="bi bi-upload me-1"></i>Import CSV
+        </a>
         @if($analyzer->adapter_key === 'sysmex_xn')
             <form method="POST" action="{{ route('medical.laboratory.analyzers.maps.seed-sysmex', $analyzer) }}" class="d-inline" onsubmit="return confirm('Seed 36 Sysmex XN-550 maps? Existing codes are kept.');">
                 @csrf
@@ -23,7 +26,7 @@
         <div class="table-responsive">
             <table class="table table-hover align-middle">
                 <thead>
-                    <tr><th>Vendor Code</th><th>Universal</th><th>Key</th><th>Lab Test</th><th>Unit From → To</th><th>Factor</th><th>Ref Range</th><th>Active</th><th class="text-end">Actions</th></tr>
+                    <tr><th>Vendor Code</th><th>Universal</th><th>Key</th><th>Lab Test</th><th>Unit From → To</th><th>Factor</th><th>Ref Range</th><th>Approved</th><th>Active</th><th class="text-end">Actions</th></tr>
                 </thead>
                 <tbody>
                     @forelse($maps as $map)
@@ -51,12 +54,25 @@
                             <td class="text-nowrap">
                                 <input type="text" name="ref_range_text" value="{{ $map->ref_range_text }}" class="form-control form-control-sm d-inline-block" style="width:90px">
                             </td>
+                            <td class="text-center">
+                                @if($map->isRefRangeApproved())
+                                    <span class="badge bg-success" title="{{ $map->ref_range_approval_notes ?? 'Approved' }}">Yes</span>
+                                @else
+                                    <span class="badge bg-secondary">No</span>
+                                @endif
+                            </td>
                             <td class="text-center"><input type="checkbox" name="is_active" value="1" @checked($map->is_active) class="form-check-input"></td>
                             <td class="text-end">
                                 <input type="hidden" name="vendor_code" value="{{ $map->vendor_code }}">
                                 <div class="btn-group btn-group-sm">
                                     <button type="submit" class="btn btn-primary" title="Save"><i class="bi bi-check-lg"></i></button>
                         </form>
+                                @unless($map->isRefRangeApproved())
+                                <form method="POST" action="{{ route('medical.laboratory.analyzers.maps.approve-ref-range', [$analyzer, $map]) }}" onsubmit="return confirm('Approve reference range for {{ $map->vendor_code }}?');">
+                                    @csrf
+                                    <button type="submit" class="btn btn-success" title="Approve ref range"><i class="bi bi-patch-check"></i></button>
+                                </form>
+                                @endunless
                                 <form method="POST" action="{{ route('medical.laboratory.analyzers.maps.destroy', [$analyzer, $map]) }}" onsubmit="return confirm('Delete map {{ $map->vendor_code }}?');">
                                     @csrf
                                     @method('DELETE')
@@ -66,7 +82,7 @@
                             </td>
                     @empty
                     <tr>
-                        <td colspan="9" class="text-center text-muted py-4">No parameter maps yet. Add one below or seed Sysmex defaults.</td>
+                        <td colspan="10" class="text-center text-muted py-4">No parameter maps yet. Add one below or seed Sysmex defaults.</td>
                     </tr>
                     @endforelse
                 </tbody>

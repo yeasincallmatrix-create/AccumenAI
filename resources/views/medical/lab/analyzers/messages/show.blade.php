@@ -171,7 +171,7 @@
 </div>
 
 @if($linkedResults->count() > 0)
-<div class="card">
+<div class="card mb-3">
     <div class="card-header"><h6 class="mb-0">Linked Results</h6></div>
     <div class="card-body">
         <ul class="list-unstyled mb-0">
@@ -180,10 +180,31 @@
                 <strong>{{ $result->labTest->code ?? 'Test #'.$result->lab_test_id }}</strong>
                 <span class="text-muted">· {{ $result->result_value ?? $result->result_text ?? 'pending' }}</span>
                 <span class="badge bg-secondary float-end">{{ $result->status }}</span>
+                @if($message->lab_order_id)
+                    <a href="{{ route('medical.lab.orders.show', $message->lab_order_id) }}" class="btn btn-sm btn-link">View Linked Order</a>
+                @endif
             </li>
             @endforeach
         </ul>
     </div>
 </div>
 @endif
+
+<div class="card">
+    <div class="card-header"><h6 class="mb-0">Lifecycle Timeline</h6></div>
+    <div class="card-body">
+        <ul class="list-unstyled mb-0">
+            <li class="border-bottom py-2"><i class="bi bi-inbox me-2"></i>Received — {{ $message->received_at }} (attempts: {{ $message->attempts }})</li>
+            @if($message->processed_at)
+                <li class="border-bottom py-2"><i class="bi bi-gear me-2"></i>Processed — {{ $message->processed_at }}</li>
+            @endif
+            @if($message->isResolved())
+                <li class="border-bottom py-2"><i class="bi bi-check-circle me-2"></i>Resolved as <strong>{{ $message->resolution_status }}</strong> — {{ $message->resolved_at?->format('Y-m-d H:i') }} by user #{{ $message->resolved_by }}</li>
+                <li class="py-2 text-muted small">{{ $message->resolution_notes }}</li>
+            @elseif(in_array($message->status, ['error', 'dead']))
+                <li class="py-2 text-muted">Awaiting resolution — use Retry, Resolve, Escalate, or Discard above.</li>
+            @endif
+        </ul>
+    </div>
+</div>
 @endsection

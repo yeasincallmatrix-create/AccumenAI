@@ -67,8 +67,64 @@
     @endforelse
 </div>
 
+<div class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Live Feed <small class="text-muted">(latest stored results)</small></h6>
+        <span class="badge bg-secondary" id="live-feed-status">polling</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm mb-0">
+                <thead><tr><th>Message</th><th>Accession</th><th>Analyzer</th><th>Received</th></tr></thead>
+                <tbody id="live-lab-feed">
+                    <tr><td colspan="4" class="text-muted text-center py-3">Waiting for new results…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <script>
-// v1 polling: reload every 30s for near-live status (no extra endpoint needed).
-setTimeout(function () { window.location.reload(); }, 30000);
+// v1: reload every 30s for near-live status when Echo/Reverb is absent.
+window.__labPollTimer = setTimeout(function () { window.location.reload(); }, 30000);
 </script>
+
+@push('scripts')
+<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (!window.Echo) {
+        // Echo not loaded — polling fallback stays armed (see above).
+        return;
+    }
+
+    clearTimeout(window.__labPollTimer);
+    document.getElementById('live-feed-status').textContent = 'live';
+    document.getElementById('live-feed-status').className = 'badge bg-success';
+
+    const instituteId = {{ (int) (\App\Support\Workspace::id() ?? \App\Support\TenantContext::id() ?? 0) }};
+    const channel = window.Echo.private(`institute.${instituteId}.lab-analyzer`);
+
+    channel.listen('.result.stored', (data) => {
+        const feed = document.getElementById('live-lab-feed');
+        if (feed) {
+            if (feed.querySelector('td[colspan]')) { feed.innerHTML = ''; }
+            const row = document.createElement('tr');
+            row.className = 'table-success';
+            row.innerHTML = `
+                <td>${data.message_id}</td>
+                <td>${data.accession_number ?? '—'}</td>
+                <td>${data.analyzer_id}</td>
+                <td>Just now</td>
+            `;
+            feed.prepend(row);
+        }
+
+        if (window.showToast) {
+            window.showToast(`New result: ${data.accession_number ?? 'msg ' + data.message_id}`);
+        }
+    });
+});
+</script>
+@endpush
 @endsection

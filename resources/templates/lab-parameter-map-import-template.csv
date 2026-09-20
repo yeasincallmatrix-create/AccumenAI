@@ -1,0 +1,3 @@
+vendor_code,vendor_name,universal_code,parameter_key,unit_from,unit_to,conversion_factor,ref_low,ref_high,ref_range_text
+WBC,White Blood Cell,WBC,WBC,10^3/uL,10^3/uL,1,4.0,11.0,4.0-11.0
+HGB,Hemoglobin,HGB,HGB,g/dL,g/dL,1,13.0,17.0,13.0-17.0

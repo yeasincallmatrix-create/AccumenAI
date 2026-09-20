@@ -62,6 +62,63 @@ class LabAnalyzerMapController extends MedicalController
         return back()->with('success', "Map for '{$map->vendor_code}' deleted.");
     }
 
+    /**
+     * Phase 9: pathologist reference-range sign-off.
+     * Only clinical approver roles may sign; institute owners bypass
+     * (super-user invariant, mirrors CheckPermission).
+     */
+    public function approveRefRange(\Illuminate\Http\Request $request, LabAnalyzer $analyzer, LabAnalyzerParameterMap $map)
+    {
+        $this->analyzer($analyzer);
+        $this->ensureMapBelongs($analyzer, $map);
+
+        $user = auth()->user();
+        $isOwner = method_exists($user, 'isOwner') ? $user->isOwner() : false;
+        $canApprove = $isOwner
+            || ($user && method_exists($user, 'hasRole') && $user->hasRole(['pathologist', 'lab_manager', 'hospital_admin', 'institute-owner', 'institute-admin']));
+        abort_unless($canApprove, 403, 'Only a pathologist, lab manager, or administrator may approve reference ranges.');
+
+        $request->validate(['notes' => 'nullable|string|max:500']);
+        $map->update([
+            'ref_range_approved_by' => auth()->id(),
+            'ref_range_approved_at' => now(),
+            'ref_range_approval_notes' => $request->input('notes'),
+        ]);
+
+        return back()->with('success', "Reference range for '{$map->vendor_code}' approved.");
+    }
+
+    /**
+     * Phase 9: bulk CSV import form.
+     */
+    public function importForm(LabAnalyzer $analyzer)
+    {
+        $this->ensureSameInstitute($analyzer);
+
+        return view('medical.lab.analyzers.maps.import', compact('analyzer'));
+    }
+
+    public function downloadTemplate()
+    {
+        $path = resource_path('templates/lab-parameter-map-import-template.csv');
+
+        return response()->download($path, 'lab-parameter-map-import-template.csv');
+    }
+
+    public function import(\Illuminate\Http\Request $request, LabAnalyzer $analyzer, \App\Services\LabIntegration\ParameterMapImportService $service)
+    {
+        $this->ensureSameInstitute($analyzer);
+        $request->validate(['csv_file' => 'required|file|mimes:csv,txt|max:2048']);
+
+        $result = $service->import($analyzer, $request->file('csv_file')->getRealPath());
+
+        if (! empty($result['errors'])) {
+            return back()->with('warning', "Imported {$result['imported']}, updated {$result['updated']}, skipped {$result['skipped']}. First issue: {$result['errors'][0]}");
+        }
+
+        return back()->with('success', "Imported {$result['imported']}, updated {$result['updated']}, skipped {$result['skipped']}.");
+    }
+
     public function seedSysmex(LabAnalyzer $analyzer)
     {
         $this->analyzer($analyzer);

@@ -47,7 +47,17 @@ class LabAnalyzerMessageController extends MedicalController
 
         $messages = $query->paginate(20)->withQueryString();
 
-        return view('medical.lab.analyzers.messages.index', compact('analyzer', 'messages'));
+        // Phase 9: dead-letter summary widget.
+        $base = $analyzer->messages();
+        $summary = [
+            'pending' => (clone $base)->whereIn('status', ['received', 'parsed'])->count(),
+            'failed' => (clone $base)->where('status', 'error')->count(),
+            'dead' => (clone $base)->where('status', 'dead')->count(),
+            'unresolved' => (clone $base)->whereIn('status', ['error', 'dead'])->whereNull('resolution_status')->count(),
+            'resolved' => (clone $base)->whereNotNull('resolution_status')->count(),
+        ];
+
+        return view('medical.lab.analyzers.messages.index', compact('analyzer', 'messages', 'summary'));
     }
 
     public function show(LabAnalyzer $analyzer, LabMessage $message)
@@ -111,5 +121,52 @@ class LabAnalyzerMessageController extends MedicalController
         if ((int) $message->analyzer_id !== (int) $analyzer->id || (int) $message->institute_id !== $this->instituteId()) {
             abort(404);
         }
+    }
+
+    /**
+     * Phase 9: bulk retry of failed messages.
+     */
+    public function bulkRetry(Request $request, LabAnalyzer $analyzer, \App\Services\LabIntegration\DeadLetterService $service)
+    {
+        $this->analyzer($analyzer);
+        $request->validate(['ids' => 'required|array|min:1', 'ids.*' => 'integer']);
+
+        $count = 0;
+        $messages = LabMessage::where('analyzer_id', $analyzer->id)
+            ->where('institute_id', $this->instituteId())
+            ->whereIn('id', $request->input('ids'))
+            ->whereIn('status', ['error', 'dead'])
+            ->get();
+
+        foreach ($messages as $message) {
+            if ($service->retry($message, (int) auth()->id(), 'bulk retry from message log')) {
+                $count++;
+            }
+        }
+
+        return back()->with('success', "{$count} message(s) re-queued.");
+    }
+
+    /**
+     * Phase 9: bulk discard of failed messages.
+     */
+    public function bulkDiscard(Request $request, LabAnalyzer $analyzer, \App\Services\LabIntegration\DeadLetterService $service)
+    {
+        $this->analyzer($analyzer);
+        $request->validate(['ids' => 'required|array|min:1', 'ids.*' => 'integer']);
+
+        $count = 0;
+        $messages = LabMessage::where('analyzer_id', $analyzer->id)
+            ->where('institute_id', $this->instituteId())
+            ->whereIn('id', $request->input('ids'))
+            ->whereIn('status', ['error', 'dead'])
+            ->get();
+
+        foreach ($messages as $message) {
+            $service->discard($message, (int) auth()->id(), 'bulk discard from message log');
+            $count++;
+        }
+
+        return back()->with('success', "{$count} message(s) discarded.");
     }
 }

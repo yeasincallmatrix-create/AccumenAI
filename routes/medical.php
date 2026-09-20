@@ -381,6 +381,24 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
                 ->middleware('permission:medical.laboratory.analyzers.manage_maps')
                 ->name('maps.seed-sysmex');
 
+            // Phase 9: pathologist reference-range sign-off.
+            Route::post('{analyzer}/maps/{map}/approve-ref-range', [\App\Http\Controllers\Medical\LabAnalyzerMapController::class, 'approveRefRange'])
+                ->middleware('permission:medical.laboratory.analyzers.manage_maps')
+                ->name('maps.approve-ref-range');
+
+            // Phase 9: bulk CSV import.
+            Route::get('{analyzer}/maps/import', [\App\Http\Controllers\Medical\LabAnalyzerMapController::class, 'importForm'])
+                ->middleware('permission:medical.laboratory.analyzers.manage_maps')
+                ->name('maps.import.form');
+
+            Route::post('{analyzer}/maps/import', [\App\Http\Controllers\Medical\LabAnalyzerMapController::class, 'import'])
+                ->middleware('permission:medical.laboratory.analyzers.manage_maps')
+                ->name('maps.import');
+
+            Route::get('{analyzer}/maps/import/template', [\App\Http\Controllers\Medical\LabAnalyzerMapController::class, 'downloadTemplate'])
+                ->middleware('permission:medical.laboratory.analyzers.manage_maps')
+                ->name('maps.import.template');
+
             // Messages
             Route::get('{analyzer}/messages', [\App\Http\Controllers\Medical\LabAnalyzerMessageController::class, 'index'])
                 ->middleware('permission:medical.laboratory.analyzers.view_messages')
@@ -406,6 +424,15 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
             Route::post('{analyzer}/messages/{message}/escalate', [\App\Http\Controllers\Medical\LabAnalyzerMessageController::class, 'escalate'])
                 ->middleware('permission:medical.laboratory.analyzers.retry_messages')
                 ->name('messages.escalate');
+
+            // Phase 9: bulk dead-letter actions.
+            Route::post('{analyzer}/messages/bulk-retry', [\App\Http\Controllers\Medical\LabAnalyzerMessageController::class, 'bulkRetry'])
+                ->middleware('permission:medical.laboratory.analyzers.retry_messages')
+                ->name('messages.bulk-retry');
+
+            Route::post('{analyzer}/messages/bulk-discard', [\App\Http\Controllers\Medical\LabAnalyzerMessageController::class, 'bulkDiscard'])
+                ->middleware('permission:medical.laboratory.analyzers.retry_messages')
+                ->name('messages.bulk-discard');
 
             // Worklist
             Route::get('{analyzer}/worklist', [\App\Http\Controllers\Medical\LabAnalyzerWorklistController::class, 'index'])
