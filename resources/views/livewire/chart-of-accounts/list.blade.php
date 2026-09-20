@@ -45,6 +45,7 @@
                 <tr>
                     <th>Code</th>
                     <th>Account</th>
+                    <th class="text-end">Amount</th>
                     <th>Type</th>
                     <th>Flags</th>
                     <th>Status</th>
@@ -63,6 +64,7 @@
                                 <div class="text-muted small">Parent: {{ $account->parent->name }}</div>
                             @endif
                         </td>
+                        <td class="text-end">{{ number_format($account->balance ?? 0, 2) }}</td>
                         <td><span class="badge text-bg-light border">{{ ucfirst($account->type) }}</span></td>
                         <td>
                             @if ($account->is_cash)<span class="badge text-bg-info me-1">Cash</span>@endif
@@ -95,14 +97,14 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="{{ $canManage ? 7 : 6 }}" class="text-center text-muted py-4">No accounts found.</td>
+                        <td colspan="{{ $canManage ? 8 : 7 }}" class="text-center text-muted py-4">No accounts found.</td>
                     </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
     @if ($accounts->hasPages())
-        <div class="p-2 border-top">{{ $accounts->links('pagination::bootstrap-5') }}</div>
+        <div class="p-2 border-top">{{ $accounts->links() }}</div>
     @endif
 </div>
 </div>

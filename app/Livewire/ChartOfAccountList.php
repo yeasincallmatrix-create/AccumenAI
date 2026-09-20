@@ -39,7 +39,12 @@ class ChartOfAccountList extends DataTable
 
     protected function baseQuery(): Builder
     {
-        return ChartOfAccount::query()->with('parent');
+        return ChartOfAccount::query()
+            ->with('parent')
+            ->withSum('journalEntries as total_debit', 'debit')
+            ->withSum('journalEntries as total_credit', 'credit')
+            ->withSum('openingBalances as opening_debit', 'debit')
+            ->withSum('openingBalances as opening_credit', 'credit');
     }
 
     protected function searchableColumns(): array
@@ -129,6 +134,8 @@ class ChartOfAccountList extends DataTable
         foreach ($collection as $account) {
             $account->is_global_flag = $account->isGlobal();
             $account->is_editable = $account->isEditableBy($instituteId);
+            $account->balance = (($account->opening_debit ?? 0) - ($account->opening_credit ?? 0))
+                + (($account->total_debit ?? 0) - ($account->total_credit ?? 0));
         }
 
         return view(self::VIEW, [
