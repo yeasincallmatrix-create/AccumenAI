@@ -8,12 +8,23 @@ class TenantAccountingModeService
 {
     /**
      * Check if advanced accounting is enabled for a tenant.
+     *
+     * Schema-guarded: returns false (simple mode) when the column
+     * hasn't migrated yet, so a missing migration can never 500 pages.
      */
     public function isAdvancedEnabled(?int $instituteId = null): bool
     {
         $id = $instituteId ?? tenant_id();
 
         if (! $id) {
+            return false;
+        }
+
+        try {
+            if (! \Illuminate\Support\Facades\Schema::hasColumn('institutes', 'advanced_accounting_enabled')) {
+                return false;
+            }
+        } catch (\Throwable) {
             return false;
         }
 
