@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Payment method (cash, bank, mobile banking, card, ...). coa_id links the
- * default posting account for the method (e.g. Cash in Hand).
+ * default posting account for the method (e.g. Cash).
  */
 class PaymentMethod extends Model
 {

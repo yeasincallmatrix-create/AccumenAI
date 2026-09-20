@@ -664,7 +664,7 @@ class AccountingReportsTest extends TestCase
         $this->asUser($owner, (int) $mawa->id)
             ->get(route('accounting.reports.account-ledger', ['account_id' => $cashId]))
             ->assertOk()
-            ->assertSee('Cash in Hand')
+            ->assertSee('Cash')
             ->assertSee('750.00')
             ->assertSee('Closing balance');
     }
