@@ -9,7 +9,6 @@ use App\Models\Component;
 use App\Models\Currency;
 use App\Models\ExamType;
 use App\Models\FiscalYear;
-use App\Models\GradeScale;
 use App\Models\Industry;
 use App\Models\Institute;
 use App\Models\InstituteUser;
@@ -76,6 +75,12 @@ abstract class TestCase extends BaseTestCase
         // firstOrFail() lookups (e.g. scoped receptionist rows shadowing
         // the global one). TEST-ONLY via setUp().
         $this->cleanupOrphanedRoles();
+
+        // B85b: remove stale all-NULL global grade scale left by old DB
+        // dumps ('Global Default Grade Scale', scope 0:0:0:0). Its unique
+        // scope_key collides with every test-created global scale.
+        // TEST-ONLY via setUp(); idempotent no-op on a clean database.
+        $this->cleanupOrphanGradeScale();
     }
 
     /**
@@ -107,6 +112,38 @@ abstract class TestCase extends BaseTestCase
         if ($orphanedIds->isNotEmpty()) {
             DB::table('roles')->whereIn('id', $orphanedIds)->delete();
         }
+    }
+
+    /**
+     * B85b: delete the stale all-NULL global grade scale ('Global Default
+     * Grade Scale') that old DB dumps carry. Identified by all four scope
+     * columns NULL plus the exact dump name — never by id alone — so
+     * legitimate scales are never touched. Bands deleted first explicitly
+     * (grade_scale_rows FK cascades, but explicit order is safer).
+     * Idempotent: no-op when the orphan is absent. Sees committed rows
+     * only (runs inside the test transaction), so live test rows are
+     * never visible here.
+     */
+    protected function cleanupOrphanGradeScale(): void
+    {
+        if (! Schema::hasTable('grade_scales')) {
+            return;
+        }
+
+        $orphanId = DB::table('grade_scales')
+            ->whereNull('institute_id')
+            ->whereNull('country_id')
+            ->whereNull('education_system_id')
+            ->whereNull('academic_level_id')
+            ->where('name', 'Global Default Grade Scale')
+            ->value('id');
+
+        if ($orphanId === null) {
+            return;
+        }
+
+        DB::table('grade_scale_rows')->where('grade_scale_id', $orphanId)->delete();
+        DB::table('grade_scales')->where('id', $orphanId)->delete();
     }
 
     /**
