@@ -615,6 +615,22 @@ Route::middleware($tenant)->group(function () {
         Route::post('{progressive_contract}/cancel', [$progContr, 'cancel'])->name('cancel');
     });
 
+    // Recurring Templates
+    $recTempl = \App\Http\Controllers\RecurringTemplateController::class;
+    Route::prefix('finance/recurring-templates')->name('finance.recurring-templates.')->group(function () use ($recTempl) {
+        Route::get('/', [$recTempl, 'index'])->name('index');
+        Route::get('create', [$recTempl, 'create'])->name('create');
+        Route::post('/', [$recTempl, 'store'])->name('store');
+        Route::get('{recurring_template}', [$recTempl, 'show'])->name('show');
+        Route::get('{recurring_template}/edit', [$recTempl, 'edit'])->name('edit');
+        Route::put('{recurring_template}', [$recTempl, 'update'])->name('update');
+        Route::delete('{recurring_template}', [$recTempl, 'destroy'])->name('destroy');
+        Route::post('{recurring_template}/pause', [$recTempl, 'pause'])->name('pause');
+        Route::post('{recurring_template}/resume', [$recTempl, 'resume'])->name('resume');
+        Route::post('{recurring_template}/cancel', [$recTempl, 'cancel'])->name('cancel');
+        Route::post('{recurring_template}/generate-now', [$recTempl, 'generateNow'])->name('generate-now');
+    });
+
     // Finance Payments
     Route::prefix('finance/payments')->name('finance.payments.')->group(function () use ($finPay) {
         Route::post('/', [$finPay, 'store'])->name('store');
@@ -1195,6 +1211,7 @@ Route::middleware($tenant)->group(function () {
         Route::get('promotions/export', [$acadAn, 'promotionsExport'])->name('promotions.export');
         Route::get('completion', [$acadAn, 'completion'])->name('completion');
         Route::get('completion/export', [$acadAn, 'completionExport'])->name('completion.export');
+        Route::get('certificates', [$acadAn, 'certificates'])->name('certificates');
         Route::get('certificates/export', [$acadAn, 'certificatesExport'])->name('certificates.export');
         Route::get('finance', [$acadAn, 'finance'])->name('finance');
         Route::get('finance/export', [$acadAn, 'financeExport'])->name('finance.export');
@@ -1579,6 +1596,22 @@ Route::middleware($tenant)->group(function () {
 
     // ─── ACADEMIC STRUCTURE OPTIONS (JSON API) ────────────────────────────────
     Route::get('academic/structure/options', [\App\Http\Controllers\AcademicStructureController::class, 'options'])->name('academic.structure.options');
+
+    // ─── LEARNING STRUCTURE (JSON API) ───────────────────────────────────────
+    $lsCtrl = \App\Http\Controllers\LearningStructureController::class;
+    Route::prefix('academic/structure')->name('academic.structure.')->group(function () use ($lsCtrl) {
+        Route::get('nodes', [$lsCtrl, 'nodes'])->name('nodes');
+        Route::post('nodes', [$lsCtrl, 'store'])->name('nodes.store');
+    });
+
+    // ─── LEARNING STRUCTURE SETTINGS ─────────────────────────────────────────
+    $lsSettings = \App\Http\Controllers\LearningStructureSettingsController::class;
+    Route::get('academic/structure/settings', [$lsSettings, 'index'])->name('academic.structure.settings');
+    Route::post('academic/structure/settings/assign', [$lsSettings, 'assignTemplate'])->name('academic.structure.settings.assign');
+    Route::post('academic/structure/settings/nodes', [$lsSettings, 'storeNode'])->name('academic.structure.settings.nodes.store');
+    Route::put('academic/structure/settings/nodes/{node}', [$lsSettings, 'updateNode'])->name('academic.structure.settings.nodes.update');
+    Route::delete('academic/structure/settings/nodes/{node}', [$lsSettings, 'destroyNode'])->name('academic.structure.settings.nodes.destroy');
+    Route::post('academic/structure/settings/reorder', [$lsSettings, 'reorder'])->name('academic.structure.settings.reorder');
 
 });
 

@@ -523,7 +523,7 @@ class StudentFinanceService
     private function scopedInvoiceQuery(int $instituteId, ?int $branchId): Builder
     {
         $query = DB::table('invoices as i')
-            ->leftJoin('enrollments as e', 'e.id', '=', 'i.enrollment_id')
+            ->leftJoin('student_enrollments as e', 'e.id', '=', 'i.enrollment_id')
             ->leftJoin('batches as b', 'b.id', '=', 'e.batch_id')
             ->leftJoin('courses as c', 'c.id', '=', 'e.course_id')
             ->leftJoin('students as s', 's.id', '=', 'i.student_id')
@@ -545,7 +545,7 @@ class StudentFinanceService
     {
         $query = DB::table('payments as p')
             ->join('invoices as i', 'i.id', '=', 'p.invoice_id')
-            ->leftJoin('enrollments as e', 'e.id', '=', 'i.enrollment_id')
+            ->leftJoin('student_enrollments as e', 'e.id', '=', 'i.enrollment_id')
             ->leftJoin('batches as b', 'b.id', '=', 'e.batch_id')
             ->leftJoin('students as s', 's.id', '=', 'i.student_id')
             ->where('p.institute_id', $instituteId)
@@ -579,7 +579,7 @@ class StudentFinanceService
     private function invoiceBranchId(Invoice $invoice): ?int
     {
         if ($invoice->enrollment_id !== null) {
-            $branchId = DB::table('enrollments as e')
+            $branchId = DB::table('student_enrollments as e')
                 ->join('batches as b', 'b.id', '=', 'e.batch_id')
                 ->where('e.id', $invoice->enrollment_id)
                 ->value('b.branch_id');
