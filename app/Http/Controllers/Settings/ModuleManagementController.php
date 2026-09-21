@@ -22,7 +22,9 @@ class ModuleManagementController extends Controller
 
         $modules = ModuleRegistry::orderBy('parent_key')
             ->orderBy('sort_order')
-            ->get();
+            ->get()
+            ->filter(fn ($m) => $this->moduleAccess->isIndustryCompatible($institute, $m->key))
+            ->values();
 
         $enabledKeys = $this->moduleAccess->getEnabledModules($institute);
 

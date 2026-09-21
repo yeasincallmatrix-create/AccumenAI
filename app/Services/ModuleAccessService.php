@@ -492,8 +492,12 @@ class ModuleAccessService
             'training_center' => 'training_center',
         ];
 
-        if (isset($moduleIndustryMap[$moduleKey])) {
-            return $moduleIndustryMap[$moduleKey] === $industry;
+        // Resolve child modules to their parent for map lookup
+        // e.g. 'education.classes' → 'education', 'medical.opd' → 'medical'
+        $rootKey = explode('.', $moduleKey, 2)[0];
+
+        if (isset($moduleIndustryMap[$rootKey])) {
+            return $moduleIndustryMap[$rootKey] === $industry;
         }
 
         // For modules that are not industry-specific, they are compatible by default

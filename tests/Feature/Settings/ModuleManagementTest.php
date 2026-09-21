@@ -87,13 +87,47 @@ class ModuleManagementTest extends TestCase
         $response->assertSee('CRM');
     }
 
-    public function test_index_shows_medical_sub_modules_grouped(): void
+    public function test_index_shows_medical_sub_modules_for_healthcare_institute(): void
+    {
+        $institute = Institute::create([
+            'name' => 'Healthcare Module Test-' . uniqid(),
+            'slug' => 'healthcare-module-test-' . uniqid(),
+            'status' => 'active',
+            'industry' => 'healthcare',
+        ]);
+
+        $free = SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['free'])->first();
+        if ($free) {
+            $institute->update(['package_id' => $free->id]);
+        }
+
+        $owner = (new UserAccountService)->registerOwner([
+            'name' => 'Medical Owner',
+            'first_name' => 'Medical',
+            'last_name' => 'Owner',
+            'email' => 'module-medical-health-' . uniqid() . '@example.test',
+            'password_hash' => bcrypt('password'),
+            'status' => 'active',
+        ]);
+
+        $roleId = Role::where('slug', 'institute-owner')->firstOrFail()->id;
+        (new MembershipService)->assign($owner, $institute->id, $roleId);
+
+        $this->ensurePackageModules($institute, ['crm', 'medical', 'medical.opd']);
+
+        $response = $this->asUser($owner, $institute->id)
+            ->get(route('settings.modules'));
+        $response->assertOk();
+        $response->assertSee('Medical');
+    }
+
+    public function test_index_hides_medical_modules_for_training_center_institute(): void
     {
         [$institute, $owner] = $this->tenantOwner('module-medical@example.test');
         $response = $this->asUser($owner, $institute->id)
             ->get(route('settings.modules'));
         $response->assertOk();
-        $response->assertSee('Medical');
+        $response->assertDontSee('medical.opd');
     }
 
     public function test_toggle_requires_auth(): void
