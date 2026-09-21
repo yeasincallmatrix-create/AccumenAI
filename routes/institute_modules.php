@@ -631,6 +631,23 @@ Route::middleware($tenant)->group(function () {
         Route::post('{recurring_template}/generate-now', [$recTempl, 'generateNow'])->name('generate-now');
     });
 
+    // Expenses
+    $expense = \App\Http\Controllers\ExpenseController::class;
+    Route::prefix('finance/expenses')->name('finance.expenses.')->group(function () use ($expense) {
+        Route::get('/', [$expense, 'index'])->name('index');
+        Route::get('create', [$expense, 'create'])->name('create');
+        Route::post('/', [$expense, 'store'])->name('store');
+        Route::get('{expense}', [$expense, 'show'])->name('show');
+        Route::get('{expense}/edit', [$expense, 'edit'])->name('edit');
+        Route::put('{expense}', [$expense, 'update'])->name('update');
+        Route::delete('{expense}', [$expense, 'destroy'])->name('destroy');
+        Route::get('billable/dashboard', [$expense, 'billableDashboard'])->name('billable-dashboard');
+        Route::post('{expense}/mark-billable', [$expense, 'markBillable'])->name('mark-billable');
+        Route::post('bulk-mark-billable', [$expense, 'bulkMarkBillable'])->name('bulk-mark-billable');
+        Route::post('preview-invoice', [$expense, 'previewInvoice'])->name('preview-invoice');
+        Route::post('generate-invoice', [$expense, 'generateInvoice'])->name('generate-invoice');
+    });
+
     // Finance Payments
     Route::prefix('finance/payments')->name('finance.payments.')->group(function () use ($finPay) {
         Route::post('/', [$finPay, 'store'])->name('store');
@@ -1624,12 +1641,12 @@ Route::middleware($tenant)->group(function () {
 
     // ─── LEARNING STRUCTURE SETTINGS ─────────────────────────────────────────
     $lsSettings = \App\Http\Controllers\LearningStructureSettingsController::class;
-    Route::get('academic/structure/settings', [$lsSettings, 'index'])->name('academic.structure.settings');
-    Route::post('academic/structure/settings/assign', [$lsSettings, 'assignTemplate'])->name('academic.structure.settings.assign');
-    Route::post('academic/structure/settings/nodes', [$lsSettings, 'storeNode'])->name('academic.structure.settings.nodes.store');
-    Route::put('academic/structure/settings/nodes/{node}', [$lsSettings, 'updateNode'])->name('academic.structure.settings.nodes.update');
-    Route::delete('academic/structure/settings/nodes/{node}', [$lsSettings, 'destroyNode'])->name('academic.structure.settings.nodes.destroy');
-    Route::post('academic/structure/settings/reorder', [$lsSettings, 'reorder'])->name('academic.structure.settings.reorder');
+    Route::get('academic/structure/settings', [$lsSettings, 'index'])->middleware('permission:education.manage')->name('academic.structure.settings');
+    Route::post('academic/structure/settings/assign', [$lsSettings, 'assignTemplate'])->middleware('permission:education.manage')->name('academic.structure.settings.assign');
+    Route::post('academic/structure/settings/nodes', [$lsSettings, 'storeNode'])->middleware('permission:education.manage')->name('academic.structure.settings.nodes.store');
+    Route::put('academic/structure/settings/nodes/{node}', [$lsSettings, 'updateNode'])->middleware('permission:education.manage')->name('academic.structure.settings.nodes.update');
+    Route::delete('academic/structure/settings/nodes/{node}', [$lsSettings, 'destroyNode'])->middleware('permission:education.manage')->name('academic.structure.settings.nodes.destroy');
+    Route::post('academic/structure/settings/reorder', [$lsSettings, 'reorder'])->middleware('permission:education.manage')->name('academic.structure.settings.reorder');
 
 });
 

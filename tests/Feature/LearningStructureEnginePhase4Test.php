@@ -12,10 +12,17 @@ use App\Services\AcademicStructureService;
 use App\Services\LearningStructureResolver;
 use App\Services\LearningStructureService;
 use App\Support\TenantContext;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Tests\TestCase;
 
 class LearningStructureEnginePhase4Test extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->withoutMiddleware(ValidateCsrfToken::class);
+    }
+
     private function makeInstitute(array $overrides = []): Institute
     {
         $country = Country::first() ?? Country::create(['name' => 'Bangladesh', 'iso2' => 'BD', 'status' => true]);
@@ -336,10 +343,9 @@ class LearningStructureEnginePhase4Test extends TestCase
         ]);
         $this->actingAs($user,'institute_user');
         $res = $this->post(route('academic.structure.settings.nodes.store'), ['level_order'=>1,'name'=>'ShouldFail']);
-        // Auth middleware redirects unauthenticated / unverified users to login (302).
-        // A viewer role lacks permission but is still authenticated, so the route
-        // may redirect with an authorization error rather than returning 403.
-        $res->assertRedirect();
+        // Authenticated viewer without education.manage permission → 403
+        // (permission:education.manage middleware added in 13b-8-fix).
+        $res->assertStatus(403);
     }
 
     public function test_authorized_education_manager_can_modify_structure(): void
