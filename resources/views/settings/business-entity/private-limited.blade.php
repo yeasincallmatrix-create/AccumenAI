@@ -18,7 +18,15 @@
         <h4 class="page-header-title"><i class="bi bi-bank me-2"></i>Private Limited Settings</h4>
         <p class="page-header-desc mb-0">Share capital, shareholders and dividends.</p>
     </div>
-    <a href="{{ route('settings.business-entity') }}" class="btn btn-outline-secondary rounded-pill px-3">Change entity type</a>
+    <form method="POST" action="{{ route('settings.advanced-accounting.entity-type.update') }}" class="d-flex align-items-center gap-2">
+        @csrf @method('PUT')
+        <select name="business_entity_type" class="form-select form-select-sm" style="max-width:240px" onchange="this.form.submit()">
+            @foreach($entityOptions as $value => $label)
+                <option value="{{ $value }}" {{ $entityType->value === $value ? 'selected' : '' }}>{{ $label }}</option>
+            @endforeach
+        </select>
+        <a href="{{ route('settings.advanced-accounting') }}" class="btn btn-sm btn-outline-primary">Open Settings →</a>
+    </form>
 </div>
 
 <div class="admin-card p-4 mb-3">

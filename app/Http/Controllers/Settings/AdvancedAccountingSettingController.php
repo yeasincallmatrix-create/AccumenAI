@@ -67,6 +67,8 @@ class AdvancedAccountingSettingController extends Controller
         $type = BusinessEntityType::from($validated['business_entity_type']);
         $this->entityService->setType((int) tenant_id(), $type);
 
-        return back()->with('status', 'Entity type set to '.$type->label().'.');
+        return redirect()
+            ->route($type->settingsRoute())
+            ->with('status', 'Entity type set to '.$type->label().'.');
     }
 }

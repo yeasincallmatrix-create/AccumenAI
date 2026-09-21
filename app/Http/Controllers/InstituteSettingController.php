@@ -52,6 +52,12 @@ class InstituteSettingController extends Controller
 
         $instituteId = $this->resolveInstituteId($user);
 
+        $advancedEnabled = app(\App\Services\Accounting\TenantAccountingModeService::class)->isAdvancedEnabled();
+        $entityService = app(\App\Services\Accounting\BusinessEntityService::class);
+        $entityType = $entityService->getType((int) tenant_id());
+        $entityOptions = \App\Enums\BusinessEntityType::advancedOptions();
+        $suggestedAccounts = $advancedEnabled ? $entityService->suggestedAccounts($entityType) : [];
+
         return view('settings.index', [
             'canManageSettings' => $canManageSettings,
             'canPromote' => $canPromote,
@@ -64,6 +70,10 @@ class InstituteSettingController extends Controller
             'currentSessionId' => $request->session()->getId(),
             'securityUser' => $user,
             'securityGuard' => $user instanceof PlatformAdmin ? 'platform_admin' : 'institute_user',
+            'entityType' => $entityType,
+            'entityOptions' => $entityOptions,
+            'suggestedAccounts' => $suggestedAccounts,
+            'advancedEnabled' => $advancedEnabled,
         ]);
     }
 

@@ -52,6 +52,8 @@ class BusinessEntityController extends Controller
 
         return view('settings.business-entity.sole-proprietorship', [
             'suggested' => $this->service->suggestedAccounts($type),
+            'entityType' => $type,
+            'entityOptions' => BusinessEntityType::advancedOptions(),
         ]);
     }
 
@@ -63,6 +65,8 @@ class BusinessEntityController extends Controller
         return view('settings.business-entity.partnership', [
             'suggested' => $this->service->suggestedAccounts($type),
             'partners' => \App\Models\Partner::where('institute_id', tenant_id())->get(),
+            'entityType' => $type,
+            'entityOptions' => BusinessEntityType::advancedOptions(),
         ]);
     }
 
@@ -74,6 +78,8 @@ class BusinessEntityController extends Controller
         return view('settings.business-entity.private-limited', [
             'suggested' => $this->service->suggestedAccounts($type),
             'shareholders' => \App\Models\Shareholder::where('institute_id', tenant_id())->get(),
+            'entityType' => $type,
+            'entityOptions' => BusinessEntityType::advancedOptions(),
         ]);
     }
 }
