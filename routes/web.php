@@ -235,8 +235,8 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->group(func
     // Legacy institute-controlled toggle — now superseded by Super Admin panel (admin.institutes.certificate-approval-mode.update)
     // Kept for backwards compatibility (tests / cached forms); UI removed from settings.
     Route::put('settings/certificate-approval-mode', [InstituteSettingController::class, 'updateCertificateApprovalMode'])->middleware('permission:settings.manage')->name('settings.certificate-approval-mode.update');
-    Route::get('settings/modules', [\App\Http\Controllers\ModuleSettingsController::class, 'index'])->middleware('permission:settings.manage')->name('settings.modules');
-    Route::post('settings/modules', [\App\Http\Controllers\ModuleSettingsController::class, 'update'])->middleware('permission:settings.manage')->name('settings.modules.update');
+    Route::get('settings/modules', [\App\Http\Controllers\Settings\ModuleManagementController::class, 'index'])->middleware('permission:institute.settings.module.view')->name('settings.modules');
+    Route::post('settings/modules/toggle', [\App\Http\Controllers\Settings\ModuleManagementController::class, 'toggle'])->name('settings.modules.toggle');
     Route::get('settings/features', [\App\Http\Controllers\Institute\FeatureAccessController::class, 'index'])->middleware('permission:settings.manage')->name('settings.features');
     // Currency settings
     Route::get('settings/currency', [\App\Http\Controllers\Settings\CurrencySettingController::class, 'index'])->middleware('permission:settings.manage')->name('settings.currency.index');
@@ -316,6 +316,25 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->group(func
         Route::get('/tds-summary', [\App\Http\Controllers\Settings\TaxReportController::class, 'tdsSummary'])->middleware('permission:settings.manage')->name('tds-summary');
         Route::get('/advance-tax', [\App\Http\Controllers\Settings\TaxReportController::class, 'advanceTax'])->middleware('permission:settings.manage')->name('advance-tax');
         Route::get('/corporate-return', [\App\Http\Controllers\Settings\TaxReportController::class, 'corporateReturn'])->middleware('permission:settings.manage')->name('corporate-return');
+    });
+    // TDS Receivable (deductee-side)
+    Route::prefix('settings/tds-receivable')->name('settings.tds-receivable.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Settings\TdsReceivableController::class, 'index'])->middleware('permission:settings.manage')->name('index');
+        Route::get('/create', [\App\Http\Controllers\Settings\TdsReceivableController::class, 'create'])->middleware('permission:settings.manage')->name('create');
+        Route::post('/', [\App\Http\Controllers\Settings\TdsReceivableController::class, 'store'])->middleware('permission:settings.manage')->name('store');
+    });
+    // TDS Certificates Received
+    Route::prefix('settings/tds-certificates-received')->name('settings.tds-certificates-received.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Settings\TdsCertificateReceivedController::class, 'index'])->middleware('permission:settings.manage')->name('index');
+        Route::get('/create', [\App\Http\Controllers\Settings\TdsCertificateReceivedController::class, 'create'])->middleware('permission:settings.manage')->name('create');
+        Route::post('/', [\App\Http\Controllers\Settings\TdsCertificateReceivedController::class, 'store'])->middleware('permission:settings.manage')->name('store');
+        Route::post('/{certificate}/verify', [\App\Http\Controllers\Settings\TdsCertificateReceivedController::class, 'verify'])->middleware('permission:settings.manage')->name('verify');
+    });
+    // Tax Return Reconciliation
+    Route::prefix('settings/tax-reconciliation')->name('settings.tax-reconciliation.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Settings\TaxReconciliationController::class, 'index'])->middleware('permission:settings.manage')->name('index');
+        Route::post('/finalize', [\App\Http\Controllers\Settings\TaxReconciliationController::class, 'finalize'])->middleware('permission:settings.manage')->name('finalize');
+        Route::post('/{reconciliation}/mark-filed', [\App\Http\Controllers\Settings\TaxReconciliationController::class, 'markFiled'])->middleware('permission:settings.manage')->name('mark-filed');
     });
 });
 

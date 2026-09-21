@@ -49,36 +49,18 @@
                 <i class="bi bi-capsule"></i>
                 <span>Medical</span>
             </button>
-            <a href="{{ route('settings.currency.index') }}" class="settings-nav-item settings-tab-btn">
-                <i class="bi bi-cash-coin"></i>
-                <span>Currency</span>
-            </a>
-            <a href="{{ route('settings.advanced-accounting') }}" class="settings-nav-item settings-tab-btn">
+            <button class="settings-nav-item settings-tab-btn" type="button" data-target="pane-advanced-accounting" aria-selected="false">
                 <i class="bi bi-sliders"></i>
                 <span>Advanced Accounting</span>
                 @if(advanced_accounting())
                     <span class="badge bg-success ms-1">ON</span>
-                    @php
-                        $etype = app(\App\Services\Accounting\BusinessEntityService::class)->getType(tenant_id());
-                    @endphp
-                    @if($etype->requiresAdvancedMode())
-                        <span class="badge bg-info ms-1">{{ $etype->label() }}</span>
-                    @endif
                 @else
                     <span class="badge bg-secondary ms-1">OFF</span>
                 @endif
-            </a>
-            <a href="{{ route('settings.share-capital.index') }}" class="settings-nav-item settings-tab-btn">
-                <i class="bi bi-bank"></i>
-                <span>Share Capital</span>
-            </a>
-            <a href="{{ route('settings.dividend.index') }}" class="settings-nav-item settings-tab-btn">
-                <i class="bi bi-cash-coin"></i>
-                <span>Dividends</span>
-            </a>
-            <a href="{{ route('settings.tds.index') }}" class="settings-nav-item settings-tab-btn">
-                <i class="bi bi-file-earmark-text"></i>
-                <span>TDS & Tax</span>
+            </button>
+            <a href="{{ route('settings.modules') }}" class="settings-nav-item text-decoration-none">
+                <i class="bi bi-grid-3x3-gap"></i>
+                <span>Modules</span>
             </a>
         @endif
 <button class="settings-nav-item settings-tab-btn" type="button" data-target="pane-security" aria-selected="false">
@@ -391,6 +373,131 @@
             <div class="settings-pane" id="pane-security">
                 @include('security._panel')
             </div>
+
+            @if ($canManageSettings && $setting)
+            <div class="settings-pane" id="pane-advanced-accounting">
+                <div class="table-toolbar mb-3">
+                    <div class="toolbar-info"><i class="bi bi-sliders me-1"></i> Advanced Accounting</div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-12">
+                        <a href="{{ route('settings.advanced-accounting') }}" class="d-block text-decoration-none border rounded-3 p-3 bg-white h-100 settings-list-item">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="fs-3 text-primary"><i class="bi bi-sliders"></i></div>
+                                <div>
+                                    <div class="fw-semibold">Advanced Accounting</div>
+                                    <div class="small text-muted mb-1">Toggle GL, Journals, Trial Balance & more</div>
+                                    @if(advanced_accounting())
+                                        <span class="badge bg-success">ON</span>
+                                    @else
+                                        <span class="badge bg-secondary">OFF</span>
+                                    @endif
+                                </div>
+                                <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-12">
+                        <a href="{{ route('settings.currency.index') }}" class="d-block text-decoration-none border rounded-3 p-3 bg-white h-100 settings-list-item">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="fs-3 text-primary"><i class="bi bi-cash-coin"></i></div>
+                                <div>
+                                    <div class="fw-semibold">Currency</div>
+                                    <div class="small text-muted">Base currency, multi-currency & display format</div>
+                                </div>
+                                <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-12">
+                        <a href="{{ $entityType->requiresAdvancedMode() ? route($entityType->settingsRoute()) : route('settings.advanced-accounting') }}" class="d-block text-decoration-none border rounded-3 p-3 bg-white h-100 settings-list-item">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="fs-3 text-primary"><i class="bi bi-building"></i></div>
+                                <div>
+                                    <div class="fw-semibold">Business Entity Type</div>
+                                    <div class="small text-muted">{{ $entityType->label() }} — {{ $entityType->description() }}</div>
+                                </div>
+                                <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                            </div>
+                        </a>
+                    </div>
+                    @if($entityType->value === 'private_limited')
+                    <div class="col-12">
+                        <a href="{{ route('settings.share-capital.index') }}" class="d-block text-decoration-none border rounded-3 p-3 bg-white h-100 settings-list-item">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="fs-3 text-primary"><i class="bi bi-bank"></i></div>
+                                <div>
+                                    <div class="fw-semibold">Share Capital</div>
+                                    <div class="small text-muted">Authorized, issued & paid-up capital</div>
+                                </div>
+                                <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-12">
+                        <a href="{{ route('settings.dividend.index') }}" class="d-block text-decoration-none border rounded-3 p-3 bg-white h-100 settings-list-item">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="fs-3 text-primary"><i class="bi bi-cash-stack"></i></div>
+                                <div>
+                                    <div class="fw-semibold">Dividends</div>
+                                    <div class="small text-muted">Declare, track & pay dividends</div>
+                                </div>
+                                <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                            </div>
+                        </a>
+                    </div>
+                    @endif
+                    <div class="col-12">
+                        <a href="{{ route('settings.tds.index') }}" class="d-block text-decoration-none border rounded-3 p-3 bg-white h-100 settings-list-item">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="fs-3 text-primary"><i class="bi bi-file-earmark-text"></i></div>
+                                <div>
+                                    <div class="fw-semibold">TDS & Tax</div>
+                                    <div class="small text-muted">Tax deductions, deposits & certificates</div>
+                                </div>
+                                <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-12">
+                        <a href="{{ route('settings.tds-receivable.index') }}" class="d-block text-decoration-none border rounded-3 p-3 bg-white h-100 settings-list-item">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="fs-3 text-success"><i class="bi bi-box-arrow-in-down"></i></div>
+                                <div>
+                                    <div class="fw-semibold">TDS Receivable</div>
+                                    <div class="small text-muted">Track TDS deducted by customers</div>
+                                </div>
+                                <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-12">
+                        <a href="{{ route('settings.tds-certificates-received.index') }}" class="d-block text-decoration-none border rounded-3 p-3 bg-white h-100 settings-list-item">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="fs-3 text-info"><i class="bi bi-file-earmark-check"></i></div>
+                                <div>
+                                    <div class="fw-semibold">Certificates Received</div>
+                                    <div class="small text-muted">TDS certificates from deductors</div>
+                                </div>
+                                <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="col-12">
+                        <a href="{{ route('settings.tax-reconciliation.index') }}" class="d-block text-decoration-none border rounded-3 p-3 bg-white h-100 settings-list-item">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="fs-3 text-warning"><i class="bi bi-balance-scale"></i></div>
+                                <div>
+                                    <div class="fw-semibold">Tax Reconciliation</div>
+                                    <div class="small text-muted">Final settlement of TDS, advance & corporate tax</div>
+                                </div>
+                                <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            @endif
 
             @if ($setting && optional($user)->hasPermission('documents.view'))
                 <div class="settings-pane" id="pane-documents">

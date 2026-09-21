@@ -198,6 +198,21 @@ class Institute extends Model
         return $this->hasMany(CorporateTaxComputation::class);
     }
 
+    public function tdsReceivables(): HasMany
+    {
+        return $this->hasMany(TdsReceivable::class);
+    }
+
+    public function tdsCertificatesReceived(): HasMany
+    {
+        return $this->hasMany(TdsCertificateReceived::class);
+    }
+
+    public function taxReturnReconciliations(): HasMany
+    {
+        return $this->hasMany(TaxReturnReconciliation::class);
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
