@@ -3,6 +3,8 @@
 .env.bak*
 .env.broken*
 .env.backup*
+.env.testing
+.env.testing.tmp
 /vendor
 /node_modules
 /public/build
@@ -46,6 +48,7 @@ routes_list*.txt
 
 # local backups and dumps - never commit
 /backup/
+/backups/
 /demo/
 *.sql
 *.bak
@@ -53,6 +56,16 @@ routes_list*.txt
 *.pdf
 /New folder/
 
+# external tool artifacts
+.commandcode/
 
+# gateway
+gateway/node_modules/
+gateway/data/
+
+# test output / local reports
+test_results.txt
+tmp_task_*.json
+reports/*.json
 
 tmp_verification_report.json

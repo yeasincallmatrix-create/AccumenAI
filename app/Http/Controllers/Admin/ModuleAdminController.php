@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Industry;
 use App\Models\Institute;
 use App\Models\InstituteModuleOverride;
 use App\Models\ModuleAccessLog;
 use App\Models\ModuleRegistry;
+use App\Models\PackageScope;
 use App\Models\SubscriptionPackage;
 use App\Services\ModuleAccessService;
 use Illuminate\Http\RedirectResponse;
@@ -15,17 +17,47 @@ use Illuminate\View\View;
 
 class ModuleAdminController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
+        $industries = Industry::active()->orderBy('sort_order')->orderBy('name')->get();
+        $selectedIndustryId = $request->input('industry_id');
+
         $modules = ModuleRegistry::orderBy('sort_order')->get();
         $packages = SubscriptionPackage::where('status', 'active')->orderBy('id')->get();
+
+        if ($selectedIndustryId) {
+            $scopedPackageIds = PackageScope::where('industry_id', $selectedIndustryId)
+                ->where('status', 'active')
+                ->pluck('package_id')
+                ->toArray();
+
+            $globalPackageIds = PackageScope::whereNull('industry_id')
+                ->where('status', 'active')
+                ->pluck('package_id')
+                ->toArray();
+
+            $packages = $packages->whereIn('id', array_unique(array_merge($scopedPackageIds, $globalPackageIds)));
+
+            $scopedModuleKeys = \App\Models\PackageScopedModule::whereHas('scope', function ($q) use ($selectedIndustryId) {
+                $q->where('industry_id', $selectedIndustryId)->where('status', 'active');
+            })->where('enabled', true)
+                ->pluck('module_key')
+                ->unique()
+                ->toArray();
+
+            if (!empty($scopedModuleKeys)) {
+                $modules = $modules->filter(fn ($m) => in_array($m->key, $scopedModuleKeys, true));
+            } else {
+                $modules = $modules->filter(fn ($m) => ($m->type ?? 'core') === 'core');
+            }
+        }
 
         $packageModules = [];
         foreach ($packages as $pkg) {
             $packageModules[$pkg->id] = $pkg->packageModules()->pluck('enabled', 'module_key')->toArray();
         }
 
-        return view('admin.modules.index', compact('modules', 'packages', 'packageModules'));
+        return view('admin.modules.index', compact('modules', 'packages', 'packageModules', 'industries', 'selectedIndustryId'));
     }
 
     public function update(ModuleRegistry $module, Request $request): RedirectResponse
