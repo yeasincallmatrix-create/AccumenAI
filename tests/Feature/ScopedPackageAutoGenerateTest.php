@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Industry;
 use App\Models\Institute;
 use App\Models\PackageScope;
 use App\Models\PackageScopedFeature;
@@ -43,6 +44,26 @@ class ScopedPackageAutoGenerateTest extends TestCase
         );
     }
 
+    protected function bdCountryId(): int
+    {
+        static $id = null;
+        if ($id === null) {
+            $id = \App\Models\Country::where('iso2', 'BD')->value('id')
+                ?? \App\Models\Country::first()->id;
+        }
+        return $id;
+    }
+
+    protected function educationIndustryId(): int
+    {
+        static $id = null;
+        if ($id === null) {
+            $id = Industry::where('slug', 'education')->value('id')
+                ?? Industry::first()->id;
+        }
+        return $id;
+    }
+
     public function test_institute_create_auto_generates_scope(): void
     {
         $pkg = $this->package('create');
@@ -52,13 +73,13 @@ class ScopedPackageAutoGenerateTest extends TestCase
             'slug' => 'auto-gen-create-' . uniqid(),
             'status' => 'active',
             'package_id' => $pkg->id,
-            'country_id' => 21,
-            'industry_id' => 3418,
+            'country_id' => $this->bdCountryId(),
+            'industry_id' => $this->educationIndustryId(),
         ]);
 
         $scope = PackageScope::where('package_id', $pkg->id)
-            ->where('country_id', 21)
-            ->where('industry_id', 3418)
+            ->where('country_id', $this->bdCountryId())
+            ->where('industry_id', $this->educationIndustryId())
             ->first();
 
         $this->assertNotNull($scope, 'Scope should be auto-generated on institute create');
@@ -74,20 +95,20 @@ class ScopedPackageAutoGenerateTest extends TestCase
             'slug' => 'auto-gen-update-' . uniqid(),
             'status' => 'active',
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
         ]);
 
         $scopeBefore = PackageScope::where('package_id', $pkg->id)
-            ->where('country_id', 21)
-            ->where('industry_id', 3418)
+            ->where('country_id', $this->bdCountryId())
+            ->where('industry_id', $this->educationIndustryId())
             ->first();
         $this->assertNull($scopeBefore, 'No scope should exist before industry change');
 
-        $inst->update(['industry_id' => 3418]);
+        $inst->update(['industry_id' => $this->educationIndustryId()]);
 
         $scopeAfter = PackageScope::where('package_id', $pkg->id)
-            ->where('country_id', 21)
-            ->where('industry_id', 3418)
+            ->where('country_id', $this->bdCountryId())
+            ->where('industry_id', $this->educationIndustryId())
             ->first();
 
         $this->assertNotNull($scopeAfter, 'Scope should be auto-generated on industry change');
@@ -102,14 +123,14 @@ class ScopedPackageAutoGenerateTest extends TestCase
             'slug' => 'auto-gen-flush-' . uniqid(),
             'status' => 'active',
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
         ]);
 
         $cacheKey = 'feature_access:' . $inst->id . ':global';
         Cache::put($cacheKey, ['test' => true], 3600);
         $this->assertTrue(Cache::has($cacheKey), 'Cache should exist before update');
 
-        $inst->update(['industry_id' => 3418]);
+        $inst->update(['industry_id' => $this->educationIndustryId()]);
 
         $this->assertFalse(Cache::has($cacheKey), 'Cache should be flushed after scope-changing update');
     }
@@ -123,8 +144,8 @@ class ScopedPackageAutoGenerateTest extends TestCase
             'slug' => 'auto-gen-idempotent-' . uniqid(),
             'status' => 'active',
             'package_id' => $pkg->id,
-            'country_id' => 21,
-            'industry_id' => 3418,
+            'country_id' => $this->bdCountryId(),
+            'industry_id' => $this->educationIndustryId(),
         ]);
 
         $scope1 = $this->service->ensureScopeExistsForInstitute($inst);
@@ -135,8 +156,8 @@ class ScopedPackageAutoGenerateTest extends TestCase
         $this->assertEquals($scope1->id, $scope2->id, 'Second call should return existing scope');
 
         $count = PackageScope::where('package_id', $pkg->id)
-            ->where('country_id', 21)
-            ->where('industry_id', 3418)
+            ->where('country_id', $this->bdCountryId())
+            ->where('industry_id', $this->educationIndustryId())
             ->count();
         $this->assertEquals(1, $count, 'Only one scope row should exist');
     }
@@ -155,11 +176,11 @@ class ScopedPackageAutoGenerateTest extends TestCase
             'slug' => 'auto-gen-copy-' . uniqid(),
             'status' => 'active',
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
         ]);
 
         $scope = PackageScope::where('package_id', $pkg->id)
-            ->where('country_id', 21)
+            ->where('country_id', $this->bdCountryId())
             ->first();
         $this->assertNotNull($scope);
 
@@ -177,11 +198,11 @@ class ScopedPackageAutoGenerateTest extends TestCase
             'slug' => 'auto-gen-no-parent-' . uniqid(),
             'status' => 'active',
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
         ]);
 
         $scope = PackageScope::where('package_id', $pkg->id)
-            ->where('country_id', 21)
+            ->where('country_id', $this->bdCountryId())
             ->first();
 
         $this->assertNotNull($scope, 'Scope should still be created');

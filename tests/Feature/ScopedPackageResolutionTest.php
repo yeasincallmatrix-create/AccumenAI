@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Industry;
 use App\Models\Institute;
 use App\Models\PackageScope;
 use App\Models\PackageScopedFeature;
@@ -56,13 +57,43 @@ class ScopedPackageResolutionTest extends TestCase
         });
     }
 
+    protected function bdCountryId(): int
+    {
+        static $id = null;
+        if ($id === null) {
+            $id = \App\Models\Country::where('iso2', 'BD')->value('id')
+                ?? \App\Models\Country::first()->id;
+        }
+        return $id;
+    }
+
+    protected function educationIndustryId(): int
+    {
+        static $id = null;
+        if ($id === null) {
+            $id = Industry::where('slug', 'education')->value('id')
+                ?? Industry::first()->id;
+        }
+        return $id;
+    }
+
+    protected function schoolSubIndustryId(): int
+    {
+        static $id = null;
+        if ($id === null) {
+            $id = \App\Models\SubIndustry::where('slug', 'school')->value('id')
+                ?? \App\Models\SubIndustry::first()->id;
+        }
+        return $id;
+    }
+
     public function test_resolve_exact_match_returns_most_specific(): void
     {
         $pkg = $this->package('exact');
         $global = PackageScope::create(['package_id' => $pkg->id, 'status' => 'active']);
         $countryScope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'industry_id' => null,
             'sub_industry_id' => null,
             'status' => 'active',
@@ -70,7 +101,7 @@ class ScopedPackageResolutionTest extends TestCase
 
         $inst = $this->institute([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
         ]);
 
         $resolved = $this->service->resolveScopedPackage($inst);
@@ -84,14 +115,14 @@ class ScopedPackageResolutionTest extends TestCase
         PackageScope::create(['package_id' => $pkg->id, 'status' => 'active']);
         $cScope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'industry_id' => null,
             'status' => 'active',
         ]);
 
         $inst = $this->institute([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
         ]);
 
         $resolved = $this->service->resolveScopedPackage($inst);
@@ -105,13 +136,13 @@ class ScopedPackageResolutionTest extends TestCase
         PackageScope::create(['package_id' => $pkg->id, 'status' => 'active']);
         $cScope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'status' => 'active',
         ]);
 
         $inst = $this->institute([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
         ]);
 
         $resolved = $this->service->resolveScopedPackage($inst);
@@ -126,7 +157,7 @@ class ScopedPackageResolutionTest extends TestCase
 
         $inst = $this->institute([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
         ]);
 
         $resolved = $this->service->resolveScopedPackage($inst);
@@ -141,7 +172,7 @@ class ScopedPackageResolutionTest extends TestCase
 
         $inst = $this->institute([
             'package_id' => $pkg->id,
-            'country_id' => 1,
+            'country_id' => $this->bdCountryId(),
         ]);
 
         $resolved = $this->service->resolveScopedPackage($inst);
@@ -166,7 +197,7 @@ class ScopedPackageResolutionTest extends TestCase
         $pkg = $this->package('null-i');
         $scope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'industry_id' => null,
             'sub_industry_id' => null,
             'status' => 'active',
@@ -174,7 +205,7 @@ class ScopedPackageResolutionTest extends TestCase
 
         $inst = $this->institute([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
         ]);
 
         $resolved = $this->service->resolveScopedPackage($inst);
@@ -248,13 +279,13 @@ class ScopedPackageResolutionTest extends TestCase
         PackageScope::create(['package_id' => $pkg->id, 'status' => 'active']);
         $subScope = PackageScope::create([
             'package_id' => $pkg->id,
-            'sub_industry_id' => 15816,
+            'sub_industry_id' => $this->schoolSubIndustryId(),
             'status' => 'active',
         ]);
 
         $inst = $this->institute([
             'package_id' => $pkg->id,
-            'sub_industry_id' => 15816,
+            'sub_industry_id' => $this->schoolSubIndustryId(),
         ]);
 
         $resolved = $this->service->resolveScopedPackage($inst);
@@ -268,15 +299,15 @@ class ScopedPackageResolutionTest extends TestCase
         PackageScope::create(['package_id' => $pkg->id, 'status' => 'active']);
         $isScope = PackageScope::create([
             'package_id' => $pkg->id,
-            'industry_id' => 3418,
-            'sub_industry_id' => 15816,
+            'industry_id' => $this->educationIndustryId(),
+            'sub_industry_id' => $this->schoolSubIndustryId(),
             'status' => 'active',
         ]);
 
         $inst = $this->institute([
             'package_id' => $pkg->id,
-            'industry_id' => 3418,
-            'sub_industry_id' => 15816,
+            'industry_id' => $this->educationIndustryId(),
+            'sub_industry_id' => $this->schoolSubIndustryId(),
         ]);
 
         $resolved = $this->service->resolveScopedPackage($inst);
@@ -290,15 +321,15 @@ class ScopedPackageResolutionTest extends TestCase
         PackageScope::create(['package_id' => $pkg->id, 'status' => 'active']);
         $csScope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
-            'sub_industry_id' => 15816,
+            'country_id' => $this->bdCountryId(),
+            'sub_industry_id' => $this->schoolSubIndustryId(),
             'status' => 'active',
         ]);
 
         $inst = $this->institute([
             'package_id' => $pkg->id,
-            'country_id' => 21,
-            'sub_industry_id' => 15816,
+            'country_id' => $this->bdCountryId(),
+            'sub_industry_id' => $this->schoolSubIndustryId(),
         ]);
 
         $resolved = $this->service->resolveScopedPackage($inst);
@@ -315,9 +346,9 @@ class ScopedPackageResolutionTest extends TestCase
 
         $inst = $this->institute([
             'package_id' => $pkg->id,
-            'country_id' => 21,
-            'industry_id' => 3418,
-            'sub_industry_id' => 15816,
+            'country_id' => $this->bdCountryId(),
+            'industry_id' => $this->educationIndustryId(),
+            'sub_industry_id' => $this->schoolSubIndustryId(),
         ]);
 
         $resolved = $this->service->resolveScopedPackage($inst);
@@ -336,7 +367,7 @@ class ScopedPackageResolutionTest extends TestCase
 
         $subScope = PackageScope::create([
             'package_id' => $pkg->id,
-            'sub_industry_id' => 15816,
+            'sub_industry_id' => $this->schoolSubIndustryId(),
             'inherit_from_parent' => true,
             'status' => 'active',
         ]);
