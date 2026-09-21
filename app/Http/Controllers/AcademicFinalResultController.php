@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AcademicAssessment;
 use App\Models\AcademicFinalResult;
 use App\Models\AcademicFinalResultPolicy;
 use App\Models\AcademicFinalResultRow;
@@ -17,6 +18,7 @@ use App\Models\Subject;
 use App\Models\User;
 use App\Services\AcademicFinalResultLifecycleService;
 use App\Services\AcademicFinalResultPreflightService;
+use App\Services\AcademicFinalResultReadinessService;
 use App\Services\AcademicResultExportService;
 use App\Support\CsvStream;
 use App\Support\Workspace;
@@ -45,6 +47,7 @@ class AcademicFinalResultController extends Controller
         private readonly AcademicFinalResultLifecycleService $lifecycle,
         private readonly AcademicResultExportService $resultExporter,
         private readonly AcademicFinalResultPreflightService $preflight,
+        private readonly AcademicFinalResultReadinessService $readinessService,
     ) {}
 
     public function index(Request $request): View
@@ -338,6 +341,64 @@ class AcademicFinalResultController extends Controller
         abort_if($result->status !== AcademicFinalResult::STATUS_PUBLISHED, 404, 'Only published final results can be exported.');
 
         $export = $this->resultExporter->export($result);
+
+        return CsvStream::download($export['filename'], $export['headers'], $export['rows']);
+    }
+
+    /**
+     * Final-result preflight report — read-only dashboard that checks scope,
+     * policy, configuration and coverage before generation.
+     */
+    public function preflight(Request $request, AcademicResultAggregationScheme $result): View
+    {
+        $this->requireInstitute($request);
+
+        return view('institute.academic-final-results.preflight', [
+            'report' => $this->preflight->preflight($result),
+        ]);
+    }
+
+    /**
+     * Final-result readiness view — shows assessment coverage per student for
+     * the given aggregation scheme. Also handles the assessment-level readiness
+     * route when an AcademicAssessment is bound instead.
+     */
+    public function readiness(Request $request, ?AcademicResultAggregationScheme $result = null): View
+    {
+        $this->requireInstitute($request);
+
+        $assessmentId = $request->route('assessment');
+        if ($assessmentId !== null) {
+            $assessment = \App\Models\AcademicAssessment::findOrFail($assessmentId);
+
+            return view('institute.academic-assessments.readiness', [
+                'assessment' => $assessment,
+                'readiness' => app(\App\Services\AcademicResultReadinessService::class)->forAssessment($assessment),
+            ]);
+        }
+
+        return view('institute.academic-final-results.readiness', [
+            'readiness' => $this->readinessService->forScheme($result),
+        ]);
+    }
+
+    /**
+     * CSV download of readiness exceptions. Dispatches to the appropriate
+     * service depending on whether the bound model is a scheme or assessment.
+     */
+    public function readinessExport(Request $request, ?AcademicResultAggregationScheme $result = null)
+    {
+        $this->requireInstitute($request);
+
+        $assessmentId = $request->route('assessment');
+        if ($assessmentId !== null) {
+            $assessment = \App\Models\AcademicAssessment::findOrFail($assessmentId);
+            $export = app(\App\Services\AcademicResultReadinessService::class)->export($assessment);
+
+            return CsvStream::download($export['filename'], $export['headers'], $export['rows']);
+        }
+
+        $export = $this->readinessService->export($result);
 
         return CsvStream::download($export['filename'], $export['headers'], $export['rows']);
     }
