@@ -814,7 +814,7 @@ Route::middleware($tenant)->group(function () {
 
     // Tax Reports
     $taxReport = \App\Http\Controllers\Accounting\TaxReportController::class;
-    Route::prefix('accounting/reports/tax')->name('accounting.reports.tax.')->group(function () use ($taxReport) {
+    Route::prefix('accounting/reports/tax')->name('accounting.reports.tax.')->middleware('permission:tax.view')->group(function () use ($taxReport) {
         Route::get('vat-summary', [$taxReport, 'vatSummary'])->name('vat-summary');
         Route::get('input-vat', [$taxReport, 'inputVat'])->name('input-vat');
         Route::get('output-vat', [$taxReport, 'outputVat'])->name('output-vat');

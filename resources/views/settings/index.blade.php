@@ -447,54 +447,7 @@
                         </a>
                     </div>
                     @endif
-                    <div class="col-12">
-                        <a href="{{ route('settings.tds.index') }}" class="d-block text-decoration-none border rounded-3 p-3 bg-white h-100 settings-list-item">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="fs-3 text-primary"><i class="bi bi-file-earmark-text"></i></div>
-                                <div>
-                                    <div class="fw-semibold">TDS & Tax</div>
-                                    <div class="small text-muted">Tax deductions, deposits & certificates</div>
-                                </div>
-                                <i class="bi bi-chevron-right ms-auto text-muted"></i>
-                            </div>
-                        </a>
-                    </div>
-                    <div class="col-12">
-                        <a href="{{ route('settings.tds-receivable.index') }}" class="d-block text-decoration-none border rounded-3 p-3 bg-white h-100 settings-list-item">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="fs-3 text-success"><i class="bi bi-box-arrow-in-down"></i></div>
-                                <div>
-                                    <div class="fw-semibold">TDS Receivable</div>
-                                    <div class="small text-muted">Track TDS deducted by customers</div>
-                                </div>
-                                <i class="bi bi-chevron-right ms-auto text-muted"></i>
-                            </div>
-                        </a>
-                    </div>
-                    <div class="col-12">
-                        <a href="{{ route('settings.tds-certificates-received.index') }}" class="d-block text-decoration-none border rounded-3 p-3 bg-white h-100 settings-list-item">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="fs-3 text-info"><i class="bi bi-file-earmark-check"></i></div>
-                                <div>
-                                    <div class="fw-semibold">Certificates Received</div>
-                                    <div class="small text-muted">TDS certificates from deductors</div>
-                                </div>
-                                <i class="bi bi-chevron-right ms-auto text-muted"></i>
-                            </div>
-                        </a>
-                    </div>
-                    <div class="col-12">
-                        <a href="{{ route('settings.tax-reconciliation.index') }}" class="d-block text-decoration-none border rounded-3 p-3 bg-white h-100 settings-list-item">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="fs-3 text-warning"><i class="bi bi-balance-scale"></i></div>
-                                <div>
-                                    <div class="fw-semibold">Tax Reconciliation</div>
-                                    <div class="small text-muted">Final settlement of TDS, advance & corporate tax</div>
-                                </div>
-                                <i class="bi bi-chevron-right ms-auto text-muted"></i>
-                            </div>
-                        </a>
-                    </div>
+
                 </div>
             </div>
             @endif

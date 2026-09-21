@@ -298,43 +298,43 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->group(func
     });
     // TDS
     Route::prefix('settings/tds')->name('settings.tds.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Settings\TdsController::class, 'index'])->middleware('permission:settings.manage')->name('index');
-        Route::get('/create', [\App\Http\Controllers\Settings\TdsController::class, 'create'])->middleware('permission:settings.manage')->name('create');
-        Route::post('/', [\App\Http\Controllers\Settings\TdsController::class, 'store'])->middleware('permission:settings.manage')->name('store');
-        Route::post('/{tds}/deposit', [\App\Http\Controllers\Settings\TdsController::class, 'deposit'])->middleware('permission:settings.manage')->name('deposit');
-        Route::get('/certificates', [\App\Http\Controllers\Settings\TdsController::class, 'certificates'])->middleware('permission:settings.manage')->name('certificates');
-        Route::post('/certificates/generate/{tds}', [\App\Http\Controllers\Settings\TdsController::class, 'generateCertificate'])->middleware('permission:settings.manage')->name('certificates.generate');
+        Route::get('/', [\App\Http\Controllers\Settings\TdsController::class, 'index'])->middleware('permission:tax.manage')->name('index');
+        Route::get('/create', [\App\Http\Controllers\Settings\TdsController::class, 'create'])->middleware('permission:tax.manage')->name('create');
+        Route::post('/', [\App\Http\Controllers\Settings\TdsController::class, 'store'])->middleware('permission:tax.manage')->name('store');
+        Route::post('/{tds}/deposit', [\App\Http\Controllers\Settings\TdsController::class, 'deposit'])->middleware('permission:tax.manage')->name('deposit');
+        Route::get('/certificates', [\App\Http\Controllers\Settings\TdsController::class, 'certificates'])->middleware('permission:tax.manage')->name('certificates');
+        Route::post('/certificates/generate/{tds}', [\App\Http\Controllers\Settings\TdsController::class, 'generateCertificate'])->middleware('permission:tax.manage')->name('certificates.generate');
     });
     // Corporate Tax
     Route::prefix('settings/corporate-tax')->name('settings.corporate-tax.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Settings\CorporateTaxController::class, 'index'])->middleware('permission:settings.manage')->name('index');
-        Route::post('/compute', [\App\Http\Controllers\Settings\CorporateTaxController::class, 'compute'])->middleware('permission:settings.manage')->name('compute');
-        Route::post('/advance', [\App\Http\Controllers\Settings\CorporateTaxController::class, 'recordAdvance'])->middleware('permission:settings.manage')->name('advance');
+        Route::get('/', [\App\Http\Controllers\Settings\CorporateTaxController::class, 'index'])->middleware('permission:tax.manage')->name('index');
+        Route::post('/compute', [\App\Http\Controllers\Settings\CorporateTaxController::class, 'compute'])->middleware('permission:tax.manage')->name('compute');
+        Route::post('/advance', [\App\Http\Controllers\Settings\CorporateTaxController::class, 'recordAdvance'])->middleware('permission:tax.manage')->name('advance');
     });
     // Tax Reports
     Route::prefix('settings/tax-reports')->name('settings.tax-reports.')->group(function () {
-        Route::get('/tds-summary', [\App\Http\Controllers\Settings\TaxReportController::class, 'tdsSummary'])->middleware('permission:settings.manage')->name('tds-summary');
-        Route::get('/advance-tax', [\App\Http\Controllers\Settings\TaxReportController::class, 'advanceTax'])->middleware('permission:settings.manage')->name('advance-tax');
-        Route::get('/corporate-return', [\App\Http\Controllers\Settings\TaxReportController::class, 'corporateReturn'])->middleware('permission:settings.manage')->name('corporate-return');
+        Route::get('/tds-summary', [\App\Http\Controllers\Settings\TaxReportController::class, 'tdsSummary'])->middleware('permission:tax.report')->name('tds-summary');
+        Route::get('/advance-tax', [\App\Http\Controllers\Settings\TaxReportController::class, 'advanceTax'])->middleware('permission:tax.report')->name('advance-tax');
+        Route::get('/corporate-return', [\App\Http\Controllers\Settings\TaxReportController::class, 'corporateReturn'])->middleware('permission:tax.report')->name('corporate-return');
     });
     // TDS Receivable (deductee-side)
     Route::prefix('settings/tds-receivable')->name('settings.tds-receivable.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Settings\TdsReceivableController::class, 'index'])->middleware('permission:settings.manage')->name('index');
-        Route::get('/create', [\App\Http\Controllers\Settings\TdsReceivableController::class, 'create'])->middleware('permission:settings.manage')->name('create');
-        Route::post('/', [\App\Http\Controllers\Settings\TdsReceivableController::class, 'store'])->middleware('permission:settings.manage')->name('store');
+        Route::get('/', [\App\Http\Controllers\Settings\TdsReceivableController::class, 'index'])->middleware('permission:tax.manage')->name('index');
+        Route::get('/create', [\App\Http\Controllers\Settings\TdsReceivableController::class, 'create'])->middleware('permission:tax.manage')->name('create');
+        Route::post('/', [\App\Http\Controllers\Settings\TdsReceivableController::class, 'store'])->middleware('permission:tax.manage')->name('store');
     });
     // TDS Certificates Received
     Route::prefix('settings/tds-certificates-received')->name('settings.tds-certificates-received.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Settings\TdsCertificateReceivedController::class, 'index'])->middleware('permission:settings.manage')->name('index');
-        Route::get('/create', [\App\Http\Controllers\Settings\TdsCertificateReceivedController::class, 'create'])->middleware('permission:settings.manage')->name('create');
-        Route::post('/', [\App\Http\Controllers\Settings\TdsCertificateReceivedController::class, 'store'])->middleware('permission:settings.manage')->name('store');
-        Route::post('/{certificate}/verify', [\App\Http\Controllers\Settings\TdsCertificateReceivedController::class, 'verify'])->middleware('permission:settings.manage')->name('verify');
+        Route::get('/', [\App\Http\Controllers\Settings\TdsCertificateReceivedController::class, 'index'])->middleware('permission:tax.manage')->name('index');
+        Route::get('/create', [\App\Http\Controllers\Settings\TdsCertificateReceivedController::class, 'create'])->middleware('permission:tax.manage')->name('create');
+        Route::post('/', [\App\Http\Controllers\Settings\TdsCertificateReceivedController::class, 'store'])->middleware('permission:tax.manage')->name('store');
+        Route::post('/{certificate}/verify', [\App\Http\Controllers\Settings\TdsCertificateReceivedController::class, 'verify'])->middleware('permission:tax.manage')->name('verify');
     });
     // Tax Return Reconciliation
     Route::prefix('settings/tax-reconciliation')->name('settings.tax-reconciliation.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Settings\TaxReconciliationController::class, 'index'])->middleware('permission:settings.manage')->name('index');
-        Route::post('/finalize', [\App\Http\Controllers\Settings\TaxReconciliationController::class, 'finalize'])->middleware('permission:settings.manage')->name('finalize');
-        Route::post('/{reconciliation}/mark-filed', [\App\Http\Controllers\Settings\TaxReconciliationController::class, 'markFiled'])->middleware('permission:settings.manage')->name('mark-filed');
+        Route::get('/', [\App\Http\Controllers\Settings\TaxReconciliationController::class, 'index'])->middleware('permission:tax.manage')->name('index');
+        Route::post('/finalize', [\App\Http\Controllers\Settings\TaxReconciliationController::class, 'finalize'])->middleware('permission:tax.manage')->name('finalize');
+        Route::post('/{reconciliation}/mark-filed', [\App\Http\Controllers\Settings\TaxReconciliationController::class, 'markFiled'])->middleware('permission:tax.manage')->name('mark-filed');
     });
 });
 

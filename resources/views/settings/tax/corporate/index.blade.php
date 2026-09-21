@@ -12,6 +12,8 @@
 
 @section('content')
 
+@include('settings.tds._subnav')
+
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
     <div class="page-header-text">
         <h4 class="page-header-title"><i class="bi bi-building me-2"></i>Corporate Tax <span class="badge bg-info ms-2" style="font-size:.65rem">{{ $country }}</span></h4>
