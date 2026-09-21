@@ -1255,7 +1255,7 @@ Route::middleware($tenant)->group(function () {
 
         // Final Results
         Route::get('final-results', [$setAcadFinal, 'index'])->name('final-results.index');
-        Route::post('final-results', [$setAcadFinal, 'storeResult'])->name('final-results.store');
+        Route::post('final-results/{policy}', [$setAcadFinal, 'storeResult'])->name('final-results.store');
         Route::get('final-results/{result}', [$setAcadFinal, 'show'])->name('final-results.show');
         Route::post('final-results/{result}/approve', [$setAcadFinal, 'approve'])->name('final-results.approve');
         Route::get('final-results/{result}/report', [$setAcadFinal, 'report'])->name('final-results.report');
@@ -1267,8 +1267,8 @@ Route::middleware($tenant)->group(function () {
         Route::get('final-results/{result}/readiness', [$setAcadFinal, 'readiness'])->name('final-results.readiness');
         Route::get('final-results/{result}/readiness/export', [$setAcadFinal, 'readinessExport'])->name('final-results.readiness.export');
         Route::get('final-results/{result}/preflight', [$setAcadFinal, 'preflight'])->name('final-results.preflight');
-        Route::get('final-results/policy', [$setAcadFinal, 'policy'])->name('final-results.policy');
-        Route::put('final-results/policy', [$setAcadFinal, 'updatePolicy'])->name('final-results.policy.update');
+        Route::get('final-results/policy/{scheme}', [$setAcadFinal, 'policy'])->name('final-results.policy');
+        Route::put('final-results/policy/{policy}', [$setAcadFinal, 'updatePolicy'])->name('final-results.policy.update');
 
         // Promotions — requires promotion.manage in addition to education.manage
         Route::middleware('permission:promotion.manage')->group(function () use ($setAcadPromo) {
