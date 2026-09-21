@@ -53,3 +53,6 @@ Schedule::command('database:backup --type=weekly --verify')->weeklyOn(0, '02:00'
 
 // Phase 7b — tenant grant/denial expiry (idempotent, cache-flushing).
 Schedule::command('grants:process-expired')->hourly()->withoutOverlapping();
+
+// Recurring transactions — process due templates hourly
+Schedule::command('accounting:process-recurring')->hourly()->withoutOverlapping();

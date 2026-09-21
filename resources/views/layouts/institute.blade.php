@@ -921,6 +921,9 @@
                             <a class="nav-link sub {{ request()->routeIs('finance.progressive-contracts.*') ? 'active' : '' }}" href="{{ route('finance.progressive-contracts.index') }}">
                                 <i class="bi bi-building-gear"></i><span class="sidebar-label">Progressive Contracts</span>
                             </a>
+                            <a class="nav-link sub {{ request()->routeIs('finance.recurring-templates.*') ? 'active' : '' }}" href="{{ route('finance.recurring-templates.index') }}">
+                                <i class="bi bi-arrow-repeat"></i><span class="sidebar-label">Recurring Templates</span>
+                            </a>
                             <a class="nav-link sub {{ request()->routeIs('finance.payments.index') ? 'active' : '' }}" href="{{ route('finance.payments.index') }}">
                                 <i class="bi bi-cash-stack"></i><span class="sidebar-label">Payments</span>
                             </a>
