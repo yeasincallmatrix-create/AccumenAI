@@ -573,4 +573,81 @@ class JournalPostingService
 
         throw new \RuntimeException('Could not allocate a unique journal number.');
     }
+
+    /**
+     * Post a journal entry for an expense: Dr Expense Account, Cr Payment Account.
+     */
+    public function postExpenseEntry(\App\Models\Accounting\Expense $expense, int $actorId): ?\App\Models\JournalEntry
+    {
+        $currency = \App\Models\Currency::where('code', $expense->currency ?? 'BDT')->first();
+        if (!$currency) {
+            return null;
+        }
+
+        $entries = [
+            [
+                'coa_id' => $expense->expense_account_id,
+                'debit' => (float) $expense->amount,
+                'credit' => 0,
+                'memo' => "Expense {$expense->expense_number}",
+            ],
+            [
+                'coa_id' => $expense->payment_account_id,
+                'debit' => 0,
+                'credit' => (float) $expense->amount,
+                'memo' => "Payment for {$expense->expense_number}",
+            ],
+        ];
+
+        if ((float) ($expense->tax_amount ?? 0) > 0 && $expense->tax_group_id) {
+            $taxCoa = \App\Models\ChartOfAccount::where('institute_id', $expense->institute_id)
+                ->where('code', '1201')->first();
+            if ($taxCoa) {
+                array_unshift($entries, [
+                    'coa_id' => $taxCoa->id,
+                    'debit' => (float) $expense->tax_amount,
+                    'credit' => 0,
+                    'memo' => "Input tax for {$expense->expense_number}",
+                ]);
+                $entries[2]['credit'] = (float) $expense->tax_amount;
+            }
+        }
+
+        $journal = $this->create([
+            'institute_id' => $expense->institute_id,
+            'branch_id' => $expense->branch_id,
+            'journal_date' => $expense->expense_date->toDateString(),
+            'type' => 'payment',
+            'currency_id' => $currency->id,
+            'description' => "Expense {$expense->expense_number} — {$expense->vendor_name}",
+            'source' => 'app',
+            'ref_type' => 'expense',
+            'ref_id' => $expense->id,
+            'entries' => $entries,
+        ], $actorId, true);
+
+        return $journal->entries()->first();
+    }
+
+    /**
+     * Reverse a posted expense journal entry.
+     */
+    public function reverseExpenseEntry(\App\Models\Accounting\Expense $expense, ?int $actorId = null, ?string $reason = null): ?\App\Models\Journal
+    {
+        if (!$expense->journal_entry_id) {
+            return null;
+        }
+
+        $journalEntry = \App\Models\JournalEntry::find($expense->journal_entry_id);
+        if (!$journalEntry) {
+            return null;
+        }
+
+        $journal = $journalEntry->journal;
+        if (!$journal || $journal->status !== 'posted') {
+            return null;
+        }
+
+        return $this->reverse($journal, $expense->institute_id, $actorId, $reason ?? "Reversal for expense {$expense->expense_number}");
+    }
 }

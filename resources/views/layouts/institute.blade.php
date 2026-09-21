@@ -924,6 +924,12 @@
                             <a class="nav-link sub {{ request()->routeIs('finance.recurring-templates.*') ? 'active' : '' }}" href="{{ route('finance.recurring-templates.index') }}">
                                 <i class="bi bi-arrow-repeat"></i><span class="sidebar-label">Recurring Templates</span>
                             </a>
+                            <a class="nav-link sub {{ request()->routeIs('finance.expenses.*') ? 'active' : '' }}" href="{{ route('finance.expenses.index') }}">
+                                <i class="bi bi-receipt"></i><span class="sidebar-label">Expenses</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('finance.expenses.billable-dashboard') ? 'active' : '' }}" href="{{ route('finance.expenses.billable-dashboard') }}">
+                                <i class="bi bi-cash-coin"></i><span class="sidebar-label">Billable Expenses</span>
+                            </a>
                             <a class="nav-link sub {{ request()->routeIs('accounting.bank-feed.*') ? 'active' : '' }}" href="{{ route('accounting.bank-feed.index') }}">
                                 <i class="bi bi-bank"></i><span class="sidebar-label">Bank Feed Import</span>
                             </a>
