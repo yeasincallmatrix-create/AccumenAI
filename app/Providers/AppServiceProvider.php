@@ -807,6 +807,18 @@ class AppServiceProvider extends ServiceProvider
             }
         }
 
+        // Education: also seed permissions and assign to admin role
+        if (($institute->industry ?? '') === 'education') {
+            try {
+                app(\App\Services\EducationModuleActivator::class)->activateForEducation($institute);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('EducationModuleActivator failed', [
+                    'institute_id' => $institute->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         app(\App\Services\ModuleAccessService::class)->flushCache($institute->id);
     }
 }

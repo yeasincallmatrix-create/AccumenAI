@@ -72,6 +72,8 @@ class BackfillIndustryModules extends Command
                                 app(\App\Services\MedicalModuleActivator::class)->activateForHealthcare($institute);
                             } elseif ($institute->industry === 'training_center') {
                                 app(\App\Services\TrainingCenterModuleActivator::class)->activateForTrainingCenter($institute);
+                            } elseif ($institute->industry === 'education') {
+                                app(\App\Services\EducationModuleActivator::class)->activateForEducation($institute);
                             } else {
                                 InstituteModuleOverride::updateOrCreate(
                                     ['institute_id' => $institute->id, 'module_key' => $desiredModule],

@@ -83,6 +83,52 @@ class FeatureRegistrySeeder extends Seeder
             $row->wasRecentlyCreated ? $created++ : $updated++;
         }
 
+        $educationFeatures = [
+            'education.students' => [
+                'name' => 'Students',
+                'description' => 'Student registration, enrollment, profiles, and academic records',
+                'sort_order' => 21,
+            ],
+            'education.classes' => [
+                'name' => 'Classes',
+                'description' => 'Classes, sections, subjects, timetable, and curriculum',
+                'sort_order' => 22,
+            ],
+            'education.exams' => [
+                'name' => 'Exams & Results',
+                'description' => 'Exam scheduling, marks entry, grading, and result publishing',
+                'sort_order' => 23,
+            ],
+            'education.attendance' => [
+                'name' => 'Attendance',
+                'description' => 'Student and teacher attendance tracking and reports',
+                'sort_order' => 24,
+            ],
+            'education.fees' => [
+                'name' => 'Fees',
+                'description' => 'Fee heads, structures, collection, waivers, and Outstanding tracking',
+                'sort_order' => 25,
+            ],
+            'education.guardians' => [
+                'name' => 'Guardians',
+                'description' => 'Guardian portal, parent-student linking, and communication',
+                'sort_order' => 26,
+            ],
+            'education.analytics' => [
+                'name' => 'Academic Analytics',
+                'description' => 'Performance dashboards, analytics, and reports',
+                'sort_order' => 27,
+            ],
+        ];
+
+        foreach ($educationFeatures as $key => $attrs) {
+            $row = FeatureRegistry::updateOrCreate(
+                ['feature_key' => $key],
+                array_merge($attrs, ['module_key' => 'education', 'status' => 'active'])
+            );
+            $row->wasRecentlyCreated ? $created++ : $updated++;
+        }
+
         if ($this->command) {
             $this->command->info("Medical features: {$created} created, {$updated} updated.");
         }

@@ -452,6 +452,19 @@ class RegistrationFlowController extends Controller
             }
         }
 
+        // Auto-enable education module for education tenants
+        if (($org['industry'] ?? null) === 'education') {
+            try {
+                app(\App\Services\EducationModuleActivator::class)->activateForEducation($institute);
+            } catch (\Throwable $e) {
+                Log::warning('RegistrationFlow: education module activation failed', [
+                    'institute_id' => $institute->id,
+                    'error' => $e->getMessage(),
+                ]);
+                report($e);
+            }
+        }
+
         // Log the new user in? Spec says do not automatically log in after Step1, but after full flow should land on setup/dashboard. We will log in now.
         \Illuminate\Support\Facades\Auth::guard('web')->login($user);
         $request->session()->regenerate();

@@ -209,6 +209,19 @@ class InstituteCreationController extends Controller
             }
         }
 
+        // Auto-enable education module for education tenants
+        if ($institute->industry === 'education') {
+            try {
+                app(\App\Services\EducationModuleActivator::class)->activateForEducation($institute);
+            } catch (\Throwable $e) {
+                Log::warning('InstituteCreation: education module activation failed', [
+                    'institute_id' => $institute->id,
+                    'error' => $e->getMessage(),
+                ]);
+                report($e);
+            }
+        }
+
         return redirect()
             ->route('dashboard')
             ->with('status', mawa_lang('workspace.created', ['name' => $institute->name]));

@@ -982,43 +982,43 @@
                             <a class="nav-link sub {{ request()->routeIs('finance.reports.*') ? 'active' : '' }}" href="{{ route('finance.reports.trial-balance') }}">
                                 <i class="bi bi-bar-chart-fill"></i><span class="sidebar-label">{{ mawa_e('sidebar.reports') }}</span>
                             </a>
-                            @if ($user && $user->hasPermission('tax.view'))
-                                @php $taxOpen = request()->routeIs('accounting.reports.tax.*','settings.tds*','settings.tds-receivable*','settings.tds-certificates*','settings.corporate-tax*','settings.tax-reports*','settings.tax-reconciliation*') ? true : false; @endphp
-                                <div class="nav-group">
-                                    <button class="nav-link w-100 d-flex align-items-center justify-content-between {{ $taxOpen ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#taxComplianceNavGroup" aria-expanded="{{ $taxOpen ? 'true' : 'false' }}" aria-controls="taxComplianceNavGroup">
-                                        <span class="d-flex align-items-center gap-2"><i class="bi bi-file-invoice-dollar"></i><span class="sidebar-label fw-semibold">{{ tenant_tax_module_label() }} &amp; Compliance</span></span>
-                                        <i class="bi bi-chevron-down small sidebar-label nav-caret"></i>
-                                    </button>
-                                    <div class="collapse {{ $taxOpen ? 'show' : '' }}" id="taxComplianceNavGroup">
-                                        <a class="nav-link sub {{ request()->routeIs('accounting.reports.tax.*') ? 'active' : '' }}" href="{{ route('accounting.reports.tax.vat-summary') }}">
-                                            <i class="bi bi-receipt"></i><span class="sidebar-label">VAT &amp; Tax</span>
-                                        </a>
-                                        <a class="nav-link sub {{ request()->routeIs('settings.tds.*') ? 'active' : '' }}" href="{{ route('settings.tds.index') }}">
-                                            <i class="bi bi-file-earmark-minus"></i><span class="sidebar-label">{{ tenant_tds_label() }} &amp; Tax</span>
-                                        </a>
-                                        <a class="nav-link sub {{ request()->routeIs('settings.tds-receivable.*') ? 'active' : '' }}" href="{{ route('settings.tds-receivable.index') }}">
-                                            <i class="bi bi-file-earmark-plus"></i><span class="sidebar-label">{{ tenant_tds_label() }} Receivable</span>
-                                        </a>
-                                        <a class="nav-link sub {{ request()->routeIs('settings.tds-certificates*') ? 'active' : '' }}" href="{{ route('settings.tds-certificates-received.index') }}">
-                                            <i class="bi bi-patch-check"></i><span class="sidebar-label">Certificates Received</span>
-                                        </a>
-                                        <a class="nav-link sub {{ request()->routeIs('settings.corporate-tax*') ? 'active' : '' }}" href="{{ route('settings.corporate-tax.index') }}">
-                                            <i class="bi bi-building"></i><span class="sidebar-label">Corporate Tax</span>
-                                        </a>
-                                        <a class="nav-link sub {{ request()->routeIs('settings.tax-reports.*') ? 'active' : '' }}" href="{{ route('settings.tax-reports.tds-summary') }}">
-                                            <i class="bi bi-file-bar-graph"></i><span class="sidebar-label">Tax Reports</span>
-                                        </a>
-                                        <a class="nav-link sub {{ request()->routeIs('settings.tax-reconciliation.*') ? 'active' : '' }}" href="{{ route('settings.tax-reconciliation.index') }}">
-                                            <i class="bi bi-arrow-left-right"></i><span class="sidebar-label">Tax Reconciliation</span>
-                                        </a>
-                                    </div>
-                                </div>
-                            @endif
                             <a class="nav-link sub {{ request()->routeIs('sync.*') ? 'active' : '' }}" href="{{ route('sync.index') }}">
                                 <i class="bi bi-arrow-repeat"></i><span class="sidebar-label">{{ mawa_e('sidebar.offline_review') }}</span>
                                 @if ($countsPendingSync ?? false)
                                     <span class="badge bg-warning ms-auto">{{ $countsPendingSync }}</span>
                                 @endif
+                            </a>
+                        </div>
+                    </div>
+                @endif
+                @if ($user && $user->hasPermission('tax.view'))
+                    @php $taxOpen = request()->routeIs('accounting.reports.tax.*','settings.tds*','settings.tds-receivable*','settings.tds-certificates*','settings.corporate-tax*','settings.tax-reports*','settings.tax-reconciliation*') ? true : false; @endphp
+                    <div class="nav-group">
+                        <button class="nav-link w-100 d-flex align-items-center justify-content-between {{ $taxOpen ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#taxComplianceNavGroup" aria-expanded="{{ $taxOpen ? 'true' : 'false' }}" aria-controls="taxComplianceNavGroup">
+                            <span class="d-flex align-items-center gap-2"><i class="bi bi-file-invoice-dollar"></i><span class="sidebar-label fw-semibold">Compliance</span></span>
+                            <i class="bi bi-chevron-down small sidebar-label nav-caret"></i>
+                        </button>
+                        <div class="collapse {{ $taxOpen ? 'show' : '' }}" id="taxComplianceNavGroup">
+                            <a class="nav-link sub {{ request()->routeIs('accounting.reports.tax.*') ? 'active' : '' }}" href="{{ route('accounting.reports.tax.vat-summary') }}">
+                                <i class="bi bi-receipt"></i><span class="sidebar-label">VAT &amp; Tax</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('settings.tds.*') ? 'active' : '' }}" href="{{ route('settings.tds.index') }}">
+                                <i class="bi bi-file-earmark-minus"></i><span class="sidebar-label">{{ tenant_tds_label() }} &amp; Tax</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('settings.tds-receivable.*') ? 'active' : '' }}" href="{{ route('settings.tds-receivable.index') }}">
+                                <i class="bi bi-file-earmark-plus"></i><span class="sidebar-label">{{ tenant_tds_label() }} Receivable</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('settings.tds-certificates*') ? 'active' : '' }}" href="{{ route('settings.tds-certificates-received.index') }}">
+                                <i class="bi bi-patch-check"></i><span class="sidebar-label">Certificates Received</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('settings.corporate-tax*') ? 'active' : '' }}" href="{{ route('settings.corporate-tax.index') }}">
+                                <i class="bi bi-building"></i><span class="sidebar-label">Corporate Tax</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('settings.tax-reports.*') ? 'active' : '' }}" href="{{ route('settings.tax-reports.tds-summary') }}">
+                                <i class="bi bi-file-bar-graph"></i><span class="sidebar-label">Tax Reports</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('settings.tax-reconciliation.*') ? 'active' : '' }}" href="{{ route('settings.tax-reconciliation.index') }}">
+                                <i class="bi bi-arrow-left-right"></i><span class="sidebar-label">Tax Reconciliation</span>
                             </a>
                         </div>
                     </div>

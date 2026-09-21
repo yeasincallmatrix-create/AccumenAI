@@ -36,6 +36,8 @@ class DatabaseSeeder extends Seeder
         $this->call(RolePermissionSeeder::class);
         $this->call(ModuleRegistrySeeder::class);
         $this->call(MedicalSubModuleSeeder::class);
+        $this->call(EducationSubModuleSeeder::class);
+        $this->call(EducationPermissionSeeder::class);
         $this->call(IndustryTaxonomySeeder::class);
         $this->call(IndustryTaxonomyTestSeeder::class);
         $this->call(AcademicStructureSeeder::class);
