@@ -13,11 +13,18 @@ use App\Services\MembershipService;
 use App\Services\ModuleAccessService;
 use App\Services\UserAccountService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Tests\TestCase;
 
 class ModuleManagementTest extends TestCase
 {
     use DatabaseTransactions;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->withoutMiddleware(ValidateCsrfToken::class);
+    }
 
     protected function tenantOwner(string $email): array
     {
@@ -31,6 +38,7 @@ class ModuleManagementTest extends TestCase
             'email' => $email,
             'password_hash' => bcrypt('password'),
             'status' => 'active',
+            'email_verified_at' => now(),
         ]);
         $roleId = Role::where('slug', 'institute-owner')->firstOrFail()->id;
         (new MembershipService)->assign($owner, $institute->id, $roleId);
@@ -108,6 +116,7 @@ class ModuleManagementTest extends TestCase
             'email' => 'module-medical-health-' . uniqid() . '@example.test',
             'password_hash' => bcrypt('password'),
             'status' => 'active',
+            'email_verified_at' => now(),
         ]);
 
         $roleId = Role::where('slug', 'institute-owner')->firstOrFail()->id;
@@ -295,6 +304,7 @@ class ModuleManagementTest extends TestCase
             'email' => 'module-iso-b-owner@example.test',
             'password_hash' => bcrypt('password'),
             'status' => 'active',
+            'email_verified_at' => now(),
         ]);
         $roleId = Role::where('slug', 'institute-owner')->firstOrFail()->id;
         (new MembershipService)->assign($ownerB, $instituteB->id, $roleId);
