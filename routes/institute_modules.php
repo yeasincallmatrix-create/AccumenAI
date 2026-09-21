@@ -600,6 +600,21 @@ Route::middleware($tenant)->group(function () {
         Route::post('{invoice}/cancel', [$finInv, 'cancel'])->name('cancel');
     });
 
+    // Progressive Contracts
+    $progContr = \App\Http\Controllers\ProgressiveContractController::class;
+    Route::prefix('finance/progressive-contracts')->name('finance.progressive-contracts.')->group(function () use ($progContr) {
+        Route::get('/', [$progContr, 'index'])->name('index');
+        Route::get('create', [$progContr, 'create'])->name('create');
+        Route::post('/', [$progContr, 'store'])->name('store');
+        Route::get('{progressive_contract}', [$progContr, 'show'])->name('show');
+        Route::get('{progressive_contract}/edit', [$progContr, 'edit'])->name('edit');
+        Route::put('{progressive_contract}', [$progContr, 'update'])->name('update');
+        Route::delete('{progressive_contract}', [$progContr, 'destroy'])->name('destroy');
+        Route::get('{progressive_contract}/create-invoice', [$progContr, 'createInvoiceForm'])->name('create-invoice');
+        Route::post('{progressive_contract}/create-invoice', [$progContr, 'storeInvoice'])->name('store-invoice');
+        Route::post('{progressive_contract}/cancel', [$progContr, 'cancel'])->name('cancel');
+    });
+
     // Finance Payments
     Route::prefix('finance/payments')->name('finance.payments.')->group(function () use ($finPay) {
         Route::post('/', [$finPay, 'store'])->name('store');
@@ -991,7 +1006,7 @@ Route::middleware($tenant)->group(function () {
     });
 
     // ─── TRAINING ENROLLMENTS & SETTINGS (domain:professional) ───────────────
-    Route::prefix('training')->name('training.')->middleware('domain:professional')->group(function () {
+    Route::prefix('training')->name('training.')->middleware(['domain:professional', 'module_access:training_center'])->group(function () {
         Route::resource('enrollments', \App\Http\Controllers\Training\EnrollmentController::class)->only(['index','create','store','update','destroy'])->names('enrollments');
         Route::get('settings', [\App\Http\Controllers\Training\SettingController::class, 'index'])->name('settings.index');
         Route::put('settings', [\App\Http\Controllers\Training\SettingController::class, 'update'])->name('settings.update');

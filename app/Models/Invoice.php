@@ -37,6 +37,13 @@ class Invoice extends Model
         'due_amount',
         'status',
         'created_by',
+        'progressive_contract_id',
+        'is_progressive',
+        'is_final_progressive',
+        'milestone_name',
+        'progress_percentage',
+        'cumulative_billed',
+        'retention_amount',
     ];
 
     protected function casts(): array
@@ -46,6 +53,11 @@ class Invoice extends Model
             'due_date' => 'date',
             'exchange_rate' => 'decimal:8',
             'base_payable_amount' => 'decimal:4',
+            'is_progressive' => 'boolean',
+            'is_final_progressive' => 'boolean',
+            'progress_percentage' => 'decimal:2',
+            'cumulative_billed' => 'decimal:2',
+            'retention_amount' => 'decimal:2',
         ];
     }
 
@@ -112,5 +124,20 @@ class Invoice extends Model
     public function salesDelivery(): BelongsTo
     {
         return $this->belongsTo(SalesDelivery::class, 'sales_delivery_id');
+    }
+
+    public function progressiveContract(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Accounting\ProgressiveContract::class, 'progressive_contract_id');
+    }
+
+    public function scopeProgressive($q)
+    {
+        return $q->where('is_progressive', true);
+    }
+
+    public function scopeNonProgressive($q)
+    {
+        return $q->where('is_progressive', false);
     }
 }

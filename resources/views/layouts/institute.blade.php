@@ -918,6 +918,9 @@
                             <a class="nav-link sub {{ request()->routeIs('finance.invoices.*') || request()->routeIs('finance.payments.*') ? 'active' : '' }}" href="{{ route('finance.invoices.index') }}">
                                 <i class="bi bi-receipt-cutoff"></i><span class="sidebar-label">Invoices</span>
                             </a>
+                            <a class="nav-link sub {{ request()->routeIs('finance.progressive-contracts.*') ? 'active' : '' }}" href="{{ route('finance.progressive-contracts.index') }}">
+                                <i class="bi bi-building-gear"></i><span class="sidebar-label">Progressive Contracts</span>
+                            </a>
                             <a class="nav-link sub {{ request()->routeIs('finance.payments.index') ? 'active' : '' }}" href="{{ route('finance.payments.index') }}">
                                 <i class="bi bi-cash-stack"></i><span class="sidebar-label">Payments</span>
                             </a>
