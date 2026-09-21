@@ -23,6 +23,7 @@ class ModuleRegistrySeeder extends Seeder
             ['key' => 'notifications', 'name' => 'Notifications', 'type' => 'core', 'description' => 'In-app & push notifications', 'sort_order' => 9],
             ['key' => 'ai', 'name' => 'AI', 'type' => 'core', 'description' => 'AI assistant & tools', 'sort_order' => 10],
             ['key' => 'vat', 'name' => 'VAT / Tax', 'type' => 'core', 'description' => 'VAT & tax configuration, returns and compliance', 'sort_order' => 11],
+            ['key' => 'tds', 'name' => 'TDS / Tax', 'type' => 'core', 'description' => 'Withholding tax, advance tax, corporate tax and reconciliation', 'sort_order' => 12],
             ['key' => 'education', 'name' => 'Education', 'type' => 'industry', 'description' => 'Education management (students, exams, results, certificates)', 'sort_order' => 20],
             ['key' => 'training_center', 'name' => 'Training Center', 'type' => 'industry', 'description' => 'Training center management', 'sort_order' => 22],
             ['key' => 'medical', 'name' => 'Medical / Hospital Management', 'type' => 'industry', 'description' => 'Complete Hospital Management System (OPD, IPD, Pharmacy, Lab, Billing)', 'sort_order' => 50],
@@ -45,9 +46,9 @@ class ModuleRegistrySeeder extends Seeder
 
         $packageModules = [
             'free'       => ['notifications'],
-            'basic'      => ['finance', 'reports', 'notifications', 'education'],
-            'advanced'   => ['finance', 'accounting', 'reports', 'notifications', 'ai', 'education', 'sales', 'medical', 'training_center'],
-            'premium'    => ['finance', 'accounting', 'inventory', 'hr', 'reports', 'notifications', 'ai', 'education', 'sales', 'purchase', 'medical', 'training_center'],
+            'basic'      => ['finance', 'reports', 'notifications', 'education', 'vat', 'tds'],
+            'advanced'   => ['finance', 'accounting', 'reports', 'notifications', 'ai', 'education', 'sales', 'medical', 'training_center', 'vat', 'tds'],
+            'premium'    => ['finance', 'accounting', 'inventory', 'hr', 'reports', 'notifications', 'ai', 'education', 'sales', 'purchase', 'medical', 'training_center', 'vat', 'tds'],
         ];
 
         foreach ($packageModules as $slug => $keys) {

@@ -61,6 +61,11 @@ abstract class TestCase extends BaseTestCase
         // institute id — so setUp() never creates orphan tenant rows.
         $this->seedReferenceMasters();
 
+        // Module registry + package modules (idempotent — updateOrCreate).
+        if (Schema::hasTable('module_registry')) {
+            (new \Database\Seeders\ModuleRegistrySeeder)->run();
+        }
+
         // B82: global reference rows tests resolve via firstOrFail()
         // (document categories, lead statuses, themes). Idempotent —
         // each seeder no-ops when its rows already exist.
@@ -282,6 +287,18 @@ abstract class TestCase extends BaseTestCase
             } catch (\Illuminate\Database\QueryException | \Illuminate\Database\DeadlockException $e) {
                 if (Permission::where('slug', 'finance.view')->doesntExist()
                     || Permission::where('slug', 'crm.view')->doesntExist()) {
+                    throw $e;
+                }
+            }
+        }
+
+        if (Permission::where('slug', 'institute.settings.module.view')->doesntExist()
+            || Permission::where('slug', 'institute.settings.module.toggle')->doesntExist()) {
+            try {
+                (new \Database\Seeders\ModuleTogglePermissionSeeder)->run();
+            } catch (\Illuminate\Database\QueryException | \Illuminate\Database\DeadlockException $e) {
+                if (Permission::where('slug', 'institute.settings.module.view')->doesntExist()
+                    || Permission::where('slug', 'institute.settings.module.toggle')->doesntExist()) {
                     throw $e;
                 }
             }
