@@ -926,7 +926,7 @@ Route::middleware($tenant)->group(function () {
     // ─── CURRICULA ─────────────────────────────────────────────────────────
     $curric = \App\Http\Controllers\CurriculumController::class;
 
-    Route::prefix('curricula')->name('curricula.')->middleware('domain:professional')->group(function () use ($curric) {
+    Route::prefix('curricula')->name('curricula.')->middleware(['domain:professional', 'module_access:education.classes'])->group(function () use ($curric) {
         Route::get('/', [$curric, 'index'])->middleware('permission:curriculum.view')->name('index');
         Route::get('create', [$curric, 'create'])->middleware('permission:curriculum.manage')->name('create');
         Route::post('/', [$curric, 'store'])->middleware('permission:curriculum.manage')->name('store');
@@ -1030,7 +1030,7 @@ Route::middleware($tenant)->group(function () {
     // ─── CLASSES (institute) — academic domain only (domain:academic)
     $cls = \App\Http\Controllers\ClassController::class;
 
-    Route::prefix('classes')->name('classes.')->middleware('domain:academic')->group(function () use ($cls) {
+    Route::prefix('classes')->name('classes.')->middleware(['domain:academic', 'module_access:education.classes'])->group(function () use ($cls) {
         Route::get('/', [$cls, 'index'])->middleware('permission:courses.view')->name('index');
         Route::get('subjects', [$cls, 'subjects'])->middleware('permission:courses.view')->name('subjects');
         Route::get('batches', [$cls, 'batches'])->middleware('permission:batches.view')->name('batches');
@@ -1050,7 +1050,7 @@ Route::middleware($tenant)->group(function () {
     $adm = \App\Http\Controllers\AdmissionController::class;
     $admPipe = \App\Http\Controllers\AdmissionPipelineController::class;
 
-    Route::prefix('admissions')->name('admissions.')->group(function () use ($adm, $admPipe) {
+    Route::prefix('admissions')->name('admissions.')->middleware('module_access:education.students')->group(function () use ($adm, $admPipe) {
         Route::get('/', [$adm, 'index'])->name('index');
         Route::get('create', [$adm, 'create'])->name('create');
         Route::post('/', [$adm, 'store'])->name('store');
@@ -1152,7 +1152,7 @@ Route::middleware($tenant)->group(function () {
     $acadAtt = \App\Http\Controllers\AcademicAttendanceController::class;
     $acadAttRep = \App\Http\Controllers\AcademicAttendanceReportController::class;
 
-    Route::prefix('academic-attendance')->name('academic-attendance.')->middleware('domain:academic')->group(function () use ($acadAtt, $acadAttRep) {
+    Route::prefix('academic-attendance')->name('academic-attendance.')->middleware(['domain:academic', 'module_access:education.attendance'])->group(function () use ($acadAtt, $acadAttRep) {
         Route::post('mark', [$acadAtt, 'store'])->name('mark.store');
         Route::get('reports/class', [$acadAttRep, 'classReport'])->name('reports.class');
         Route::get('reports/daily', [$acadAttRep, 'daily'])->name('reports.daily');
@@ -1165,7 +1165,7 @@ Route::middleware($tenant)->group(function () {
     // ─── ACADEMIC ANALYTICS ────────────────────────────────────────────────
     $acadAn = \App\Http\Controllers\AcademicAnalyticsController::class;
 
-    Route::prefix('academic/analytics')->name('academic.analytics.')->middleware('domain:academic')->group(function () use ($acadAn) {
+    Route::prefix('academic/analytics')->name('academic.analytics.')->middleware(['domain:academic', 'module_access:education.analytics'])->group(function () use ($acadAn) {
         Route::get('students', [$acadAn, 'students'])->name('students');
         Route::get('students/export', [$acadAn, 'studentsExport'])->name('students.export');
         Route::get('courses', [$acadAn, 'courses'])->name('courses');
@@ -1198,7 +1198,7 @@ Route::middleware($tenant)->group(function () {
     $setAcadMarks = \App\Http\Controllers\AcademicMarksController::class;
 
     // Settings - Academic Structure (education.manage required; promotions require promotion.manage) — academic domain enforced
-    Route::prefix('settings/academic')->name('settings.academic.')->middleware(['permission:education.manage', 'domain:academic'])->group(function () use ($setAcadStruct, $setAcadGrading, $setAcadAgg, $setAcadAssess, $setAcadFinal, $setAcadPromo, $setAcadPlc, $setAcadMarks) {
+    Route::prefix('settings/academic')->name('settings.academic.')->middleware(['permission:education.manage', 'domain:academic', 'module_access:education.classes'])->group(function () use ($setAcadStruct, $setAcadGrading, $setAcadAgg, $setAcadAssess, $setAcadFinal, $setAcadPromo, $setAcadPlc, $setAcadMarks) {
         Route::get('/', [$setAcadStruct, 'index'])->name('index');
         Route::match(['put', 'post'], 'label', [$setAcadStruct, 'updateLabel'])->name('label');
 
@@ -1505,7 +1505,9 @@ Route::middleware($tenant)->group(function () {
     // ─── GEO (public) moved to bottom outside tenant group — see end of file
 
     // ─── AI ────────────────────────────────────────────────────────────────
-    Route::post('ai/assistant/send', [\App\Http\Controllers\Ai\AiAssistantController::class, 'send'])->name('ai.assistant.send');
+    Route::post('ai/assistant/send', [\App\Http\Controllers\Ai\AiAssistantController::class, 'send'])
+        ->middleware(['ai.enabled', 'permission:ai.assistant'])
+        ->name('ai.assistant.send');
 
     // ─── OWNER PROFILE ─────────────────────────────────────────────────────
     $ownerProf = \App\Http\Controllers\OwnerProfileController::class;

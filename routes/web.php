@@ -165,7 +165,7 @@ Route::middleware(['auth:web'])->group(function () {
     Route::match(['get', 'post'], 'workspace/onboarding/choose', [\App\Http\Controllers\InstituteOnboardingController::class, 'choose'])->name('workspace.onboarding.choose');
 });
 
-Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->prefix('students')->name('students.')->group(function () {
+Route::middleware(['auth:institute_user,web', 'tenant', 'verified', 'module_access:education.students'])->prefix('students')->name('students.')->group(function () {
     Route::get('/', [StudentController::class, 'index'])->middleware('permission:students.view')->name('index');
     Route::get('create', [StudentController::class, 'create'])->middleware('permission:students.manage')->name('create');
     Route::post('/', [StudentController::class, 'store'])->middleware('permission:students.manage')->name('store');
@@ -191,14 +191,14 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->prefix('sy
     Route::post('{queue}/reject', [OfflineSyncController::class, 'reject'])->middleware('permission:finance.manage')->name('reject');
 });
 
-Route::middleware(['auth:institute_user,web', 'tenant', 'verified', 'domain:academic'])->group(function () {
+Route::middleware(['auth:institute_user,web', 'tenant', 'verified', 'domain:academic', 'module_access:education.attendance'])->group(function () {
     Route::get('academic/dashboard', [\App\Http\Controllers\AcademicDashboardController::class, '__invoke'])->name('academic.dashboard');
     Route::get('academic/analytics', [\App\Http\Controllers\AcademicAnalyticsController::class, 'index'])->name('academic.analytics.index');
     Route::get('academic-attendance/mark', [\App\Http\Controllers\AcademicAttendanceController::class, 'index'])->name('academic-attendance.mark.index');
     Route::get('academic-attendance/reports', [\App\Http\Controllers\AcademicAttendanceReportController::class, 'index'])->name('academic-attendance.reports.index');
 });
 
-Route::middleware(['auth:institute_user,web', 'tenant', 'verified', 'domain:professional'])->prefix('batches')->name('batches.')->group(function () {
+Route::middleware(['auth:institute_user,web', 'tenant', 'verified', 'domain:professional', 'module_access:education.classes'])->prefix('batches')->name('batches.')->group(function () {
     Route::get('/', [BatchController::class, 'index'])->middleware('permission:batches.view')->name('index');
     Route::get('{batch}', [BatchController::class, 'show'])->middleware('permission:batches.view')->name('show');
     Route::post('/', [BatchController::class, 'store'])->middleware('permission:batches.manage')->name('store');
@@ -209,7 +209,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified', 'domain:prof
 });
 
 // Exams — fixed: uses App\Http\Controllers\ExamController (not Institute\ namespace)
-Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->prefix('exams')->name('exams.')->group(function () {
+Route::middleware(['auth:institute_user,web', 'tenant', 'verified', 'module_access:education.exams'])->prefix('exams')->name('exams.')->group(function () {
     Route::get('/', [ExamController::class, 'index'])->middleware('permission:exams.view')->name('index');
     Route::post('send-to-exam/{batch}', [ExamController::class, 'sendToExam'])->middleware('permission:exams.manage')->name('sendToExam');
     Route::get('{exam}', [ExamController::class, 'show'])->middleware('permission:exams.view')->name('show');
@@ -670,7 +670,9 @@ Route::middleware(['auth:institute_user,web','tenant', 'deny.teacher.finance', '
     Route::get('recycle', [\App\Http\Controllers\RecycleBinController::class, 'index'])->name('recycle.index');
     Route::get('settings', [\App\Http\Controllers\InstituteSettingController::class, 'index'])->name('settings.index');
     Route::get('owner/profile', function () { return redirect()->route('settings.index'); })->name('owner.profile');
-    Route::get('ai/assistant', [\App\Http\Controllers\Ai\AiAssistantController::class, 'index'])->name('ai.assistant');
+    Route::get('ai/assistant', [\App\Http\Controllers\Ai\AiAssistantController::class, 'index'])
+        ->middleware(['ai.enabled', 'permission:ai.assistant'])
+        ->name('ai.assistant');
     Route::get('finance/online-payments/gateways', function () { return redirect()->route('finance.dashboard'); })->name('finance.online-payments.gateways');
 });
 
