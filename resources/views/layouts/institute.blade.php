@@ -924,6 +924,12 @@
                             <a class="nav-link sub {{ request()->routeIs('finance.recurring-templates.*') ? 'active' : '' }}" href="{{ route('finance.recurring-templates.index') }}">
                                 <i class="bi bi-arrow-repeat"></i><span class="sidebar-label">Recurring Templates</span>
                             </a>
+                            <a class="nav-link sub {{ request()->routeIs('accounting.bank-feed.*') ? 'active' : '' }}" href="{{ route('accounting.bank-feed.index') }}">
+                                <i class="bi bi-bank"></i><span class="sidebar-label">Bank Feed Import</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('accounting.bank-reconciliation.*') ? 'active' : '' }}" href="{{ route('accounting.bank-reconciliation.index') }}">
+                                <i class="bi bi-arrow-left-right"></i><span class="sidebar-label">Bank Reconciliation</span>
+                            </a>
                             <a class="nav-link sub {{ request()->routeIs('finance.payments.index') ? 'active' : '' }}" href="{{ route('finance.payments.index') }}">
                                 <i class="bi bi-cash-stack"></i><span class="sidebar-label">Payments</span>
                             </a>

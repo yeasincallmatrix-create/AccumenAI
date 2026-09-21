@@ -1,0 +1,92 @@
+{
+  "task": "Feature 3/4 — Bank Feed Import",
+  "status": "completed",
+  "feature": "bank_feed_import",
+
+  "backups": {
+    "main_db": "backups/accumen_ai_before_bankfeed_20260921_213023.sql (3.73 MB)",
+    "test_db": "backups/monetix_test_before_bankfeed_20260921_213023.sql (8.35 MB)"
+  },
+
+  "tables_created": ["bank_rules"],
+  "tables_altered": [
+    "bank_statements (+6 columns: import_hash, import_source, original_filename, imported_at, opening_balance, closing_balance)",
+    "bank_statement_lines (+7 columns: rule_id, match_confidence, matched_je_id, categorized_account_id, category_status, matched_at, counterparty)"
+  ],
+
+  "models_created": ["App\\Models\\BankRule"],
+  "models_updated": ["App\\Models\\BankStatement (+casts)", "App\\Models\\BankStatementLine (+3 relationships, +casts)"],
+
+  "services_created": [
+    "App\\Services\\Accounting\\BankStatementParser",
+    "App\\Services\\Accounting\\BankStatementImportService",
+    "App\\Services\\Accounting\\BankFeedMatchingService"
+  ],
+
+  "controllers_created": ["App\\Http\\Controllers\\Accounting\\BankFeedController"],
+
+  "views_created": 4,
+  "routes_added": 13,
+
+  "features": {
+    "csv_parser": true,
+    "ofx_parser": true,
+    "qfx_parser": true,
+    "idempotent_import": true,
+    "auto_match_by_amount_date_reference": true,
+    "rule_engine": true,
+    "5_pattern_types": true,
+    "amount_range_filter": true,
+    "direction_filter": true,
+    "manual_categorize": true,
+    "bulk_categorize": true,
+    "bulk_ignore": true,
+    "create_rule_from_line": true,
+    "je_posting_on_categorize": true,
+    "audit_logging": true,
+    "tenant_isolation": true
+  },
+
+  "test_counts": {
+    "BankFeedImportTest": "22/22 pass",
+    "ProgressiveInvoiceTest": "21/21 unchanged",
+    "RecurringTransactionTest": "34/34 unchanged",
+    "BankReconciliationTest": "6/6 unchanged",
+    "total_new": 22,
+    "total_regression": 61,
+    "new_regressions": 0
+  },
+
+  "regressions": 0,
+
+  "files_created": [
+    "database/migrations/2026_09_22_120000_create_bank_rules_table.php",
+    "database/migrations/2026_09_22_120100_add_import_fields_to_bank_statements.php",
+    "app/Models/BankRule.php",
+    "app/Services/Accounting/BankStatementParser.php",
+    "app/Services/Accounting/BankStatementImportService.php",
+    "app/Services/Accounting/BankFeedMatchingService.php",
+    "app/Http/Controllers/Accounting/BankFeedController.php",
+    "resources/views/institute/accounting/bank-feed/index.blade.php",
+    "resources/views/institute/accounting/bank-feed/upload.blade.php",
+    "resources/views/institute/accounting/bank-feed/statement.blade.php",
+    "resources/views/institute/accounting/bank-feed/rules.blade.php",
+    "tests/Feature/Finance/BankFeedImportTest.php"
+  ],
+
+  "files_changed": [
+    "app/Models/BankStatement.php (+casts)",
+    "app/Models/BankStatementLine.php (+3 relationships, +casts)",
+    "routes/institute_modules.php (+13 routes)",
+    "resources/views/layouts/institute.blade.php (+2 sidebar links: Bank Feed Import, Bank Reconciliation)"
+  ],
+
+  "fixes_applied_during_testing": [
+    "BankFeedMatchingService autoMatch: replaced whereHas (invalid on DB query builder) with proper JOIN on journals table",
+    "BankRule regex: pattern_value should NOT include slashes (model wraps in /pattern/i)",
+    "Tenant tests: must clear TenantContext before creating cross-tenant test data (TenantScoped trait overrides institute_id)"
+  ],
+
+  "commit": "pending",
+  "push": "pending"
+}

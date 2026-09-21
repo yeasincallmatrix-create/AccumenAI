@@ -18,6 +18,8 @@ class BankStatementLine extends Model
     protected $casts = [
         'transaction_date' => 'date',
         'amount' => 'decimal:4',
+        'match_confidence' => 'integer',
+        'matched_at' => 'datetime',
     ];
 
     public function statement(): BelongsTo
@@ -28,6 +30,21 @@ class BankStatementLine extends Model
     public function institute(): BelongsTo
     {
         return $this->belongsTo(Institute::class);
+    }
+
+    public function rule(): BelongsTo
+    {
+        return $this->belongsTo(BankRule::class, 'rule_id');
+    }
+
+    public function matchedJournal(): BelongsTo
+    {
+        return $this->belongsTo(Journal::class, 'matched_je_id');
+    }
+
+    public function categorizedAccount(): BelongsTo
+    {
+        return $this->belongsTo(ChartOfAccount::class, 'categorized_account_id');
     }
 
     public function reconciliations(): HasMany

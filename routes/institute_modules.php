@@ -806,6 +806,24 @@ Route::middleware($tenant)->group(function () {
         Route::delete('statement/{statementId}/lines/{lineId}', [$acctBank, 'destroyLine'])->name('lines.destroy');
     });
 
+    // Accounting Bank Feed Import
+    $acctBankFeed = \App\Http\Controllers\Accounting\BankFeedController::class;
+    Route::prefix('accounting/bank-feed')->name('accounting.bank-feed.')->group(function () use ($acctBankFeed) {
+        Route::get('/', [$acctBankFeed, 'index'])->name('index');
+        Route::get('upload', [$acctBankFeed, 'upload'])->name('upload');
+        Route::post('import', [$acctBankFeed, 'import'])->name('import');
+        Route::get('statement/{statement}', [$acctBankFeed, 'statement'])->name('statement');
+        Route::post('statement/{statement}/auto-match', [$acctBankFeed, 'autoMatch'])->name('auto-match');
+        Route::post('statement/{statement}/apply-rules', [$acctBankFeed, 'applyRules'])->name('apply-rules');
+        Route::post('line/{line}/categorize', [$acctBankFeed, 'categorize'])->name('line.categorize');
+        Route::post('statement/{statement}/bulk-categorize', [$acctBankFeed, 'bulkCategorize'])->name('bulk-categorize');
+        Route::post('statement/{statement}/bulk-ignore', [$acctBankFeed, 'bulkIgnore'])->name('bulk-ignore');
+        Route::get('rules', [$acctBankFeed, 'rules'])->name('rules');
+        Route::post('rules', [$acctBankFeed, 'storeRule'])->name('rules.store');
+        Route::put('rules/{rule}', [$acctBankFeed, 'updateRule'])->name('rules.update');
+        Route::delete('rules/{rule}', [$acctBankFeed, 'destroyRule'])->name('rules.destroy');
+    });
+
     // Accounting Executive Dashboard
     Route::prefix('accounting/executive')->name('accounting.executive.')->group(function () use ($acctExec) {
         Route::get('/', [$acctExec, 'index'])->name('index');

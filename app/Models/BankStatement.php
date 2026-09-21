@@ -19,6 +19,9 @@ class BankStatement extends Model
 
     protected $casts = [
         'statement_date' => 'date',
+        'opening_balance' => 'decimal:4',
+        'closing_balance' => 'decimal:4',
+        'imported_at' => 'datetime',
     ];
 
     public function institute(): BelongsTo
