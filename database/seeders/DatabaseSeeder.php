@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
         // so institute-owner grant picks them up (plus AiTool seeder grants
         // owner/admin/accountant directly). Same namespace — no import needed.
         $this->call(AiToolPermissionSeeder::class);
+        $this->call(ModuleTogglePermissionSeeder::class);
         $this->call(RolePermissionSeeder::class);
         $this->call(ModuleRegistrySeeder::class);
         $this->call(MedicalSubModuleSeeder::class);

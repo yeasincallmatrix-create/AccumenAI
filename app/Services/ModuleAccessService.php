@@ -61,6 +61,22 @@ class ModuleAccessService
             ->exists();
     }
 
+    /**
+     * Check if a module is allowed by the tenant's package (without overrides/entitlements).
+     */
+    public function isPackageAllowed(string $moduleKey, int $instituteId): bool
+    {
+        $institute = Institute::withoutGlobalScopes()->find($instituteId);
+        if (! $institute || ! $institute->package_id) {
+            return false;
+        }
+
+        return PackageModule::where('package_id', $institute->package_id)
+            ->where('module_key', $moduleKey)
+            ->where('enabled', true)
+            ->exists();
+    }
+
     public function getEnabledModules(Institute $institute): array
     {
         $cacheKey = $this->cachePrefix.$institute->id;
