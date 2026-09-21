@@ -11,10 +11,12 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
+use Tests\Concerns\ResolvesTestIds;
 
 class PackagesGenerateScopesCommandTest extends TestCase
 {
     use DatabaseTransactions;
+    use ResolvesTestIds;
 
     protected function setUp(): void
     {
@@ -139,7 +141,7 @@ class PackagesGenerateScopesCommandTest extends TestCase
             $this->markTestSkipped('FREE package not in DB');
         }
 
-        $inst = Institute::where('country_id', 21)
+        $inst = Institute::where('country_id', $this->bdCountryId())
             ->where('industry_id', 1)
             ->first();
 
@@ -151,7 +153,7 @@ class PackagesGenerateScopesCommandTest extends TestCase
 
         $this->assertDatabaseHas('package_scopes', [
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'industry_id' => 1,
             'status' => 'active',
         ]);

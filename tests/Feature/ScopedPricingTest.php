@@ -9,10 +9,12 @@ use App\Services\ModuleAccessService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
+use Tests\Concerns\ResolvesTestIds;
 
 class ScopedPricingTest extends TestCase
 {
     use DatabaseTransactions;
+    use ResolvesTestIds;
 
     private ModuleAccessService $service;
 
@@ -46,7 +48,7 @@ class ScopedPricingTest extends TestCase
         $pkg = $this->package('direct');
         $scope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'price_monthly' => 50.00,
             'price_yearly' => 500.00,
             'currency' => 'USD',
@@ -64,7 +66,7 @@ class ScopedPricingTest extends TestCase
 
         $parentScope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'price_monthly' => 75.00,
             'price_yearly' => 750.00,
             'currency' => 'EUR',
@@ -73,8 +75,8 @@ class ScopedPricingTest extends TestCase
 
         $childScope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
-            'industry_id' => 3418,
+            'country_id' => $this->bdCountryId(),
+            'industry_id' => $this->educationIndustryId(),
             'inherit_from_parent' => true,
             'status' => 'active',
         ]);
@@ -89,7 +91,7 @@ class ScopedPricingTest extends TestCase
         $pkg = $this->package('pkg');
         $scope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'inherit_from_parent' => true,
             'status' => 'active',
         ]);
@@ -104,15 +106,15 @@ class ScopedPricingTest extends TestCase
 
         $parentScope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'currency' => 'MYR',
             'status' => 'active',
         ]);
 
         $childScope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
-            'industry_id' => 3418,
+            'country_id' => $this->bdCountryId(),
+            'industry_id' => $this->educationIndustryId(),
             'inherit_from_parent' => true,
             'status' => 'active',
         ]);
@@ -125,7 +127,7 @@ class ScopedPricingTest extends TestCase
         $pkg = $this->package('array');
         $scope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'price_monthly' => 200.00,
             'price_yearly' => 2000.00,
             'currency' => 'INR',
@@ -137,7 +139,7 @@ class ScopedPricingTest extends TestCase
             'slug' => 'scoped-price-array-' . uniqid(),
             'status' => 'active',
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
         ]);
 
         $price = $this->service->resolveScopedPrice($inst);

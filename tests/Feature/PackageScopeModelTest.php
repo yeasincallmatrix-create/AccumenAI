@@ -9,10 +9,12 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
+use Tests\Concerns\ResolvesTestIds;
 
 class PackageScopeModelTest extends TestCase
 {
     use DatabaseTransactions;
+    use ResolvesTestIds;
 
     protected function setUp(): void
     {
@@ -66,7 +68,7 @@ class PackageScopeModelTest extends TestCase
 
         PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'industry_id' => null,
             'sub_industry_id' => null,
             'status' => 'active',
@@ -76,7 +78,7 @@ class PackageScopeModelTest extends TestCase
 
         PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'industry_id' => null,
             'sub_industry_id' => null,
             'status' => 'active',
@@ -102,7 +104,7 @@ class PackageScopeModelTest extends TestCase
         $pkg = $this->package();
         $scope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'industry_id' => null,
             'sub_industry_id' => null,
             'status' => 'active',
@@ -116,7 +118,7 @@ class PackageScopeModelTest extends TestCase
         $pkg = $this->package();
         $scope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'industry_id' => null,
             'sub_industry_id' => null,
             'status' => 'active',
@@ -140,8 +142,8 @@ class PackageScopeModelTest extends TestCase
     {
         $pkg = $this->package();
 
-        PackageScope::create(['package_id' => $pkg->id, 'country_id' => 21, 'status' => 'active']);
-        PackageScope::create(['package_id' => $pkg->id, 'country_id' => 1, 'status' => 'inactive']);
+        PackageScope::create(['package_id' => $pkg->id, 'country_id' => $this->bdCountryId(), 'status' => 'active']);
+        PackageScope::create(['package_id' => $pkg->id, 'country_id' => $this->nonBdCountryId(), 'status' => 'inactive']);
 
         $activeCount = PackageScope::where('package_id', $pkg->id)->active()->count();
         $this->assertEquals(1, $activeCount);
@@ -172,13 +174,13 @@ class PackageScopeModelTest extends TestCase
         $pkg = $this->package();
         $scope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'industry_id' => null,
             'sub_industry_id' => null,
             'status' => 'active',
         ]);
 
-        $this->assertEquals("{$pkg->id}-21-G-G", $scope->scope_hash);
+        $this->assertEquals("{$pkg->id}-{$this->bdCountryId()}-G-G", $scope->scope_hash);
     }
 
     public function test_scope_hash_format_with_all_dimensions(): void
@@ -186,7 +188,7 @@ class PackageScopeModelTest extends TestCase
         $pkg = $this->package();
         $scope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'industry_id' => null,
             'sub_industry_id' => null,
             'status' => 'active',
@@ -194,13 +196,13 @@ class PackageScopeModelTest extends TestCase
 
         $scope2 = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 1,
+            'country_id' => $this->nonBdCountryId(),
             'industry_id' => null,
             'sub_industry_id' => null,
             'status' => 'active',
         ]);
 
-        $this->assertEquals("{$pkg->id}-21-G-G", $scope->scope_hash);
-        $this->assertEquals("{$pkg->id}-1-G-G", $scope2->scope_hash);
+        $this->assertEquals("{$pkg->id}-{$this->bdCountryId()}-G-G", $scope->scope_hash);
+        $this->assertEquals("{$pkg->id}-{$this->nonBdCountryId()}-G-G", $scope2->scope_hash);
     }
 }

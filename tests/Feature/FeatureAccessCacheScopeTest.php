@@ -12,10 +12,12 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
+use Tests\Concerns\ResolvesTestIds;
 
 class FeatureAccessCacheScopeTest extends TestCase
 {
     use DatabaseTransactions;
+    use ResolvesTestIds;
 
     private ModuleAccessService $service;
 
@@ -60,13 +62,13 @@ class FeatureAccessCacheScopeTest extends TestCase
         $pkg = $this->package('ckey');
         $scope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'status' => 'active',
         ]);
 
         $inst = $this->institute([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
         ]);
 
         $this->service->getFeatureAccessMap($inst);
@@ -80,13 +82,13 @@ class FeatureAccessCacheScopeTest extends TestCase
         $pkg = $this->package('cflush');
         $scope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'status' => 'active',
         ]);
 
         $inst = $this->institute([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
         ]);
 
         $this->service->getFeatureAccessMap($inst);
@@ -104,8 +106,8 @@ class FeatureAccessCacheScopeTest extends TestCase
         $pkg = $this->package('gflush');
         $globalScope = PackageScope::create(['package_id' => $pkg->id, 'status' => 'active']);
 
-        $inst1 = $this->institute(['package_id' => $pkg->id, 'country_id' => 21]);
-        $inst2 = $this->institute(['package_id' => $pkg->id, 'country_id' => 1]);
+        $inst1 = $this->institute(['package_id' => $pkg->id, 'country_id' => $this->bdCountryId()]);
+        $inst2 = $this->institute(['package_id' => $pkg->id, 'country_id' => $this->nonBdCountryId()]);
 
         $this->service->getFeatureAccessMap($inst1);
         $this->service->getFeatureAccessMap($inst2);

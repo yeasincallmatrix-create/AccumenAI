@@ -12,10 +12,12 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
+use Tests\Concerns\ResolvesTestIds;
 
 class ScopedModuleResolutionTest extends TestCase
 {
     use DatabaseTransactions;
+    use ResolvesTestIds;
 
     private ModuleAccessService $service;
 
@@ -113,7 +115,7 @@ class ScopedModuleResolutionTest extends TestCase
 
         $childScope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'inherit_from_parent' => true,
             'status' => 'active',
         ]);
@@ -134,7 +136,7 @@ class ScopedModuleResolutionTest extends TestCase
 
         $childScope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'inherit_from_parent' => true,
             'status' => 'active',
         ]);
@@ -154,7 +156,7 @@ class ScopedModuleResolutionTest extends TestCase
 
         $childScope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'inherit_from_parent' => false,
             'status' => 'active',
         ]);
@@ -176,7 +178,7 @@ class ScopedModuleResolutionTest extends TestCase
 
         $countryScope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'inherit_from_parent' => true,
             'status' => 'active',
         ]);
@@ -184,7 +186,7 @@ class ScopedModuleResolutionTest extends TestCase
 
         $leafScope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'industry_id' => $industryId,
             'inherit_from_parent' => true,
             'status' => 'active',

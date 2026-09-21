@@ -13,10 +13,12 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
+use Tests\Concerns\ResolvesTestIds;
 
 class ScopedModuleBackfillTest extends TestCase
 {
     use DatabaseTransactions;
+    use ResolvesTestIds;
 
     protected function setUp(): void
     {
@@ -86,7 +88,7 @@ class ScopedModuleBackfillTest extends TestCase
         $instId = DB::table('institutes')->insertGetId([
             'name' => 'Backfill Mod ' . uniqid(),
             'slug' => 'backfillmod-' . uniqid(),
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'status' => 'active',
             'package_id' => $pkg->id,
             'created_at' => now(),
@@ -96,7 +98,7 @@ class ScopedModuleBackfillTest extends TestCase
         Artisan::call('packages:generate-scopes', ['--backfill' => true]);
 
         $scope = PackageScope::where('package_id', $pkg->id)
-            ->where('country_id', 21)
+            ->where('country_id', $this->bdCountryId())
             ->first();
         $this->assertNotNull($scope, 'Institute scope should exist after backfill');
 
@@ -146,7 +148,7 @@ class ScopedModuleBackfillTest extends TestCase
         $instId = DB::table('institutes')->insertGetId([
             'name' => 'Ensure Mod ' . uniqid(),
             'slug' => 'ensuremod-' . uniqid(),
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'status' => 'active',
             'package_id' => $pkg->id,
             'created_at' => now(),
@@ -157,7 +159,7 @@ class ScopedModuleBackfillTest extends TestCase
         $scope = app(ModuleAccessService::class)->ensureScopeExistsForInstitute($inst);
 
         $this->assertNotNull($scope);
-        $this->assertEquals(21, $scope->country_id);
+        $this->assertEquals($this->bdCountryId(), $scope->country_id);
         $this->assertDatabaseHas('package_scoped_modules', [
             'package_scope_id' => $scope->id,
             'module_key' => 'reports',

@@ -10,10 +10,12 @@ use App\Services\ModuleAccessService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
+use Tests\Concerns\ResolvesTestIds;
 
 class ScopedFeatureResolutionTest extends TestCase
 {
     use DatabaseTransactions;
+    use ResolvesTestIds;
 
     private ModuleAccessService $service;
 
@@ -70,7 +72,7 @@ class ScopedFeatureResolutionTest extends TestCase
 
         $childScope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'inherit_from_parent' => true,
             'status' => 'active',
         ]);
@@ -95,7 +97,7 @@ class ScopedFeatureResolutionTest extends TestCase
 
         $childScope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'inherit_from_parent' => true,
             'status' => 'active',
         ]);
@@ -120,7 +122,7 @@ class ScopedFeatureResolutionTest extends TestCase
 
         $childScope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'inherit_from_parent' => true,
             'status' => 'active',
         ]);
@@ -144,7 +146,7 @@ class ScopedFeatureResolutionTest extends TestCase
 
         $childScope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'inherit_from_parent' => false,
             'status' => 'active',
         ]);
@@ -171,7 +173,7 @@ class ScopedFeatureResolutionTest extends TestCase
         // Level 2: country scope (BD = 21)
         $countryScope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
+            'country_id' => $this->bdCountryId(),
             'inherit_from_parent' => true,
             'status' => 'active',
         ]);
@@ -180,8 +182,8 @@ class ScopedFeatureResolutionTest extends TestCase
         // Level 3: country+industry scope (BD + healthcare = 3418)
         $countryIndustryScope = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
-            'industry_id' => 3418,
+            'country_id' => $this->bdCountryId(),
+            'industry_id' => $this->educationIndustryId(),
             'inherit_from_parent' => true,
             'status' => 'active',
         ]);
@@ -204,13 +206,13 @@ class ScopedFeatureResolutionTest extends TestCase
         $pkg = $this->package();
 
         // Parent scope: country (BD = 21)
-        $scopeA = PackageScope::create(['package_id' => $pkg->id, 'country_id' => 21, 'inherit_from_parent' => true, 'status' => 'active']);
+        $scopeA = PackageScope::create(['package_id' => $pkg->id, 'country_id' => $this->bdCountryId(), 'inherit_from_parent' => true, 'status' => 'active']);
         // Child scope: country + industry (BD + healthcare = 3418)
         // resolveParentScope should find scopeA as parent
         $scopeB = PackageScope::create([
             'package_id' => $pkg->id,
-            'country_id' => 21,
-            'industry_id' => 3418,
+            'country_id' => $this->bdCountryId(),
+            'industry_id' => $this->educationIndustryId(),
             'inherit_from_parent' => true,
             'status' => 'active',
         ]);
