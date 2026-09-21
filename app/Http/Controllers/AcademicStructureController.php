@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AcademicGroup;
 use App\Models\AcademicLevel;
 use App\Models\ClassGrade;
+use App\Models\IndustryTemplateMapping;
 use App\Models\Institute;
 use App\Models\InstituteAcademicGroup;
 use App\Models\InstituteAcademicLevel;
@@ -14,6 +15,7 @@ use App\Models\InstituteUser;
 use App\Models\User;
 use App\Services\AcademicStructureService;
 use App\Support\Workspace;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -47,6 +49,78 @@ class AcademicStructureController extends Controller
             'institute' => $institute,
             'structure' => $this->service->resolve($institute),
             'systems' => $this->service->systemsForCountry($institute->country_id),
+        ]);
+    }
+
+    /**
+     * JSON API: return the structure template + levels for the institute's
+     * industry/sub_industry. Used by learning-select.js cascading selector.
+     */
+    public function options(Request $request): JsonResponse
+    {
+        $institute = $this->resolveInstitute($request);
+
+        abort_if($institute === null, 404);
+
+        // 1) Exact match: industry + sub_industry
+        $mapping = IndustryTemplateMapping::query()
+            ->where('industry', $institute->industry)
+            ->where('sub_industry', $institute->sub_industry)
+            ->where('status', true)
+            ->orderBy('priority')
+            ->first();
+
+        // 2) Sub-industry only (ignoring industry mismatch — e.g. computer_it_training_institute)
+        if ($mapping === null && filled($institute->sub_industry)) {
+            $mapping = IndustryTemplateMapping::query()
+                ->where('sub_industry', $institute->sub_industry)
+                ->where('status', true)
+                ->orderBy('priority')
+                ->first();
+        }
+
+        // 3) Industry fallback (null sub_industry)
+        if ($mapping === null) {
+            $mapping = IndustryTemplateMapping::query()
+                ->where('industry', $institute->industry)
+                ->whereNull('sub_industry')
+                ->where('status', true)
+                ->orderBy('priority')
+                ->first();
+        }
+
+        $template = $mapping?->template;
+
+        // 4) Try sub_industry code directly as a template code
+        if ($template === null && filled($institute->sub_industry)) {
+            $template = \App\Models\StructureTemplate::query()
+                ->where('code', $institute->sub_industry)
+                ->where('is_global', true)
+                ->where('status', true)
+                ->first();
+        }
+
+        $levels = $template
+            ? $template->levels()->orderBy('level_order')->get()
+                ->map(fn ($lvl) => [
+                    'level_order' => $lvl->level_order,
+                    'label' => $lvl->label,
+                    'label_key' => $lvl->label_key,
+                    'value_source' => $lvl->value_source,
+                ])
+                ->all()
+            : [];
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'template' => $template
+                    ? ['id' => $template->id, 'code' => $template->code, 'name' => $template->name]
+                    : null,
+                'source' => 'global',
+                'branch_id' => $request->input('branch_id'),
+                'levels' => $levels,
+            ],
         ]);
     }
 

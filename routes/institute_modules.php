@@ -1170,12 +1170,15 @@ Route::middleware($tenant)->group(function () {
         Route::get('students/export', [$acadAn, 'studentsExport'])->name('students.export');
         Route::get('courses', [$acadAn, 'courses'])->name('courses');
         Route::get('courses/export', [$acadAn, 'coursesExport'])->name('courses.export');
+        Route::get('batches', [$acadAn, 'batches'])->name('batches');
         Route::get('batches/export', [$acadAn, 'batchesExport'])->name('batches.export');
         Route::get('attendance', [$acadAn, 'attendance'])->name('attendance');
         Route::get('attendance/export', [$acadAn, 'attendanceExport'])->name('attendance.export');
+        Route::get('results', [$acadAn, 'results'])->name('results');
         Route::get('results/export', [$acadAn, 'resultsExport'])->name('results.export');
         Route::get('promotions', [$acadAn, 'promotions'])->name('promotions');
         Route::get('promotions/export', [$acadAn, 'promotionsExport'])->name('promotions.export');
+        Route::get('completion', [$acadAn, 'completion'])->name('completion');
         Route::get('completion/export', [$acadAn, 'completionExport'])->name('completion.export');
         Route::get('certificates/export', [$acadAn, 'certificatesExport'])->name('certificates.export');
         Route::get('finance', [$acadAn, 'finance'])->name('finance');
@@ -1556,6 +1559,9 @@ Route::middleware($tenant)->group(function () {
 
     // ─── PURCHASE REPORTS EXTRA (unique) ────────────────────────────────────
     Route::get('purchase/reports/export', [\App\Http\Controllers\Purchase\PurchaseReportController::class, 'export'])->middleware('module_access:purchase')->name('purchase.reports.export');
+
+    // ─── ACADEMIC STRUCTURE OPTIONS (JSON API) ────────────────────────────────
+    Route::get('academic/structure/options', [\App\Http\Controllers\AcademicStructureController::class, 'options'])->name('academic.structure.options');
 
 });
 
