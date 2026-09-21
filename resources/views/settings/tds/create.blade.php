@@ -1,6 +1,6 @@
 @extends('layouts.institute')
 
-@section('title', 'Record TDS Deduction')
+@section('title', 'Record ' . tenant_tds_label() . ' Deduction')
 
 @push('styles')
 <style>
@@ -16,8 +16,8 @@
 
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
     <div class="page-header-text">
-        <h4 class="page-header-title"><i class="bi bi-plus-circle me-2"></i>Record TDS Deduction</h4>
-        <p class="page-header-desc mb-0">Record a new Tax Deducted at Source entry.</p>
+        <h4 class="page-header-title"><i class="bi bi-plus-circle me-2"></i>Record {{ tenant_tds_label() }} Deduction</h4>
+        <p class="page-header-desc mb-0">Record a new {{ tenant_tds_label() }} entry.</p>
     </div>
     <a href="{{ route('settings.tds.index') }}" class="btn btn-outline-secondary rounded-pill px-3"><i class="bi bi-arrow-left me-1"></i>Back</a>
 </div>
@@ -31,7 +31,7 @@
         @csrf
         <div class="row g-3">
             <div class="col-md-6">
-                <label class="form-label">TDS Type *</label>
+                <label class="form-label">{{ tenant_tds_label() }} Type *</label>
                 <select name="type" class="form-select" required>
                     <option value="">Select Type</option>
                     @php

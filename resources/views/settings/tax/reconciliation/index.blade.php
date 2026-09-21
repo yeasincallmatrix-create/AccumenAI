@@ -17,7 +17,7 @@
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2">
     <div class="page-header-text">
         <h4 class="page-header-title"><i class="bi bi-balance-scale me-2"></i>Tax Return Reconciliation</h4>
-        <p class="page-header-desc mb-0">FY {{ $fy }} — reconcile TDS payable, receivable, advance tax & corporate tax.</p>
+        <p class="page-header-desc mb-0">FY {{ $fy }} — reconcile {{ tenant_tds_label() }} payable, receivable, advance tax & corporate tax.</p>
     </div>
     <a href="{{ route('settings.tds-receivable.index') }}" class="btn btn-outline-secondary rounded-pill px-3"><i class="bi bi-arrow-left me-1"></i>Back</a>
 </div>
@@ -29,14 +29,14 @@
 <div class="row g-3 mb-4">
     <div class="col-md-3">
         <div class="admin-card p-3 border-start border-primary border-4">
-            <div class="text-muted small">TDS Payable (we deducted)</div>
+            <div class="text-muted small">{{ tenant_tds_label() }} Payable (we deducted)</div>
             <div class="h4 mb-0">{{ number_format($computed['tds_payable_total'], 2) }}</div>
             <small class="text-muted">{{ $computed['currency_code'] }}</small>
         </div>
     </div>
     <div class="col-md-3">
         <div class="admin-card p-3 border-start border-success border-4">
-            <div class="text-muted small">TDS Receivable (deducted from us)</div>
+            <div class="text-muted small">{{ tenant_tds_label() }} Receivable (deducted from us)</div>
             <div class="h4 mb-0 text-success">{{ number_format($computed['tds_receivable_total'], 2) }}</div>
             <small class="text-muted">{{ $computed['currency_code'] }}</small>
         </div>
@@ -62,7 +62,7 @@
     <table class="table table-bordered">
         <tbody>
             <tr><td><strong>Total Tax Liability</strong></td><td class="text-end">{{ number_format($computed['total_tax_liability'], 2) }}</td></tr>
-            <tr><td><strong>Total Credits</strong> (TDS Receivable + Advance Tax)</td><td class="text-end text-success">{{ number_format($computed['total_credits'], 2) }}</td></tr>
+            <tr><td><strong>Total Credits</strong> ({{ tenant_tds_label() }} Receivable + Advance Tax)</td><td class="text-end text-success">{{ number_format($computed['total_credits'], 2) }}</td></tr>
             <tr class="table {{ $computed['net_payable'] >= 0 ? 'table-warning' : 'table-success' }}">
                 <td><strong>Net Payable / (Refund)</strong></td>
                 <td class="text-end fw-bold h5">{{ number_format($computed['net_payable'], 2) }}</td>

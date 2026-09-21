@@ -1,6 +1,6 @@
 @extends('layouts.institute')
 
-@section('title', 'TDS Certificates Received')
+@section('title', tenant_tds_label() . ' Certificates Received')
 
 @push('styles')
 <style>
@@ -17,7 +17,7 @@
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2">
     <div class="page-header-text">
         <h4 class="page-header-title"><i class="bi bi-file-earmark-check me-2"></i>Certificates Received</h4>
-        <p class="page-header-desc mb-0">TDS certificates received from customers/deductors.</p>
+        <p class="page-header-desc mb-0">{{ tenant_tds_label() }} certificates received from customers/deductors.</p>
     </div>
     <div class="d-flex gap-2">
         <a href="{{ route('settings.tds-certificates-received.create') }}" class="btn btn-primary rounded-pill px-3"><i class="bi bi-plus-lg me-1"></i>Record Certificate</a>
@@ -49,7 +49,7 @@
                     <th>Date</th>
                     <th>Tax Period</th>
                     <th class="text-end">Base Amount</th>
-                    <th class="text-end">TDS</th>
+                    <th class="text-end">{{ tenant_tds_label() }}</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>

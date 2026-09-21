@@ -17,7 +17,7 @@
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2">
     <div class="page-header-text">
         <h4 class="page-header-title"><i class="bi bi-file-earmark-plus me-2"></i>Record Certificate Received</h4>
-        <p class="page-header-desc mb-0">Record a TDS certificate received from a customer/deductor.</p>
+        <p class="page-header-desc mb-0">Record a {{ tenant_tds_label() }} certificate received from a customer/deductor.</p>
     </div>
     <a href="{{ route('settings.tds-certificates-received.index') }}" class="btn btn-outline-secondary rounded-pill px-3"><i class="bi bi-arrow-left me-1"></i>Back</a>
 </div>
@@ -60,7 +60,7 @@
                 <input type="number" name="total_base" class="form-control" value="{{ old('total_base') }}" step="0.01" min="0" required>
             </div>
             <div class="col-md-6">
-                <label class="form-label">Total TDS <span class="text-danger">*</span></label>
+                <label class="form-label">Total {{ tenant_tds_label() }} <span class="text-danger">*</span></label>
                 <input type="number" name="total_tds" class="form-control" value="{{ old('total_tds') }}" step="0.01" min="0.01" required>
             </div>
             <div class="col-md-6">

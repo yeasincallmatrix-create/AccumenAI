@@ -55,5 +55,6 @@ class DatabaseSeeder extends Seeder
         $this->call(CrmLeadStatusSeeder::class);
         $this->call(ThemeSeeder::class);
         $this->call(TaxDeductionRuleSeeder::class);
+        $this->call(CountryTaxConfigSeeder::class);
     }
 }

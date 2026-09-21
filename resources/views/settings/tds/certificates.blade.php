@@ -1,6 +1,6 @@
 @extends('layouts.institute')
 
-@section('title', 'TDS Certificates')
+@section('title', tenant_tds_label() . ' Certificates')
 
 @push('styles')
 <style>
@@ -16,10 +16,10 @@
 
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
     <div class="page-header-text">
-        <h4 class="page-header-title"><i class="bi bi-file-earmark-check me-2"></i>TDS Certificates</h4>
-        <p class="page-header-desc mb-0">Certificates issued for TDS deductions deposited.</p>
+        <h4 class="page-header-title"><i class="bi bi-file-earmark-check me-2"></i>{{ tenant_tds_label() }} Certificates</h4>
+        <p class="page-header-desc mb-0">Certificates issued for {{ tenant_tds_label() }} deductions deposited.</p>
     </div>
-    <a href="{{ route('settings.tds.index') }}" class="btn btn-outline-secondary rounded-pill px-3"><i class="bi bi-arrow-left me-1"></i>Back to TDS</a>
+    <a href="{{ route('settings.tds.index') }}" class="btn btn-outline-secondary rounded-pill px-3"><i class="bi bi-arrow-left me-1"></i>Back to {{ tenant_tds_label() }}</a>
 </div>
 
 @if(session('success'))

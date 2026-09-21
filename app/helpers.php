@@ -1403,6 +1403,62 @@ if (! function_exists('tenant_country')) {
     }
 }
 
+if (! function_exists('tenant_tax_config')) {
+    function tenant_tax_config(?int $instituteId = null): array
+    {
+        return app(\App\Services\Accounting\CountryTaxConfigService::class)
+            ->config($instituteId);
+    }
+}
+
+if (! function_exists('tenant_tds_label')) {
+    function tenant_tds_label(?int $instituteId = null): string
+    {
+        return app(\App\Services\Accounting\CountryTaxConfigService::class)
+            ->label($instituteId);
+    }
+}
+
+if (! function_exists('tenant_tax_module_label')) {
+    function tenant_tax_module_label(?int $instituteId = null): string
+    {
+        return app(\App\Services\Accounting\CountryTaxConfigService::class)
+            ->moduleLabel($instituteId);
+    }
+}
+
+if (! function_exists('tenant_tds_label_local')) {
+    function tenant_tds_label_local(?int $instituteId = null): ?string
+    {
+        return app(\App\Services\Accounting\CountryTaxConfigService::class)
+            ->localLabel($instituteId);
+    }
+}
+
+if (! function_exists('tenant_tax_authority')) {
+    function tenant_tax_authority(?int $instituteId = null): string
+    {
+        return app(\App\Services\Accounting\CountryTaxConfigService::class)
+            ->authority($instituteId);
+    }
+}
+
+if (! function_exists('tenant_tax_authority_full')) {
+    function tenant_tax_authority_full(?int $instituteId = null): string
+    {
+        return app(\App\Services\Accounting\CountryTaxConfigService::class)
+            ->authorityFull($instituteId);
+    }
+}
+
+if (! function_exists('tenant_tin_label')) {
+    function tenant_tin_label(?int $instituteId = null): string
+    {
+        return app(\App\Services\Accounting\CountryTaxConfigService::class)
+            ->tinLabel($instituteId);
+    }
+}
+
 if (! function_exists('tenant_currency')) {
     /**
      * Resolve tenant's currency code. Falls back to CountryCurrencyMap.

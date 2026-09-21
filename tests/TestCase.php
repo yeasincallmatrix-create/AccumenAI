@@ -71,6 +71,11 @@ abstract class TestCase extends BaseTestCase
             (new \Database\Seeders\TaxDeductionRuleSeeder)->run();
         }
 
+        // Phase J.3: country tax configs (idempotent — updateOrInsert).
+        if (Schema::hasTable('country_tax_configs')) {
+            (new \Database\Seeders\CountryTaxConfigSeeder)->run();
+        }
+
         // B82: global reference rows tests resolve via firstOrFail()
         // (document categories, lead statuses, themes). Idempotent —
         // each seeder no-ops when its rows already exist.

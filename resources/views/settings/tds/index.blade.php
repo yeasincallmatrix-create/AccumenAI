@@ -1,6 +1,6 @@
 @extends('layouts.institute')
 
-@section('title', 'TDS & Tax')
+@section('title', tenant_tds_label() . ' & Tax')
 
 @push('styles')
 <style>
@@ -16,11 +16,11 @@
 
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2">
     <div class="page-header-text">
-        <h4 class="page-header-title"><i class="bi bi-file-earmark-text me-2"></i>TDS & Tax <span class="badge bg-info ms-2" style="font-size:.65rem">{{ $country }}</span></h4>
-        <p class="page-header-desc mb-0">Tax Deducted at Source — deductions, deposits, and certificates.</p>
+        <h4 class="page-header-title"><i class="bi bi-file-earmark-text me-2"></i>{{ tenant_tds_label() }} & Tax <span class="badge bg-info ms-2" style="font-size:.65rem">{{ $country }}</span></h4>
+        <p class="page-header-desc mb-0">{{ tenant_tds_label() }} — deductions, deposits, and certificates.</p>
     </div>
     <div class="d-flex gap-2">
-        <a href="{{ route('settings.tds.create') }}" class="btn btn-primary rounded-pill px-3"><i class="bi bi-plus-lg me-1"></i>Record TDS</a>
+        <a href="{{ route('settings.tds.create') }}" class="btn btn-primary rounded-pill px-3"><i class="bi bi-plus-lg me-1"></i>Record {{ tenant_tds_label() }}</a>
         <a href="{{ route('settings.tds.certificates') }}" class="btn btn-outline-secondary rounded-pill px-3">Certificates</a>
         <a href="{{ route('settings.tax-reports.tds-summary') }}" class="btn btn-outline-info rounded-pill px-3">Reports</a>
     </div>
@@ -38,7 +38,7 @@
 </div>
 
 <div class="admin-card p-4">
-    <h5 class="mb-3">TDS Deductions</h5>
+    <h5 class="mb-3">{{ tenant_tds_label() }} Deductions</h5>
     <div class="table-responsive">
         <table class="table table-hover align-middle">
             <thead>
@@ -91,7 +91,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="9" class="text-center text-muted py-4">No TDS deductions recorded yet.</td></tr>
+                <tr><td colspan="9" class="text-center text-muted py-4">No {{ tenant_tds_label() }} deductions recorded yet.</td></tr>
                 @endforelse
             </tbody>
         </table>

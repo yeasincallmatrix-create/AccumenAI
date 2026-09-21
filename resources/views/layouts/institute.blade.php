@@ -986,7 +986,7 @@
                                 @php $taxOpen = request()->routeIs('accounting.reports.tax.*','settings.tds*','settings.tds-receivable*','settings.tds-certificates*','settings.corporate-tax*','settings.tax-reports*','settings.tax-reconciliation*') ? true : false; @endphp
                                 <div class="nav-group">
                                     <button class="nav-link w-100 d-flex align-items-center justify-content-between {{ $taxOpen ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#taxComplianceNavGroup" aria-expanded="{{ $taxOpen ? 'true' : 'false' }}" aria-controls="taxComplianceNavGroup">
-                                        <span class="d-flex align-items-center gap-2"><i class="bi bi-file-invoice-dollar"></i><span class="sidebar-label fw-semibold">Tax &amp; Compliance</span></span>
+                                        <span class="d-flex align-items-center gap-2"><i class="bi bi-file-invoice-dollar"></i><span class="sidebar-label fw-semibold">{{ tenant_tax_module_label() }} &amp; Compliance</span></span>
                                         <i class="bi bi-chevron-down small sidebar-label nav-caret"></i>
                                     </button>
                                     <div class="collapse {{ $taxOpen ? 'show' : '' }}" id="taxComplianceNavGroup">
@@ -994,10 +994,10 @@
                                             <i class="bi bi-receipt"></i><span class="sidebar-label">VAT &amp; Tax</span>
                                         </a>
                                         <a class="nav-link sub {{ request()->routeIs('settings.tds.*') ? 'active' : '' }}" href="{{ route('settings.tds.index') }}">
-                                            <i class="bi bi-file-earmark-minus"></i><span class="sidebar-label">TDS &amp; Tax</span>
+                                            <i class="bi bi-file-earmark-minus"></i><span class="sidebar-label">{{ tenant_tds_label() }} &amp; Tax</span>
                                         </a>
                                         <a class="nav-link sub {{ request()->routeIs('settings.tds-receivable.*') ? 'active' : '' }}" href="{{ route('settings.tds-receivable.index') }}">
-                                            <i class="bi bi-file-earmark-plus"></i><span class="sidebar-label">TDS Receivable</span>
+                                            <i class="bi bi-file-earmark-plus"></i><span class="sidebar-label">{{ tenant_tds_label() }} Receivable</span>
                                         </a>
                                         <a class="nav-link sub {{ request()->routeIs('settings.tds-certificates*') ? 'active' : '' }}" href="{{ route('settings.tds-certificates-received.index') }}">
                                             <i class="bi bi-patch-check"></i><span class="sidebar-label">Certificates Received</span>

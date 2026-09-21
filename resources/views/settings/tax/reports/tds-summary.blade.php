@@ -1,6 +1,6 @@
 @extends('layouts.institute')
 
-@section('title', 'TDS Summary Report')
+@section('title', tenant_tds_label() . ' Summary Report')
 
 @push('styles')
 <style>
@@ -16,10 +16,10 @@
 
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
     <div class="page-header-text">
-        <h4 class="page-header-title"><i class="bi bi-file-earmark-bar-graph me-2"></i>TDS Summary Report <span class="badge bg-info ms-2" style="font-size:.65rem">{{ $country_code }}</span></h4>
+        <h4 class="page-header-title"><i class="bi bi-file-earmark-bar-graph me-2"></i>{{ tenant_tds_label() }} Summary Report <span class="badge bg-info ms-2" style="font-size:.65rem">{{ $country_code }}</span></h4>
         <p class="page-header-desc mb-0">Period: {{ $period }}</p>
     </div>
-    <a href="{{ route('settings.tds.index') }}" class="btn btn-outline-secondary rounded-pill px-3"><i class="bi bi-arrow-left me-1"></i>Back to TDS</a>
+    <a href="{{ route('settings.tds.index') }}" class="btn btn-outline-secondary rounded-pill px-3"><i class="bi bi-arrow-left me-1"></i>Back to {{ tenant_tds_label() }}</a>
 </div>
 
 <div class="row g-3 mb-4">

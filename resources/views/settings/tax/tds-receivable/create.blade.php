@@ -1,6 +1,6 @@
 @extends('layouts.institute')
 
-@section('title', 'Record TDS Receivable')
+@section('title', 'Record ' . tenant_tds_label() . ' Receivable')
 
 @push('styles')
 <style>
@@ -16,8 +16,8 @@
 
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2">
     <div class="page-header-text">
-        <h4 class="page-header-title"><i class="bi bi-plus-circle me-2"></i>Record TDS Receivable</h4>
-        <p class="page-header-desc mb-0">Record TDS deducted by a customer from your invoice.</p>
+        <h4 class="page-header-title"><i class="bi bi-plus-circle me-2"></i>Record {{ tenant_tds_label() }} Receivable</h4>
+        <p class="page-header-desc mb-0">Record {{ tenant_tds_label() }} deducted by a customer from your invoice.</p>
     </div>
     <a href="{{ route('settings.tds-receivable.index') }}" class="btn btn-outline-secondary rounded-pill px-3"><i class="bi bi-arrow-left me-1"></i>Back</a>
 </div>
@@ -52,7 +52,7 @@
                 <input type="number" name="rate_percent" id="rate_percent" class="form-control" value="{{ old('rate_percent', '10') }}" step="0.01" min="0" max="100" required oninput="calcTDS()">
             </div>
             <div class="col-md-4">
-                <label class="form-label">Calculated TDS</label>
+                <label class="form-label">Calculated {{ tenant_tds_label() }}</label>
                 <input type="text" id="tds_preview" class="form-control bg-light" readonly value="0.00">
             </div>
             <div class="col-md-4">

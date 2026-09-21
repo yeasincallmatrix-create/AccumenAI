@@ -1,6 +1,6 @@
 @extends('layouts.institute')
 
-@section('title', 'TDS Receivable')
+@section('title', tenant_tds_label() . ' Receivable')
 
 @push('styles')
 <style>
@@ -16,8 +16,8 @@
 
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2">
     <div class="page-header-text">
-        <h4 class="page-header-title"><i class="bi bi-box-arrow-in-down me-2"></i>TDS Receivable</h4>
-        <p class="page-header-desc mb-0">Track TDS deducted by customers from your invoices.</p>
+        <h4 class="page-header-title"><i class="bi bi-box-arrow-in-down me-2"></i>{{ tenant_tds_label() }} Receivable</h4>
+        <p class="page-header-desc mb-0">Track {{ tenant_tds_label() }} deducted by customers from your invoices.</p>
     </div>
     <div class="d-flex gap-2">
         <a href="{{ route('settings.tds-receivable.create') }}" class="btn btn-primary rounded-pill px-3"><i class="bi bi-plus-lg me-1"></i>Record Receivable</a>
@@ -39,7 +39,7 @@
     </div>
     <div class="col-md-4">
         <div class="admin-card p-3">
-            <div class="text-muted small">TDS Receivable</div>
+            <div class="text-muted small">{{ tenant_tds_label() }} Receivable</div>
             <div class="h4 mb-0 text-primary">{{ number_format($totals['tds'], 2) }}</div>
         </div>
     </div>
@@ -53,7 +53,7 @@
 
 <div class="admin-card p-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0">TDS Receivables</h5>
+        <h5 class="mb-0">{{ tenant_tds_label() }} Receivables</h5>
         <form class="d-flex gap-2" method="GET">
             <select name="fy" class="form-select form-select-sm" onchange="this.form.submit()">
                 @for($y = (int)date('Y'); $y >= (int)date('Y')-3; $y--)
@@ -71,7 +71,7 @@
                     <th>Reference</th>
                     <th class="text-end">Gross</th>
                     <th class="text-end">Rate</th>
-                    <th class="text-end">TDS</th>
+                    <th class="text-end">{{ tenant_tds_label() }}</th>
                     <th class="text-end">Net</th>
                     <th>Status</th>
                 </tr>
@@ -97,7 +97,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="8" class="text-center text-muted py-4">No TDS receivables recorded yet.</td></tr>
+                <tr><td colspan="8" class="text-center text-muted py-4">No {{ tenant_tds_label() }} receivables recorded yet.</td></tr>
                 @endforelse
             </tbody>
         </table>
