@@ -9,9 +9,16 @@ use App\Models\InstituteUser;
 use App\Models\StructureTemplate;
 use Tests\TestCase;
 use App\Support\TenantContext;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 
 class LearningStructureEnginePhase5Test extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->withoutMiddleware(ValidateCsrfToken::class);
+    }
+
     private function makeInstitute(array $o=[]): Institute {
         $c = Country::first() ?? Country::create(['name'=>'Bangladesh','iso2'=>'BD','status'=>true]);
         return Institute::create(array_merge(['name'=>'P5 '.uniqid(),'slug'=>'p5-'.uniqid(),'country_id'=>$c->id,'industry'=>'education','sub_industry'=>'school','country'=>$c->name], $o));
