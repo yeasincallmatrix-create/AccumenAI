@@ -10,37 +10,22 @@ use App\Models\Role;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-/**
- * Activates the training_center module for professional/training-center tenants.
- *
- * Called automatically when an institute is created or its industry changes
- * to 'training_center'. Ensures:
- *   1. training_center module exists in module_registry
- *   2. training_center permissions are seeded (idempotent)
- *   3. Permissions are assigned to the institute's admin/owner role
- *
- * Module access is controlled via InstituteModuleOverride, not via
- * package_modules (which is shared across all tenants on the same package).
- */
 class TrainingCenterModuleActivator
 {
-    /**
-     * Activate training_center module for a training_center institute.
-     * No-op for non-training_center industries.
-     */
     public function activateForTrainingCenter(Institute $institute): void
     {
         if (($institute->industry ?? '') !== 'training_center') {
             return;
         }
 
-        $this->ensureModuleRegistered();
+        $this->ensureModulesRegistered();
 
         InstituteModuleOverride::updateOrCreate(
             ['institute_id' => $institute->id, 'module_key' => 'training_center'],
             ['enabled' => true]
         );
 
+        $this->enableSubModules($institute);
         $this->seedPermissions();
         $this->assignToAdminRole($institute);
 
@@ -59,10 +44,7 @@ class TrainingCenterModuleActivator
         ]);
     }
 
-    /**
-     * Ensure the training_center module exists in module_registry.
-     */
-    public function ensureModuleRegistered(): void
+    private function ensureModulesRegistered(): void
     {
         ModuleRegistry::updateOrCreate(
             ['key' => 'training_center'],
@@ -71,17 +53,56 @@ class TrainingCenterModuleActivator
                 'type' => 'industry',
                 'description' => 'Training center management: courses, batches, enrollments, attendance, exams, results, certificates, and fees',
                 'status' => 'active',
-                'sort_order' => 40,
+                'sort_order' => 22,
             ]
         );
+
+        $subModules = [
+            ['key' => 'training_center.courses',      'name' => 'Courses',      'icon' => 'bi-book',           'sort' => 23, 'route' => 'courses.manage.index'],
+            ['key' => 'training_center.batches',      'name' => 'Batches',      'icon' => 'bi-calendar-week',  'sort' => 24, 'route' => 'batches.index'],
+            ['key' => 'training_center.trainees',     'name' => 'Trainees',     'icon' => 'bi-person-badge',   'sort' => 25, 'route' => 'students.index'],
+            ['key' => 'training_center.attendance',   'name' => 'Attendance',   'icon' => 'bi-calendar-check', 'sort' => 26, 'route' => 'training.attendance.index'],
+            ['key' => 'training_center.exams',        'name' => 'Exams',        'icon' => 'bi-pencil-square',  'sort' => 27, 'route' => 'training.exams.index'],
+            ['key' => 'training_center.certificates', 'name' => 'Certificates', 'icon' => 'bi-award',          'sort' => 28, 'route' => 'training.certificates.index'],
+            ['key' => 'training_center.fees',         'name' => 'Fees',         'icon' => 'bi-cash-coin',      'sort' => 29, 'route' => 'training.fees.index'],
+            ['key' => 'training_center.reports',      'name' => 'Reports',      'icon' => 'bi-graph-up',       'sort' => 30, 'route' => 'training.reports.index'],
+        ];
+
+        foreach ($subModules as $sub) {
+            ModuleRegistry::updateOrCreate(
+                ['key' => $sub['key']],
+                [
+                    'name'       => $sub['name'],
+                    'parent_key' => 'training_center',
+                    'icon'       => $sub['icon'],
+                    'sort_order' => $sub['sort'],
+                    'type'       => 'industry',
+                    'status'     => 'active',
+                    'index_route' => $sub['route'],
+                ]
+            );
+        }
     }
 
-    /**
-     * Seed all training_center permissions (idempotent — uses firstOrCreate).
-     */
+    private function enableSubModules(Institute $institute): void
+    {
+        $subKeys = [
+            'training_center.courses', 'training_center.batches', 'training_center.trainees',
+            'training_center.attendance', 'training_center.exams', 'training_center.certificates',
+            'training_center.fees', 'training_center.reports',
+        ];
+
+        foreach ($subKeys as $key) {
+            InstituteModuleOverride::updateOrCreate(
+                ['institute_id' => $institute->id, 'module_key' => $key],
+                ['enabled' => true]
+            );
+        }
+    }
+
     private function seedPermissions(): void
     {
-        $trainingPermissions = [
+        $permissions = [
             'training_batches' => [
                 'view' => 'View Batches', 'create' => 'Create Batches',
                 'edit' => 'Edit Batches', 'delete' => 'Delete Batches',
@@ -114,7 +135,7 @@ class TrainingCenterModuleActivator
             ],
         ];
 
-        foreach ($trainingPermissions as $module => $actions) {
+        foreach ($permissions as $module => $actions) {
             foreach ($actions as $action => $label) {
                 Permission::firstOrCreate(
                     ['slug' => $module.'.'.$action],
@@ -122,11 +143,28 @@ class TrainingCenterModuleActivator
                 );
             }
         }
+
+        $flatSlugs = [
+            'training.view' => 'View Training',
+            'training.manage' => 'Manage Training',
+            'trainees.view' => 'View Trainees',
+            'trainees.manage' => 'Manage Trainees',
+            'enrollments.view' => 'View Enrollments',
+            'enrollments.manage' => 'Manage Enrollments',
+            'marks.view' => 'View Marks',
+            'marks.manage' => 'Manage Marks',
+            'results.view' => 'View Results',
+            'results.publish' => 'Publish Results',
+        ];
+
+        foreach ($flatSlugs as $slug => $label) {
+            DB::table('permissions')->updateOrInsert(
+                ['slug' => $slug],
+                ['module' => 'training', 'name' => $label, 'created_at' => now()]
+            );
+        }
     }
 
-    /**
-     * Assign all training_center permissions to the institute's admin/owner role.
-     */
     private function assignToAdminRole(Institute $institute): void
     {
         $adminRole = Role::where('institute_id', $institute->id)
@@ -140,7 +178,9 @@ class TrainingCenterModuleActivator
             return;
         }
 
-        $trainingPermissions = Permission::where('module', 'like', 'training_%')->pluck('id')->toArray();
+        $trainingPermissions = Permission::where('module', 'like', 'training_%')
+            ->orWhere('module', 'training')
+            ->pluck('id')->toArray();
 
         if (! empty($trainingPermissions)) {
             $existing = DB::table('role_permissions')
