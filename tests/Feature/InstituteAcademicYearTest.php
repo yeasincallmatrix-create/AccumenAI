@@ -9,11 +9,12 @@ use App\Models\User;
 use App\Services\AcademicSetupService;
 use App\Services\UserAccountService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\Concerns\ResolvesTestIds;
 use Tests\TestCase;
 
 class InstituteAcademicYearTest extends TestCase
 {
-    use DatabaseTransactions;
+    use DatabaseTransactions, ResolvesTestIds;
 
     private function owner(string $email = null): User
     {
@@ -197,7 +198,7 @@ class InstituteAcademicYearTest extends TestCase
             'industry' => 'education',
             'sub_industry' => 'school',
             'country' => 'Bangladesh',
-            'country_id' => 1,
+            'country_id' => $this->bdCountryId(),
             'status' => 'active',
         ]);
         // Ensure no year exists

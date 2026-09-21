@@ -20,6 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
+use Tests\Concerns\ResolvesTestIds;
 use Tests\TestCase;
 
 /**
@@ -37,7 +38,7 @@ use Tests\TestCase;
  */
 class SecurityForensicTest extends TestCase
 {
-    use DatabaseTransactions;
+    use DatabaseTransactions, ResolvesTestIds;
 
     // ----------------------------------------------------------------
     // Helpers
@@ -52,7 +53,7 @@ class SecurityForensicTest extends TestCase
             'status' => 'active',
             'package_id' => 1,
             'currency_id' => 1,
-            'country_id' => 1,
+            'country_id' => $this->bdCountryId(),
         ]);
     }
 

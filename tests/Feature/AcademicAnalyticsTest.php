@@ -36,6 +36,7 @@ use App\Services\Accounting\AccountingSetupService;
 use App\Services\Education\FeeHeadService;
 use App\Services\Education\FeeStructureService;
 use App\Services\Education\StudentFinanceService;
+use App\Services\ModuleAccessService;
 use App\Support\BranchContext;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -132,6 +133,8 @@ class AcademicAnalyticsTest extends TestCase
             'slug' => str()->slug($name.'-'.uniqid()),
             'country' => $country->name,
             'country_id' => $country->id,
+            'industry' => 'education',
+            'sub_industry' => 'school',
             'status' => 'active',
         ]);
     }
@@ -492,6 +495,14 @@ class AcademicAnalyticsTest extends TestCase
         $institute = $this->institute($c, 'Analytics Institute');
         $branchA = $this->branch($institute, 'Branch A');
         $branchB = $this->branch($institute, 'Branch B');
+
+        // Enable education module and education.analytics sub-module so
+        // module_access:education.analytics middleware passes.
+        // The index route (web.php) also requires education.attendance.
+        $moduleSvc = app(ModuleAccessService::class);
+        $moduleSvc->enableModule($institute, 'education');
+        $moduleSvc->enableModule($institute, 'education.analytics');
+        $moduleSvc->enableModule($institute, 'education.attendance');
 
         $owner = $this->user($institute, 'institute-owner', 'an-owner');
         $teacher = $this->user($institute, 'teacher', 'an-teacher', $branchA);
