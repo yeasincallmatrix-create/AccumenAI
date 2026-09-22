@@ -291,6 +291,7 @@ class JournalPostingService
         $this->assertBranchBelongsToInstitute($data['institute_id'], $data['branch_id']);
         $this->assertLinesWellFormed($data['entries']);
         $this->assertCoaBelongsToInstitute($data['institute_id'], $data['branch_id'], $data['entries']);
+        $this->assertPostableAccounts($data['entries']);
         $this->assertPartiesBelongToInstitute($data['institute_id'], $data['branch_id'], $data['entries']);
 
         return $data;
@@ -475,6 +476,25 @@ class JournalPostingService
             throw ValidationException::withMessages([
                 'entries' => 'One or more accounts do not belong to this institute or its branch.',
             ]);
+        }
+    }
+
+    private function assertPostableAccounts(array $entries): void
+    {
+        $coaIds = array_unique(array_column($entries, 'coa_id'));
+        $accounts = ChartOfAccount::whereIn('id', $coaIds)->get();
+
+        foreach ($accounts as $account) {
+            if ($account->is_header || !$account->is_postable) {
+                throw ValidationException::withMessages([
+                    'entries' => "Cannot post to header account: {$account->code} - {$account->name}. Please post to a sub-account instead.",
+                ]);
+            }
+            if ($account->hasChildren()) {
+                throw ValidationException::withMessages([
+                    'entries' => "Cannot post to '{$account->name}' because it has sub-accounts. Choose a specific sub-account.",
+                ]);
+            }
         }
     }
 

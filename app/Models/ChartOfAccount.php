@@ -27,6 +27,39 @@ class ChartOfAccount extends Model
 
     protected $guarded = [];
 
+    protected static function booted(): void
+    {
+        static::updating(function (ChartOfAccount $account) {
+            if ($account->isDirty('parent_id')) {
+                $oldParentId = $account->getOriginal('parent_id');
+                $newParentId = $account->getAttribute('parent_id');
+                $hasChildren = $account->children()->exists();
+
+                if ($hasChildren) {
+                    $account->is_header = true;
+                    $account->is_postable = false;
+                } else {
+                    $account->is_header = false;
+                    $account->is_postable = true;
+                }
+
+                if ($oldParentId) {
+                    $oldParent = static::where('id', $oldParentId)->withCount('children')->first();
+                    static::where('id', $oldParentId)->update([
+                        'is_header' => $oldParent ? $oldParent->children_count > 0 : false,
+                        'is_postable' => $oldParent ? $oldParent->children_count === 0 : false,
+                    ]);
+                }
+                if ($newParentId) {
+                    static::where('id', $newParentId)->update([
+                        'is_header' => true,
+                        'is_postable' => false,
+                    ]);
+                }
+            }
+        });
+    }
+
     protected function casts(): array
     {
         return [
@@ -36,6 +69,8 @@ class ChartOfAccount extends Model
             'is_payable' => 'boolean',
             'is_active' => 'boolean',
             'is_system' => 'boolean',
+            'is_postable' => 'boolean',
+            'is_header' => 'boolean',
             'industries' => 'array',
         ];
     }
@@ -277,5 +312,25 @@ class ChartOfAccount extends Model
                 $q->orWhereJsonContains('industries', $industrySlug);
             }
         });
+    }
+
+    public function scopePostable($query)
+    {
+        return $query->where('is_postable', true);
+    }
+
+    public function scopeHeaders($query)
+    {
+        return $query->where('is_header', true);
+    }
+
+    public function hasChildren(): bool
+    {
+        return $this->children()->exists();
+    }
+
+    public function canBePosted(): bool
+    {
+        return $this->is_postable && !$this->hasChildren();
     }
 }
