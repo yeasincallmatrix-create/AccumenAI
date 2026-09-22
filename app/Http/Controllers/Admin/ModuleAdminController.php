@@ -47,9 +47,9 @@ class ModuleAdminController extends Controller
 
             if (!empty($scopedModuleKeys)) {
                 $modules = $modules->filter(fn ($m) => in_array($m->key, $scopedModuleKeys, true));
-            } else {
-                $modules = $modules->filter(fn ($m) => ($m->type ?? 'core') === 'core');
             }
+            // When no scoped modules exist for the industry, show all modules
+            // (fallback was previously filtering to type=core only, hiding industry sub-modules)
         }
 
         $packageModules = [];
