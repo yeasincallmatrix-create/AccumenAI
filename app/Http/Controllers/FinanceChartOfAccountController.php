@@ -48,6 +48,7 @@ class FinanceChartOfAccountController extends Controller
         }
 
         $accounts = $query
+            ->orderByRaw('CAST(SUBSTRING(code, 1, 1) AS UNSIGNED)')
             ->orderByRaw('CAST(SUBSTRING_INDEX(code, ".", 1) AS UNSIGNED)')
             ->orderByRaw('CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(code, ".", 2), ".", -1) AS UNSIGNED)')
             ->orderByRaw('CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(code, ".", 3), ".", -1) AS UNSIGNED)')

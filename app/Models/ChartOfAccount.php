@@ -390,18 +390,34 @@ class ChartOfAccount extends Model
     public static function sortByCodeNatural($collection)
     {
         return $collection->sort(function ($a, $b) {
-            $aParts = explode('.', (string) $a->code);
-            $bParts = explode('.', (string) $b->code);
+            $aStr = (string) $a->code;
+            $bStr = (string) $b->code;
+
+            // PRIMARY: first digit groups categories (1=Asset, 2=Liability, 3=Equity, 4=Income, 5=Expense)
+            $aFirst = $aStr[0] ?? '';
+            $bFirst = $bStr[0] ?? '';
+            if ($aFirst !== $bFirst) {
+                return $aFirst <=> $bFirst;
+            }
+
+            // SECONDARY: natural numeric sort on dot-separated parts
+            $aParts = explode('.', $aStr);
+            $bParts = explode('.', $bStr);
             $maxLen = max(count($aParts), count($bParts));
+
             for ($i = 0; $i < $maxLen; $i++) {
                 $aPart = $aParts[$i] ?? null;
                 $bPart = $bParts[$i] ?? null;
+
                 if ($aPart === null) return -1;
                 if ($bPart === null) return 1;
+
                 $aNum = is_numeric($aPart) ? (int) $aPart : 0;
                 $bNum = is_numeric($bPart) ? (int) $bPart : 0;
+
                 if ($aNum !== $bNum) return $aNum <=> $bNum;
             }
+
             return 0;
         })->values();
     }
