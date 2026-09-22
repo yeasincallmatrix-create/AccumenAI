@@ -266,3 +266,85 @@ All failures are **pre-existing (P0)**. Key categories:
 | Phase18BranchIsolationTest | pass | PASS |
 | OverrideArchiveTest | 4 | PASS |
 | AiSecurityTest | 8 | PASS |
+
+---
+
+## 12. Security Audit — 2026-09-22
+
+**Full report:** `reports/SECURITY_AUDIT_REPORT.md`
+**Findings:** 42 total (3 CRITICAL, 14 HIGH, 15 MEDIUM, 10 LOW)
+**Overall gate:** BLOCKED — must fix PHASE 0 before production deployment.
+
+### CRITICAL (Fix Immediately)
+
+| ID | Finding | File | Action Required |
+|----|---------|------|-----------------|
+| SEC-022 | APP_KEY exposed in .env | `.env:3` | Rotate APP_KEY; ensure .env never deployed to public |
+| SEC-013 | Raw HTML XSS in email notifications | `resources/views/mail/notification.blade.php:1` | Replace `{!! $bodyText !!}` with sanitized output |
+| SEC-021 | APP_DEBUG=true in .env | `.env:4` | Set APP_DEBUG=false in production |
+
+### HIGH (Fix This Week)
+
+| ID | Finding | File | Action Required |
+|----|---------|------|-----------------|
+| SEC-002 | `guard`/`role` not blocked in privilege escalation middleware | `BlockPlatformAdminEscalation.php:20` | Add 'guard' and 'role' to in_array blocking check |
+| SEC-018 | SVG uploads allowed (stored XSS risk) | InstituteSettingController, InstituteLogoController, SettingController, StudentFormRequest | Remove 'svg' from mimes rules or sanitize SVGs |
+| SEC-019 | Sensitive files on public disk without access control | DocumentService, StudentController, Medical controllers | Move to private storage; implement signed URLs |
+| SEC-025 | CSP allows unsafe-inline + unsafe-eval | `SecurityHeaders.php:30` | Remove unsafe-inline/unsafe-eval; implement nonce-based CSP |
+| SEC-027 | SESSION_SECURE_COOKIE not set | `.env` | Set SESSION_SECURE_COOKIE=true in production |
+| SEC-003 | API login bypasses 2FA | `Api/AuthController.php:82-91` | Add 2FA challenge to API login flow |
+| SEC-008 | 100+ models with $guarded = [] | 100+ model files | Add $fillable arrays to all models |
+| SEC-001 | Platform admin bypasses ALL permission checks | CheckPermission.php, CheckModuleAccess.php, CheckFeatureAccess.php | Consider adding is_super_admin flag; impersonation audit trail |
+
+### MEDIUM (Fix Within 1 Month)
+
+| ID | Finding | Action Required |
+|----|---------|-----------------|
+| SEC-004 | 2FA challenge has no timeout enforcement | Add timestamp check in 2FA challenge store method |
+| SEC-005 | Finance routes lack granular permission middleware | Add permission:finance.manage/view to finance routes |
+| SEC-006 | Many module routes lack per-route permission checks | Add permission: middleware to Teachers, Alumni, Calendar, Documents, etc. |
+| SEC-009 | InstituteUser has security-sensitive fields in $fillable | Remove institute_id, role_id from $fillable |
+| SEC-011 | Raw variable interpolation in selectRaw() | Use parameterized bindings |
+| SEC-012 | API controllers without Form Request validation | Create Form Request classes for all API endpoints |
+| SEC-014 | Markdown rendered as raw HTML on homepage | Sanitize HTML output |
+| SEC-015 | json_encode in JavaScript context without HEX_TAG | Add JSON_HEX_TAG flag |
+| SEC-023 | Debug status leaked in API response | Remove debug status from API responses |
+| SEC-024 | Exception messages exposed in error responses | Return generic error messages |
+| SEC-028 | Session encryption disabled | Set SESSION_ENCRYPT=true |
+| SEC-030 | ExamResult::updateOrCreate() with unguarded model | Add $fillable to ExamResult |
+| SEC-031 | Guardian model fully unguarded | Add $fillable array |
+| SEC-033 | Subscription package pricing in $fillable | Verify authorization on all package management routes |
+| SEC-036 | bKash webhook signature validation not verified | Implement HMAC signature verification |
+| SEC-039 | exec() calls in AppServiceProvider | Use escapeshellarg() for all variables |
+
+### PHASE 0 — Deployment Blockers
+
+Before ANY production deployment, these must be resolved:
+
+1. **Rotate APP_KEY** — Generate new key, re-encrypt all Crypt:: values
+2. **Set APP_DEBUG=false** — In production .env
+3. **Set SESSION_SECURE_COOKIE=true** — In production .env
+4. **Fix email XSS** — Sanitize $bodyText in notification.blade.php
+5. **Block guard/role injection** — Update BlockPlatformAdminEscalation in_array check
+6. **Remove SVG from upload allowed types** — Or implement SVG sanitization
+
+### What's Done Well (Don't Regress)
+
+- TenantScoped global scope with mass-assignment hardening
+- Workspace forgery detection in SetTenantContext
+- Session regeneration after login across ALL guards
+- Account lockout with configurable thresholds
+- Centralized password service (PasswordService)
+- Password hash validation before bcrypt comparison
+- Generic error messages in auth flows
+- CSRF protection on all web routes (no exemptions)
+- All DB::raw() calls use hardcoded SQL (no user input)
+- Query builder parameterization
+- UUID-based filenames on most uploads
+- ZipSlip protection in DeploymentZipService
+- ProfileImageService re-encoding strips malicious payloads
+- Latest Laravel version (v12.69.2)
+- bcrypt with 12 rounds
+- Laravel Crypt facade (AES-256-CBC) for at-rest encryption
+- random_int() for all security-critical random generation
+- AuditActivityLog refuses to read institute_id from request input

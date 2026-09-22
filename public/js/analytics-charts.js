@@ -1,4 +1,4 @@
-/* analytics-charts.js — read-only Chart.js visuals for Education Analytics overview */
+﻿/* analytics-charts.js ΓÇö read-only Chart.js visuals for Education Analytics overview */
 (function () {
   if (typeof Chart === 'undefined') return;
 
@@ -42,7 +42,7 @@
       } catch (e) { /* silent */ }
     }
 
-    // Results donut — pass vs fail
+    // Results donut ΓÇö pass vs fail
     var rEl = document.getElementById('analyticsResultsChart');
     if (rEl) {
       var passed = parseInt(rEl.getAttribute('data-passed') || '0', 10);

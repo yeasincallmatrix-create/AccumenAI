@@ -1,11 +1,11 @@
-(function (window) {
+﻿(function (window) {
     'use strict';
 
     var Monetix = window.Monetix || (window.Monetix = {});
 
     /**
-     * Global address selector — country-neutral cascading Country → Level 1 →
-     * Level 2 → Level 3.
+     * Global address selector ΓÇö country-neutral cascading Country ΓåÆ Level 1 ΓåÆ
+     * Level 2 ΓåÆ Level 3.
      *
      * Level labels are dynamic: they come from the per-country administrative-
      * level configuration served by /geo/levels/{country}. Selecting a country
@@ -96,9 +96,9 @@
         // Level 1 shows as soon as a country is picked; District (2) is always
         // visible once a country exists; Upazila (3) stays hidden until its
         // parent level actually has a value AND the level-3 field itself has
-        // data to choose from — otherwise it is hidden entirely. For Bangladesh
+        // data to choose from ΓÇö otherwise it is hidden entirely. For Bangladesh
         // (BD) the field is shown immediately once a country exists (the BD
-        // hierarchy is short and division→district→upazila is fully seeded), so
+        // hierarchy is short and divisionΓåÆdistrictΓåÆupazila is fully seeded), so
         // the Upazila dropdown sits in place even before its parent is chosen.
         function isBangladesh() {
             var opt = countrySelect.options[countrySelect.selectedIndex];

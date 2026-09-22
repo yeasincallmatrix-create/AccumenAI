@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
     function dismiss(el) {
         var height = el.scrollHeight;
         el.classList.add('is-collapsing');

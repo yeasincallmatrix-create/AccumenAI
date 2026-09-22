@@ -1,10 +1,10 @@
-(function (window) {
+﻿(function (window) {
     'use strict';
     var Monetix = window.Monetix || (window.Monetix = {});
 
     /**
      * Learning Structure N-level cascading selector.
-     * Generic — derives levels from /academic/structure/options.
+     * Generic ΓÇö derives levels from /academic/structure/options.
      * Pattern cloned from geo-select.js: stale-request protection via reqSeq/AbortController.
      *
      * Usage: <div data-learning-component data-options-endpoint="/academic/structure/options"

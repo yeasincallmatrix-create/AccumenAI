@@ -1,4 +1,4 @@
-(function (window) {
+﻿(function (window) {
     'use strict';
 
     var Monetix = window.Monetix || (window.Monetix = {});

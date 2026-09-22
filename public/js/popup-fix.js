@@ -1,5 +1,5 @@
-/**
- * popup-fix.js — non-destructive fix for trapped popups/dropdowns
+﻿/**
+ * popup-fix.js ΓÇö non-destructive fix for trapped popups/dropdowns
  * No HTML structure change. Only toggles .popup-open on ancestor
  * scroll containers so their overflow becomes visible while a menu is open.
  * Also patches Bootstrap boundary to viewport for extra safety.
@@ -158,7 +158,7 @@
         // 2) Generic: any .modal not already direct child of <body>
         document.querySelectorAll('.modal').forEach(function (m) {
             if (m.parentElement !== document.body) {
-                // Keep Bootstrap's data/ARIA intact — just re-parent
+                // Keep Bootstrap's data/ARIA intact ΓÇö just re-parent
                 document.body.appendChild(m);
             }
         });
@@ -216,12 +216,12 @@
             // Release Bootstrap's scrollbar compensation
             document.body.style.removeProperty('margin-right');
         } else if (backs.length > 1) {
-            // frequent triggers created stacked backdrops — keep only the last visible
+            // frequent triggers created stacked backdrops ΓÇö keep only the last visible
             for (var i = 0; i < backs.length - 1; i++) {
                 backs[i].parentNode && backs[i].parentNode.removeChild(backs[i]);
             }
         }
-        // Ensure visible modal is not trapped behind backdrop — force to top
+        // Ensure visible modal is not trapped behind backdrop ΓÇö force to top
         document.querySelectorAll('.modal.show').forEach(function (m) {
             if (isModalActuallyVisible(m)) {
                 m.style.zIndex = '1055';
@@ -252,7 +252,7 @@
 
     // Hook Bootstrap modal lifecycle
     document.addEventListener('show.bs.modal', function (e) {
-        // Before showing a new one, hide any stale visible modal — prevents stacking
+        // Before showing a new one, hide any stale visible modal ΓÇö prevents stacking
         // when user spams same-page trigger (e.g. Edit student repeatedly)
         document.querySelectorAll('.modal.show').forEach(function (m) {
             if (m !== e.target && isModalActuallyVisible(m)) {
@@ -290,11 +290,11 @@
     });
 
     // Seamless navigation (Monetix.loadPage) may swap <main> while a modal was
-    // logically closed but backdrop remains in <body> — purge it.
+    // logically closed but backdrop remains in <body> ΓÇö purge it.
     document.addEventListener('loadPage', function () { setTimeout(cleanOrphanBackdrops, 100); });
     window.addEventListener('popstate', function () { setTimeout(cleanOrphanBackdrops, 150); });
 
-    // Periodic orphan sweep — catches cases where Bootstrap's transitionend never
+    // Periodic orphan sweep ΓÇö catches cases where Bootstrap's transitionend never
     // fired because tab was backgrounded during frequent actions.
     setInterval(function () {
         if (!document.querySelector('.modal.show') && document.querySelector('.modal-backdrop')) {

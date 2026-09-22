@@ -1,6 +1,6 @@
-/**
+﻿/**
  * Lightweight client-side password policy UX.
- * UX only — backend validation via PasswordPolicy is authoritative.
+ * UX only ΓÇö backend validation via PasswordPolicy is authoritative.
  * No plaintext persistence, no localStorage, no console.log, no extra requests.
  */
 (function () {
@@ -47,10 +47,10 @@
         var icon = li.querySelector('.req-icon');
         if (checks[k]) {
           li.classList.add('text-success'); li.classList.remove('text-muted');
-          if (icon) { icon.textContent = '✓'; icon.className = 'req-icon text-success fw-bold'; }
+          if (icon) { icon.textContent = 'Γ£ô'; icon.className = 'req-icon text-success fw-bold'; }
         } else {
           li.classList.remove('text-success'); li.classList.add('text-muted');
-          if (icon) { icon.textContent = '○'; icon.className = 'req-icon'; }
+          if (icon) { icon.textContent = 'Γùï'; icon.className = 'req-icon'; }
         }
       });
       if (matchLi && confirmEl) {
@@ -58,10 +58,10 @@
         var mIcon = matchLi.querySelector('.req-icon');
         if (matched) {
           matchLi.classList.add('text-success'); matchLi.classList.remove('text-muted');
-          if (mIcon) { mIcon.textContent = '✓'; mIcon.className = 'req-icon text-success fw-bold'; }
+          if (mIcon) { mIcon.textContent = 'Γ£ô'; mIcon.className = 'req-icon text-success fw-bold'; }
         } else {
           matchLi.classList.remove('text-success'); matchLi.classList.add('text-muted');
-          if (mIcon) { mIcon.textContent = '○'; mIcon.className = 'req-icon'; }
+          if (mIcon) { mIcon.textContent = 'Γùï'; mIcon.className = 'req-icon'; }
         }
       }
       var s = score(v);

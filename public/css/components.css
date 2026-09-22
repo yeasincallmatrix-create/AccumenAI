@@ -1,4 +1,4 @@
-/* ===================== Cards (unified) ===================== */
+﻿/* ===================== Cards (unified) ===================== */
 
 /* Bootstrap ships hardcoded #0d6efd custom properties on these classes;
    re-point them at the active theme so buttons/dropdowns/pills/pagination
@@ -906,7 +906,7 @@ border:2px solid var(--white);
 
 /* ===================== Connectivity signal at the avatar corner =====================
    Replaces the static green presence dot: pins the signal's box at the avatar's
-   bottom-right so its CENTER lands on the 44px circular image's edge � the circle
+   bottom-right so its CENTER lands on the 44px circular image's edge ∩┐╜ the circle
    cuts through the dot's middle (was :right/bottom:-1px, floated outside it).
    Ripple rings overflow the box but stay clipped by the sidebar. */
 
@@ -1616,7 +1616,7 @@ html.monetix-dark .colhdr-pop input[type="date"] {
 }
 html.monetix-dark .colhdr-actions { border-color: #2a2f3a; }
 
-/* ===================== Global Glass Effect � Popups =====================
+/* ===================== Global Glass Effect ∩┐╜ Popups =====================
    Non-destructive trap fix: backdrop is purely visual, never blocks clicks
    when hidden; modal always sits above backdrop even after frequent open/close
    on same page (seamless-fade / loadPage swaps). */
@@ -1644,7 +1644,7 @@ html.monetix-dark .modal-backdrop{
 html.monetix-dark .modal-backdrop.show{
     background:rgba(255,255,255,.05) !important;
 }
-/* Modal must always stack above the glass backdrop � prevents "trapped under
+/* Modal must always stack above the glass backdrop ∩┐╜ prevents "trapped under
    effect" when Bootstrap creates a new backdrop on frequent same-page opens. */
 .modal{
     z-index:1055 !important;
@@ -1675,7 +1675,7 @@ body:not(.modal-open) .modal-backdrop{
     display:none !important;
     pointer-events:none !important;
 }
-/* Avoid double blur stacking when user spams the trigger � only the
+/* Avoid double blur stacking when user spams the trigger ∩┐╜ only the
    topmost backdrop paints the blur. Keep underlying layers transparent. */
 .modal-backdrop ~ .modal-backdrop{
     background:transparent !important;
@@ -1686,19 +1686,19 @@ body:not(.modal-open) .modal-backdrop{
     background:transparent !important;
 }
 /* Full-page lock fix: if no modal is actually visible, ensure page remains
-   scrollable � handles orphan lock after frequent open/close without reload. */
+   scrollable ∩┐╜ handles orphan lock after frequent open/close without reload. */
 body:not(:has(.modal.show)){
     overflow:auto !important;
 }
 
 /* ===================== Popup / Dropdown escape fix (non-destructive) =====================
    Fixes trapped dropdowns/menus that were clipped by ancestor overflow.
-   No HTML structure change � only overflow/position tweaks.
+   No HTML structure change ∩┐╜ only overflow/position tweaks.
    Covers: .table-responsive, .card, .admin-card, .filter-card, .modal-body,
            .colhdr-pop, .inst-list, .phone-country-list, and generic dropdowns.
    --------------------------------------------------------------------------- */
 
-/* 1) Let Bootstrap dropdowns float above clipping ancestors � high z-index + solid visual */
+/* 1) Let Bootstrap dropdowns float above clipping ancestors ∩┐╜ high z-index + solid visual */
 .dropdown-menu{
     z-index: 1085 !important;
     --bs-dropdown-zindex: 1085;
@@ -1727,7 +1727,7 @@ body:not(:has(.modal.show)){
 .card.popup-open .table-responsive{
     overflow: visible !important;
 }
-/* Fallback via :has() � works even before JS loads */
+/* Fallback via :has() ∩┐╜ works even before JS loads */
 .table-responsive:has(.dropdown-menu.show),
 .table-responsive:has(.colhdr-pop:not([hidden])),
 .table-responsive:has(.inst-list.open),
@@ -1753,7 +1753,7 @@ body:not(:has(.modal.show)){
 }
 
 /* 5) Generic escape for any card-like wrapper that may have overflow hidden
-      for border-radius � keep radius but do not clip dropdowns */
+      for border-radius ∩┐╜ keep radius but do not clip dropdowns */
 .card:has(.dropdown-menu.show),
 .admin-card:has(.dropdown-menu.show){
     overflow: visible !important;
@@ -1765,7 +1765,7 @@ th:has(.colhdr-pop:not([hidden])),
     overflow: visible !important;
 }
 
-/* 7) Visual clarity � opaque background, strong shadow, no blur bleed
+/* 7) Visual clarity ∩┐╜ opaque background, strong shadow, no blur bleed
       Fixes "popup visual not clear" where glass backdrop / low contrast
       made menus look washed out. Purely visual, no structure change. */
 .dropdown-menu,
@@ -1862,22 +1862,22 @@ html.monetix-dark .breadcrumb-item.active{
     color:#8ba0b8;
 }
 
-/* ===================== Shallow Depth � iPhone Portrait (non-destructive) =====================
+/* ===================== Shallow Depth ∩┐╜ iPhone Portrait (non-destructive) =====================
    Upgrade over the 6px glass: true depth-of-field like iPhone portrait background.
    - Backdrop: 18-22px bokeh blur + warm saturate + soft vignette dim
    - Foreground modal: crisp frosted glass, lifted shadow, subtle border
    - Background page (.content/.sidebar/.topbar) gently blurs/scales when modal open
-   No HTML/route change � pure CSS override, layered after existing glass rules.
+   No HTML/route change ∩┐╜ pure CSS override, layered after existing glass rules.
    --------------------------------------------------------------------------- */
 
-/* 1) Backdrop � stronger bokeh (was blur(6px)) */
+/* 1) Backdrop ∩┐╜ stronger bokeh (was blur(6px)) */
 .modal-backdrop{
     background:rgba(248,249,250,.34) !important;
     backdrop-filter:blur(20px) saturate(1.75) brightness(1.04) !important;
     -webkit-backdrop-filter:blur(20px) saturate(1.75) brightness(1.04) !important;
     transition:opacity .42s cubic-bezier(.22,1,.36,1), backdrop-filter .42s ease !important;
 }
-/* subtle vignette + light tint via extra layer � paints under the blur */
+/* subtle vignette + light tint via extra layer ∩┐╜ paints under the blur */
 .modal-backdrop.show{
     background:
         radial-gradient(1200px 600px at 50% -10%, rgba(255,255,255,.55) 0%, transparent 60%),
@@ -1914,7 +1914,7 @@ body.modal-open div.topbar{
     filter:blur(1.2px) saturate(.94) brightness(.985) !important;
     transition:filter .45s cubic-bezier(.22,1,.36,1) !important;
 }
-/* release immediately when closing � no lingering blur */
+/* release immediately when closing ∩┐╜ no lingering blur */
 body:not(.modal-open) .layout > .content,
 body:not(.modal-open) main.content,
 body:not(.modal-open) .sidebar,
@@ -1922,7 +1922,7 @@ body:not(.modal-open) div.topbar{
     transition:filter .32s ease, transform .32s ease !important;
 }
 
-/* 3) Foreground modal � crisp frosted glass lifted off the creamy background */
+/* 3) Foreground modal ∩┐╜ crisp frosted glass lifted off the creamy background */
 .modal-content{
     background:rgba(255,255,255,.88) !important;
     backdrop-filter:blur(16px) saturate(1.5) !important;
@@ -1966,7 +1966,7 @@ html.monetix-dark .modal-footer{
     border-top-color:rgba(255,255,255,.08) !important;
 }
 
-/* 4) Entrance � gentle scale + fade like iOS sheet (replaces Bootstrap slide) */
+/* 4) Entrance ∩┐╜ gentle scale + fade like iOS sheet (replaces Bootstrap slide) */
 .modal.fade .modal-dialog{
     transform:scale(.96) translateY(8px) !important;
     opacity:0 !important;
@@ -1977,7 +1977,7 @@ html.monetix-dark .modal-footer{
     transform:scale(1) translateY(0) !important;
     opacity:1 !important;
 }
-/* keep maximized edit modal crisp � no scale bounce */
+/* keep maximized edit modal crisp ∩┐╜ no scale bounce */
 #editStudentModal.monetix-maximized.modal.show .modal-dialog{
     transform:none !important;
 }

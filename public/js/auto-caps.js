@@ -1,5 +1,5 @@
-/**
- * Auto Initial Caps for First Name / Last Name — project-wide.
+﻿/**
+ * Auto Initial Caps for First Name / Last Name ΓÇö project-wide.
  *
  * Attaches to every input whose name/id suggests a person name:
  *   first_name, last_name, middle_name, father_name, mother_name,
@@ -40,8 +40,8 @@
         var collapsed = String(value == null ? '' : value).replace(/\s+/g, ' ').trim();
         if (!collapsed) return collapsed;
         // Split keeping delimiters (space, hyphen, apostrophe, dot, slash, paren)
-        return collapsed.split(/([ \t\-'‘’.\/()]+)/).map(function (part) {
-            if (/^[ \t\-'‘’.\/()]+$/.test(part) || part === '') return part;
+        return collapsed.split(/([ \t\-'ΓÇÿΓÇÖ.\/()]+)/).map(function (part) {
+            if (/^[ \t\-'ΓÇÿΓÇÖ.\/()]+$/.test(part) || part === '') return part;
             return titleWord(part);
         }).join('');
     }
@@ -49,7 +49,7 @@
     // Live-typing: uppercase letters that start a word, keep caret stable.
     function liveCaps(el) {
         var start = el.selectionStart, end = el.selectionEnd, val = el.value;
-        var out = val.replace(/(^|[\s\-'‘’."\/(\[])([a-z\u00E0-\u00FF\u0100-\u017F])/gu, function (m, p1, p2) {
+        var out = val.replace(/(^|[\s\-'ΓÇÿΓÇÖ."\/(\[])([a-z\u00E0-\u00FF\u0100-\u017F])/gu, function (m, p1, p2) {
             return p1 + p2.toLocaleUpperCase();
         });
         if (out !== val) {

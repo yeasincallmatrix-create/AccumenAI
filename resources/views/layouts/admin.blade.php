@@ -13,7 +13,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    @vite(['resources/css/app.css'])
+    <link href="{{ asset('css/base.css') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('css/base.css')) }}" rel="stylesheet">
+    <link href="{{ asset('css/layout.css') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('css/layout.css')) }}" rel="stylesheet">
+    <link href="{{ asset('css/components.css') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('css/components.css')) }}" rel="stylesheet">
     @include('layouts.partials.theme_colors')
     @stack('styles')
 </head>
@@ -552,7 +554,16 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-@vite(['resources/js/app.js'])
+<script src="{{ asset('js/flash.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/flash.js')) }}"></script>
+<script src="{{ asset('js/password-toggle.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/password-toggle.js')) }}"></script>
+<script src="{{ asset('js/password-policy.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/password-policy.js')) }}"></script>
+<script src="{{ asset('js/ajax.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/ajax.js')) }}"></script>
+<script src="{{ asset('js/ajax-table.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/ajax-table.js')) }}"></script>
+<script src="{{ asset('js/page-nav.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/page-nav.js')) }}"></script>
+<script src="{{ asset('js/column-filters.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/column-filters.js')) }}"></script>
+<script src="{{ asset('js/geo-select.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/geo-select.js')) }}"></script>
+<script src="{{ asset('js/popup-fix.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/popup-fix.js')) }}"></script>
+<script src="{{ asset('js/auto-caps.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/auto-caps.js')) }}"></script>
 {{-- Alpine.js (global) — used by <x-connectivity-signal />. If you move Alpine into
      the @vite build instead, import 'alpinejs' and Alpine.start() in resources/js.
      Passing the page defer-safely: if this ever fails to load the component simply

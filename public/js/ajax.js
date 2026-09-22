@@ -1,4 +1,4 @@
-(function (window) {
+﻿(function (window) {
     'use strict';
 
     var Monetix = window.Monetix || (window.Monetix = {});
@@ -29,7 +29,7 @@
     Monetix.request = function (url, options) {
         if (isBadUrl(url)) {
             console.error('[Monetix] Blocked request with stringified object URL:', url);
-            Monetix.toast('Invalid request — please refresh and try again.', 'danger');
+            Monetix.toast('Invalid request ΓÇö please refresh and try again.', 'danger');
             return Promise.resolve({ success: false, message: 'Invalid request.' });
         }
         options = options || {};
@@ -95,7 +95,7 @@
 
     /**
      * Delegated handler for single-button status/action forms (approve, reject,
-     * suspend, reactivate…). Submits via fetch and refreshes the page content,
+     * suspend, reactivateΓÇª). Submits via fetch and refreshes the page content,
      * showing the server message as a toast.
      */
     document.addEventListener('submit', function (e) {
@@ -151,14 +151,14 @@
     Monetix.loadPage = function (url, opts) {
         if (isBadUrl(url)) {
             console.error('[Monetix] Blocked loadPage with stringified object URL:', url);
-            Monetix.toast('Invalid navigation — please refresh.', 'danger');
+            Monetix.toast('Invalid navigation ΓÇö please refresh.', 'danger');
             return;
         }
         opts = opts || {};
         var main = document.querySelector('main.content');
         if (!main) { window.location.href = url; return; }
 
-        // Fix D — prevent duplicate navigation: ignore a request for the exact
+        // Fix D ΓÇö prevent duplicate navigation: ignore a request for the exact
         // URL that is already being fetched (e.g. double-clicks, racing
         // debounced keystrokes).
         if (Monetix._loadingUrl && Monetix._loadingUrl === url) { return; }
@@ -206,8 +206,8 @@
             main.innerHTML = newMain.innerHTML;
             if (doc.title) { document.title = doc.title; }
 
-            // Non-destructive fix: sync CSRF token — previously loadPage only swapped
-            // <main>, leaving sidebar logout form with stale token → 419 on next POST.
+            // Non-destructive fix: sync CSRF token ΓÇö previously loadPage only swapped
+            // <main>, leaving sidebar logout form with stale token ΓåÆ 419 on next POST.
             try {
                 var newMeta = doc.querySelector('meta[name="csrf-token"]');
                 if (newMeta) {
@@ -222,11 +222,11 @@
                 }
             } catch (e) {}
 
-            // Re-run the target page's own scripts (column toggles, modals, …).
+            // Re-run the target page's own scripts (column toggles, modals, ΓÇª).
             Monetix.runPageScripts(doc);
 
             // Notify page-level enhancers (geo-select, re-usable address
-            // components, …) that the content was swapped so they can bind
+            // components, ΓÇª) that the content was swapped so they can bind
             // the freshly rendered nodes.
             if (typeof CustomEvent === 'function') {
                 document.dispatchEvent(new CustomEvent('loadPage'));
@@ -330,7 +330,7 @@
     // Loading-state helpers for buttons/inputs.
     Monetix.loading = function (el, busyText, idleHtml) {
         if (!el) { return function () {}; }
-        var busy = busyText || 'Saving…';
+        var busy = busyText || 'SavingΓÇª';
         var idle = idleHtml !== undefined ? idleHtml : el.innerHTML;
         el.setAttribute('data-ajax-idle', idle);
         el.disabled = true;
@@ -374,7 +374,7 @@
      * Persist-safe delegated listener registry.
      *
      * loadPage() swaps <main> and re-runs the page scripts on every seamless
-     * navigation. A raw document.addEventListener('click', …) in a page script
+     * navigation. A raw document.addEventListener('click', ΓÇª) in a page script
      * would therefore register a NEW listener each render, making buttons fire
      * twice or more. Monetix.delegate() solves this once, for every page:
      *
@@ -384,7 +384,7 @@
      *     still-attached DOM nodes. No stale-closure bugs, no once-flags.
      *
      * Usage (in a page script, calling it again on every render is safe):
-     *   Monetix.delegate('click', '[data-edit-batch]', function (e, btn) { … }, 'batches-edit');
+     *   Monetix.delegate('click', '[data-edit-batch]', function (e, btn) { ΓÇª }, 'batches-edit');
      *
      * The selector may be omitted to match any click (fn receives (e, null)).
      */
@@ -433,7 +433,7 @@
             body: new URLSearchParams(new FormData(form))
         }).then(function (res) {
             if (res.status === 419) {
-                // CSRF mismatch → use GET fallback (never needs token)
+                // CSRF mismatch ΓåÆ use GET fallback (never needs token)
                 window.location.href = url;
                 return null;
             }
@@ -441,14 +441,14 @@
                 window.location.href = res.url;
                 return null;
             }
-            // Normal POST succeeded — follow redirect manually or reload
+            // Normal POST succeeded ΓÇö follow redirect manually or reload
             return res.text().then(function () {
-                // Logout controller redirects to login; fetch won't auto-navigate for POST→302, so go to login-url
+                // Logout controller redirects to login; fetch won't auto-navigate for POSTΓåÆ302, so go to login-url
                 var login = document.querySelector('meta[name="login-url"]');
                 window.location.href = (login ? login.getAttribute('content') : '/login');
             });
         }).catch(function () {
-            // Network failure → fallback to GET which always works
+            // Network failure ΓåÆ fallback to GET which always works
             window.location.href = url;
         });
     });

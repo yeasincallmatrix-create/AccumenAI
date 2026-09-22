@@ -1,4 +1,4 @@
-(function (window) {
+﻿(function (window) {
     'use strict';
 
     var Monetix = window.Monetix || (window.Monetix = {});
@@ -6,11 +6,11 @@
     /**
      * In-page navigation history.
      *
-     * AJAX pagination (students, batches, courses, …) updates the list content
+     * AJAX pagination (students, batches, courses, ΓÇª) updates the list content
      * without a full reload, so the browser's native back button would walk
      * every unrelated history entry. This keeps a per-list stack of the pages a
-     * user actually visited (e.g. page 1 → 2 → 5) and lets the back button
-     * return to the previous page inside the same list (5 → 2 → 1) before it
+     * user actually visited (e.g. page 1 ΓåÆ 2 ΓåÆ 5) and lets the back button
+     * return to the previous page inside the same list (5 ΓåÆ 2 ΓåÆ 1) before it
      * finally leaves to the source page.
      */
 

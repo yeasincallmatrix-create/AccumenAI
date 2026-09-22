@@ -1,4 +1,4 @@
-(function (window) {
+﻿(function (window) {
     'use strict';
 
     var Monetix = window.Monetix || (window.Monetix = {});
@@ -46,7 +46,7 @@
                 var url = buildUrl();
                 if (url.indexOf('[object') !== -1 || url.indexOf('%5Bobject') !== -1) {
                     console.error('[Monetix] Blocked load with stringified object', url);
-                    if (window.Monetix && Monetix.toast) Monetix.toast('Invalid filter value — please refresh.', 'danger');
+                    if (window.Monetix && Monetix.toast) Monetix.toast('Invalid filter value ΓÇö please refresh.', 'danger');
                     return;
                 }
                 // Filter keystrokes are transient states: replace the history
