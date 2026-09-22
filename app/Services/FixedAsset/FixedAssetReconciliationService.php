@@ -78,7 +78,7 @@ class FixedAssetReconciliationService
             ->where('institute_id', $instituteId)
             ->where(fn ($q) => $q->where('branch_id', $branchId)->orWhereNull('branch_id'))
             ->where(function ($q) use ($overrideIds) {
-                $q->where('code', '1301')->orWhereIn('id', $overrideIds);
+                $q->where('code', '1400.5')->orWhereIn('id', $overrideIds);
             })
             ->pluck('id');
 

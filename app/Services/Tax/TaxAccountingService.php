@@ -24,11 +24,11 @@ class TaxAccountingService
         ?int $actorId = null,
         ?string $description = null,
     ): \App\Models\Journal {
-        $outputAccountId = $this->coa->accountByCode($instituteId, '2100', $branchId)?->id;
-        $clearingAccountId = $this->coa->accountByCode($instituteId, '2102', $branchId)?->id;
+        $outputAccountId = $this->coa->accountByCode($instituteId, '2100.1', $branchId)?->id;
+        $clearingAccountId = $this->coa->accountByCode($instituteId, '2100.4', $branchId)?->id;
 
         if ($outputAccountId === null || $clearingAccountId === null) {
-            throw new \InvalidArgumentException('Tax accounts (2100/2102) not found. Run accounting setup first.');
+            throw new \InvalidArgumentException('Tax accounts (2100.1/2100.4) not found. Run accounting setup first.');
         }
 
         $date = $journalDate ?? now()->toDateString();
@@ -66,11 +66,11 @@ class TaxAccountingService
         ?int $actorId = null,
         ?string $description = null,
     ): \App\Models\Journal {
-        $inputAccountId = $this->coa->accountByCode($instituteId, '1201', $branchId)?->id;
-        $clearingAccountId = $this->coa->accountByCode($instituteId, '2102', $branchId)?->id;
+        $inputAccountId = $this->coa->accountByCode($instituteId, '1200.2', $branchId)?->id;
+        $clearingAccountId = $this->coa->accountByCode($instituteId, '2100.4', $branchId)?->id;
 
         if ($inputAccountId === null || $clearingAccountId === null) {
-            throw new \InvalidArgumentException('Tax accounts (1201/2102) not found. Run accounting setup first.');
+            throw new \InvalidArgumentException('Tax accounts (1200.2/2100.4) not found. Run accounting setup first.');
         }
 
         $date = $journalDate ?? now()->toDateString();
@@ -108,10 +108,10 @@ class TaxAccountingService
         ?int $actorId = null,
         ?string $description = null,
     ): \App\Models\Journal {
-        $whAccountId = $this->coa->accountByCode($instituteId, '2101', $branchId)?->id;
+        $whAccountId = $this->coa->accountByCode($instituteId, '2100.2', $branchId)?->id;
 
         if ($whAccountId === null) {
-            throw new \InvalidArgumentException('Withholding Tax Payable account (2101) not found.');
+            throw new \InvalidArgumentException('Withholding Tax Payable account (2100.2) not found.');
         }
 
         $date = $journalDate ?? now()->toDateString();
@@ -149,8 +149,8 @@ class TaxAccountingService
         ?int $actorId = null,
         ?string $description = null,
     ): \App\Models\Journal {
-        $clearingAccountId = $this->coa->accountByCode($instituteId, '2102', $branchId)?->id;
-        $taxAccountId = $this->coa->accountByCode($instituteId, $isInput ? '1201' : '2100', $branchId)?->id;
+        $clearingAccountId = $this->coa->accountByCode($instituteId, '2100.4', $branchId)?->id;
+        $taxAccountId = $this->coa->accountByCode($instituteId, $isInput ? '1200.2' : '2100.1', $branchId)?->id;
 
         if ($clearingAccountId === null || $taxAccountId === null) {
             throw new \InvalidArgumentException('Tax accounts not found. Run accounting setup first.');

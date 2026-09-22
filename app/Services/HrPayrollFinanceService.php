@@ -28,10 +28,10 @@ class HrPayrollFinanceService
      */
     public function ensurePayrollAccounts(int $instituteId, ?int $branchId): array
     {
-        $expense = $this->accountByCode($instituteId, $branchId, '5001', 'Salary & Wages', 'expense');
-        $payable = $this->accountByCode($instituteId, $branchId, '2005', 'Salary Payable', 'liability', true);
-        $tax = $this->accountByCode($instituteId, $branchId, '2110', 'Payroll Tax Payable', 'liability', true);
-        $deduct = $this->accountByCode($instituteId, $branchId, '2120', 'Other Payroll Deductions Payable', 'liability', true);
+        $expense = $this->accountByCode($instituteId, $branchId, '5000.1', 'Salary & Wages', 'expense');
+        $payable = $this->accountByCode($instituteId, $branchId, '2000.2', 'Salary Payable', 'liability', true);
+        $tax = $this->accountByCode($instituteId, $branchId, '2100.2', 'Payroll Tax Payable', 'liability', true);
+        $deduct = $this->accountByCode($instituteId, $branchId, '2100.3', 'Other Payroll Deductions Payable', 'liability', true);
 
         return [(int) $expense->id, (int) $payable->id, (int) $tax->id, (int) $deduct->id];
     }
@@ -124,7 +124,7 @@ class HrPayrollFinanceService
         foreach ($payroll->deductions_snapshot ?? [] as $d) {
             $code = $d['code'] ?? '';
             $amt = (float) ($d['amount'] ?? 0);
-            if (in_array($code, ['tax', '2110'], true) || stripos($d['name'] ?? '', 'tax') !== false) {
+            if (in_array($code, ['tax', '2100.2'], true) || stripos($d['name'] ?? '', 'tax') !== false) {
                 $tax += $amt;
             } else {
                 $otherDed += $amt;
@@ -242,7 +242,7 @@ class HrPayrollFinanceService
 
         // Fallback to cash 1000 or bank 1100 via ensure
         try {
-            $cash = $this->accountByCode($instituteId, $branchId, '1000', 'Cash', 'asset');
+            $cash = $this->accountByCode($instituteId, $branchId, '1000.1', 'Cash', 'asset');
 
             return (int) $cash->id;
         } catch (\Throwable $e) {
@@ -305,7 +305,7 @@ class HrPayrollFinanceService
         // Use chart accounts 2005, 2110, 2120 if exist
         $payableBalance = null;
         try {
-            $payableCodes = ['2005', '2110', '2120'];
+            $payableCodes = ['2000.2', '2100.2', '2100.3'];
             $coas = ChartOfAccount::where('institute_id', $instituteId)
                 ->whereIn('code', $payableCodes)
                 ->when($branchId !== null, fn ($q) => $q->where(fn ($qq) => $qq->where('branch_id', $branchId)->orWhereNull('branch_id')))

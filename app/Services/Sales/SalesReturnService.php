@@ -358,7 +358,7 @@ class SalesReturnService
 
     private function receivableAccount(int $instituteId, ?int $branchId): ChartOfAccount
     {
-        $coa = ChartOfAccount::query()->where('institute_id',$instituteId)->where('code','1200')->where('is_active',true)->first();
+        $coa = ChartOfAccount::query()->where('institute_id',$instituteId)->where('code','1200.1')->where('is_active',true)->first();
         if (! $coa) {
             $coa = ChartOfAccount::query()->where('institute_id',$instituteId)->where('type','asset')->where('is_active',true)->first();
         }

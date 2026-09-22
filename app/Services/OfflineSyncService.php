@@ -220,7 +220,7 @@ class OfflineSyncService
     {
         $instituteId = (int) $memo->institute_id;
         $isBank = in_array($memo->payment_method, ['bank', 'bkash', 'nagad'], true);
-        $code = $isBank ? '1100' : '1000';
+        $code = $isBank ? '1100.1' : '1000.1';
 
         $coaService = app(ChartOfAccountService::class);
         $account = $coaService->accountByCode($instituteId, $code, null);
@@ -242,7 +242,7 @@ class OfflineSyncService
     {
         $coaService = app(ChartOfAccountService::class);
 
-        foreach (['4004', '4001'] as $code) {
+        foreach (['4000.2', '4100.1'] as $code) {
             $account = $coaService->accountByCode($instituteId, $code, null);
 
             if ($account !== null) {

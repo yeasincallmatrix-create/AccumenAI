@@ -545,7 +545,7 @@ class PurchaseReturnService
 
     private function payableAccount(int $instituteId, ?int $branchId): int
     {
-        $account=app(\App\Services\Accounting\ChartOfAccountService::class)->accountByCode($instituteId,'2001',$branchId)
+        $account=app(\App\Services\Accounting\ChartOfAccountService::class)->accountByCode($instituteId,'2000.1',$branchId)
             ?? \App\Models\ChartOfAccount::where('institute_id',$instituteId)->where('branch_id',$branchId)->where('is_payable',true)->orderBy('code')->first();
         if(!$account) throw new \RuntimeException('No payable account configured.');
         return (int)$account->id;

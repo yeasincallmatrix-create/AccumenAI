@@ -44,7 +44,7 @@ class InventoryAccountingService
             ? $holder->inventory_account_id ?? ($holder->category?->inventory_account_id ?? null)
             : $holder->inventory_account_id;
 
-        return $this->resolveAccount($instituteId, $branchId, $override, '1300', 'inventory account');
+        return $this->resolveAccount($instituteId, $branchId, $override, '1300.1', 'inventory account');
     }
 
     public function cogsAccount(InventoryItem|InventoryCategory $holder, int $instituteId, ?int $branchId): ChartOfAccount
@@ -53,7 +53,7 @@ class InventoryAccountingService
             ? $holder->cogs_account_id ?? ($holder->category?->cogs_account_id ?? null)
             : $holder->cogs_account_id;
 
-        return $this->resolveAccount($instituteId, $branchId, $override, '5007', 'COGS account');
+        return $this->resolveAccount($instituteId, $branchId, $override, '5000.5', 'COGS account');
     }
 
     public function salesAccount(InventoryItem|InventoryCategory $holder, int $instituteId, ?int $branchId): ChartOfAccount
@@ -62,7 +62,7 @@ class InventoryAccountingService
             ? $holder->sales_account_id ?? ($holder->category?->sales_account_id ?? null)
             : $holder->sales_account_id;
 
-        return $this->resolveAccount($instituteId, $branchId, $override, '4003', 'merchandise sales account');
+        return $this->resolveAccount($instituteId, $branchId, $override, '4400.1', 'merchandise sales account');
     }
 
     public function expenseAccount(InventoryItem|InventoryCategory $holder, int $instituteId, ?int $branchId): ChartOfAccount
@@ -71,22 +71,22 @@ class InventoryAccountingService
             ? $holder->expense_account_id ?? ($holder->category?->expense_account_id ?? null)
             : $holder->expense_account_id;
 
-        return $this->resolveAccount($instituteId, $branchId, $override, '5006', 'expense account');
+        return $this->resolveAccount($instituteId, $branchId, $override, '5900.1', 'expense account');
     }
 
     public function adjustmentIncomeAccount(int $instituteId, ?int $branchId): ChartOfAccount
     {
-        return $this->resolveAccount($instituteId, $branchId, null, '4005', 'inventory adjustment income account');
+        return $this->resolveAccount($instituteId, $branchId, null, '4000.3', 'inventory adjustment income account');
     }
 
     public function adjustmentExpenseAccount(int $instituteId, ?int $branchId): ChartOfAccount
     {
-        return $this->resolveAccount($instituteId, $branchId, null, '5008', 'inventory adjustment expense account');
+        return $this->resolveAccount($instituteId, $branchId, null, '5000.5', 'inventory adjustment expense account');
     }
 
     public function wastageAccount(int $instituteId, ?int $branchId): ChartOfAccount
     {
-        return $this->resolveAccount($instituteId, $branchId, null, '5009', 'inventory wastage account');
+        return $this->resolveAccount($instituteId, $branchId, null, '5000.5', 'inventory wastage account');
     }
 
     /**
@@ -265,9 +265,9 @@ class InventoryAccountingService
     /**
      * Stock adjustment journal.
      *
-     *   adjustment_in   -> Dr Inventory / Cr Inventory Adjustment Income (4005)
-     *   adjustment_out  -> Dr Inventory Adjustment Expense (5008) / Cr Inventory
-     *   wastage_out     -> Dr Inventory Wastage (5009) / Cr Inventory
+     *   adjustment_in   -> Dr Inventory / Cr Inventory Adjustment Income (4000.3)
+     *   adjustment_out  -> Dr Inventory Adjustment Expense (5000.5) / Cr Inventory
+     *   wastage_out     -> Dr Inventory Wastage (5000.5) / Cr Inventory
      *
      * @param  array<int, array{item: InventoryItem, quantity: float, unit_cost: float, difference: float}>  $lines
      * @param  array<string, mixed>  $options
@@ -451,7 +451,7 @@ class InventoryAccountingService
 
     private function payableAccount(int $instituteId, ?int $branchId): int
     {
-        $account = $this->chartOfAccounts->accountByCode($instituteId, '2001', $branchId);
+        $account = $this->chartOfAccounts->accountByCode($instituteId, '2000.1', $branchId);
 
         if ($account === null) {
             $account = ChartOfAccount::query()

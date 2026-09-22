@@ -17,7 +17,7 @@ use Illuminate\Validation\ValidationException;
  * Fixed Asset <-> Accounting bridge (STEP 17).
  *
  * Resolves CoA accounts (category override wins, otherwise the TEMPLATE code
- * 1500/1301/5010/4010/5011/5012/4011) and posts every asset journal through
+ * 1400.1/1400.5/5400.1/4900.3/5900.1/3400.1) and posts every asset journal through
  * JournalPostingService so balance, ownership, fiscal-period locking,
  * immutability and duplicate-posting rules apply unchanged. Never hard-code ids.
  */
@@ -33,37 +33,37 @@ class FixedAssetAccountingService
 
     public function assetAccount(FixedAsset $asset, int $instituteId, ?int $branchId): ChartOfAccount
     {
-        return $this->resolveAccount($instituteId, $branchId, $asset->category?->asset_account_id, '1500', 'fixed asset account');
+        return $this->resolveAccount($instituteId, $branchId, $asset->category?->asset_account_id, '1400.1', 'fixed asset account');
     }
 
     public function accumulatedDepreciationAccount(FixedAsset $asset, int $instituteId, ?int $branchId): ChartOfAccount
     {
-        return $this->resolveAccount($instituteId, $branchId, $asset->category?->accumulated_depreciation_account_id, '1301', 'accumulated depreciation account');
+        return $this->resolveAccount($instituteId, $branchId, $asset->category?->accumulated_depreciation_account_id, '1400.5', 'accumulated depreciation account');
     }
 
     public function depreciationExpenseAccount(FixedAsset $asset, int $instituteId, ?int $branchId): ChartOfAccount
     {
-        return $this->resolveAccount($instituteId, $branchId, $asset->category?->depreciation_expense_account_id, '5010', 'depreciation expense account');
+        return $this->resolveAccount($instituteId, $branchId, $asset->category?->depreciation_expense_account_id, '5400.1', 'depreciation expense account');
     }
 
     public function disposalGainAccount(FixedAsset $asset, int $instituteId, ?int $branchId): ChartOfAccount
     {
-        return $this->resolveAccount($instituteId, $branchId, $asset->category?->disposal_gain_account_id, '4010', 'gain on disposal account');
+        return $this->resolveAccount($instituteId, $branchId, $asset->category?->disposal_gain_account_id, '4900.3', 'gain on disposal account');
     }
 
     public function disposalLossAccount(FixedAsset $asset, int $instituteId, ?int $branchId): ChartOfAccount
     {
-        return $this->resolveAccount($instituteId, $branchId, $asset->category?->disposal_loss_account_id, '5011', 'loss on disposal account');
+        return $this->resolveAccount($instituteId, $branchId, $asset->category?->disposal_loss_account_id, '5900.1', 'loss on disposal account');
     }
 
     public function impairmentAccount(FixedAsset $asset, int $instituteId, ?int $branchId): ChartOfAccount
     {
-        return $this->resolveAccount($instituteId, $branchId, $asset->category?->impairment_account_id, '5012', 'impairment expense account');
+        return $this->resolveAccount($instituteId, $branchId, $asset->category?->impairment_account_id, '5900.1', 'impairment expense account');
     }
 
     public function revaluationSurplusAccount(FixedAsset $asset, int $instituteId, ?int $branchId): ChartOfAccount
     {
-        return $this->resolveAccount($instituteId, $branchId, $asset->category?->impairment_account_id, '3100', 'revaluation surplus account');
+        return $this->resolveAccount($instituteId, $branchId, $asset->category?->impairment_account_id, '3400.1', 'revaluation surplus account');
     }
 
     /**
@@ -405,7 +405,7 @@ class FixedAssetAccountingService
 
     private function payableAccountId(int $instituteId, ?int $branchId): int
     {
-        $account = $this->chartOfAccounts->accountByCode($instituteId, '2001', $branchId)
+        $account = $this->chartOfAccounts->accountByCode($instituteId, '2000.1', $branchId)
             ?? ChartOfAccount::query()
                 ->where('institute_id', $instituteId)
                 ->where('is_payable', true)

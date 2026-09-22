@@ -17,12 +17,12 @@ class FeeHeadService
 {
     /** Fee-head type → template income account code. */
     private const TYPE_TO_COA = [
-        FeeHead::TYPE_ADMISSION => '4002',
-        FeeHead::TYPE_COURSE_TUITION => '4001',
-        FeeHead::TYPE_REGISTRATION => '4004',
-        FeeHead::TYPE_EXAM => '4004',
-        FeeHead::TYPE_CERTIFICATE => '4004',
-        FeeHead::TYPE_OTHER => '4004',
+        FeeHead::TYPE_ADMISSION => '4100.2',
+        FeeHead::TYPE_COURSE_TUITION => '4100.1',
+        FeeHead::TYPE_REGISTRATION => '4000.2',
+        FeeHead::TYPE_EXAM => '4000.2',
+        FeeHead::TYPE_CERTIFICATE => '4000.2',
+        FeeHead::TYPE_OTHER => '4000.2',
     ];
 
     public function __construct(private readonly ChartOfAccountService $coaService) {}
@@ -112,7 +112,7 @@ class FeeHeadService
      */
     public function defaultIncomeAccount(int $instituteId, ?int $branchId, string $type): ?int
     {
-        $code = self::TYPE_TO_COA[$type] ?? '4004';
+        $code = self::TYPE_TO_COA[$type] ?? '4000.2';
 
         $account = $this->coaService->accountByCode($instituteId, $code, $branchId)
             ?? $this->coaService->accountByCode($instituteId, $code, null);
