@@ -557,7 +557,7 @@
                 @endif
                 @php $isEducation = \App\Support\InstituteDomain::isAcademic($institute); @endphp
                 @php $isProfessional = \App\Support\InstituteDomain::isProfessional($institute); @endphp
-                @php $hasEducationModule = $workspaceAllowedEducation ?? false; @endphp
+                @php $hasEducationModule = $workspaceAllowedEducation ?? false; if (\App\Support\InstituteDomain::isProfessional($institute) && !($isEducation ?? false)) { $hasEducationModule = true; } @endphp
                 @if ($isEducation)
                     @php
                         $academicHref = $usesClassTerm ? route('classes.index') : route('courses.manage.index');
@@ -568,9 +568,15 @@
                     @endphp
                 @endif
                 @if (($isEducation || $isProfessional) && $hasEducationModule)
-                    <a class="nav-link {{ request()->routeIs('students.*') ? 'active' : '' }}" href="{{ route('students.index') }}">
-                        <i class="bi bi-people-fill"></i><span class="sidebar-label">{{ $isProfessional && !$isEducation ? mawa_e('sidebar.trainees') : mawa_e('sidebar.students') }}</span>
+                    @php $isTrainingNav = $isProfessional && !$isEducation; @endphp
+                    <a class="nav-link {{ ($isTrainingNav ? request()->routeIs('training.students.*', 'training.classes.*') : request()->routeIs('students.*')) ? 'active' : '' }}" href="{{ $isTrainingNav ? route('training.students.index') : route('students.index') }}">
+                        <i class="bi bi-people-fill"></i><span class="sidebar-label">{{ $isTrainingNav ? mawa_e('sidebar.trainees') : mawa_e('sidebar.students') }}</span>
                     </a>
+                    @if ($isTrainingNav)
+                        <a class="nav-link {{ request()->routeIs('training.classes.*') ? 'active' : '' }}" href="{{ route('training.classes.index') }}">
+                            <i class="bi bi-collection"></i><span class="sidebar-label">{{ mawa_e('sidebar.classes') }}</span>
+                        </a>
+                    @endif
                 @endif
                 @if ($isEducation && $hasEducationModule && ($user instanceof \App\Models\InstituteUser && $user->hasPermission('admission.approve')))
                     @php $pendingAdmissionCount = \App\Http\Controllers\AdmissionController::pendingCount($user->institute_id); @endphp

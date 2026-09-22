@@ -65,7 +65,7 @@ class TrainingCenterModuleActivatorTest extends TestCase
             ->where('institute_id', $institute->id)
             ->where('module_key', 'like', 'training_center.%')
             ->count();
-        $this->assertEquals(8, $subOverrides);
+        $this->assertEquals(9, $subOverrides);
     }
 
     public function test_activate_is_idempotent(): void
@@ -138,7 +138,7 @@ class TrainingCenterModuleActivatorTest extends TestCase
         $this->activator->activateForTrainingCenter($institute);
 
         $subs = DB::table('module_registry')->where('parent_key', 'training_center')->count();
-        $this->assertEquals(8, $subs);
+        $this->assertEquals(9, $subs);
     }
 
     public function test_feature_entries_intact(): void

@@ -33,10 +33,10 @@ class TrainingCenterSubModuleInfrastructureTest extends TestCase
         $this->assertEquals('active', $row->status);
     }
 
-    public function test_8_sub_modules_registered(): void
+public function test_9_sub_modules_registered(): void
     {
         $count = DB::table('module_registry')->where('parent_key', 'training_center')->count();
-        $this->assertEquals(8, $count);
+        $this->assertEquals(9, $count);
     }
 
     public function test_sub_modules_correct_parent(): void
@@ -54,9 +54,9 @@ class TrainingCenterSubModuleInfrastructureTest extends TestCase
         }
 
         $subKeys = [
-            'training_center.courses', 'training_center.batches', 'training_center.trainees',
-            'training_center.attendance', 'training_center.exams', 'training_center.certificates',
-            'training_center.fees', 'training_center.reports',
+            'training_center.courses', 'training_center.batches', 'training_center.students',
+            'training_center.classes', 'training_center.attendance', 'training_center.exams',
+            'training_center.certificates', 'training_center.fees', 'training_center.reports',
         ];
 
         $pkg = DB::table('subscription_packages')->whereRaw('LOWER(slug) = ?', ['advanced'])->first();
@@ -77,7 +77,9 @@ class TrainingCenterSubModuleInfrastructureTest extends TestCase
     public function test_flat_permissions_seeded(): void
     {
         $flatSlugs = [
-            'training.view', 'training.manage', 'trainees.view', 'trainees.manage',
+            'training.view', 'training.manage', 'students.view', 'students.manage',
+            'classes.view', 'classes.manage',
+            'trainees.view', 'trainees.manage',
             'enrollments.view', 'enrollments.manage', 'marks.view', 'marks.manage',
             'results.view', 'results.publish', 'training.certificates.view',
             'training.settings.manage', 'training.attendance.view', 'training.exams.view',
@@ -93,8 +95,9 @@ class TrainingCenterSubModuleInfrastructureTest extends TestCase
     {
         $prefixedSlugs = [
             'training_center.courses.view', 'training_center.courses.manage',
-            'training_center.batches.view', 'training_center.batches.manage',
-            'training_center.trainees.view', 'training_center.trainees.manage',
+            'training_batches.view', 'training_batches.manage',
+            'training_students.view', 'training_students.manage',
+            'training_classes.view', 'training_classes.manage',
             'training_center.attendance.view', 'training_center.attendance.manage',
             'training_center.exams.view', 'training_center.exams.manage',
             'training_center.certificates.view', 'training_center.certificates.manage',
@@ -121,9 +124,9 @@ class TrainingCenterSubModuleInfrastructureTest extends TestCase
         }
 
         $expected = [
-            'training_center.courses', 'training_center.batches', 'training_center.trainees',
-            'training_center.attendance', 'training_center.exams', 'training_center.certificates',
-            'training_center.fees', 'training_center.reports',
+            'training_center.courses', 'training_center.batches', 'training_center.students',
+            'training_center.classes', 'training_center.attendance', 'training_center.exams',
+            'training_center.certificates', 'training_center.fees', 'training_center.reports',
         ];
 
         $existing = DB::table('feature_registry')
@@ -197,17 +200,17 @@ class TrainingCenterSubModuleInfrastructureTest extends TestCase
         $this->get(route('training.attendance.index'))->assertStatus(200);
     }
 
-    public function test_sub_module_count_is_8(): void
+    public function test_sub_module_count_is_9(): void
     {
         $count = DB::table('module_registry')->where('parent_key', 'training_center')->count();
-        $this->assertEquals(8, $count);
+        $this->assertEquals(9, $count);
     }
 
     public function test_registry_idempotent(): void
     {
         (new TrainingCenterSubModuleSeeder)->run();
         $count = DB::table('module_registry')->where('parent_key', 'training_center')->count();
-        $this->assertEquals(8, $count, 'Re-running seeder should not create duplicates');
+        $this->assertEquals(9, $count, 'Re-running seeder should not create duplicates');
     }
 
     private function makeInstitute(): object

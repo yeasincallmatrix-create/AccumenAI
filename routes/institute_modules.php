@@ -1079,6 +1079,15 @@ Route::middleware($tenant)->group(function () {
         Route::put('certificates/{certificate}', [\App\Http\Controllers\Training\TrainingCertificateController::class, 'update'])->name('certificates.update');
         Route::get('fees', [\App\Http\Controllers\Training\FeesController::class, 'index'])->name('fees.index');
         Route::get('reports', [\App\Http\Controllers\Training\ReportsController::class, 'index'])->name('reports.index');
+
+        // ─── TRAINING STUDENTS ────────────────────────────
+        Route::resource('students', \App\Http\Controllers\Training\TrainingStudentController::class)->only(['index','create','store','edit','update','destroy'])->names('students');
+        Route::get('students/{student}', [\App\Http\Controllers\Training\TrainingStudentController::class, 'show'])->name('students.show');
+
+        // ─── TRAINING CLASSES ─────────────────────────────
+        Route::resource('classes', \App\Http\Controllers\Training\TrainingClassController::class)->only(['index','create','store','edit','update','destroy'])->names('classes');
+        Route::get('classes/{class}/subjects', [\App\Http\Controllers\Training\TrainingClassController::class, 'subjects'])->name('classes.subjects');
+        Route::get('classes/{class}/batches', [\App\Http\Controllers\Training\TrainingClassController::class, 'batches'])->name('classes.batches');
     });
 
     // Course Subjects (institute)

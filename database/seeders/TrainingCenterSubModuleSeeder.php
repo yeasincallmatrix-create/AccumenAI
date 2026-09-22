@@ -18,12 +18,13 @@ class TrainingCenterSubModuleSeeder extends Seeder
         $subModules = [
             ['key' => 'training_center.courses',      'name' => 'Courses',      'sort_order' => 23, 'icon' => 'bi-book',           'index_route' => 'courses.manage.index'],
             ['key' => 'training_center.batches',      'name' => 'Batches',      'sort_order' => 24, 'icon' => 'bi-calendar-week',  'index_route' => 'batches.index'],
-            ['key' => 'training_center.trainees',     'name' => 'Trainees',     'sort_order' => 25, 'icon' => 'bi-person-badge',   'index_route' => 'students.index'],
-            ['key' => 'training_center.attendance',   'name' => 'Attendance',   'sort_order' => 26, 'icon' => 'bi-calendar-check', 'index_route' => 'training.attendance.index'],
-            ['key' => 'training_center.exams',        'name' => 'Exams',        'sort_order' => 27, 'icon' => 'bi-pencil-square',  'index_route' => 'training.exams.index'],
-            ['key' => 'training_center.certificates', 'name' => 'Certificates', 'sort_order' => 28, 'icon' => 'bi-award',          'index_route' => 'training.certificates.index'],
-            ['key' => 'training_center.fees',         'name' => 'Fees',         'sort_order' => 29, 'icon' => 'bi-cash-coin',      'index_route' => 'training.fees.index'],
-            ['key' => 'training_center.reports',      'name' => 'Reports',      'sort_order' => 30, 'icon' => 'bi-graph-up',       'index_route' => 'training.reports.index'],
+            ['key' => 'training_center.students',     'name' => 'Students',     'sort_order' => 25, 'icon' => 'bi-person-badge',   'index_route' => 'training.students.index'],
+            ['key' => 'training_center.classes',      'name' => 'Classes',      'sort_order' => 26, 'icon' => 'bi-collection',     'index_route' => 'training.classes.index'],
+            ['key' => 'training_center.attendance',   'name' => 'Attendance',   'sort_order' => 27, 'icon' => 'bi-calendar-check', 'index_route' => 'training.attendance.index'],
+            ['key' => 'training_center.exams',        'name' => 'Exams',        'sort_order' => 28, 'icon' => 'bi-pencil-square',  'index_route' => 'training.exams.index'],
+            ['key' => 'training_center.certificates', 'name' => 'Certificates', 'sort_order' => 29, 'icon' => 'bi-award',          'index_route' => 'training.certificates.index'],
+            ['key' => 'training_center.fees',         'name' => 'Fees',         'sort_order' => 30, 'icon' => 'bi-cash-coin',      'index_route' => 'training.fees.index'],
+            ['key' => 'training_center.reports',      'name' => 'Reports',      'sort_order' => 31, 'icon' => 'bi-graph-up',       'index_route' => 'training.reports.index'],
         ];
 
         foreach ($subModules as $sub) {
@@ -52,7 +53,7 @@ class TrainingCenterSubModuleSeeder extends Seeder
         }
 
         if ($this->command) {
-            $this->command->info('Training Center sub-modules seeded: 8');
+            $this->command->info('Training Center sub-modules seeded: 9');
         }
     }
 }

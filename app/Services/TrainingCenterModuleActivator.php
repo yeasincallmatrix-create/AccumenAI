@@ -60,12 +60,13 @@ class TrainingCenterModuleActivator
         $subModules = [
             ['key' => 'training_center.courses',      'name' => 'Courses',      'icon' => 'bi-book',           'sort' => 23, 'route' => 'courses.manage.index'],
             ['key' => 'training_center.batches',      'name' => 'Batches',      'icon' => 'bi-calendar-week',  'sort' => 24, 'route' => 'batches.index'],
-            ['key' => 'training_center.trainees',     'name' => 'Trainees',     'icon' => 'bi-person-badge',   'sort' => 25, 'route' => 'students.index'],
-            ['key' => 'training_center.attendance',   'name' => 'Attendance',   'icon' => 'bi-calendar-check', 'sort' => 26, 'route' => 'training.attendance.index'],
-            ['key' => 'training_center.exams',        'name' => 'Exams',        'icon' => 'bi-pencil-square',  'sort' => 27, 'route' => 'training.exams.index'],
-            ['key' => 'training_center.certificates', 'name' => 'Certificates', 'icon' => 'bi-award',          'sort' => 28, 'route' => 'training.certificates.index'],
-            ['key' => 'training_center.fees',         'name' => 'Fees',         'icon' => 'bi-cash-coin',      'sort' => 29, 'route' => 'training.fees.index'],
-            ['key' => 'training_center.reports',      'name' => 'Reports',      'icon' => 'bi-graph-up',       'sort' => 30, 'route' => 'training.reports.index'],
+            ['key' => 'training_center.students',     'name' => 'Students',     'icon' => 'bi-person-badge',   'sort' => 25, 'route' => 'training.students.index'],
+            ['key' => 'training_center.classes',      'name' => 'Classes',      'icon' => 'bi-collection',     'sort' => 26, 'route' => 'training.classes.index'],
+            ['key' => 'training_center.attendance',   'name' => 'Attendance',   'icon' => 'bi-calendar-check', 'sort' => 27, 'route' => 'training.attendance.index'],
+            ['key' => 'training_center.exams',        'name' => 'Exams',        'icon' => 'bi-pencil-square',  'sort' => 28, 'route' => 'training.exams.index'],
+            ['key' => 'training_center.certificates', 'name' => 'Certificates', 'icon' => 'bi-award',          'sort' => 29, 'route' => 'training.certificates.index'],
+            ['key' => 'training_center.fees',         'name' => 'Fees',         'icon' => 'bi-cash-coin',      'sort' => 30, 'route' => 'training.fees.index'],
+            ['key' => 'training_center.reports',      'name' => 'Reports',      'icon' => 'bi-graph-up',       'sort' => 31, 'route' => 'training.reports.index'],
         ];
 
         foreach ($subModules as $sub) {
@@ -87,9 +88,9 @@ class TrainingCenterModuleActivator
     private function enableSubModules(Institute $institute): void
     {
         $subKeys = [
-            'training_center.courses', 'training_center.batches', 'training_center.trainees',
-            'training_center.attendance', 'training_center.exams', 'training_center.certificates',
-            'training_center.fees', 'training_center.reports',
+            'training_center.courses', 'training_center.batches', 'training_center.students',
+            'training_center.classes', 'training_center.attendance', 'training_center.exams',
+            'training_center.certificates', 'training_center.fees', 'training_center.reports',
         ];
 
         foreach ($subKeys as $key) {
@@ -103,9 +104,20 @@ class TrainingCenterModuleActivator
     private function seedPermissions(): void
     {
         $permissions = [
+            'training_students' => [
+                'view' => 'View Students', 'create' => 'Create Students',
+                'edit' => 'Edit Students', 'delete' => 'Delete Students',
+                'manage' => 'Manage Students',
+            ],
+            'training_classes' => [
+                'view' => 'View Classes', 'create' => 'Create Classes',
+                'edit' => 'Edit Classes', 'delete' => 'Delete Classes',
+                'manage' => 'Manage Classes',
+            ],
             'training_batches' => [
                 'view' => 'View Batches', 'create' => 'Create Batches',
                 'edit' => 'Edit Batches', 'delete' => 'Delete Batches',
+                'manage' => 'Manage Batches',
             ],
             'training_enrollments' => [
                 'view' => 'View Enrollments', 'create' => 'Enroll Trainees',
@@ -147,6 +159,10 @@ class TrainingCenterModuleActivator
         $flatSlugs = [
             'training.view' => 'View Training',
             'training.manage' => 'Manage Training',
+            'students.view' => 'View Students',
+            'students.manage' => 'Manage Students',
+            'classes.view' => 'View Classes',
+            'classes.manage' => 'Manage Classes',
             'trainees.view' => 'View Trainees',
             'trainees.manage' => 'Manage Trainees',
             'enrollments.view' => 'View Enrollments',

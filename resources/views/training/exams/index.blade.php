@@ -1,6 +1,6 @@
 @extends('layouts.institute')
 
-@section('title', 'Training Exams — AccumenAI')
+@section('title', mawa_lang('exams.title') . ' — AccumenAI')
 
 @php
     $activeTab ??= 'exams';
@@ -43,17 +43,10 @@
 @endpush
 
 @section('content')
-<nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb small mb-0">
-        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="#" class="text-decoration-none">Training</a></li>
-        <li class="breadcrumb-item active">Exams</li>
-    </ol>
-</nav>
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2">
     <div class="page-header-text">
-        <h4 class="page-header-title">Training Exams</h4>
-        <p class="page-header-desc mb-0">Training exams — independent from Education</p>
+        <h4 class="page-header-title">{{ mawa_e('exams.title') }}</h4>
+        <p class="page-header-desc mb-0">{{ mawa_e('exams.subtitle') }}</p>
     </div>
     <div class="d-flex gap-2">
         @if ($user->hasPermission('exams.manage'))
@@ -143,6 +136,8 @@
                     <th>{{ mawa_e('exams.table_date') }}</th>
                     <th>{{ mawa_e('exams.table_marks') }}</th>
                     <th>{{ mawa_e('exams.table_students') }}</th>
+                    <th>{{ mawa_lang('status.pass') }}</th>
+                    <th>{{ mawa_lang('status.fail') }}</th>
                     <th>{{ mawa_e('batches.table_status') }}</th>
                 </tr>
             </thead>
@@ -156,7 +151,9 @@
                         <td>{{ $exam->subjects->isNotEmpty() ? $exam->subjects->map(fn ($s) => $s->subject?->name ?? '—')->implode(', ') : '—' }}</td>
                         <td><x-tdate :value="$exam->exam_date" fallback="d M Y, h:i A" :datetime="true" empty="—" /></td>
                         <td>{{ rtrim(rtrim(number_format($exam->full_marks, 2), '0'), '.') }} / {{ rtrim(rtrim(number_format($exam->pass_marks, 2), '0'), '.') }}</td>
-                        <td>{{ $exam->results_count }}</td>
+                        <td>{{ $exam->students_count ?? $exam->results_count }}</td>
+                        <td>{{ $exam->pass_count ?? '—' }}</td>
+                        <td>{{ $exam->fail_count ?? '—' }}</td>
                         <td>{{ $statusNames[$exam->status] ?? $exam->status }}</td>
                     </tr>
                 @endforeach
