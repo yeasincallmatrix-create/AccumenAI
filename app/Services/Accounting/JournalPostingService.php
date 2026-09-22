@@ -621,7 +621,7 @@ class JournalPostingService
 
         if ((float) ($expense->tax_amount ?? 0) > 0 && $expense->tax_group_id) {
             $taxCoa = \App\Models\ChartOfAccount::where('institute_id', $expense->institute_id)
-                ->where('code', '1201')->first();
+                ->where('code', '1200.2')->first();
             if ($taxCoa) {
                 array_unshift($entries, [
                     'coa_id' => $taxCoa->id,

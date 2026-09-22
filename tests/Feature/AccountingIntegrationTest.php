@@ -316,10 +316,10 @@ class AccountingIntegrationTest extends TestCase
         $this->assertSame($totals['debit'], $totals['credit'], 'Sale journal must balance.');
         $this->assertGreaterThanOrEqual(2, $totals['count']);
 
-        $arDebit = $journal->entries()->where('coa_id', $this->coaId($institute, '1200'))->sum('debit');
+        $arDebit = $journal->entries()->where('coa_id', $this->coaId($institute, '1200.1'))->sum('debit');
         $this->assertSame(150.0, round((float) $arDebit, 4));
 
-        $arEntry = $journal->entries()->where('coa_id', $this->coaId($institute, '1200'))->first();
+        $arEntry = $journal->entries()->where('coa_id', $this->coaId($institute, '1200.1'))->first();
         $this->assertSame((int) $customer->id, (int) $arEntry->party_id);
     }
 
@@ -363,9 +363,9 @@ class AccountingIntegrationTest extends TestCase
             'payment_method' => 'bank',
         ], (int) $owner->id);
 
-        $cashDebit = $cashPayment->journal->entries()->where('coa_id', $this->coaId($institute, '1000'))->sum('debit');
-        $bankDebit = $bankPayment->journal->entries()->where('coa_id', $this->coaId($institute, '1100'))->sum('debit');
-        $arCredit = $bankPayment->journal->entries()->where('coa_id', $this->coaId($institute, '1200'))->sum('credit');
+        $cashDebit = $cashPayment->journal->entries()->where('coa_id', $this->coaId($institute, '1000.1'))->sum('debit');
+        $bankDebit = $bankPayment->journal->entries()->where('coa_id', $this->coaId($institute, '1100.1'))->sum('debit');
+        $arCredit = $bankPayment->journal->entries()->where('coa_id', $this->coaId($institute, '1200.1'))->sum('credit');
 
         $this->assertSame(50.0, round((float) $cashDebit, 4));
         $this->assertSame(50.0, round((float) $bankDebit, 4));
@@ -390,7 +390,7 @@ class AccountingIntegrationTest extends TestCase
 
         $this->assertSame(0.0, round(app(ReceivablesPayablesService::class)->partyBalance($customer)['receivable'], 4));
         $this->assertSame(150.0, round(app(FinancialReportService::class)->incomeStatement($institute->id, null)['net'], 4));
-        $this->assertSame(150.0, round((float) app(FinancialReportService::class)->cashBankSummary($institute->id, null)->firstWhere('code', '1000')->balance, 4));
+        $this->assertSame(150.0, round((float) app(FinancialReportService::class)->cashBankSummary($institute->id, null)->firstWhere('code', '1000.1')->balance, 4));
     }
 
     public function test_partial_payment_reduces_ar_only(): void
@@ -410,7 +410,7 @@ class AccountingIntegrationTest extends TestCase
 
         $this->assertSame(100.0, round(app(ReceivablesPayablesService::class)->partyBalance($customer)['receivable'], 4));
         $sheet = app(FinancialReportService::class)->balanceSheet($institute->id, null);
-        $this->assertSame(100.0, round((float) $sheet['assets']->firstWhere('code', '1200')->balance, 4));
+        $this->assertSame(100.0, round((float) $sheet['assets']->firstWhere('code', '1200.1')->balance, 4));
         $this->assertSame(150.0, round($sheet['net_income'], 4));
     }
 
@@ -460,7 +460,7 @@ class AccountingIntegrationTest extends TestCase
         $this->assertSame(150.0, round((float) $invoice->due_amount, 4));
         $this->assertSame('unpaid', $invoice->status);
         $this->assertSame('reversed', $payment->refresh()->journal->status);
-        $this->assertSame(0.0, round((float) app(FinancialReportService::class)->cashBankSummary($institute->id, null)->firstWhere('code', '1000')->balance, 4));
+        $this->assertSame(0.0, round((float) app(FinancialReportService::class)->cashBankSummary($institute->id, null)->firstWhere('code', '1000.1')->balance, 4));
         $this->assertSame(150.0, round(app(FinancialReportService::class)->incomeStatement($institute->id, null)['net'], 4));
 
         $rows = app(FinancialReportService::class)->trialBalance($institute->id, null);
@@ -591,11 +591,11 @@ class AccountingIntegrationTest extends TestCase
         $totals = $this->entryTotals($journal);
         $this->assertSame($totals['debit'], $totals['credit'], 'Cash memo journal must balance.');
 
-        $this->assertSame(200.0, round((float) $journal->entries()->where('coa_id', $this->coaId($institute, '1000'))->sum('debit'), 4));
-        $this->assertSame(200.0, round((float) $journal->entries()->where('coa_id', $this->coaId($institute, '4004'))->sum('credit'), 4));
+        $this->assertSame(200.0, round((float) $journal->entries()->where('coa_id', $this->coaId($institute, '1000.1'))->sum('debit'), 4));
+        $this->assertSame(200.0, round((float) $journal->entries()->where('coa_id', $this->coaId($institute, '4000.2'))->sum('credit'), 4));
 
         $this->assertSame(200.0, round(app(FinancialReportService::class)->incomeStatement($institute->id, null)['total_income'], 4));
-        $this->assertSame(200.0, round((float) app(FinancialReportService::class)->cashBankSummary($institute->id, null)->firstWhere('code', '1000')->balance, 4));
+        $this->assertSame(200.0, round((float) app(FinancialReportService::class)->cashBankSummary($institute->id, null)->firstWhere('code', '1000.1')->balance, 4));
     }
 
     public function test_cash_memo_bank_method_debits_bank_account(): void
@@ -607,7 +607,7 @@ class AccountingIntegrationTest extends TestCase
         $memo = $this->materializeCashMemo($institute, $reviewer, ['amount' => 250, 'payment_method' => 'bank']);
 
         $this->assertNotNull($memo->journal_id);
-        $this->assertSame(250.0, round((float) $memo->journal->entries()->where('coa_id', $this->coaId($institute, '1100'))->sum('debit'), 4));
+        $this->assertSame(250.0, round((float) $memo->journal->entries()->where('coa_id', $this->coaId($institute, '1100.1'))->sum('debit'), 4));
     }
 
     public function test_cash_memo_without_accounting_stays_legacy_memo_only(): void
@@ -738,8 +738,8 @@ class AccountingIntegrationTest extends TestCase
         $this->assertSame(350.0, round($pl['net'], 4));
 
         $sheet = app(FinancialReportService::class)->balanceSheet($institute->id, null);
-        $this->assertSame(300.0, round((float) $sheet['assets']->firstWhere('code', '1000')->balance, 4));
-        $this->assertSame(50.0, round((float) $sheet['assets']->firstWhere('code', '1200')->balance, 4));
+        $this->assertSame(300.0, round((float) $sheet['assets']->firstWhere('code', '1000.1')->balance, 4));
+        $this->assertSame(50.0, round((float) $sheet['assets']->firstWhere('code', '1200.1')->balance, 4));
         $this->assertSame(round($sheet['total_assets'], 4), round($sheet['total_liabilities'] + $sheet['total_equity'], 4), 'Assets must equal liabilities plus equity.');
         $this->assertSame(350.0, round($sheet['total_assets'], 4));
 
@@ -756,8 +756,8 @@ class AccountingIntegrationTest extends TestCase
         $this->setupAccounting($institute);
         $owner = $this->user($institute, 'institute-owner', 'owner');
 
-        $cash = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '1000')->firstOrFail();
-        $tuition = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '4001')->firstOrFail();
+        $cash = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '1000.1')->firstOrFail();
+        $tuition = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '4100.1')->firstOrFail();
 
         $journal = app(JournalPostingService::class)->create($this->journalPayload($institute, null, $cash->id, $tuition->id, 100), (int) $owner->id);
         $reversal = app(JournalPostingService::class)->reverse($journal, (int) $institute->id, (int) $owner->id, 'Correction');
@@ -772,7 +772,7 @@ class AccountingIntegrationTest extends TestCase
         $this->assertSame($totals['debit'], $totals['credit'], 'Reversal journal must balance.');
 
         $this->assertSame(0.0, round(app(FinancialReportService::class)->incomeStatement($institute->id, null)['total_income'], 4));
-        $this->assertSame(0.0, round((float) app(FinancialReportService::class)->cashBankSummary($institute->id, null)->firstWhere('code', '1000')->balance, 4));
+        $this->assertSame(0.0, round((float) app(FinancialReportService::class)->cashBankSummary($institute->id, null)->firstWhere('code', '1000.1')->balance, 4));
     }
 
     // ------------------------------------------------- Duplicate posting
@@ -805,7 +805,7 @@ class AccountingIntegrationTest extends TestCase
 
         $this->assertSame(1, $invoice->refresh()->payments()->count());
         $this->assertSame(2, Journal::query()->where('institute_id', $institute->id)->count());
-        $this->assertSame(150.0, round((float) app(FinancialReportService::class)->cashBankSummary($institute->id, null)->firstWhere('code', '1000')->balance, 4));
+        $this->assertSame(150.0, round((float) app(FinancialReportService::class)->cashBankSummary($institute->id, null)->firstWhere('code', '1000.1')->balance, 4));
     }
 
     // ------------------------------------------------- Immutability
@@ -816,8 +816,8 @@ class AccountingIntegrationTest extends TestCase
         $this->setupAccounting($institute);
         $owner = $this->user($institute, 'institute-owner', 'owner');
 
-        $cash = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '1000')->firstOrFail();
-        $tuition = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '4001')->firstOrFail();
+        $cash = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '1000.1')->firstOrFail();
+        $tuition = ChartOfAccount::query()->where('institute_id', $institute->id)->where('code', '4100.1')->firstOrFail();
 
         $journal = app(JournalPostingService::class)->create($this->journalPayload($institute, null, $cash->id, $tuition->id, 50), (int) $owner->id);
         $this->assertSame('posted', $journal->status);

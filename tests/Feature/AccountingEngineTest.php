@@ -99,8 +99,8 @@ class AccountingEngineTest extends TestCase
         $this->setupAccounting($institute, $branch);
 
         $this->assertSame(5, \DB::table('account_groups')->where('institute_id', $institute->id)->count());
-        // TEMPLATE is 39 accounts (38 − 1001/1002 + 1000/1100/1400).
-        $this->assertSame(39, ChartOfAccount::query()->where('institute_id', $institute->id)->count());
+        // TEMPLATE is 33 accounts after COA restructure.
+        $this->assertSame(33, ChartOfAccount::query()->where('institute_id', $institute->id)->count());
         $this->assertSame(4, PaymentMethod::query()->where('institute_id', $institute->id)->count());
         $this->assertSame(1, FiscalYear::query()->where('institute_id', $institute->id)->count());
     }
@@ -111,8 +111,8 @@ class AccountingEngineTest extends TestCase
         $branch = $this->branch($institute);
         $this->setupAccounting($institute, $branch);
 
-        $cash = $this->coaId($institute, '1000');
-        $tuition = $this->coaId($institute, '4001');
+        $cash = $this->coaId($institute, '1000.1');
+        $tuition = $this->coaId($institute, '4100.1');
 
         $journal = $this->posting()->create([
             'institute_id' => $institute->id,
@@ -139,8 +139,8 @@ class AccountingEngineTest extends TestCase
         $branch = $this->branch($institute);
         $this->setupAccounting($institute, $branch);
 
-        $cash = $this->coaId($institute, '1000');
-        $tuition = $this->coaId($institute, '4001');
+        $cash = $this->coaId($institute, '1000.1');
+        $tuition = $this->coaId($institute, '4100.1');
 
         $this->expectException(ValidationException::class);
 
@@ -163,8 +163,8 @@ class AccountingEngineTest extends TestCase
         $branch = $this->branch($institute);
         $this->setupAccounting($institute, $branch);
 
-        $cash = $this->coaId($institute, '1000');
-        $tuition = $this->coaId($institute, '4001');
+        $cash = $this->coaId($institute, '1000.1');
+        $tuition = $this->coaId($institute, '4100.1');
 
         $this->expectException(ValidationException::class);
 
@@ -187,8 +187,8 @@ class AccountingEngineTest extends TestCase
         $branch = $this->branch($institute);
         $this->setupAccounting($institute, $branch);
 
-        $ar = $this->coaId($institute, '1200');
-        $tuition = $this->coaId($institute, '4001');
+        $ar = $this->coaId($institute, '1200.1');
+        $tuition = $this->coaId($institute, '4100.1');
 
         $customer = Party::create([
             'institute_id' => $institute->id,
@@ -226,8 +226,8 @@ class AccountingEngineTest extends TestCase
         $branch = $this->branch($institute);
         $this->setupAccounting($institute, $branch);
 
-        $cash = $this->coaId($institute, '1000');
-        $tuition = $this->coaId($institute, '4001');
+        $cash = $this->coaId($institute, '1000.1');
+        $tuition = $this->coaId($institute, '4100.1');
 
         $draft = $this->posting()->create([
             'institute_id' => $institute->id,
@@ -254,11 +254,11 @@ class AccountingEngineTest extends TestCase
         $branch = $this->branch($institute);
         $this->setupAccounting($institute, $branch);
 
-        $cash = $this->coaId($institute, '1000');
-        $ar = $this->coaId($institute, '1200');
-        $ap = $this->coaId($institute, '2001');
-        $tuition = $this->coaId($institute, '4001');
-        $misc = $this->coaId($institute, '5006');
+        $cash = $this->coaId($institute, '1000.1');
+        $ar = $this->coaId($institute, '1200.1');
+        $ap = $this->coaId($institute, '2000.1');
+        $tuition = $this->coaId($institute, '4100.1');
+        $misc = $this->coaId($institute, '5000.5');
 
         $customer = Party::create([
             'institute_id' => $institute->id,

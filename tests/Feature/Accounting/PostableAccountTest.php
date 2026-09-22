@@ -40,7 +40,7 @@ class PostableAccountTest extends TestCase
         $institute = $this->institute();
         $coa = ChartOfAccount::create([
             'institute_id' => $institute->id,
-            'code' => '1100',
+            'code' => '1100.1',
             'name' => 'Bank Accounts',
             'account_group_id' => 1,
             'type' => 'asset',
@@ -96,7 +96,7 @@ class PostableAccountTest extends TestCase
         $institute = $this->institute();
         $header = ChartOfAccount::create([
             'institute_id' => $institute->id,
-            'code' => '1200',
+            'code' => '1200.1',
             'name' => 'Accounts Receivable',
             'account_group_id' => 1,
             'type' => 'asset',
@@ -123,7 +123,7 @@ class PostableAccountTest extends TestCase
         $institute = $this->institute();
         $child = ChartOfAccount::create([
             'institute_id' => $institute->id,
-            'code' => '1201',
+            'code' => '1200.2',
             'name' => 'Input VAT',
             'account_group_id' => 1,
             'type' => 'asset',
@@ -133,7 +133,7 @@ class PostableAccountTest extends TestCase
 
         $parent = ChartOfAccount::create([
             'institute_id' => $institute->id,
-            'code' => '1200',
+            'code' => '1200.1',
             'name' => 'Accounts Receivable',
             'account_group_id' => 1,
             'type' => 'asset',
@@ -154,33 +154,33 @@ class PostableAccountTest extends TestCase
     {
         $institute = $this->institute();
         ChartOfAccount::create([
-            'institute_id' => $institute->id, 'code' => '1100.1', 'name' => 'Bank 1',
+            'institute_id' => $institute->id, 'code' => '9901.1', 'name' => 'TEST-Bank-1',
             'account_group_id' => 1, 'type' => 'asset', 'is_postable' => true, 'is_header' => false,
         ]);
         ChartOfAccount::create([
-            'institute_id' => $institute->id, 'code' => '1100', 'name' => 'Bank Header',
+            'institute_id' => $institute->id, 'code' => '9901.2', 'name' => 'TEST-Bank-Header',
             'account_group_id' => 1, 'type' => 'asset', 'is_postable' => false, 'is_header' => true,
         ]);
 
         $postable = ChartOfAccount::postable()->where('institute_id', $institute->id)->get();
         $this->assertCount(1, $postable);
-        $this->assertEquals('1100.1', $postable->first()->code);
+        $this->assertEquals('9901.1', $postable->first()->code);
     }
 
     public function test_scope_headers_returns_only_headers(): void
     {
         $institute = $this->institute();
         ChartOfAccount::create([
-            'institute_id' => $institute->id, 'code' => '1100', 'name' => 'Bank Header',
+            'institute_id' => $institute->id, 'code' => '9901.1', 'name' => 'TEST-Bank-Header',
             'account_group_id' => 1, 'type' => 'asset', 'is_postable' => false, 'is_header' => true,
         ]);
         ChartOfAccount::create([
-            'institute_id' => $institute->id, 'code' => '1100.1', 'name' => 'Bank 1',
+            'institute_id' => $institute->id, 'code' => '9901.2', 'name' => 'TEST-Bank-1',
             'account_group_id' => 1, 'type' => 'asset', 'is_postable' => true, 'is_header' => false,
         ]);
 
         $headers = ChartOfAccount::headers()->where('institute_id', $institute->id)->get();
         $this->assertCount(1, $headers);
-        $this->assertEquals('1100', $headers->first()->code);
+        $this->assertEquals('9901.1', $headers->first()->code);
     }
 }

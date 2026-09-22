@@ -15,11 +15,11 @@ class VerifyIndustryTags extends Command
     public function handle(): int
     {
         $canonical = [
-            '4001' => ['education', 'training_center'],
-            '4002' => ['education', 'training_center'],
-            '4003' => null,
-            '4010' => null,
-            '5007' => null,
+            '4100.1' => ['education', 'training_center'],
+            '4100.2' => ['education', 'training_center'],
+            '4400.1' => null,
+            '4900.3' => null,
+            '5000.5' => null,
         ];
 
         $mismatches = 0;

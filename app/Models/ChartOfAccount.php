@@ -58,6 +58,59 @@ class ChartOfAccount extends Model
                 }
             }
         });
+
+        static::updating(function (ChartOfAccount $acc) {
+            if ($acc->is_system && $acc->isDirty([
+                'code', 'name', 'type', 'parent_id',
+                'industries', 'is_header', 'is_postable'
+            ])) {
+                throw new \DomainException("Cannot modify system account: {$acc->code}");
+            }
+        });
+
+        static::deleting(function (ChartOfAccount $acc) {
+            if ($acc->is_system) {
+                throw new \DomainException("Cannot delete system account: {$acc->code}");
+            }
+            if (\DB::table('journal_entries')->where('coa_id', $acc->id)->exists()) {
+                throw new \DomainException("Cannot delete account with journals: {$acc->code}");
+            }
+        });
+    }
+
+    public function isLocked(): bool
+    {
+        return (bool) $this->is_system;
+    }
+
+    public function isEditable(): bool
+    {
+        return ! $this->is_system;
+    }
+
+    public function canBeDeleted(): bool
+    {
+        if ($this->is_system) {
+            return false;
+        }
+        if ($this->children()->exists()) {
+            return false;
+        }
+        if (\DB::table('journal_entries')->where('coa_id', $this->id)->exists()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function scopeEditable($q)
+    {
+        return $q->where('is_system', false);
+    }
+
+    public function scopeLocked($q)
+    {
+        return $q->where('is_system', true);
     }
 
     protected function casts(): array
@@ -332,5 +385,24 @@ class ChartOfAccount extends Model
     public function canBePosted(): bool
     {
         return $this->is_postable && !$this->hasChildren();
+    }
+
+    public static function sortByCodeNatural($collection)
+    {
+        return $collection->sort(function ($a, $b) {
+            $aParts = explode('.', (string) $a->code);
+            $bParts = explode('.', (string) $b->code);
+            $maxLen = max(count($aParts), count($bParts));
+            for ($i = 0; $i < $maxLen; $i++) {
+                $aPart = $aParts[$i] ?? null;
+                $bPart = $bParts[$i] ?? null;
+                if ($aPart === null) return -1;
+                if ($bPart === null) return 1;
+                $aNum = is_numeric($aPart) ? (int) $aPart : 0;
+                $bNum = is_numeric($bPart) ? (int) $bPart : 0;
+                if ($aNum !== $bNum) return $aNum <=> $bNum;
+            }
+            return 0;
+        })->values();
     }
 }

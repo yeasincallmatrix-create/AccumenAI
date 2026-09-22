@@ -16,7 +16,7 @@ use Tests\TestCase;
  * Phase F - industry-scoped COA (visibleTo-only).
  *
  * Locked decisions:
- * - 4001/4002 tagged ["education","training_center"]; 4010/5007 universal.
+ * - 4100.1/4100.2 tagged ["education","training_center"]; 4900.3/5000.5 universal.
  * - Only visibleTo()/visible() filter; TenantScoped default path untouched.
  * - Institute::create + InstituteUser::create (no factories exist).
  */
@@ -73,8 +73,8 @@ class IndustryScopedCoaTest extends TestCase
         $visible = ChartOfAccount::visibleTo($tenant->id)->pluck('code')->toArray();
 
         // Critical: training_center slug passes (name collision-safe resolver).
-        $this->assertContains('4001', $visible);
-        $this->assertContains('4002', $visible);
+        $this->assertContains('4100.4', $visible);
+        $this->assertContains('4200.1', $visible);
     }
 
     public function test_hospital_does_not_see_tuition(): void
@@ -82,8 +82,8 @@ class IndustryScopedCoaTest extends TestCase
         $tenant = $this->tenantWithIndustry('healthcare');
         $visible = ChartOfAccount::visibleTo($tenant->id)->pluck('code')->toArray();
 
-        $this->assertNotContains('4001', $visible);
-        $this->assertNotContains('4002', $visible);
+        $this->assertNotContains('4100.1', $visible);
+        $this->assertNotContains('4100.2', $visible);
     }
 
     public function test_universal_still_visible(): void
@@ -91,7 +91,7 @@ class IndustryScopedCoaTest extends TestCase
         $tenant = $this->tenantWithIndustry('healthcare');
         $visible = ChartOfAccount::visibleTo($tenant->id)->pluck('code')->toArray();
 
-        foreach (['1000', '1100', '1200', '2000', '2100', '3000', '4000', '4010', '5007', '5000'] as $code) {
+        foreach (['1000.1', '1100.1', '1200.1', '2000.1', '2100.1', '3100.1', '4000.1', '4900.3', '5000.5', '5000.1'] as $code) {
             $this->assertContains($code, $visible, "Universal {$code} missing");
         }
     }

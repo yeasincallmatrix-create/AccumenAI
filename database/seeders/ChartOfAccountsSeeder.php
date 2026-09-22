@@ -9,7 +9,7 @@ use Illuminate\Database\Seeder;
 
 /**
  * Seeds the minimal chart of accounts an institute needs:
- * 1001 Cash in Hand (asset/cash) and 4001 Tuition Income (income).
+ * 1000.1 Cash in Hand (asset/cash) and 4100.1 Tuition Fees (income).
  *
  * Institute-scoped and idempotent (firstOrCreate on institute+code).
  * No-op when no institute id is given so global seeding never
@@ -32,8 +32,8 @@ class ChartOfAccountsSeeder extends Seeder
             return;
         }
 
-        $this->account('1000', 'Cash', 'asset', ['is_cash' => true]);
-        $this->account('4001', 'Tuition Income', 'income');
+        $this->account('1000.1', 'Cash in Hand', 'asset', ['is_cash' => true]);
+        $this->account('4100.1', 'Tuition Fees', 'income');
     }
 
     protected function account(string $code, string $name, string $type, array $flags = []): ChartOfAccount

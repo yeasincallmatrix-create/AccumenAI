@@ -25,7 +25,7 @@ use Illuminate\Validation\ValidationException;
  * so balance, COA/party/branch ownership, fiscal-period locking, immutability
  * and duplicate-posting rules are all enforced by the engine.
  *
- * Account resolution follows the existing COA conventions: AP = code 2001 (or
+ * Account resolution follows the existing COA conventions: AP = code 2000.1 (or
  * first is_payable account), expense = caller-supplied account or first active
  * expense account, money-out side = shared STEP 14 payment-method resolver.
  * Input tax is only booked when the caller supplies an explicit tax account —
@@ -421,7 +421,7 @@ class PurchaseAccountingService
 
     private function payableAccount(int $instituteId, ?int $branchId): int
     {
-        $account = app(ChartOfAccountService::class)->accountByCode($instituteId, '2001', $branchId)
+        $account = app(ChartOfAccountService::class)->accountByCode($instituteId, '2000.1', $branchId)
             ?? ChartOfAccount::query()
                 ->where('institute_id', $instituteId)
                 ->where('branch_id', $branchId)

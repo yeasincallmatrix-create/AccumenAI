@@ -560,7 +560,7 @@ class InvoiceService
     private function saleJournalPayload(Invoice $invoice, float $totalAmount, float $discount, float $payable, ?int $branchId, array $fxMeta): array
     {
         $coaService = app(ChartOfAccountService::class);
-        $receivable = $coaService->accountByCode($invoice->institute_id, '1200', $branchId)
+        $receivable = $coaService->accountByCode($invoice->institute_id, '1200.1', $branchId)
             ?? ChartOfAccount::query()
                 ->where('institute_id', $invoice->institute_id)
                 ->where('branch_id', $branchId)

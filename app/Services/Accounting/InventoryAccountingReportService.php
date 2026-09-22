@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
  *
  * Stock valuation, inventory movement, COGS, and slow-moving inventory.
  * Reuses InventoryReportService for stock-on-hand, valuation, and movement
- * ledger queries. COGS derived from posted journal entries on account 5007.
+ * ledger queries. COGS derived from posted journal entries on account 5000.5.
  */
 class InventoryAccountingReportService
 {
@@ -83,14 +83,14 @@ class InventoryAccountingReportService
     }
 
     /**
-     * COGS report: total COGS from posted journal entries on account 5007
+     * COGS report: total COGS from posted journal entries on account 5000.5
      * in a date range.
      */
     public function cogsReport(int $instituteId, ?int $branchId, string $from, string $to): array
     {
         $cogsAccount = DB::table('chart_of_accounts')
             ->where('institute_id', $instituteId)
-            ->where('code', '5007')
+            ->where('code', '5000.5')
             ->first();
 
         if (!$cogsAccount) {

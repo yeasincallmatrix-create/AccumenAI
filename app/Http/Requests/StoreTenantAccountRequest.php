@@ -24,7 +24,7 @@ class StoreTenantAccountRequest extends FormRequest
             'code' => [
                 'required',
                 'string',
-                'regex:/^\d{4}(-\d{2})?$/',
+                'regex:/^\d{1,4}(\.\d+){0,3}$/',
                 Rule::unique('chart_of_accounts', 'code')
                     ->where(function ($q) use ($instituteId) {
                         $q->where('institute_id', $instituteId)
@@ -51,7 +51,7 @@ class StoreTenantAccountRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'code.regex' => 'Code must be 4 digits (e.g., 1001) or 4-2 sub (e.g., 6600-01).',
+            'code.regex' => 'Code must be 1-4 digits optionally followed by dot-separated subcodes (e.g., 1, 1000, 1000.1, 1000.1.1). Hyphen is NOT allowed — use dots.',
             'code.unique' => 'This code conflicts with an existing global or tenant account.',
         ];
     }

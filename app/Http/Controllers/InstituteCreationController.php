@@ -146,6 +146,14 @@ class InstituteCreationController extends Controller
             return $institute;
         });
 
+        // Seed tenant COA children (industry-scoped)
+        try {
+            app(\App\Services\Accounting\TenantCoaSeederService::class)
+                ->seedForTenant($institute->id);
+        } catch (\Throwable $e) {
+            \Log::warning('TenantCoaSeeder failed', ['institute_id' => $institute->id, 'error' => $e->getMessage()]);
+        }
+
         InstituteOnboardingController::clear();
 
         Workspace::set($institute->id);

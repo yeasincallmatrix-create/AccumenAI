@@ -385,7 +385,7 @@ class AccountingPeriodService
      * Close a fiscal year:
      *   1. requires a subsequent fiscal year to exist (the carry-forward home);
      *   2. posts a closing journal via JournalPostingService sweeping income to
-     *      expenses with the net result moving to Retained Earnings (code 3002);
+     *      expenses with the net result moving to Retained Earnings (code 3100.2);
      *   3. closes every open period of the year;
      *   4. marks the year closed and no longer current;
      *   5. carries balance-sheet balances forward as next year's opening balances;
@@ -572,7 +572,7 @@ class AccountingPeriodService
      * Post the year-end closing journal via JournalPostingService: debit every
      * income account by its credit balance, credit every expense account by its
      * debit balance, and balance the difference against Retained Earnings
-     * (code 3002) — credited for a profit, debited for a loss. Uses the
+     * (code 3100.2) — credited for a profit, debited for a loss. Uses the
      * journal engine, so balance, institute, branch and account ownership are
      * validated exactly like any other posting.
      */
@@ -588,13 +588,13 @@ class AccountingPeriodService
         $retainedEarnings = ChartOfAccount::query()
             ->where('institute_id', $instituteId)
             ->where('branch_id', $year->branch_id)
-            ->where('code', '3002')
+            ->where('code', '3100.2')
             ->whereNull('deleted_at')
             ->value('id');
 
         if ($retainedEarnings === null) {
             throw ValidationException::withMessages([
-                'year' => 'Retained Earnings (code 3002) is missing from the chart of accounts.',
+                'year' => 'Retained Earnings (code 3100.2) is missing from the chart of accounts.',
             ]);
         }
 

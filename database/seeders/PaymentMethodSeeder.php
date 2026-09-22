@@ -9,7 +9,7 @@ use Illuminate\Database\Seeder;
 
 /**
  * Seeds default Cash / Bank payment methods for one institute,
- * linked to the 1001 Cash account (created via ChartOfAccountsSeeder
+ * linked to the 1000.1 Cash account (created via ChartOfAccountsSeeder
  * when missing). Idempotent (firstOrCreate on institute+name).
  * No-op without institute.
  */
@@ -33,7 +33,7 @@ class PaymentMethodSeeder extends Seeder
         (new ChartOfAccountsSeeder($this->instituteId, $this->branchId))->run();
 
         $cashCoaId = ChartOfAccount::where('institute_id', $this->instituteId)
-            ->where('code', '1000')
+            ->where('code', '1000.1')
             ->value('id');
 
         foreach ([

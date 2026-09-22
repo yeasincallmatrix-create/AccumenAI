@@ -205,7 +205,7 @@ class TenantIsolationTest extends TestCase
         $response = $this->asUser($owner, $a->id)->post(
             route('finance.chart-of-accounts.store'),
             [
-                'code' => '6600-01',
+                'code' => '6600.01',
                 'name' => 'Transportation - Bike',
                 'type' => $parent->type,
                 'parent_id' => $parent->id,
@@ -214,7 +214,7 @@ class TenantIsolationTest extends TestCase
 
         $response->assertRedirect();
         $this->assertDatabaseHas('chart_of_accounts', [
-            'code' => '6600-01',
+            'code' => '6600.01',
             'institute_id' => $a->id,
             'parent_id' => $parent->id,
         ]);
@@ -232,7 +232,7 @@ class TenantIsolationTest extends TestCase
         $response = $this->asUser($owner, $a->id)->post(
             route('finance.chart-of-accounts.store'),
             [
-                'code' => '8888-01',
+                'code' => '8888.01',
                 'name' => 'Attempted sub',
                 'type' => 'asset',
                 'parent_id' => $bParent->id,

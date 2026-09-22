@@ -34,8 +34,8 @@ class AccountingSetupService
         'money_precision' => '19,4',
         'invoice_auto_post' => false,
         'fiscal_year_start' => 1,
-        'fx_gain_account_code' => '4900',
-        'fx_loss_account_code' => '5900',
+        'fx_gain_account_code' => '4900.1',
+        'fx_loss_account_code' => '5900.1',
         'fx_unrealized_gain_account_code' => '4901',
         'fx_unrealized_loss_account_code' => '5901',
         'fx_revaluation_policy' => 'period_end',
@@ -65,8 +65,8 @@ class AccountingSetupService
      */
     private function seedPaymentMethods(int $instituteId, ?int $branchId, ?int $createdBy): void
     {
-        $cash = $this->coaService->accountByCode($instituteId, '1000', $branchId);
-        $bank = $this->coaService->accountByCode($instituteId, '1100', $branchId);
+        $cash = $this->coaService->accountByCode($instituteId, '1000.1', $branchId);
+        $bank = $this->coaService->accountByCode($instituteId, '1100.1', $branchId);
 
         $methods = [
             ['name' => 'Cash', 'coa_id' => $cash?->id],

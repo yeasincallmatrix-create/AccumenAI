@@ -166,8 +166,8 @@ class InventoryStockEngineTest extends TestCase
         $this->assertSame(10.0, (float) $this->level($warehouse, $item)->quantity);
         $this->assertSame(25.0, (float) $this->level($warehouse, $item)->avg_cost);
 
-        $invDebit = $journal->entries()->where('coa_id', $this->coaId($institute, '1300'))->sum('debit');
-        $apCredit = $journal->entries()->where('coa_id', $this->coaId($institute, '2001'))->sum('credit');
+        $invDebit = $journal->entries()->where('coa_id', $this->coaId($institute, '1300.1'))->sum('debit');
+        $apCredit = $journal->entries()->where('coa_id', $this->coaId($institute, '2000.1'))->sum('credit');
         $this->assertSame(250.0, round((float) $invDebit, 4));
         $this->assertSame(250.0, round((float) $apCredit, 4));
     }
@@ -215,8 +215,8 @@ class InventoryStockEngineTest extends TestCase
 
         $this->assertSame(6.0, (float) $this->level($warehouse, $item)->quantity);
 
-        $cogsDebit = $journal->entries()->where('coa_id', $this->coaId($institute, '5007'))->sum('debit');
-        $invCredit = $journal->entries()->where('coa_id', $this->coaId($institute, '1300'))->sum('credit');
+        $cogsDebit = $journal->entries()->where('coa_id', $this->coaId($institute, '5000.5'))->sum('debit');
+        $invCredit = $journal->entries()->where('coa_id', $this->coaId($institute, '1300.1'))->sum('credit');
         $this->assertSame(80.0, round((float) $cogsDebit, 4));
         $this->assertSame(80.0, round((float) $invCredit, 4));
     }
@@ -337,7 +337,7 @@ class InventoryStockEngineTest extends TestCase
 
         $this->assertSame(12.0, (float) $this->level($warehouse, $item)->quantity);
         $this->assertSame(2.0, (float) $surplus->items->first()->difference);
-        $incomeCredit = $surplusJournal->entries()->where('coa_id', $this->coaId($institute, '4005'))->sum('credit');
+        $incomeCredit = $surplusJournal->entries()->where('coa_id', $this->coaId($institute, '4000.3'))->sum('credit');
         $this->assertSame(40.0, round((float) $incomeCredit, 4));
 
         // Physical count found 9 -> deficit of 3 (Dr 5008 / Cr Inventory)
@@ -352,7 +352,7 @@ class InventoryStockEngineTest extends TestCase
 
         $this->assertSame(9.0, (float) $this->level($warehouse, $item)->quantity);
         $this->assertSame(-3.0, (float) $deficit->items->first()->difference);
-        $lossDebit = $deficitJournal->entries()->where('coa_id', $this->coaId($institute, '5008'))->sum('debit');
+        $lossDebit = $deficitJournal->entries()->where('coa_id', $this->coaId($institute, '5000.5'))->sum('debit');
         $this->assertSame(60.0, round((float) $lossDebit, 4));
     }
 
@@ -379,7 +379,7 @@ class InventoryStockEngineTest extends TestCase
         );
 
         $this->assertSame(4.0, (float) $this->level($warehouse, $item)->quantity);
-        $wastageDebit = $journal->entries()->where('coa_id', $this->coaId($institute, '5009'))->sum('debit');
+        $wastageDebit = $journal->entries()->where('coa_id', $this->coaId($institute, '5000.5'))->sum('debit');
         $this->assertSame(10.0, round((float) $wastageDebit, 4));
     }
 

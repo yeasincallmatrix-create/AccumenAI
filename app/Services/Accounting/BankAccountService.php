@@ -20,12 +20,12 @@ class BankAccountService
 
         $global = ChartOfAccount::withoutGlobalScope('institute')
             ->whereNull('institute_id')
-            ->where('code', '1100')
+            ->where('code', '1100.1')
             ->first();
 
         return ChartOfAccount::withoutGlobalScope('institute')->create([
             'institute_id' => $instituteId,
-            'code' => '1100',
+            'code' => '1100.1',
             'name' => 'Bank Accounts',
             'account_group_id' => $global?->account_group_id ?? 1,
             'type' => 'asset',

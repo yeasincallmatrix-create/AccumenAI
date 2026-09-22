@@ -17,14 +17,14 @@ class IndustryTagSeeder extends Seeder
      * - Defends against external tag mutation by forcing canonical state
      */
     public const TAGGED = [
-        '4001' => ['education', 'training_center'],
-        '4002' => ['education', 'training_center'],
+        '4100.1' => ['education', 'training_center'],
+        '4100.2' => ['education', 'training_center'],
     ];
 
     public const MUST_BE_UNIVERSAL = [
-        '4003',  // Merchandise Sales
-        '4010',  // Gain on Disposal
-        '5007',  // COGS
+        '4400.1',  // Merchandise Sales
+        '4900.3',  // Gain on Disposal
+        '5000.5',  // COGS
     ];
 
     public function run(): void

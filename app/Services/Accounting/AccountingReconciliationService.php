@@ -118,7 +118,7 @@ class AccountingReconciliationService
 
     public function inventoryValuation(int $instituteId, ?int $branchId, ?string $asOfDate = null): array
     {
-        $glTotal = $this->glBalanceForCode($instituteId, $branchId, '1300', $asOfDate);
+        $glTotal = $this->glBalanceForCode($instituteId, $branchId, '1300.1', $asOfDate);
 
         $subledgerTotal = 0.0;
         try {
@@ -160,8 +160,8 @@ class AccountingReconciliationService
 
     public function taxPayable(int $instituteId, ?int $branchId, ?string $asOfDate = null): array
     {
-        $vatPayable = $this->glBalanceForCode($instituteId, $branchId, '2100', $asOfDate);
-        $inputVat = $this->glBalanceForCode($instituteId, $branchId, '1201', $asOfDate);
+        $vatPayable = $this->glBalanceForCode($instituteId, $branchId, '2100.1', $asOfDate);
+        $inputVat = $this->glBalanceForCode($instituteId, $branchId, '1200.2', $asOfDate);
         // Net tax liability = VAT payable (credit) + Input VAT (debit, so negative liability)
         // For reporting, just check that tax accounts have no unexpected variance
         // Compare against tax_return aggregated if available

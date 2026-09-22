@@ -421,6 +421,13 @@ class RegistrationFlowController extends Controller
             // Clean pending (locked)
             $lockedPending->delete();
         });
+
+        try {
+            app(\App\Services\Accounting\TenantCoaSeederService::class)
+                ->seedForTenant($institute->id);
+        } catch (\Throwable $e) {
+            \Log::warning('TenantCoaSeeder failed', ['institute_id' => $institute->id, 'error' => $e->getMessage()]);
+        }
         } catch (\Illuminate\Validation\ValidationException $e) {
             // Duplicate email race — pending still exists for retry with new email or login
             throw $e;

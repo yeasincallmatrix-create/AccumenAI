@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
  *
  * VAT summary, input VAT, output VAT, tax liability, and tax transaction
  * detail. All figures derived from posted journal entries linked to tax
- * CoA accounts (1201 = Input VAT, 2100 = VAT Payable).
+ * CoA accounts (1200.2 = Input VAT, 2100 = VAT Payable).
  */
 class TaxReportService
 {
@@ -27,8 +27,8 @@ class TaxReportService
      */
     public function vatSummary(int $instituteId, ?int $branchId, string $from, string $to): array
     {
-        $outputVat = $this->accountBalance($instituteId, $branchId, '2100', $from, $to);
-        $inputVat = $this->accountBalance($instituteId, $branchId, '1201', $from, $to);
+        $outputVat = $this->accountBalance($instituteId, $branchId, '2100.1', $from, $to);
+        $inputVat = $this->accountBalance($instituteId, $branchId, '1200.2', $from, $to);
 
         $transactions = $this->taxTransactionCount($instituteId, $branchId, $from, $to);
 
@@ -50,7 +50,7 @@ class TaxReportService
     public function inputVatDetail(int $instituteId, ?int $branchId, string $from, string $to): \Illuminate\Support\Collection
     {
         $account = ChartOfAccount::where('institute_id', $instituteId)
-            ->where('code', '1201')
+            ->where('code', '1200.2')
             ->first();
 
         if (!$account) {
@@ -79,7 +79,7 @@ class TaxReportService
     public function outputVatDetail(int $instituteId, ?int $branchId, string $from, string $to): \Illuminate\Support\Collection
     {
         $account = ChartOfAccount::where('institute_id', $instituteId)
-            ->where('code', '2100')
+            ->where('code', '2100.1')
             ->first();
 
         if (!$account) {
@@ -109,9 +109,9 @@ class TaxReportService
     {
         $asOf = $asOfDate ?? now()->toDateString();
 
-        $vatPayable = $this->accountBalance($instituteId, $branchId, '2100', null, $asOf);
-        $whtPayable = $this->accountBalance($instituteId, $branchId, '2101', null, $asOf);
-        $taxClearing = $this->accountBalance($instituteId, $branchId, '2102', null, $asOf);
+        $vatPayable = $this->accountBalance($instituteId, $branchId, '2100.1', null, $asOf);
+        $whtPayable = $this->accountBalance($instituteId, $branchId, '2100.2', null, $asOf);
+        $taxClearing = $this->accountBalance($instituteId, $branchId, '2100.4', null, $asOf);
 
         return [
             'vat_payable' => round($vatPayable, 4),
@@ -129,7 +129,7 @@ class TaxReportService
      */
     public function taxTransactionDetail(int $instituteId, ?int $branchId, string $from, string $to): \Illuminate\Support\Collection
     {
-        $taxCodes = ['1201', '2100', '2101', '2102'];
+        $taxCodes = ['1200.2', '2100.1', '2100.2', '2100.4'];
         $taxAccountIds = ChartOfAccount::where('institute_id', $instituteId)
             ->whereIn('code', $taxCodes)
             ->pluck('id');
@@ -184,7 +184,7 @@ class TaxReportService
      */
     private function taxTransactionCount(int $instituteId, ?int $branchId, string $from, string $to): int
     {
-        $taxCodes = ['1201', '2100', '2101', '2102'];
+        $taxCodes = ['1200.2', '2100.1', '2100.2', '2100.4'];
         $taxAccountIds = ChartOfAccount::where('institute_id', $instituteId)
             ->whereIn('code', $taxCodes)
             ->pluck('id');

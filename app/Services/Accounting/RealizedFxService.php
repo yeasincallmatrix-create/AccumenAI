@@ -98,14 +98,14 @@ class RealizedFxService
 
     public function gainAccount(int $instituteId, ?int $branchId): ChartOfAccount
     {
-        $code = $this->settings->getSetting($instituteId, 'fx_gain_account_code', '4900', $branchId);
+        $code = $this->settings->getSetting($instituteId, 'fx_gain_account_code', '4900.1', $branchId);
 
         return $this->accountByCode($instituteId, $branchId, (string) $code, 'FX gain account');
     }
 
     public function lossAccount(int $instituteId, ?int $branchId): ChartOfAccount
     {
-        $code = $this->settings->getSetting($instituteId, 'fx_loss_account_code', '5900', $branchId);
+        $code = $this->settings->getSetting($instituteId, 'fx_loss_account_code', '5900.1', $branchId);
 
         return $this->accountByCode($instituteId, $branchId, (string) $code, 'FX loss account');
     }

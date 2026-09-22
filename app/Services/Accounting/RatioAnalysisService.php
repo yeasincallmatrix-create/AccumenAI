@@ -85,18 +85,18 @@ class RatioAnalysisService
     protected function getBalanceSheetData(int $instituteId, string $asOf, ?int $branchId): array
     {
         $groups = [
-            'cash' => ['1000'],
-            'bank' => ['1100'],
-            'current_assets' => ['1000', '1100', '1200', '1300', '1400'],
-            'inventory' => ['1300'],
-            'fixed_assets' => ['1500'],
-            'total_assets' => ['1000', '1100', '1200', '1300', '1400', '1500'],
-            'current_liab' => ['2000', '2100'],
-            'total_liab' => ['2000', '2100', '2200'],
-            'total_equity' => ['3000', '3001', '3002', '3100'],
-            'receivables' => ['1200'],
-            'payables' => ['2000'],
-            'long_term_debt' => ['2200'],
+            'cash' => ['1000.1', '1000.2'],
+            'bank' => ['1100.1'],
+            'current_assets' => ['1000.1', '1000.2', '1100.1', '1200.1', '1200.2', '1200.3', '1300.1', '1300.2', '1500.1', '1500.2'],
+            'inventory' => ['1300.1', '1300.2'],
+            'fixed_assets' => ['1400.1', '1400.2', '1400.3', '1400.4', '1400.5'],
+            'total_assets' => ['1000.1', '1000.2', '1100.1', '1200.1', '1200.2', '1200.3', '1300.1', '1300.2', '1500.1', '1500.2', '1400.1', '1400.2', '1400.3', '1400.4', '1400.5'],
+            'current_liab' => ['2000.1', '2000.2', '2000.3', '2100.1', '2100.2', '2100.3', '2100.4'],
+            'total_liab' => ['2000.1', '2000.2', '2000.3', '2100.1', '2100.2', '2100.3', '2100.4', '2200.1', '2200.2', '2200.3'],
+            'total_equity' => ['3100.1', '3100.2', '3300.1', '3300.2', '3300.3', '3300.4', '3400.1', '3400.2'],
+            'receivables' => ['1200.1'],
+            'payables' => ['2000.1'],
+            'long_term_debt' => ['2200.2'],
         ];
 
         $debitNature = ['cash', 'bank', 'current_assets', 'inventory', 'fixed_assets', 'total_assets', 'receivables'];
@@ -116,7 +116,7 @@ class RatioAnalysisService
             ->whereNull('institute_id')->where('type', 'income')->pluck('id');
         $expenseIds = ChartOfAccount::withoutGlobalScope('institute')
             ->whereNull('institute_id')->where('type', 'expense')->pluck('id');
-        $cogsIds = $this->globalIds(['5007']);
+        $cogsIds = $this->globalIds(['5000.5']);
 
         [$revDr, $revCr] = $this->sums($instituteId, $revenueIds, $from, $to, $branchId);
         [$cogsDr] = $this->sums($instituteId, $cogsIds, $from, $to, $branchId);
@@ -131,8 +131,8 @@ class RatioAnalysisService
             })->pluck('id');
         [$intDr, $intCr] = $this->sums($instituteId, $interestIds, $from, $to, $branchId);
 
-        // Depreciation from 5010.
-        [$depDr] = $this->sums($instituteId, $this->globalIds(['5010']), $from, $to, $branchId);
+        // Depreciation from 5400.1.
+        [$depDr] = $this->sums($instituteId, $this->globalIds(['5400.1']), $from, $to, $branchId);
 
         $revenue = $revCr - $revDr;
         $expense = $expDr - $expCr;
@@ -248,7 +248,7 @@ class RatioAnalysisService
     {
         $ocf = $is['net_income'] + $is['depreciation'];
 
-        [$capexDr, $capexCr] = $this->sums($instituteId, $this->globalIds(['1500']), $from, $to, $branchId);
+        [$capexDr, $capexCr] = $this->sums($instituteId, $this->globalIds(['1400.1', '1400.2', '1400.3', '1400.4']), $from, $to, $branchId);
         $fcf = $ocf - ($capexDr - $capexCr);
 
         return [
