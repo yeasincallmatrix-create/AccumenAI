@@ -1067,12 +1067,17 @@ if (! function_exists('platform_logo_url')) {
      * Falls back to the bundled default mark when none is uploaded (or the
      * file is missing / settings storage is unreachable).
      */
-    function platform_logo_url(): string
+function platform_logo_url(): string
     {
         try {
             $path = \App\Models\Setting::get('brand.logo');
-            if (is_string($path) && $path !== '' && is_file(public_path('storage/'.$path))) {
-                return asset('storage/'.$path);
+            if (is_string($path) && $path !== '') {
+                if (is_file(public_path('storage/'.$path))) {
+                    return asset('storage/'.$path);
+                }
+                if (is_file(storage_path('app/public/'.$path))) {
+                    return asset('storage/'.$path);
+                }
             }
         } catch (\Throwable) {
             // Fail open to the bundled logo.

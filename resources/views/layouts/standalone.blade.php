@@ -12,9 +12,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <link href="{{ asset('css/base.css') }}" rel="stylesheet">
-    <link href="{{ asset('css/layout.css') }}" rel="stylesheet">
-    <link href="{{ asset('css/components.css') }}" rel="stylesheet">
+    @vite(['resources/css/app.css'])
     @include('layouts.partials.theme_colors')
     @stack('styles')
 </head>
@@ -68,11 +66,7 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="{{ asset('js/flash.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/flash.js')) }}"></script>
-<script src="{{ asset('js/password-toggle.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/password-toggle.js')) }}"></script>
-<script src="{{ asset('js/popup-fix.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/popup-fix.js')) }}"></script>
-<script src="{{ asset('js/password-policy.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/password-policy.js')) }}"></script>
-<script src="{{ asset('js/auto-caps.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/auto-caps.js')) }}"></script>
+@vite(['resources/js/app.js'])
 <script>
 (function () {
     var root = document.documentElement;
