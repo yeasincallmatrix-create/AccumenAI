@@ -11,6 +11,9 @@
             @if ($institute->package)
                 <span class="badge bg-info ms-1">{{ $institute->package->slug }}</span>
             @endif
+            @if($institute->industry)
+                | Industry: <strong>{{ \App\Support\IndustryRules::label('', $institute->industry) ?? $institute->industry }}</strong>
+            @endif
             — Toggle modules on/off for this institute. Package default applies; override wins.
         </p>
     </div>
@@ -28,6 +31,32 @@
     </div>
 @endif
 
+<div class="admin-card mb-4">
+    <div class="table-toolbar">
+        <div class="toolbar-info">
+            <i class="bi bi-funnel"></i> Filter Modules by Industry
+            @if($selectedIndustry)
+                <span class="badge bg-primary ms-2">Filtered: {{ \App\Support\IndustryRules::label('', $selectedIndustry) ?? $selectedIndustry }}</span>
+            @endif
+        </div>
+        <div class="toolbar-actions">
+            <form method="GET" action="{{ route('admin.institutes.modules', $institute) }}" class="d-flex align-items-center gap-2">
+                <select name="industry" id="industryFilter" class="form-select form-select-sm" style="width:auto;min-width:200px" onchange="this.form.submit()">
+                    <option value="">All Industries</option>
+                    @foreach($industries as $industry)
+                        <option value="{{ $industry->slug }}" {{ $selectedIndustry === $industry->slug ? 'selected' : '' }}>
+                            {{ $industry->name }}
+                        </option>
+                    @endforeach
+                </select>
+                @if($selectedIndustry)
+                    <a href="{{ route('admin.institutes.modules', $institute) }}" class="btn btn-outline-secondary btn-sm">Clear</a>
+                @endif
+            </form>
+        </div>
+    </div>
+</div>
+
 <form method="POST" action="{{ route('admin.institutes.modules.update', $institute) }}">
     @csrf
     @method('PUT')
@@ -35,7 +64,10 @@
     <div class="admin-card">
         <div class="table-toolbar">
             <div class="toolbar-info">
-                <i class="bi bi-puzzle-fill"></i> All Modules — {{ $allModules->count() }} total
+                <i class="bi bi-puzzle-fill"></i> Modules — {{ $allModules->count() }} total
+                @if($selectedIndustry)
+                    <span class="badge bg-secondary ms-2">Industry: {{ \App\Support\IndustryRules::label('', $selectedIndustry) ?? $selectedIndustry }}</span>
+                @endif
             </div>
         </div>
         <div class="table-responsive">
@@ -51,17 +83,27 @@
                 </thead>
                 <tbody>
                     @foreach($allModules as $module)
-                        @php
-                            $inPackage = $resolved[$module->key] ?? false;
-                            $override = $overrides->get($module->key);
-                            $hasOverride = $override !== null;
-                            $isEnabled = $hasOverride ? (bool) $override->enabled : $inPackage;
-                        @endphp
+@php
+    $moduleIndustryMap = [
+        'education' => 'education',
+        'medical' => 'healthcare',
+        'training_center' => 'training_center',
+    ];
+    $rootKey = explode('.', $module->key, 2)[0];
+    $moduleIndustry = $moduleIndustryMap[$rootKey] ?? null;
+    $inPackage = $resolved[$module->key] ?? false;
+    $override = $overrides->get($module->key);
+    $hasOverride = $override !== null;
+    $isEnabled = $hasOverride ? (bool) $override->enabled : $inPackage;
+@endphp
                         <tr>
                             <td class="text-muted">{{ $loop->iteration }}</td>
                             <td>
                                 <span class="fw-semibold">{{ $module->name }}</span>
                                 <br><small class="text-muted"><code>{{ $module->key }}</code></small>
+                                @if($moduleIndustry)
+                                    <br><span class="badge bg-light text-dark border mt-1" style="font-size:11px">{{ $moduleIndustry }}</span>
+                                @endif
                             </td>
                             <td class="text-center">
                                 @if($inPackage)

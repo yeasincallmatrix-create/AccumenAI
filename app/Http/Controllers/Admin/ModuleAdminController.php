@@ -92,15 +92,34 @@ class ModuleAdminController extends Controller
         return back()->with('success', "Modules updated for {$package->name}.");
     }
 
-    public function instituteModules(Institute $institute): View
+    public function instituteModules(Institute $institute, Request $request): View
     {
         $institute->load('package');
         $service = app(ModuleAccessService::class);
+        $selectedIndustry = $request->query('industry');
+        $industries = Industry::active()->orderBy('name')->get();
+
         $allModules = ModuleRegistry::where('status', 'active')->orderBy('sort_order')->get();
+
+        if ($selectedIndustry) {
+            $moduleIndustryMap = [
+                'education' => 'education',
+                'medical' => 'healthcare',
+                'training_center' => 'training_center',
+            ];
+            $allModules = $allModules->filter(function ($module) use ($selectedIndustry, $moduleIndustryMap) {
+                $rootKey = explode('.', $module->key, 2)[0];
+                if (isset($moduleIndustryMap[$rootKey])) {
+                    return $moduleIndustryMap[$rootKey] === $selectedIndustry;
+                }
+                return true;
+            })->values();
+        }
+
         $resolved = $service->resolveEnabled($institute);
         $overrides = $institute->moduleOverrides()->get()->keyBy('module_key');
 
-        return view('admin.modules.institute-modules', compact('institute', 'allModules', 'resolved', 'overrides'));
+        return view('admin.modules.institute-modules', compact('institute', 'allModules', 'resolved', 'overrides', 'industries', 'selectedIndustry'));
     }
 
     public function updateInstituteModules(Institute $institute, Request $request): RedirectResponse
