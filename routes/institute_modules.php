@@ -419,6 +419,17 @@ Route::middleware($tenant)->group(function () {
         Route::get('{customer}/edit', [$salesCust, 'edit'])->name('edit');
         Route::put('{customer}', [$salesCust, 'update'])->name('update');
     });
+
+    // Sales Lookup (JSON selectors — customers / CRM / items)
+    $salesLookup = \App\Http\Controllers\Sales\SalesLookupController::class;
+    Route::prefix('sales')->name('sales.')->middleware('permission:sales.view')->group(function () use ($salesLookup) {
+        Route::get('customers/search', [$salesLookup, 'customers'])->name('customers.search');
+        Route::get('customers/{party}', [$salesLookup, 'customerShow'])->name('customers.show');
+        Route::get('customers-crm/search', [$salesLookup, 'crmCustomers'])->name('crmCustomers.search');
+        Route::get('items/search', [$salesLookup, 'items'])->name('items.search');
+        Route::get('items/{item}/availability', [$salesLookup, 'itemAvailability'])->name('items.availability');
+        Route::get('items/{item}', [$salesLookup, 'itemShow'])->name('items.show');
+    });
     }); // end module_access:sales
 
     // ─── PURCHASE ──────────────────────────────────────────────────────────
@@ -536,6 +547,16 @@ Route::middleware($tenant)->group(function () {
 
     // Purchase Credit
     Route::post('purchase/credit/adjust', [$pRet, 'adjust'])->middleware('module_access:purchase')->name('purchase.credit.adjust');
+
+    // Purchase Suppliers
+    Route::prefix('purchase/suppliers')->name('purchase.suppliers.')->group(function () use ($pSup) {
+        Route::get('/', [$pSup, 'index'])->name('index');
+        Route::post('/', [$pSup, 'store'])->name('store');
+        Route::get('{id}', [$pSup, 'show'])->name('show');
+        Route::put('{id}', [$pSup, 'update'])->name('update');
+        Route::delete('{id}', [$pSup, 'destroy'])->name('destroy');
+        Route::put('{id}/restore', [$pSup, 'restore'])->name('restore');
+    });
     }); // end module_access:purchase
 
     // ─── FINANCE ───────────────────────────────────────────────────────────

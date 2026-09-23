@@ -32,6 +32,9 @@ class DatabaseSeeder extends Seeder
         $this->call(AccountingPermissionSeeder::class);
         $this->call(StaffPermissionSeeder::class);
         $this->call(AdminPermissionSeeder::class);
+        // Sales/Purchase module gates (23+22 slugs) — before RolePermissionSeeder
+        // so institute-owner grant picks them up on fresh installs.
+        $this->call(SalesPurchasePermissionSeeder::class);
         // B95: AI tool gating permissions (finance.view / crm.view).
         // Placed with other permission seeders, before RolePermissionSeeder
         // so institute-owner grant picks them up (plus AiTool seeder grants
