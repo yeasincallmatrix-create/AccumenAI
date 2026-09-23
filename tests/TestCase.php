@@ -64,6 +64,12 @@ abstract class TestCase extends BaseTestCase
         // Module registry + package modules (idempotent — updateOrCreate).
         if (Schema::hasTable('module_registry')) {
             (new \Database\Seeders\ModuleRegistrySeeder)->run();
+            (new \Database\Seeders\SalesSubModuleSeeder)->run();
+            (new \Database\Seeders\PurchaseSubModuleSeeder)->run();
+            (new \Database\Seeders\PackageSubModuleMappingSeeder)->run();
+            if (Schema::hasTable('feature_registry')) {
+                (new \Database\Seeders\SalesPurchaseFeatureSeeder)->run();
+            }
         }
 
         // TDS deduction rules (idempotent — updateOrInsert).
@@ -311,6 +317,32 @@ abstract class TestCase extends BaseTestCase
                     || Permission::where('slug', 'institute.settings.module.toggle')->doesntExist()) {
                     throw $e;
                 }
+            }
+        }
+
+        if (Permission::where('slug', 'sales.view')->doesntExist()
+            || Permission::where('slug', 'purchase.view')->doesntExist()) {
+            try {
+                (new \Database\Seeders\SalesPurchasePermissionSeeder)->run();
+            } catch (\Illuminate\Database\QueryException | \Illuminate\Database\DeadlockException $e) {
+                if (Permission::where('slug', 'sales.view')->doesntExist()
+                    || Permission::where('slug', 'purchase.view')->doesntExist()) {
+                    throw $e;
+                }
+            }
+        }
+
+        // Attach sales/purchase grants to owner/admin/manager/accountant roles.
+        // RolePermissionSeeder is idempotent (array_diff) — safe every setUp.
+        try {
+            (new \Database\Seeders\RolePermissionSeeder)->run();
+        } catch (\Illuminate\Database\QueryException | \Illuminate\Database\DeadlockException $e) {
+            // parallel worker may race inserts — only rethrow if grants missing
+            if (DB::table('role_permissions')
+                ->whereIn('role_id', DB::table('roles')->whereIn('slug', ['institute-owner'])->whereNull('institute_id')->pluck('id'))
+                ->whereIn('permission_id', DB::table('permissions')->whereIn('slug', ['sales.view'])->pluck('id'))
+                ->doesntExist()) {
+                throw $e;
             }
         }
     }

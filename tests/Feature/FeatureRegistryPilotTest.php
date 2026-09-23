@@ -32,9 +32,9 @@ class FeatureRegistryPilotTest extends TestCase
         $medicalCount = FeatureRegistry::where('module_key', 'medical')->count();
         $this->assertEquals(12, $medicalCount, 'Expected exactly 12 medical features.');
 
-        // Education / training_center features are co-seeded (multi-module
-        // registry); only reject unknown module keys.
-        $known = ['medical', 'education', 'training_center'];
+        // Education / training_center / sales / purchase features are
+        // co-seeded (multi-module registry); only reject unknown module keys.
+        $known = ['medical', 'education', 'training_center', 'sales', 'purchase'];
         $unknown = FeatureRegistry::whereNotIn('module_key', $known)->count();
         $this->assertEquals(0, $unknown, 'Unknown-module features should not exist.');
     }

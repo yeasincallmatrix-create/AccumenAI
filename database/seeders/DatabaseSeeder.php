@@ -43,6 +43,10 @@ class DatabaseSeeder extends Seeder
         $this->call(ModuleTogglePermissionSeeder::class);
         $this->call(RolePermissionSeeder::class);
         $this->call(ModuleRegistrySeeder::class);
+        $this->call(SalesSubModuleSeeder::class);
+        $this->call(PurchaseSubModuleSeeder::class);
+        $this->call(PackageSubModuleMappingSeeder::class);
+        $this->call(SalesPurchaseFeatureSeeder::class);
         $this->call(MedicalSubModuleSeeder::class);
         $this->call(MedicalPermissionSeeder::class);
         $this->call(MedicalPermissionAliasSeeder::class);
