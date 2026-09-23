@@ -107,12 +107,13 @@ border-right:1px solid var(--border);
 padding:22px 0 0;
 display:flex;
 flex-direction:column;
-height:100vh;
-position:sticky;
-top:0;
-overflow:hidden;
-min-height:0;
-transition:width .3s cubic-bezier(.4,0,.2,1), transform .3s cubic-bezier(.4,0,.2,1);
+    height:100vh;
+    position:sticky;
+    top:0;
+    z-index:1020;
+    overflow:hidden;
+    min-height:0;
+    transition:width .3s cubic-bezier(.4,0,.2,1), transform .3s cubic-bezier(.4,0,.2,1);
 }
 
 .sidebar .nav{
