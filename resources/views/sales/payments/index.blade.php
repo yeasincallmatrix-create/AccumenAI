@@ -2,37 +2,44 @@
 @section('title','Receive Payments')
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4>Receive Payments</h4>
-    <a href="{{ route('sales.payments.create') }}" class="btn btn-sm btn-primary rounded-pill">+ Receive Payment</a>
+    <h4><i class="bi bi-cash me-2"></i>Receive Payments</h4>
+    <a href="{{ route('sales.payments.create') }}" class="btn btn-sm btn-primary rounded-pill"><i class="bi bi-plus-lg me-1"></i>Receive Payment</a>
 </div>
 @if(session('status'))<div class="alert alert-success">{{ session('status') }}</div>@endif
-<div class="card">
+<div class="card mb-4">
     <div class="card-body">
-        <form method="GET" class="row g-2 mb-3">
-            <div class="col-md-2"><input type="date" name="from_date" value="{{ request('from_date') }}" class="form-control form-control-sm"></div>
-            <div class="col-md-2"><input type="date" name="to_date" value="{{ request('to_date') }}" class="form-control form-control-sm"></div>
-            <div class="col-md-2"><button class="btn btn-sm btn-primary">Filter</button></div>
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-2"><label class="form-label">From</label><input type="date" name="from_date" value="{{ request('from_date') }}" class="form-control form-control-sm"></div>
+            <div class="col-md-2"><label class="form-label">To</label><input type="date" name="to_date" value="{{ request('to_date') }}" class="form-control form-control-sm"></div>
+            <div class="col-md-3">
+                <button class="btn btn-sm btn-primary rounded-pill" type="submit"><i class="bi bi-search me-1"></i>Filter</button>
+                <a href="{{ route('sales.payments.index') }}" class="btn btn-sm btn-outline-secondary rounded-pill">Reset</a>
+            </div>
         </form>
-        <div class="table-responsive">
-            <table class="table table-sm mb-0">
-                <thead><tr><th>#</th><th>Customer</th><th>Invoice</th><th class="text-end">Amount</th><th>Method</th><th>Date</th></tr></thead>
-                <tbody>
-                @forelse($payments as $p)
-                    <tr>
-                        <td>{{ $p->id }}</td>
-                        <td>{{ $p->party?->name ?? '—' }}</td>
-                        <td>{{ $p->invoice?->invoice_number ?? '—' }}</td>
-                        <td class="text-end">{{ number_format((float)$p->amount,2) }}</td>
-                        <td>{{ $p->paymentMethod?->name ?? $p->payment_method }}</td>
-                        <td><x-tdate :value="$p->paid_at" fallback="Y-m-d" /></td>
-                    </tr>
-                @empty
-                    <tr><td colspan="6" class="text-center text-muted">No payments found.</td></tr>
-                @endforelse
-                </tbody>
-            </table>
-        </div>
-        {{ $payments->links() }}
     </div>
+</div>
+<div class="card">
+    <div class="table-responsive">
+        <table class="table align-middle mb-0">
+            <thead><tr><th>#</th><th>Customer</th><th>Invoice</th><th class="text-end">Amount</th><th>Method</th><th>Transaction</th><th>Date</th><th class="text-end">Actions</th></tr></thead>
+            <tbody>
+            @forelse($payments as $p)
+                <tr>
+                    <td class="fw-semibold">#{{ $p->id }}</td>
+                    <td>{{ $p->party?->name ?? '—' }}</td>
+                    <td>{{ $p->invoice?->invoice_number ?? '—' }}</td>
+                    <td class="text-end fw-semibold">{{ number_format((float)$p->amount,2) }}</td>
+                    <td><span class="badge bg-light text-dark">{{ $p->paymentMethod?->name ?? $p->payment_method }}</span></td>
+                    <td><small class="text-muted">{{ $p->transaction_id ?? '—' }}</small></td>
+                    <td><x-tdate :value="$p->paid_at" fallback="Y-m-d" /></td>
+                    <td class="text-end"><a href="{{ route('sales.payments.show',$p) }}" class="btn btn-sm btn-outline-primary rounded-pill" title="View"><i class="bi bi-eye"></i></a></td>
+                </tr>
+            @empty
+                <tr><td colspan="8" class="text-center text-muted py-4">No payments found.</td></tr>
+            @endforelse
+            </tbody>
+        </table>
+    </div>
+    @if($payments->hasPages())<div class="card-footer">{{ $payments->links() }}</div>@endif
 </div>
 @endsection

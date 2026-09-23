@@ -41,7 +41,15 @@
             <tbody>
                 @forelse ($customers as $customer)
                     <tr>
-                        @if (in_array('name', $visibleColumns, true))<td class="fw-semibold">{{ $customer->name }}</td>@endif
+                        @if (in_array('name', $visibleColumns, true))<td class="fw-semibold">{{ $customer->name }}
+                            @if (($customer->type ?? '') === 'both')
+                                <span class="badge bg-info ms-1">Customer + Vendor</span>
+                            @elseif (($customer->type ?? '') === 'supplier')
+                                <span class="badge bg-warning text-dark ms-1">Vendor</span>
+                            @else
+                                <span class="badge bg-primary ms-1">Customer</span>
+                            @endif
+                        </td>@endif
                         @if (in_array('phone', $visibleColumns, true))<td>{{ $customer->phone ?? '—' }}</td>@endif
                         @if (in_array('email', $visibleColumns, true))<td>{{ $customer->email ?? '—' }}</td>@endif
                         @if (in_array('status', $visibleColumns, true))<td>

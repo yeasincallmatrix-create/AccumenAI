@@ -50,6 +50,30 @@
                     <label class="form-label">Credit Limit</label>
                     <input type="number" name="credit_limit" value="{{ old('credit_limit', $customer?->credit_limit) }}" class="form-control" min="0" step="0.01">
                 </div>
+                <div class="col-md-6">
+                    <label class="form-label">Preferred Type</label>
+                    <select name="preferred_type" class="form-select">
+                        <option value="">— Default —</option>
+                        <option value="customer" {{ old('preferred_type', $customer?->preferred_type)==='customer'?'selected':'' }}>Customer</option>
+                        <option value="supplier" {{ old('preferred_type', $customer?->preferred_type)==='supplier'?'selected':'' }}>Supplier</option>
+                        <option value="both" {{ old('preferred_type', $customer?->preferred_type)==='both'?'selected':'' }}>Both</option>
+                    </select>
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label d-block">Can be used as</label>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="is_customer" value="1" id="isCustomer" {{ old('is_customer', $customer?->is_customer ?? true) ? 'checked' : '' }}>
+                        <label class="form-check-label" for="isCustomer">Customer</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="is_vendor" value="1" id="isVendor" {{ old('is_vendor', $customer?->is_vendor) ? 'checked' : '' }}>
+                        <label class="form-check-label" for="isVendor">Supplier / Vendor</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="is_both" value="1" id="isBoth" {{ old('is_both', ($customer?->type==='both')) ? 'checked' : '' }}>
+                        <label class="form-check-label" for="isBoth">Both (Customer + Vendor)</label>
+                    </div>
+                </div>
                 @if ($isEdit)
                 <div class="col-md-6">
                     <label class="form-label">Status</label>

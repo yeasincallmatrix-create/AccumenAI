@@ -67,18 +67,29 @@ class CustomerController extends Controller
             'address' => ['nullable', 'string', 'max:2000'],
             'tin' => ['nullable', 'string', 'max:50'],
             'credit_limit' => ['nullable', 'numeric', 'min:0'],
+            'preferred_type' => ['nullable', 'in:customer,supplier,both'],
+            'is_customer' => ['nullable', 'boolean'],
+            'is_vendor' => ['nullable', 'boolean'],
+            'is_both' => ['nullable', 'boolean'],
         ]);
+
+        $isBoth = $request->boolean('is_both');
+        $isCust = $isBoth || $request->boolean('is_customer', true);
+        $isVend = $isBoth || $request->boolean('is_vendor');
+        $type = $data['preferred_type'] ?? ($isBoth ? 'both' : ($isVend && $isCust ? 'both' : ($isVend ? 'supplier' : 'customer')));
 
         Party::create([
             'institute_id' => $institute->id,
             'branch_id' => $branchId,
-            'type' => 'customer',
+            'type' => $type,
             'name' => $data['name'],
             'phone' => $data['phone'] ?? null,
             'email' => $data['email'] ?? null,
             'address' => $data['address'] ?? null,
             'tin' => $data['tin'] ?? null,
             'credit_limit' => $data['credit_limit'] ?? null,
+            'is_customer' => $isCust,
+            'is_vendor' => $isVend,
             'is_active' => true,
             'created_by' => $this->actorId($request),
         ]);
@@ -140,7 +151,16 @@ class CustomerController extends Controller
             'tin' => ['nullable', 'string', 'max:50'],
             'credit_limit' => ['nullable', 'numeric', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
+            'preferred_type' => ['nullable', 'in:customer,supplier,both'],
+            'is_customer' => ['nullable', 'boolean'],
+            'is_vendor' => ['nullable', 'boolean'],
+            'is_both' => ['nullable', 'boolean'],
         ]);
+
+        $isBoth = $request->boolean('is_both');
+        $isCust = $isBoth || $request->boolean('is_customer', true);
+        $isVend = $isBoth || $request->boolean('is_vendor');
+        $type = $data['preferred_type'] ?? ($isBoth ? 'both' : ($isVend && $isCust ? 'both' : ($isVend ? 'supplier' : 'customer')));
 
         $customer->update([
             'name' => $data['name'],
@@ -149,6 +169,9 @@ class CustomerController extends Controller
             'address' => $data['address'] ?? null,
             'tin' => $data['tin'] ?? null,
             'credit_limit' => $data['credit_limit'] ?? null,
+            'type' => $type,
+            'is_customer' => $isCust,
+            'is_vendor' => $isVend,
             'is_active' => $request->boolean('is_active', true),
             'updated_by' => $this->actorId($request),
         ]);
