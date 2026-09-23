@@ -29,11 +29,14 @@ class FeatureRegistryPilotTest extends TestCase
             $this->markTestSkipped('feature_registry table does not exist.');
         }
 
-        $totalCount = FeatureRegistry::count();
-        $this->assertEquals(12, $totalCount, 'Expected exactly 12 medical features.');
+        $medicalCount = FeatureRegistry::where('module_key', 'medical')->count();
+        $this->assertEquals(12, $medicalCount, 'Expected exactly 12 medical features.');
 
-        $nonMedical = FeatureRegistry::where('module_key', '!=', 'medical')->count();
-        $this->assertEquals(0, $nonMedical, 'Non-medical features should not exist yet.');
+        // Education / training_center features are co-seeded (multi-module
+        // registry); only reject unknown module keys.
+        $known = ['medical', 'education', 'training_center'];
+        $unknown = FeatureRegistry::whereNotIn('module_key', $known)->count();
+        $this->assertEquals(0, $unknown, 'Unknown-module features should not exist.');
     }
 
     public function test_feature_key_is_unique(): void

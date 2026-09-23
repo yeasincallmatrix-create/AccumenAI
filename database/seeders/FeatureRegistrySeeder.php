@@ -140,35 +140,40 @@ class FeatureRegistrySeeder extends Seeder
                 'description' => 'Batch management, schedules, and capacity',
                 'sort_order' => 102,
             ],
-            'training_center.trainees' => [
-                'name' => 'Trainees',
-                'description' => 'Trainee registration, enrollment, and profiles',
+            'training_center.students' => [
+                'name' => 'Students',
+                'description' => 'Student registration, enrollment, and profiles',
                 'sort_order' => 103,
+            ],
+            'training_center.classes' => [
+                'name' => 'Classes',
+                'description' => 'Training classes, sections, and scheduling',
+                'sort_order' => 104,
             ],
             'training_center.attendance' => [
                 'name' => 'Attendance',
                 'description' => 'Training attendance tracking and reports',
-                'sort_order' => 104,
+                'sort_order' => 105,
             ],
             'training_center.exams' => [
                 'name' => 'Exams',
                 'description' => 'Training exams, marks, results, and publishing',
-                'sort_order' => 105,
+                'sort_order' => 106,
             ],
             'training_center.certificates' => [
                 'name' => 'Certificates',
                 'description' => 'Certificate generation, templates, and downloads',
-                'sort_order' => 106,
+                'sort_order' => 107,
             ],
             'training_center.fees' => [
                 'name' => 'Fees',
                 'description' => 'Training fees, collection, and receipts',
-                'sort_order' => 107,
+                'sort_order' => 108,
             ],
             'training_center.reports' => [
                 'name' => 'Reports',
                 'description' => 'Training analytics and reports',
-                'sort_order' => 108,
+                'sort_order' => 109,
             ],
         ];
 
@@ -181,7 +186,7 @@ class FeatureRegistrySeeder extends Seeder
         }
 
         if ($this->command) {
-            $this->command->info("Medical features: {$created} created, {$updated} updated.");
+            $this->command?->info("Medical features: {$created} created, {$updated} updated.");
         }
     }
 }

@@ -41,6 +41,6 @@ class StaffPermissionSeeder extends Seeder
             ['module' => 'settings', 'name' => 'View Settings']
         );
 
-        $this->command->info('Staff permissions seeded successfully!');
+        $this->command?->info('Staff permissions seeded successfully!');
     }
 }

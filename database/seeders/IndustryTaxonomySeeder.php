@@ -100,7 +100,7 @@ class IndustryTaxonomySeeder extends Seeder
             }
         }
 
-        $this->command->info('Industry taxonomy seeded: '
+        $this->command?->info('Industry taxonomy seeded: '
             . Industry::count() . ' industries, '
             . SubIndustry::count() . ' sub-industries.');
     }

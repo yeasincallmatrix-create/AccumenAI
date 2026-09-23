@@ -38,6 +38,15 @@ class RadiologyOrderTest extends TestCase
             'sub_industry' => 'hospital',
             'country' => 'Bangladesh',
             'status' => 'active',
+            'package_id' => \App\Models\SubscriptionPackage::where('slug', 'advanced')->value('id'),
+        ]);
+
+        DB::table('institute_subscriptions')->insert([
+            'institute_id' => $this->institute->id,
+            'package_id' => $this->institute->package_id,
+            'status' => 'active',
+            'start_date' => now()->toDateString(),
+            'end_date' => now()->addYear()->toDateString(),
         ]);
 
         $this->owner = User::factory()->create([
@@ -297,11 +306,19 @@ class RadiologyOrderTest extends TestCase
             'status' => 'active',
         ]);
 
-        $staffRoleId = Role::where('slug', 'doctor')->value('id');
+        // Dedicated staff role with NO medical permissions so the index
+        // route's radiology view check must 403. (The global 'doctor' role
+        // is institute-scoped via MedicalRoleSeeder and may be cleaned up
+        // as an orphan by TestCase::cleanupOrphanedRoles before setUp
+        // finishes; if it exists it may also already hold radiology.view.)
+        $staffRole = Role::firstOrCreate(
+            ['slug' => 'rad-no-perm-' . uniqid()],
+            ['name' => 'Radiology No Permission', 'status' => 'active'],
+        );
         Membership::create([
             'user_id' => $staff->id,
             'institution_id' => $this->institute->id,
-            'role_id' => $staffRoleId,
+            'role_id' => $staffRole->id,
             'status' => 'active',
         ]);
 

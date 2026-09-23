@@ -27,6 +27,11 @@ class DatabaseSeeder extends Seeder
         $this->call(RoleSeeder::class);
         $this->call(TaxPermissionSeeder::class);
         $this->call(LabAnalyzerPermissionSeeder::class);
+        // Orphan permission seeders — wired so fresh installs get the slugs
+        // that routes/middleware gate on (notifications/hr/accounting/staff/admin).
+        $this->call(AccountingPermissionSeeder::class);
+        $this->call(StaffPermissionSeeder::class);
+        $this->call(AdminPermissionSeeder::class);
         // B95: AI tool gating permissions (finance.view / crm.view).
         // Placed with other permission seeders, before RolePermissionSeeder
         // so institute-owner grant picks them up (plus AiTool seeder grants
@@ -36,6 +41,9 @@ class DatabaseSeeder extends Seeder
         $this->call(RolePermissionSeeder::class);
         $this->call(ModuleRegistrySeeder::class);
         $this->call(MedicalSubModuleSeeder::class);
+        $this->call(MedicalPermissionSeeder::class);
+        $this->call(MedicalPermissionAliasSeeder::class);
+        $this->call(MedicalRoleSeeder::class);
         $this->call(EducationSubModuleSeeder::class);
         $this->call(EducationPermissionSeeder::class);
         $this->call(TrainingCenterSubModuleSeeder::class);
@@ -60,5 +68,8 @@ class DatabaseSeeder extends Seeder
         $this->call(ThemeSeeder::class);
         $this->call(TaxDeductionRuleSeeder::class);
         $this->call(CountryTaxConfigSeeder::class);
+        // Orphan catalogs — landing pages + role templates.
+        $this->call(HomePageSeeder::class);
+        $this->call(RoleTemplateSeeder::class);
     }
 }

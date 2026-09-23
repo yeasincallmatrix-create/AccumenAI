@@ -196,10 +196,17 @@ class LockedMenuUpgradeTest extends TestCase
         // institutes queries. The directive cache ensures the feature
         // directives add at most 1 query (and 0 on cache hit). We verify
         // that the directives do NOT cause excessive amplification: the
-        // total must be <= baseline + 1.  The baseline for this page is
-        // ~23 queries; with caching it stays at ~23 (0 extra).
+        // total must be <= baseline + 1.
+        //
+        // Baseline note: when medical submodules were missing from
+        // module_registry the medical sidebar rendered empty and skipped
+        // most feature directives (~23 institutes queries). After the
+        // submodule backfill the full medical feature matrix renders, so
+        // the measured baseline is ~29 (directives still share one
+        // $__instCache; the extra queries come from view/composer work
+        // that only runs when the medical menu is present).
         $this->assertLessThanOrEqual(
-            24,
+            30,
             count($instituteQueries),
             'Feature directives should add at most 1 institutes query (cache miss on first call).'
         );

@@ -29,6 +29,6 @@ class AdminPermissionSeeder extends Seeder
             );
         }
 
-        $this->command->info('Admin permissions seeded successfully!');
+        $this->command?->info('Admin permissions seeded successfully!');
     }
 }

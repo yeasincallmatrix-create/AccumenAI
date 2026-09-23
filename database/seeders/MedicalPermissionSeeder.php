@@ -287,7 +287,7 @@ class MedicalPermissionSeeder extends Seeder
             }
         }
 
-        $this->command->info('Medical permissions seeded successfully!');
+        $this->command?->info('Medical permissions seeded successfully!');
 
         // Vitals editing (additive). Granted to existing doctor and nurse
         // roles; institute owners bypass permission checks.
@@ -367,7 +367,7 @@ class MedicalPermissionSeeder extends Seeder
         }
 
         if ($diagnosticInstitutes->isNotEmpty()) {
-            $this->command->info("Diagnostic staff role created for {$diagnosticInstitutes->count()} diagnostic center(s).");
+            $this->command?->info("Diagnostic staff role created for {$diagnosticInstitutes->count()} diagnostic center(s).");
         }
 
         // Emergency permissions (additive). Granted to doctor, receptionist, nurse roles.

@@ -10,13 +10,13 @@ class PackageFeatureSeeder extends Seeder
 {
     public function run(): void
     {
-        $medicalFeatures = \App\Models\FeatureRegistry::where('module_key', 'medical')
-            ->pluck('feature_key')
-            ->toArray();
+        $featuresByModule = \App\Models\FeatureRegistry::where('status', 'active')
+            ->get()
+            ->groupBy('module_key');
 
-        if (empty($medicalFeatures)) {
+        if ($featuresByModule->isEmpty()) {
             if ($this->command) {
-                $this->command->warn('No medical features found in feature_registry. Run FeatureRegistrySeeder first.');
+                $this->command->warn('No active features found in feature_registry. Run FeatureRegistrySeeder first.');
             }
             return;
         }
@@ -32,21 +32,23 @@ class PackageFeatureSeeder extends Seeder
                 continue;
             }
 
-            $hasMedical = \App\Models\PackageModule::where('package_id', $pkg->id)
-                ->where('module_key', 'medical')
-                ->where('enabled', true)
-                ->exists();
+            foreach ($featuresByModule as $moduleKey => $features) {
+                $hasModule = \App\Models\PackageModule::where('package_id', $pkg->id)
+                    ->where('module_key', $moduleKey)
+                    ->where('enabled', true)
+                    ->exists();
 
-            if (! $hasMedical) {
-                continue;
-            }
+                if (! $hasModule) {
+                    continue;
+                }
 
-            foreach ($medicalFeatures as $featureKey) {
-                $row = PackageFeature::updateOrCreate(
-                    ['package_id' => $pkg->id, 'feature_key' => $featureKey],
-                    ['enabled' => true]
-                );
-                $row->wasRecentlyCreated ? $created++ : $updated++;
+                foreach ($features as $feature) {
+                    $row = PackageFeature::updateOrCreate(
+                        ['package_id' => $pkg->id, 'feature_key' => $feature->feature_key],
+                        ['enabled' => true]
+                    );
+                    $row->wasRecentlyCreated ? $created++ : $updated++;
+                }
             }
         }
 

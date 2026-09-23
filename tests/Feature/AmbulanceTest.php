@@ -18,6 +18,7 @@ use App\Services\ModuleAccessService;
 use App\Support\Workspace;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class AmbulanceTest extends TestCase
@@ -40,6 +41,15 @@ class AmbulanceTest extends TestCase
             'sub_industry' => 'hospital',
             'country' => 'Bangladesh',
             'status' => 'active',
+            'package_id' => \App\Models\SubscriptionPackage::where('slug', 'advanced')->value('id'),
+        ]);
+
+        DB::table('institute_subscriptions')->insert([
+            'institute_id' => $this->institute->id,
+            'package_id' => $this->institute->package_id,
+            'status' => 'active',
+            'start_date' => now()->toDateString(),
+            'end_date' => now()->addYear()->toDateString(),
         ]);
 
         $this->owner = User::factory()->create([
