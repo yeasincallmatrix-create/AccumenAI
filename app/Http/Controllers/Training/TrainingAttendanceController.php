@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Training\TrainingCertificate;
 use Illuminate\Http\Request;
 
-class TrainingCertificateController extends Controller
+class TrainingAttendanceController extends Controller
 {
     public function index(Request $request)
     {

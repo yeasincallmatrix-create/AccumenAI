@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Training;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
-class TrainingAttendanceController extends Controller
+class TrainingResultsController extends Controller
 {
     public function index(Request $request)
     {

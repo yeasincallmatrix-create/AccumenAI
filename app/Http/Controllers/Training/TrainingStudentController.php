@@ -17,7 +17,7 @@ class TrainingStudentController extends Controller
 
     public function create()
     {
-        return view('training.students.create');
+        return view('training.students.form');
     }
 
     public function store(Request $request)
@@ -26,7 +26,7 @@ class TrainingStudentController extends Controller
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
-            'phone' => 'nullable|string|max=20',
+            'phone' => 'nullable|string|max:20',
             'status' => 'nullable|string',
         ]);
         $validated['institute_id'] = auth()->user()->institute_id;
@@ -44,7 +44,7 @@ class TrainingStudentController extends Controller
     public function edit($id)
     {
         $student = TrainingStudent::findOrFail($id);
-        return view('training.students.edit', compact('student'));
+        return view('training.students.form', compact('student'));
     }
 
     public function update(Request $request, $id)

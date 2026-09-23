@@ -3,60 +3,66 @@
 namespace App\Http\Controllers\Training;
 
 use App\Http\Controllers\Controller;
-use App\Models\Training\TrainingBatch;
+use App\Models\Training\TrainingClass;
 use Illuminate\Http\Request;
 
-class TrainingBatchController extends Controller
+class TrainingClassController extends Controller
 {
     public function index(Request $request)
     {
-        $batches = TrainingBatch::where('institute_id', auth()->user()->institute_id)
+        $classes = TrainingClass::where('institute_id', auth()->user()->institute_id)
             ->orderByDesc('id')->paginate(20)->withQueryString();
-        return view('training.batches.index', compact('batches'));
+        return view('training.classes.index', compact('classes'));
     }
 
     public function create()
     {
-        return view('training.batches.create');
+        return view('training.classes.create');
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'course_id' => 'nullable|integer',
+            'name' => 'required|string|max:150',
+            'code' => 'nullable|string|max:50',
+            'status' => 'nullable|string|max:30',
         ]);
-        $validated['institute_id'] = auth()->user()->institute_id;
-        TrainingBatch::create($validated);
-        return redirect()->route('training.batches.index')
-            ->with('success', 'Batch created.');
+        $class = new TrainingClass($validated);
+        $class->institute_id = auth()->user()->institute_id;
+        $class->save();
+        return redirect()->route('training.classes.index')
+            ->with('success', 'Class created.');
     }
 
     public function show($id)
     {
-        $batch = TrainingBatch::findOrFail($id);
-        return view('training.batches.show', compact('batch'));
+        $class = TrainingClass::findOrFail($id);
+        return view('training.classes.show', compact('class'));
     }
 
     public function edit($id)
     {
-        $batch = TrainingBatch::findOrFail($id);
-        return view('training.batches.edit', compact('batch'));
+        $class = TrainingClass::findOrFail($id);
+        return view('training.classes.edit', compact('class'));
     }
 
     public function update(Request $request, $id)
     {
-        $batch = TrainingBatch::findOrFail($id);
-        $validated = $request->validate(['name' => 'required|string|max:255']);
-        $batch->update($validated);
-        return redirect()->route('training.batches.index')
-            ->with('success', 'Batch updated.');
+        $class = TrainingClass::findOrFail($id);
+        $validated = $request->validate([
+            'name' => 'required|string|max:150',
+            'code' => 'nullable|string|max:50',
+            'status' => 'nullable|string|max:30',
+        ]);
+        $class->update($validated);
+        return redirect()->route('training.classes.index')
+            ->with('success', 'Class updated.');
     }
 
     public function destroy($id)
     {
-        TrainingBatch::findOrFail($id)->delete();
-        return redirect()->route('training.batches.index')
-            ->with('success', 'Batch deleted.');
+        TrainingClass::findOrFail($id)->delete();
+        return redirect()->route('training.classes.index')
+            ->with('success', 'Class deleted.');
     }
 }

@@ -8,7 +8,7 @@ use App\Models\Training\TrainingExam;
 use App\Models\Training\TrainingStudent;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\SoftDeletes;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TrainingExamResult extends Model
 {

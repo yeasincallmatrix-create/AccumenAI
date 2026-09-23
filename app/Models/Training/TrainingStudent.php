@@ -17,7 +17,7 @@ class TrainingStudent extends Model
 
     protected $fillable = [
         'institute_id', 'branch_id', 'user_id', 'reg_no', 'student_id',
-        'is_test', 'first_name', 'last_name', 'uuid', 'student_id_number',
+        'is_test', 'first_name', 'last_name', 'full_name', 'name', 'uuid', 'student_id_number',
         'application_number', 'application_date', 'admission_status', 'admission_source',
         'admission_reject_reason', 'applied_course_id', 'applied_academic_year_id',
         'preferred_batch_id', 'admission_assigned_user_id', 'created_by', 'approved_by',
