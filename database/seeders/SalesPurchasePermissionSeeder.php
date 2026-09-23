@@ -56,6 +56,8 @@ class SalesPurchasePermissionSeeder extends Seeder
             ['slug' => 'sales.orders.delete',       'module' => 'sales', 'name' => 'Delete Sales Orders'],
             ['slug' => 'sales.credit_memos.view',   'module' => 'sales', 'name' => 'View Credit Memos'],
             ['slug' => 'sales.credit_memos.create', 'module' => 'sales', 'name' => 'Create Credit Memos'],
+            ['slug' => 'sales.receipts.view',       'module' => 'sales', 'name' => 'View Sales Receipts'],
+            ['slug' => 'sales.receipts.create',     'module' => 'sales', 'name' => 'Create Sales Receipts'],
             ['slug' => 'sales.customers.manage',    'module' => 'sales', 'name' => 'Manage Customers'],
 
             // ── PURCHASE (22) ────────────────────────────────────────────

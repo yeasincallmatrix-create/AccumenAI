@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Purchase;
 
 use App\Http\Controllers\Concerns\ResolvesInstitute;
+use App\Http\Controllers\Controller;
 use App\Models\Currency;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseQuotation;

@@ -384,8 +384,24 @@ Route::middleware($tenant)->group(function () {
 
     // Sales Invoices
     Route::prefix('sales/invoices')->name('sales.invoices.')->group(function () use ($salesInv) {
-        Route::get('create', [\App\Http\Controllers\Sales\SalesInvoiceController::class, 'createForOrder'])->name('create');
-        Route::post('{order}', [\App\Http\Controllers\Sales\SalesInvoiceController::class, 'storeForOrder'])->middleware('permission:sales.create')->name('store');
+        Route::get('/', [$salesInv, 'index'])->middleware('permission:sales.invoices.view')->name('index');
+        Route::get('create', [$salesInv, 'createForOrder'])->name('create');
+        Route::post('{order}', [$salesInv, 'storeForOrder'])->middleware('permission:sales.invoices.create')->name('store');
+        Route::get('{invoice}', [$salesInv, 'show'])->middleware('permission:sales.invoices.view')->name('show');
+    });
+
+    // Receive Payments
+    Route::prefix('sales/payments')->name('sales.payments.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Sales\ReceivePaymentController::class, 'index'])->middleware('permission:sales.payments.view')->name('index');
+        Route::get('create', [\App\Http\Controllers\Sales\ReceivePaymentController::class, 'create'])->middleware('permission:sales.payments.create')->name('create');
+        Route::post('/', [\App\Http\Controllers\Sales\ReceivePaymentController::class, 'store'])->middleware('permission:sales.payments.create')->name('store');
+    });
+
+    // Sales Receipts
+    Route::prefix('sales/receipts')->name('sales.receipts.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Sales\SalesReceiptController::class, 'index'])->middleware('permission:sales.receipts.view')->name('index');
+        Route::get('create', [\App\Http\Controllers\Sales\SalesReceiptController::class, 'create'])->middleware('permission:sales.receipts.create')->name('create');
+        Route::post('/', [\App\Http\Controllers\Sales\SalesReceiptController::class, 'store'])->middleware('permission:sales.receipts.create')->name('store');
     });
 
     // Sales Returns
@@ -434,7 +450,7 @@ Route::middleware($tenant)->group(function () {
     }); // end module_access:sales
 
     // ─── PURCHASE ──────────────────────────────────────────────────────────
-    $poCtrl = \App\Http\Controllers\PurchaseOrderController::class;
+    $poCtrl = \App\Http\Controllers\Purchase\PurchaseOrderController::class;
     $pInv = \App\Http\Controllers\Purchase\PurchaseInvoiceController::class;
     $pQuot = \App\Http\Controllers\Purchase\PurchaseQuotationController::class;
     $pReq = \App\Http\Controllers\Purchase\PurchaseRequestController::class;
@@ -545,6 +561,20 @@ Route::middleware($tenant)->group(function () {
 
     // Purchase Payments
     Route::post('purchase/payments/reverse', [$pRet, 'reverse'])->middleware('module_access:purchase')->name('purchase.payments.reverse');
+
+    // Purchase Expenses
+    Route::prefix('purchase/expenses')->name('purchase.expenses.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Purchase\ExpenseController::class, 'index'])->middleware('permission:purchase.expenses.view')->name('index');
+        Route::get('create', [\App\Http\Controllers\Purchase\ExpenseController::class, 'create'])->middleware('permission:purchase.expenses.create')->name('create');
+        Route::post('/', [\App\Http\Controllers\Purchase\ExpenseController::class, 'store'])->middleware('permission:purchase.expenses.create')->name('store');
+    });
+
+    // Bill Payments
+    Route::prefix('purchase/bill-payments')->name('purchase.payments.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Purchase\BillPaymentController::class, 'index'])->middleware('permission:purchase.payments.view')->name('index');
+        Route::get('create', [\App\Http\Controllers\Purchase\BillPaymentController::class, 'create'])->middleware('permission:purchase.payments.create')->name('create');
+        Route::post('/', [\App\Http\Controllers\Purchase\BillPaymentController::class, 'store'])->middleware('permission:purchase.payments.create')->name('store');
+    });
 
     // Purchase Credit
     Route::post('purchase/credit/adjust', [$pRet, 'adjust'])->middleware('module_access:purchase')->name('purchase.credit.adjust');

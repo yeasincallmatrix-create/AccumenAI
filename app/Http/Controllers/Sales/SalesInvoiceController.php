@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Sales;
 
+use App\Http\Controllers\Concerns\AuthorizesPermission;
 use App\Http\Controllers\Concerns\ResolvesInstitute;
 use App\Http\Controllers\Controller;
+use App\Models\Invoice;
 use App\Models\SalesDelivery;
 use App\Models\SalesOrder;
 use App\Services\Sales\SalesInvoiceService;
@@ -13,9 +15,47 @@ use Illuminate\View\View;
 
 class SalesInvoiceController extends Controller
 {
+    use AuthorizesPermission;
     use ResolvesInstitute;
 
     public function __construct(private readonly SalesInvoiceService $invoices) {}
+
+    public function index(Request $request): View
+    {
+        $this->requirePermission('sales.invoices.view', 'sales.view', 'sales.manage');
+        $institute = $this->requireInstitute($request);
+
+        $invoices = Invoice::query()
+            ->where('institute_id', $institute->id)
+            ->whereNotNull('sales_order_id')
+            ->with(['party', 'items'])
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->input('status')))
+            ->when($request->filled('customer_id'), fn ($q) => $q->where('party_id', $request->input('customer_id')))
+            ->when($request->filled('from_date'), fn ($q, $d) => $q->whereDate('created_at', '>=', $d), $request->input('from_date'))
+            ->when($request->filled('to_date'), fn ($q, $d) => $q->whereDate('created_at', '<=', $d), $request->input('to_date'))
+            ->orderByDesc('id')
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('sales.invoices.index', [
+            'institute' => $institute,
+            'invoices' => $invoices,
+        ]);
+    }
+
+    public function show(Request $request, Invoice $invoice): View
+    {
+        $this->requirePermission('sales.invoices.view', 'sales.view', 'sales.manage');
+        $institute = $this->requireInstitute($request);
+        abort_if((int) $invoice->institute_id !== (int) $institute->id, 404);
+
+        $invoice->load(['party', 'items.coa', 'journal', 'payments']);
+
+        return view('sales.invoices.show', [
+            'institute' => $institute,
+            'invoice' => $invoice,
+        ]);
+    }
 
     public function createForOrder(Request $request, SalesOrder $order): View
     {
