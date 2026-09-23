@@ -193,7 +193,7 @@
             </tr>
             @endforelse
             @if(isset($result))
-            <tr style="font-weight:bold; background:#f9f9f9;">
+            <tr style="font-weight:bold; background:var(--surface-alt,#f9f9f9);">
                 <td colspan="3">Total</td>
                 <td>{{ $result->total_marks }}</td>
                 <td>{{ $result->obtained_marks }}</td>
@@ -221,8 +221,8 @@
             <tr><td colspan="5">No exam details</td></tr>
         @endforelse
         @if(isset($result))
-            <tr style="font-weight:bold; background:#f9f9f9;">
-                <td colspan="2">Total</td>
+            <tr style="font-weight:bold; background:var(--surface-alt,#f9f9f9);">
+                <td colspan="3">Total</td>
                 <td>{{ $result->total_marks }}</td>
                 <td>{{ $result->obtained_marks }}</td>
                 <td>{{ $result->percentage }}% ({{ ucfirst($result->status) }})</td>

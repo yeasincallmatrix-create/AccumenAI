@@ -48,13 +48,16 @@ class PurchaseOrderTest extends TestCase
     {
         $c ??= $this->country();
 
-        return Institute::create([
+        $inst = Institute::create([
             'name' => 'PO Inst '.uniqid(),
             'slug' => 'po-'.uniqid(),
             'country' => $c->name,
             'country_id' => $c->id,
             'status' => 'active',
         ]);
+        app(\App\Services\ModuleAccessService::class)->enableModule($inst, 'purchase');
+
+        return $inst;
     }
 
     private function branch(Institute $i, string $name = 'Branch'): Branch

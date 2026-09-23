@@ -3,8 +3,8 @@
 @push('styles')
 <style>
     .student-form-card {
-        background: #fff;
-        border: 1px solid #e3e8ef;
+        background: var(--white, #fff);
+        border: 1px solid var(--border, #e3e8ef);
         border-radius: 10px;
         padding: 24px;
         box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
@@ -18,7 +18,7 @@
         letter-spacing: .4px;
         margin: 24px 0 12px;
         padding-bottom: 6px;
-        border-bottom: 1px solid #eef1f6;
+        border-bottom: 1px solid var(--border, #eef1f6);
     }
     .section-title:first-child {
         margin-top: 0;
@@ -48,7 +48,7 @@
     .field label {
         font-size: 13px;
         font-weight: 500;
-        color: #495057;
+        color: var(--muted, #495057);
     }
     .field label .req {
         color: #dc3545;
@@ -58,11 +58,12 @@
     .field select,
     .field textarea {
         padding: 9px 12px;
-        border: 1px solid #ced4da;
+        border: 1px solid var(--border, #ced4da);
         border-radius: 6px;
         font-size: 14px;
         width: 100%;
-        background: #fff;
+        background: var(--white, #fff);
+        color: var(--text, #212529);
         transition: border-color .15s, box-shadow .15s;
     }
     .field input:focus,
@@ -73,14 +74,14 @@
         box-shadow: 0 0 0 3px rgba(13, 110, 253, .15);
     }
     .field input[readonly] {
-        background: #e9ecef;
-        color: #6c757d;
+        background: var(--surface, #e9ecef);
+        color: var(--muted, #6c757d);
         cursor: not-allowed;
     }
 
     .hint {
         font-size: 12px;
-        color: #6c757d;
+        color: var(--muted, #6c757d);
     }
 
     .form-footer {

@@ -316,10 +316,10 @@ Route::middleware($tenant)->group(function () {
     Route::middleware('module_access:sales')->group(function () use ($salesOrder, $salesDel, $salesQuot, $salesRet, $salesLead, $salesCust, $salesInv, $salesReport, $salesSettings) {
 
     // Sales Settings
-    Route::post('sales/settings', [$salesSettings, 'update'])->name('sales.settings.update');
+    Route::match(['put', 'post'], 'sales/settings', [$salesSettings, 'update'])->middleware('permission:sales.manage')->name('sales.settings.update');
 
     // Sales Reports
-    Route::prefix('sales/reports')->name('sales.reports.')->group(function () use ($salesReport) {
+    Route::prefix('sales/reports')->name('sales.reports.')->middleware('permission:sales.view')->group(function () use ($salesReport) {
         Route::get('/', [$salesReport, 'dashboard'])->name('dashboard');
         Route::get('daily', [$salesReport, 'daily'])->name('daily');
         Route::get('weekly', [$salesReport, 'weekly'])->name('weekly');
@@ -331,12 +331,12 @@ Route::middleware($tenant)->group(function () {
         Route::get('salesperson', [$salesReport, 'salesperson'])->name('salesperson');
         Route::get('branch', [$salesReport, 'branch'])->name('branch');
         Route::get('warehouse', [$salesReport, 'warehouse'])->name('warehouse');
-        Route::get('returns', [$salesReport, 'returnsReport'])->name('returns');
+        Route::get('returns', [$salesReport, 'returns'])->name('returns');
         Route::get('statement', [$salesReport, 'statement'])->name('statement');
     });
 
     // Sales Quotations
-    Route::prefix('sales/quotations')->name('sales.quotations.')->group(function () use ($salesQuot) {
+    Route::prefix('sales/quotations')->name('sales.quotations.')->middleware('permission:sales.view')->group(function () use ($salesQuot) {
         Route::get('/', [$salesQuot, 'index'])->name('index');
         Route::get('create', [$salesQuot, 'create'])->name('create');
         Route::post('/', [$salesQuot, 'store'])->name('store');
@@ -353,20 +353,21 @@ Route::middleware($tenant)->group(function () {
 
     // Sales Orders
     Route::prefix('sales/orders')->name('sales.orders.')->group(function () use ($salesOrder) {
-        Route::get('/', [$salesOrder, 'index'])->name('index');
-        Route::get('create', [$salesOrder, 'create'])->name('create');
-        Route::post('/', [$salesOrder, 'store'])->name('store');
-        Route::get('{order}', [$salesOrder, 'show'])->name('show');
-        Route::get('{order}/edit', [$salesOrder, 'edit'])->name('edit');
-        Route::put('{order}', [$salesOrder, 'update'])->name('update');
-        Route::post('{order}/submit', [$salesOrder, 'submit'])->name('submit');
-        Route::post('{order}/approve', [$salesOrder, 'approve'])->name('approve');
-        Route::post('{order}/reject', [$salesOrder, 'reject'])->name('reject');
-        Route::post('{order}/cancel', [$salesOrder, 'cancel'])->name('cancel');
-        Route::post('{order}/processing', [$salesOrder, 'processing'])->name('processing');
-        Route::post('{order}/ready', [$salesOrder, 'readyForDelivery'])->name('ready');
-        Route::post('{order}/complete', [$salesOrder, 'complete'])->name('complete');
-        Route::get('{order}/print', [$salesOrder, 'print'])->name('print');
+        Route::get('/', [$salesOrder, 'index'])->middleware('permission:sales.view')->name('index');
+        Route::get('create', [$salesOrder, 'create'])->middleware('permission:sales.create')->name('create');
+        Route::post('/', [$salesOrder, 'store'])->middleware('permission:sales.create')->name('store');
+        Route::get('{order}', [$salesOrder, 'show'])->middleware('permission:sales.view')->name('show');
+        Route::get('{order}/edit', [$salesOrder, 'edit'])->middleware('permission:sales.update')->name('edit');
+        Route::put('{order}', [$salesOrder, 'update'])->middleware('permission:sales.update')->name('update');
+        Route::post('{order}/submit', [$salesOrder, 'submit'])->middleware('permission:sales.update')->name('submit');
+        Route::post('{order}/approve', [$salesOrder, 'approve'])->middleware('permission:sales.manage')->name('approve');
+        Route::post('{order}/reject', [$salesOrder, 'reject'])->middleware('permission:sales.manage')->name('reject');
+        Route::post('{order}/cancel', [$salesOrder, 'cancel'])->middleware('permission:sales.manage')->name('cancel');
+        Route::post('{order}/processing', [$salesOrder, 'processing'])->middleware('permission:sales.update')->name('processing');
+        Route::post('{order}/ready', [$salesOrder, 'readyForDelivery'])->middleware('permission:sales.update')->name('ready');
+        Route::post('{order}/complete', [$salesOrder, 'complete'])->middleware('permission:sales.update')->name('complete');
+        Route::get('{order}/print', [$salesOrder, 'print'])->middleware('permission:sales.view')->name('print');
+        Route::post('convert/{quotation}', [$salesOrder, 'convert'])->middleware('permission:sales.create')->name('convert');
     });
 
     // Sales Deliveries
@@ -384,11 +385,11 @@ Route::middleware($tenant)->group(function () {
     // Sales Invoices
     Route::prefix('sales/invoices')->name('sales.invoices.')->group(function () use ($salesInv) {
         Route::get('create', [\App\Http\Controllers\Sales\SalesInvoiceController::class, 'createForOrder'])->name('create');
-        Route::post('/', [\App\Http\Controllers\Sales\SalesInvoiceController::class, 'storeForOrder'])->name('store');
+        Route::post('{order}', [\App\Http\Controllers\Sales\SalesInvoiceController::class, 'storeForOrder'])->middleware('permission:sales.create')->name('store');
     });
 
     // Sales Returns
-    Route::prefix('sales/returns')->name('sales.returns.')->group(function () use ($salesRet) {
+    Route::prefix('sales/returns')->name('sales.returns.')->middleware('permission:sales.view')->group(function () use ($salesRet) {
         Route::get('/', [$salesRet, 'index'])->name('index');
         Route::get('create', [$salesRet, 'create'])->name('create');
         Route::post('/', [$salesRet, 'store'])->name('store');
@@ -402,7 +403,7 @@ Route::middleware($tenant)->group(function () {
     });
 
     // Sales Leads
-    Route::prefix('sales/leads')->name('sales.leads.')->group(function () use ($salesLead) {
+    Route::prefix('sales/leads')->name('sales.leads.')->middleware('permission:sales.view')->group(function () use ($salesLead) {
         Route::get('/', [$salesLead, 'index'])->name('index');
         Route::get('create', [$salesLead, 'create'])->name('create');
         Route::post('/', [$salesLead, 'store'])->name('store');
@@ -411,7 +412,7 @@ Route::middleware($tenant)->group(function () {
     });
 
     // Sales Customers (manage)
-    Route::prefix('sales/customers/manage')->name('sales.customers.manage.')->group(function () use ($salesCust) {
+    Route::prefix('sales/customers/manage')->name('sales.customers.manage.')->middleware('permission:sales.customers.manage')->group(function () use ($salesCust) {
         Route::get('/', [$salesCust, 'index'])->name('index');
         Route::get('create', [$salesCust, 'create'])->name('create');
         Route::post('/', [$salesCust, 'store'])->name('store');
@@ -446,18 +447,18 @@ Route::middleware($tenant)->group(function () {
 
     // Purchase Orders
     Route::prefix('purchase/orders')->name('purchase.orders.')->group(function () use ($poCtrl) {
-        Route::get('/', [$poCtrl, 'index'])->name('index');
-        Route::get('create', [$poCtrl, 'create'])->name('create');
-        Route::post('/', [$poCtrl, 'store'])->name('store');
-        Route::get('{order}', [$poCtrl, 'show'])->name('show');
-        Route::get('{order}/edit', [$poCtrl, 'edit'])->name('edit');
-        Route::put('{order}', [$poCtrl, 'update'])->name('update');
-        Route::post('{order}/submit', [$poCtrl, 'submit'])->name('submit');
-        Route::post('{order}/approve', [$poCtrl, 'approve'])->name('approve');
-        Route::post('{order}/reject', [$poCtrl, 'reject'])->name('reject');
-        Route::post('{order}/cancel', [$poCtrl, 'cancel'])->name('cancel');
-        Route::post('{order}/close', [$poCtrl, 'close'])->name('close');
-        Route::get('{order}/print', [$poCtrl, 'print'])->name('print');
+        Route::get('/', [$poCtrl, 'index'])->middleware('permission:purchase.view')->name('index');
+        Route::get('create', [$poCtrl, 'create'])->middleware('permission:purchase.create')->name('create');
+        Route::post('/', [$poCtrl, 'store'])->middleware('permission:purchase.create')->name('store');
+        Route::get('{order}', [$poCtrl, 'show'])->middleware('permission:purchase.view')->name('show');
+        Route::get('{order}/edit', [$poCtrl, 'edit'])->middleware('permission:purchase.update')->name('edit');
+        Route::put('{order}', [$poCtrl, 'update'])->middleware('permission:purchase.update')->name('update');
+        Route::post('{order}/submit', [$poCtrl, 'submit'])->middleware('permission:purchase.update')->name('submit');
+        Route::post('{order}/approve', [$poCtrl, 'approve'])->middleware('permission:purchase.manage')->name('approve');
+        Route::post('{order}/reject', [$poCtrl, 'reject'])->middleware('permission:purchase.manage')->name('reject');
+        Route::post('{order}/cancel', [$poCtrl, 'cancel'])->middleware('permission:purchase.manage')->name('cancel');
+        Route::post('{order}/close', [$poCtrl, 'close'])->middleware('permission:purchase.manage')->name('close');
+        Route::get('{order}/print', [$poCtrl, 'print'])->middleware('permission:purchase.view')->name('print');
     });
 
     // Purchase Invoices
@@ -495,9 +496,9 @@ Route::middleware($tenant)->group(function () {
         Route::get('/', [$pReq, 'index'])->name('index');
         Route::get('create', [$pReq, 'create'])->name('create');
         Route::post('/', [$pReq, 'store'])->name('store');
-        Route::get('{request}', [$pReq, 'show'])->name('show');
-        Route::post('{request}/approve', [$pReq, 'approve'])->name('approve');
-        Route::post('{request}/convert', [$pReq, 'convertToOrder'])->name('convert');
+        Route::get('{purchaseRequest}', [$pReq, 'show'])->name('show');
+        Route::post('{purchaseRequest}/approve', [$pReq, 'approve'])->name('approve');
+        Route::post('{purchaseRequest}/convert', [$pReq, 'convertToOrder'])->name('convert');
     });
 
     // Purchase Returns
@@ -519,10 +520,10 @@ Route::middleware($tenant)->group(function () {
 
     // Purchase Goods Receipts
     Route::prefix('purchase/receipts')->name('purchase.receipts.')->group(function () use ($pRcpt) {
-        Route::get('/', [$pRcpt, 'index'])->name('index');
-        Route::get('create', [$pRcpt, 'create'])->name('create');
-        Route::post('/', [$pRcpt, 'store'])->name('store');
-        Route::get('{receipt}', [$pRcpt, 'show'])->name('show');
+        Route::get('/', [$pRcpt, 'index'])->middleware('permission:purchase.view')->name('index');
+        Route::get('create', [$pRcpt, 'create'])->middleware('permission:purchase.create')->name('create');
+        Route::post('/', [$pRcpt, 'store'])->middleware('permission:purchase.create')->name('store');
+        Route::get('{receipt}', [$pRcpt, 'show'])->middleware('permission:purchase.view')->name('show');
         Route::post('{receipt}/confirm', [$pRcpt, 'confirm'])->name('confirm');
         Route::post('{receipt}/cancel', [$pRcpt, 'cancel'])->name('cancel');
         Route::post('{receipt}/reverse', [$pRcpt, 'reverse'])->name('reverse');
@@ -530,7 +531,7 @@ Route::middleware($tenant)->group(function () {
     });
 
     // Purchase Reports
-    Route::prefix('purchase/reports')->name('purchase.reports.')->group(function () use ($pRep) {
+    Route::prefix('purchase/reports')->name('purchase.reports.')->middleware('permission:purchase.view')->group(function () use ($pRep) {
         Route::get('/', [$pRep, 'dashboard'])->name('dashboard');
         Route::get('daily', [$pRep, 'daily'])->name('daily');
         Route::get('export', [$pRep, 'export'])->name('export');
@@ -550,12 +551,12 @@ Route::middleware($tenant)->group(function () {
 
     // Purchase Suppliers
     Route::prefix('purchase/suppliers')->name('purchase.suppliers.')->group(function () use ($pSup) {
-        Route::get('/', [$pSup, 'index'])->name('index');
-        Route::post('/', [$pSup, 'store'])->name('store');
-        Route::get('{id}', [$pSup, 'show'])->name('show');
-        Route::put('{id}', [$pSup, 'update'])->name('update');
-        Route::delete('{id}', [$pSup, 'destroy'])->name('destroy');
-        Route::put('{id}/restore', [$pSup, 'restore'])->name('restore');
+        Route::get('/', [$pSup, 'index'])->middleware('permission:purchase.view')->name('index');
+        Route::post('/', [$pSup, 'store'])->middleware('permission:purchase.vendors.manage')->name('store');
+        Route::get('{id}', [$pSup, 'show'])->middleware('permission:purchase.view')->name('show');
+        Route::put('{id}', [$pSup, 'update'])->middleware('permission:purchase.vendors.manage')->name('update');
+        Route::delete('{id}', [$pSup, 'destroy'])->middleware('permission:purchase.vendors.manage')->name('destroy');
+        Route::put('{id}/restore', [$pSup, 'restore'])->middleware('permission:purchase.vendors.manage')->name('restore');
     });
     }); // end module_access:purchase
 
@@ -1657,7 +1658,7 @@ Route::middleware($tenant)->group(function () {
     Route::get('purchase/quotations/{quotation}/print', [\App\Http\Controllers\Purchase\PurchaseQuotationController::class, 'print'])->middleware('module_access:purchase')->name('purchase.quotations.print');
 
     // ─── PURCHASE REPORTS EXTRA (unique) ────────────────────────────────────
-    Route::get('purchase/reports/export', [\App\Http\Controllers\Purchase\PurchaseReportController::class, 'export'])->middleware('module_access:purchase')->name('purchase.reports.export');
+    Route::get('purchase/reports/export', [\App\Http\Controllers\Purchase\PurchaseReportController::class, 'export'])->middleware(['module_access:purchase', 'permission:purchase.view'])->name('purchase.reports.export');
 
     // ─── ACADEMIC STRUCTURE OPTIONS (JSON API) ────────────────────────────────
     Route::get('academic/structure/options', [\App\Http\Controllers\AcademicStructureController::class, 'options'])->name('academic.structure.options');

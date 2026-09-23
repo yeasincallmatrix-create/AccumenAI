@@ -127,7 +127,7 @@
                     <thead class="table-light" style="position:sticky; top:0; z-index:1;">
                         <tr>
                             <th style="min-width:40px;">#</th>
-                            <th style="min-width:200px; position:sticky; left:0; background:#f8f9fa; z-index:2;" class="text-nowrap">Trainee</th>
+                            <th style="min-width:200px; position:sticky; left:0; background:var(--surface-alt,#f8f9fa); z-index:2;" class="text-nowrap">Trainee</th>
                             @foreach($days as $dateObj)
                                 <th class="text-center" style="min-width:52px;">
                                     {{ $dateObj->format('d') }}<br><small>{{ $dateObj->format('D') }}</small>

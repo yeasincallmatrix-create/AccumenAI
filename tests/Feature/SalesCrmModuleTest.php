@@ -78,6 +78,7 @@ class SalesCrmModuleTest extends \Tests\TestCase
     {
         $inst = $this->institute($name);
         $this->setupAccounting($inst);
+        app(\App\Services\ModuleAccessService::class)->enableModule($inst, 'sales');
         $owner = $this->owner(strtolower(str_replace(' ', '-', $name)) . '-' . uniqid() . '@example.test');
         $membership = (new MembershipService)->assign($owner, $inst->id, $this->roleId('institute-owner'));
 

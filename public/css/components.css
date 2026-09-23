@@ -788,6 +788,12 @@ border-radius:10px;
 border:1px solid #e3e6ea;
 background:#f8f9fa;
 }
+html.monetix-dark .img-preview,
+html.monetix-dark .cover-preview,
+html.monetix-dark .course-thumb-sm{
+background:#262b35;
+border-color:#2a2f3a;
+}
 
 .cover-preview{
 width:180px;
@@ -979,6 +985,7 @@ animation:conn-ripple 2.1s ease-out infinite;
 
 html.monetix-dark{
 --dark:#eef1f6; --light:#12141a; --white:#1a1d27; --border:#2a2f3a; --muted:#8ba0b8;
+--text:#eef1f6; --surface:#151820; --surface-alt:#262b35;
 --bs-body-bg:#11141b; --bs-body-color:#d7dde6;
 --bs-secondary-color:#8ba0b8; --bs-secondary-color-rgb:139,160,184;
 --bs-border-color:#2a2f3a; --bs-border-color-rgb:42,47,58;
@@ -996,18 +1003,30 @@ html.monetix-dark body{ background:#11141b; color:#d7dde6; }
 html.monetix-dark .topbar{ background:#1a1d27; border-bottom-color:#2a2f3a; }
 html.monetix-dark .topbar .icon-btn,
 html.monetix-dark .notification-trigger{ background:#1a1d27; border-color:#2a2f3a; color:#aab4c4; }
-html.monetix-dark .sidebar{ background:var(--sidebar-bg, #171a22); border-right-color:#262b35; }
+html.monetix-dark .notification-menu-header{ color:#eef1f6; }
+html.monetix-dark .notification-item{ color:#c9d1dc; }
+html.monetix-dark .notification-item:hover{ background:#22262f; color:#fff; }
+html.monetix-dark .notification-item .notification-item-title{ color:#eef1f6; }
+html.monetix-dark .notification-item .notification-item-msg{ color:#9aa8bc; }
+html.monetix-dark .notification-item .notification-item-time{ color:#7f8ea3; }
+html.monetix-dark .notification-empty{ color:#8ba0b8; }
+html.monetix-dark .sidebar{ --sidebar-bg:#171a22 !important; background:#171a22 !important; border-right-color:#262b35; }
   html.monetix-dark .sidebar .nav-link{ color:#aab4c4; }
   html.monetix-dark .sidebar .nav-link.active{ background:rgba(96,165,250,.10); color:var(--primary); border-left-color:var(--primary); }
   html.monetix-dark .sidebar .nav-link:not(.disabled):hover{ background:rgba(96,165,250,.10); color:var(--primary); border-left-color:var(--primary); }
   html.monetix-dark .sidebar .nav-link.sub{ color:#8ba0b8; }
   html.monetix-dark .sidebar .nav-link.sub:not(.disabled):hover{ background:rgba(96,165,250,.10); color:var(--primary); border-left-color:var(--primary); }
   html.monetix-dark .sidebar .nav-link.sub.active{ background:rgba(96,165,250,.10); color:var(--primary); border-left-color:var(--primary); }
+  html.monetix-dark .sidebar .nav-link.sub-sub{ color:#8ba0b8; }
+  html.monetix-dark .sidebar .nav-link.sub-sub:not(.disabled):hover{ background:rgba(96,165,250,.10); color:var(--primary); border-left-color:var(--primary); }
+  html.monetix-dark .sidebar .nav-link.sub-sub.active{ background:rgba(96,165,250,.10); color:var(--primary); border-left-color:var(--primary); }
 html.monetix-dark .sidebar .nav-link.disabled{ color:#555a66; }
 html.monetix-dark .sidebar .soon-badge{ background:#262b35; color:#8ba0b8; }
 html.monetix-dark .sidebar-user-card{ background:#171a22; border-color:#262b35; box-shadow:none; }
 html.monetix-dark .sidebar-user-card .sidebar-user-name{ color:#eef1f6; }
 html.monetix-dark .sidebar-user-card .sidebar-user-caret{ color:#8ba0b8; }
+html.monetix-dark .sidebar-user-card .badge.bg-light{ background:#262b35 !important; color:#c4ccd8 !important; border-color:#2a2f3a !important; }
+html.monetix-dark .sidebar-user-card .badge.bg-info-subtle{ background:rgba(13,188,240,.15) !important; color:#7dd3fc !important; border-color:rgba(13,188,240,.35) !important; }
 html.monetix-dark .admin-card,
 html.monetix-dark .dash-card,
 html.monetix-dark .filter-card,
@@ -1027,9 +1046,20 @@ html.monetix-dark table{ color:#d7dde6; }
 html.monetix-dark table th{ color:#8ba0b8; border-bottom-color:#2a2f3a; }
 html.monetix-dark .form-label{ color:#c4ccd8; }
 html.monetix-dark .avatar-circle{ border-color:#2a2f3a; background:#1a1d27; }
+html.monetix-dark .border.rounded-3,
 html.monetix-dark .border.rounded-3.bg-light-subtle{ background:#151820 !important; border-color:#2a2f3a !important; }
+html.monetix-dark .badge.bg-light{ background:#262b35 !important; color:#c4ccd8 !important; border-color:#2a2f3a !important; }
+html.monetix-dark .bg-white{ background:#1a1d27 !important; }
+html.monetix-dark img.bg-white,
+html.monetix-dark .img-fluid.bg-white{ background:#fff !important; }
+html.monetix-dark code{ background:#262b35; color:#9db8e6; }
+html.monetix-dark hr{ border-color:#2a2f3a; opacity:1; }
 html.monetix-dark .text-primary{ color:#60a5fa !important; }
+html.monetix-dark .field label{ color:#c4ccd8; }
+html.monetix-dark .hint,
+html.monetix-dark .field .form-text{ color:#8ba0b8; }
 html.monetix-dark .student-id-photo{ border-color:#2a2f3a; background:#171a22; }
+html.monetix-dark .student-id-photo-placeholder{ background:#171a22; border-color:#37415c; color:#6b7a90; }
 
 /* ===================== Passport-size ID photo (student profile) ===================== */
 
@@ -1424,7 +1454,23 @@ border-color:rgba(13,110,253,.35);
     font-size: 14px;
     width: 100%;
     background: #fff;
+    color: #212529;
     transition: border-color .15s, box-shadow .15s;
+}
+html.monetix-dark .address-component .field input,
+html.monetix-dark .address-component .field select,
+html.monetix-dark .address-component .field textarea,
+html.monetix-dark .field input,
+html.monetix-dark .field select,
+html.monetix-dark .field textarea {
+    background: #151820;
+    border-color: #2a2f3a;
+    color: #d7dde6;
+}
+html.monetix-dark .address-component .field input[readonly],
+html.monetix-dark .field input[readonly] {
+    background: #1a1d27;
+    color: #8ba0b8;
 }
 .address-component .field input:focus,
 .address-component .field select:focus,

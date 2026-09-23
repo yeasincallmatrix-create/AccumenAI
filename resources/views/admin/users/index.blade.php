@@ -4,10 +4,10 @@
 <style>
     .avatar-circle{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:#fff;background:#6c5ce7;flex-shrink:0}
     .avatar-img{width:42px;height:42px;border-radius:50%;object-fit:cover}
-    .summary-card{border-radius:14px;padding:16px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.06);border:1px solid #eef0f3}
-    .summary-card .label{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:#6c757d;font-weight:600}
+    .summary-card{border-radius:14px;padding:16px;background:var(--white,#fff);box-shadow:0 1px 4px rgba(0,0,0,.06);border:1px solid var(--border,#eef0f3)}
+    .summary-card .label{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted,#6c757d);font-weight:600}
     .summary-card .value{font-size:22px;font-weight:800;margin-top:4px}
-    .account-card-mobile{border:1px solid #eef0f3;border-radius:14px;padding:14px;background:#fff;margin-bottom:12px}
+    .account-card-mobile{border:1px solid var(--border,#eef0f3);border-radius:14px;padding:14px;background:var(--white,#fff);margin-bottom:12px}
     @media (min-width: 768px){ .account-card-mobile{display:none} }
     @media (max-width: 767.98px){ .desktop-table{display:none} }
 </style>

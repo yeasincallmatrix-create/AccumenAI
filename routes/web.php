@@ -631,8 +631,8 @@ Route::middleware(['auth:institute_user,web','tenant', 'deny.teacher.finance', '
     Route::get('crm', [\App\Http\Controllers\CrmDashboardController::class, 'index'])->middleware('module_access:crm')->name('crm.dashboard');
     Route::get('hr', [\App\Http\Controllers\Hr\HrDashboardController::class, 'index'])->middleware('module_access:hr')->name('hr.dashboard');
     Route::get('hr/payroll/periods', function () { return redirect()->route('hr.dashboard'); })->middleware('module_access:hr')->name('hr.payroll.periods.index');
-    Route::get('sales/settings', [\App\Http\Controllers\Sales\SalesSettingsController::class, 'index'])->middleware('module_access:sales')->name('sales.settings.index');
-    Route::get('purchase/orders', [\App\Http\Controllers\PurchaseOrderController::class, 'index'])->middleware('module_access:purchase')->name('purchase.orders.index');
+    Route::get('sales/settings', [\App\Http\Controllers\Sales\SalesSettingsController::class, 'index'])->middleware(['module_access:sales', 'permission:sales.view'])->name('sales.settings.index');
+    Route::get('purchase/orders', [\App\Http\Controllers\PurchaseOrderController::class, 'index'])->middleware(['module_access:purchase', 'permission:purchase.view'])->name('purchase.orders.index');
     Route::get('finance', [\App\Http\Controllers\FinanceDashboardController::class, 'index'])->name('finance.dashboard');
     Route::get('finance/budgets/dashboard', [\App\Http\Controllers\FinanceBudgetController::class, 'index'])->name('finance.budgets.dashboard');
     Route::get('finance/chart-of-accounts', [\App\Http\Controllers\FinanceChartOfAccountController::class, 'index'])->name('finance.chart-of-accounts.index');

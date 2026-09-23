@@ -36,6 +36,9 @@ class NavbarNavigationTest extends TestCase
             'status' => 'active',
         ]);
 
+        app(\App\Services\ModuleAccessService::class)->enableModule($this->institute, 'sales');
+        app(\App\Services\ModuleAccessService::class)->enableModule($this->institute, 'purchase');
+
         $role = Role::where('slug', 'institute-owner')->first()
             ?? Role::firstOrCreate(['slug' => 'institute-owner'], ['name' => 'Institute Owner', 'is_system' => true]);
 

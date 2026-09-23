@@ -39,11 +39,14 @@ class PurchaseCycleCompleteTest extends \Tests\TestCase
 
     protected function institute(string $name): Institute
     {
-        return Institute::create([
+        $inst = Institute::create([
             'name' => $name.' '.uniqid(),
             'slug' => \Illuminate\Support\Str::slug($name.' '.uniqid()),
             'status' => 'active',
         ]);
+        app(\App\Services\ModuleAccessService::class)->enableModule($inst, 'purchase');
+
+        return $inst;
     }
 
     protected function roleId(string $slug): int

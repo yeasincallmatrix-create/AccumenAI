@@ -41,7 +41,7 @@ class SalesQuotationTest extends TestCase
     private function institute(string $name = 'Quo Inst'): Institute
     {
         $country = $this->country();
-        return Institute::create([
+        $inst = Institute::create([
             'name' => $name . ' ' . uniqid(),
             'slug' => str()->slug($name . ' ' . uniqid()),
             'country' => $country->name,
@@ -49,6 +49,9 @@ class SalesQuotationTest extends TestCase
             'industry' => 'retail',
             'status' => 'active',
         ]);
+        app(\App\Services\ModuleAccessService::class)->enableModule($inst, 'sales');
+
+        return $inst;
     }
 
     private function branch(Institute $institute, string $name = 'Main'): Branch
@@ -424,7 +427,19 @@ class SalesQuotationTest extends TestCase
         $q = $service->accept($q);
         $this->assertTrue($service->canConvertToOrder($q));
 
-        $q->update(['converted_to_order_id' => 999]);
+        // Real FK target — cannot use a fake id (FK constraint on converted_to_order_id)
+        $order = \App\Models\SalesOrder::create([
+            'institute_id' => $inst->id,
+            'branch_id' => null,
+            'customer_id' => $customer->id,
+            'currency_id' => $currency->id,
+            'order_number' => 'SO-'.uniqid(),
+            'order_date' => now()->toDateString(),
+            'status' => 'draft',
+            'subtotal' => 50,
+            'grand_total' => 50,
+        ]);
+        $q->update(['converted_to_order_id' => $order->id]);
         $this->assertFalse($service->canConvertToOrder($q->fresh()));
     }
 

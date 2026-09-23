@@ -42,6 +42,7 @@ class SalesCycleCompleteTest extends \Tests\TestCase
         ]);
 
         app(AccountingSetupService::class)->setupForInstitute($inst->id);
+        app(\App\Services\ModuleAccessService::class)->enableModule($inst, 'sales');
 
         $owner = (new UserAccountService)->registerOwner([
             'name' => 'Sales Owner',

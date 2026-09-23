@@ -26,7 +26,7 @@ class MobileApiTest extends TestCase
     private function institute(string $name = 'Mobile API Inst'): Institute
     {
         $country = $this->country();
-        return Institute::create([
+        $inst = Institute::create([
             'name' => $name . ' ' . uniqid(),
             'slug' => str()->slug($name . ' ' . uniqid()),
             'country' => $country->name,
@@ -34,6 +34,10 @@ class MobileApiTest extends TestCase
             'industry' => 'education',
             'status' => 'active',
         ]);
+        app(\App\Services\ModuleAccessService::class)->enableModule($inst, 'sales');
+        app(\App\Services\ModuleAccessService::class)->enableModule($inst, 'hr');
+        app(\App\Services\ModuleAccessService::class)->enableModule($inst, 'inventory');
+        return $inst;
     }
 
     private function branch(Institute $institute, string $name = 'Main'): Branch

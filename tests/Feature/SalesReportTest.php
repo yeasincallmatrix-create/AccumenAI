@@ -37,6 +37,7 @@ class SalesReportTest extends TestCase
         $c ??= $this->country();
         $inst = Institute::create(['name'=>'SR Inst '.uniqid(),'slug'=>'sr-'.uniqid(),'country'=>$c->name,'country_id'=>$c->id,'industry'=>'retail','status'=>'active']);
         app(AccountingSetupService::class)->setupForInstitute($inst->id);
+        app(\App\Services\ModuleAccessService::class)->enableModule($inst, 'sales');
         return $inst;
     }
     private function branch(Institute $i, string $n='Branch'): Branch

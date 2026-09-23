@@ -153,8 +153,8 @@ class InventoryAccountingTest extends TestCase
             options: ['paid_immediately' => true, 'payment_method' => 'cash'],
         );
 
-        $cashCredit = $journal->entries()->where('coa_id', $this->coaId($institute, '1000'))->sum('credit');
-        $apCredit = $journal->entries()->where('coa_id', $this->coaId($institute, '2001'))->sum('credit');
+        $cashCredit = $journal->entries()->where('coa_id', $this->coaId($institute, '1000.1'))->sum('credit');
+        $apCredit = $journal->entries()->where('coa_id', $this->coaId($institute, '2000.1'))->sum('credit');
         $this->assertSame(200.0, round((float) $cashCredit, 4));
         $this->assertSame(0.0, round((float) $apCredit, 4));
     }

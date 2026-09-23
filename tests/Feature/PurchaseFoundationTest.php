@@ -34,7 +34,10 @@ class PurchaseFoundationTest extends TestCase
     private function institute(?Country $c = null): Institute
     {
         $c ??= $this->country();
-        return Institute::create(['name' => 'Purchase Inst '.uniqid(), 'slug' => 'purchase-'.uniqid(), 'country' => $c->name, 'country_id' => $c->id, 'status' => 'active']);
+        $inst = Institute::create(['name' => 'Purchase Inst '.uniqid(), 'slug' => 'purchase-'.uniqid(), 'country' => $c->name, 'country_id' => $c->id, 'status' => 'active']);
+        app(\App\Services\ModuleAccessService::class)->enableModule($inst, 'purchase');
+
+        return $inst;
     }
 
     private function branch(Institute $i, string $name = 'Branch'): Branch

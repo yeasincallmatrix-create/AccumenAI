@@ -7,16 +7,19 @@
     .biz-cover { height: 200px; background: linear-gradient(135deg, var(--bs-primary, #0d6efd) 0%, #6f42c1 100%); border-radius: 16px; overflow: hidden; position: relative; }
     .biz-cover img { width: 100%; height: 100%; object-fit: cover; }
     .biz-cover-placeholder { display: flex; align-items: center; justify-content: center; height: 100%; color: rgba(255,255,255,.85); font-size: 1.05rem; }
-    .biz-avatar { width: 88px; height: 88px; border-radius: 14px; background: #fff; border: 3px solid #fff; box-shadow: 0 4px 16px rgba(0,0,0,.15); overflow: hidden; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.8rem; color: var(--bs-primary, #0d6efd); margin-top: -44px; position: relative; z-index: 2; flex-shrink: 0; }
+    .biz-avatar { width: 88px; height: 88px; border-radius: 14px; background: var(--white, #fff); border: 3px solid var(--white, #fff); box-shadow: 0 4px 16px rgba(0,0,0,.15); overflow: hidden; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.8rem; color: var(--bs-primary, #0d6efd); margin-top: -44px; position: relative; z-index: 2; flex-shrink: 0; }
     .biz-avatar img { width: 100%; height: 100%; object-fit: cover; }
-    .biz-card { border: 1px solid var(--bs-border-color, #e9ecef); border-radius: 14px; background: #fff; }
+    .biz-card { border: 1px solid var(--border, #e9ecef); border-radius: 14px; background: var(--white, #fff); }
     .biz-card .card-body { padding: 1.25rem; }
+    .biz-card hr { border-color: var(--border, #e9ecef); opacity: 1; }
     .biz-badge-domain-academic { background: #0d6efd; color: #fff; }
     .biz-badge-domain-professional { background: #6f42c1; color: #fff; }
     .biz-badge-domain-other { background: #6c757d; color: #fff; }
-    .biz-kv dt { font-weight: 600; color: #6c757d; font-size: .82rem; text-transform: uppercase; letter-spacing: .02em; }
-    .biz-kv dd { font-size: .92rem; }
-    .not-provided { color: #adb5bd; font-style: italic; }
+    .biz-kv dt { font-weight: 600; color: var(--muted, #6c757d); font-size: .82rem; text-transform: uppercase; letter-spacing: .02em; }
+    .biz-kv dd { font-size: .92rem; color: var(--text, #222); }
+    .not-provided { color: var(--muted, #adb5bd); font-style: italic; opacity: .85; }
+    .biz-logo-img { border: 1px solid var(--border, #e9ecef); background: var(--white, #fff); }
+    html.monetix-dark .biz-badge-domain-other { background: #4a5060; color: #e7ebf2; }
     @media (max-width: 767.98px) { .biz-cover { height: 150px; } .biz-avatar { width: 72px; height: 72px; font-size: 1.5rem; margin-top: -36px; } }
 </style>
 @endpush
@@ -190,9 +193,9 @@
                     <dt class="col-sm-5">Logo</dt>
                     <dd class="col-sm-7">
                         @if ($institute->logo_path_resolved)
-                            <img src="{{ $institute->logo_url }}" alt="logo" style="height:36px; border-radius:6px; border:1px solid #e9ecef; background:#fff; padding:2px;">
+                            <img src="{{ $institute->logo_url }}" alt="logo" class="biz-logo-img" style="height:36px; border-radius:6px; padding:2px;">
                         @elseif ($settings?->logo)
-                            <img src="{{ asset('storage/'.$settings->logo) }}" alt="logo" style="height:36px; border-radius:6px; border:1px solid #e9ecef;">
+                            <img src="{{ asset('storage/'.$settings->logo) }}" alt="logo" class="biz-logo-img" style="height:36px; border-radius:6px;">
                         @else <span class="not-provided">Not provided</span> @endif
                         @if($canEdit)
                             <form method="POST" action="{{ route('institute.logo.upload') }}" enctype="multipart/form-data" class="mt-2 d-flex gap-2 align-items-center">

@@ -10,21 +10,22 @@
      window.tdateSync(id) refreshes the visible text after programmatic hidden-value sets.
      window.tdateReady(id) / window.guardTdateSubmit(el) guard filter-form submits. --}}
 <style>
-.tdate-cal{position:fixed;z-index:3000;background:#fff;border:1px solid #dee2e6;border-radius:.5rem;box-shadow:0 .5rem 1rem rgba(0,0,0,.15);padding:.5rem;width:292px;max-width:calc(100vw - 16px);}
+.tdate-cal{position:fixed;z-index:3000;background:var(--white,#fff);border:1px solid var(--border,#dee2e6);border-radius:.5rem;box-shadow:0 .5rem 1rem rgba(0,0,0,.15);padding:.5rem;width:292px;max-width:calc(100vw - 16px);color:var(--text,#212529);}
 .tdate-cal-head{display:flex;align-items:center;gap:.25rem;margin-bottom:.3rem;}
 .tdate-cal-head strong{flex:1;text-align:center;font-size:.85rem;font-weight:600;}
-.tdate-cal-head button{border:1px solid #dee2e6;background:#f8f9fa;border-radius:.35rem;padding:0 .45rem;line-height:1.7;font-size:.85rem;}
-.tdate-cal-head button:hover{background:#e9ecef;}
-.tdate-cal-head select{border:1px solid #dee2e6;border-radius:.35rem;font-size:.8rem;padding:.1rem .2rem;background:#fff;max-width:100%;}
+.tdate-cal-head button{border:1px solid var(--border,#dee2e6);background:var(--surface-alt,#f8f9fa);border-radius:.35rem;padding:0 .45rem;line-height:1.7;font-size:.85rem;color:var(--text,#212529);}
+.tdate-cal-head button:hover{background:var(--border,#e9ecef);}
+.tdate-cal-head select{border:1px solid var(--border,#dee2e6);border-radius:.35rem;font-size:.8rem;padding:.1rem .2rem;background:var(--white,#fff);color:var(--text,#212529);max-width:100%;}
 .tdate-cal-head select[data-cal-year]{flex-shrink:0;}
 .tdate-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center;font-size:.8rem;}
-.tdate-cal-grid .dow{color:#6c757d;font-weight:600;padding:.1rem 0;}
-.tdate-cal-grid button.day{border:0;background:transparent;border-radius:.35rem;padding:.22rem 0;font-size:.8rem;}
-.tdate-cal-grid button.day:hover{background:#e9ecef;}
+.tdate-cal-grid .dow{color:var(--muted,#6c757d);font-weight:600;padding:.1rem 0;}
+.tdate-cal-grid button.day{border:0;background:transparent;border-radius:.35rem;padding:.22rem 0;font-size:.8rem;color:inherit;}
+.tdate-cal-grid button.day:hover{background:var(--border,#e9ecef);}
 .tdate-cal-grid button.day.sel{background:#0d6efd;color:#fff;}
-.tdate-cal-grid button.day.muted{color:#adb5bd;}
-.tdate-cal-grid button.day.disabled{color:#dee2e6;text-decoration:line-through;cursor:not-allowed;}
+.tdate-cal-grid button.day.muted{color:var(--muted,#adb5bd);opacity:.75;}
+.tdate-cal-grid button.day.disabled{color:var(--border,#dee2e6);text-decoration:line-through;cursor:not-allowed;}
 .tdate-cal-grid button.day.disabled:hover{background:transparent;}
+html.monetix-dark .tdate-cal{box-shadow:0 .5rem 1rem rgba(0,0,0,.45);}
 </style>
 <script>
 window.MAWA_DATE_ORDER = @json(mawa_date_format_key());

@@ -33,10 +33,13 @@ class CustomerList extends DataTable
     protected function baseQuery(): Builder
     {
         $user = auth()->user();
-        $institute = $user?->institute;
+        $instituteId = $user?->institute_id;
+        if ($instituteId === null && $user !== null && method_exists($user, 'institute_id')) {
+            $instituteId = $user->institute_id;
+        }
 
         $query = Party::query()
-            ->where('institute_id', $institute->id)
+            ->where('institute_id', $instituteId)
             ->whereIn('type', ['customer', 'both']);
 
         // Branch scoping: branch-scoped users see their branch + shared records
@@ -113,6 +116,9 @@ class CustomerList extends DataTable
     {
         $user = auth()->user();
         $institute = $user?->institute;
+        if ($institute === null && $user !== null && $user?->institute_id) {
+            $institute = \App\Models\Institute::find($user->institute_id);
+        }
 
         return view(self::VIEW, [
             'customers' => $this->getRows(),

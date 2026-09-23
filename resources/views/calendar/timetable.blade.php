@@ -7,9 +7,9 @@
 <style>
     .timetable-grid { overflow-x: auto; }
     .timetable-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-    .timetable-table th, .timetable-table td { border: 1px solid #dee2e6; padding: 6px 8px; vertical-align: top; min-width: 140px; }
-    .timetable-table th { background: #f8f9fa; font-weight: 600; position: sticky; top: 0; z-index: 1; }
-    .timetable-table .time-col { min-width: 80px; text-align: center; background: #f8f9fa; font-weight: 500; }
+    .timetable-table th, .timetable-table td { border: 1px solid var(--border, #dee2e6); padding: 6px 8px; vertical-align: top; min-width: 140px; }
+    .timetable-table th { background: var(--surface-alt, #f8f9fa); font-weight: 600; position: sticky; top: 0; z-index: 1; }
+    .timetable-table .time-col { min-width: 80px; text-align: center; background: var(--surface-alt, #f8f9fa); font-weight: 500; }
     .timetable-table .day-col { min-width: 160px; }
     .timetable-table .event-cell { border-radius: 4px; padding: 4px 6px; margin-bottom: 4px; font-size: 0.8rem; }
     .timetable-table .event-cell .ev-title { font-weight: 600; }

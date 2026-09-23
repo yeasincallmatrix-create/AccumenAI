@@ -52,6 +52,7 @@ class PurchaseReportsTest extends TestCase
         $c = $this->country();
         $inst = Institute::create(['name' => $name.' '.uniqid(), 'slug' => str()->slug($name.' '.uniqid()), 'country' => $c->name, 'country_id' => $c->id, 'industry' => 'retail', 'status' => 'active']);
         app(AccountingSetupService::class)->setupForInstitute($inst->id);
+        app(\App\Services\ModuleAccessService::class)->enableModule($inst, 'purchase');
 
         return $inst;
     }

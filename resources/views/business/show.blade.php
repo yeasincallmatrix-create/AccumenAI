@@ -7,7 +7,7 @@
     .business-cover { height: 220px; background: linear-gradient(135deg, var(--bs-primary) 0%, #6f42c1 100%); border-radius: 16px; overflow: hidden; position: relative; }
     .business-cover img { width: 100%; height: 100%; object-fit: cover; }
     .business-cover-placeholder { display: flex; align-items: center; justify-content: center; height: 100%; color: rgba(255,255,255,.85); font-size: 1.1rem; }
-    .business-avatar { width: 96px; height: 96px; border-radius: 16px; background: #fff; border: 3px solid #fff; box-shadow: 0 4px 16px rgba(0,0,0,.15); overflow: hidden; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 2rem; color: var(--bs-primary); margin-top: -48px; position: relative; z-index: 2; }
+    .business-avatar { width: 96px; height: 96px; border-radius: 16px; background: var(--white, #fff); border: 3px solid var(--white, #fff); box-shadow: 0 4px 16px rgba(0,0,0,.15); overflow: hidden; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 2rem; color: var(--bs-primary); margin-top: -48px; position: relative; z-index: 2; }
     .business-avatar img { width: 100%; height: 100%; object-fit: cover; }
     .business-stats .stat-card { border-radius: 12px; border: 1px solid var(--bs-border-color); padding: 16px; text-align: center; }
     .business-stats .stat-number { font-size: 1.5rem; font-weight: 800; }

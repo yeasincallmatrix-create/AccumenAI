@@ -55,6 +55,7 @@ class SalesInvoiceTest extends TestCase
         $inst = Institute::create(['name'=>'SI Inst '.uniqid(),'slug'=>'si-'.uniqid(),'country'=>$c->name,'country_id'=>$c->id,'industry'=>'retail','status'=>'active']);
         // Enable accounting for invoices, and rely on retail industry to allow inventory sales_issue
         app(\App\Services\Accounting\AccountingSetupService::class)->setupForInstitute($inst->id);
+        app(\App\Services\ModuleAccessService::class)->enableModule($inst, 'sales');
         return $inst;
     }
     private function branch(Institute $i, string $n='Branch'): Branch

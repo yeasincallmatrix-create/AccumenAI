@@ -27,7 +27,7 @@
         <div class="d-flex flex-column flex-md-row align-items-center align-items-md-end gap-3" style="margin-top:-48px;">
             <div class="position-relative flex-shrink-0">
                 @if ($photoUrl)
-                    <img src="{{ $photoUrl }}" alt="{{ $displayName }}" class="rounded-circle border border-3 border-white shadow" style="width:96px;height:96px;object-fit:cover;background:#fff;">
+                    <img src="{{ $photoUrl }}" alt="{{ $displayName }}" class="rounded-circle border border-3 border-white shadow" style="width:96px;height:96px;object-fit:cover;background:var(--white,#fff);">
                 @else
                     <div class="rounded-circle border border-3 border-white shadow d-inline-flex align-items-center justify-content-center fw-bold text-white" style="width:96px;height:96px;font-size:2rem;background: linear-gradient(135deg, #0D6EFD, #6f42c1);">
                         {{ $initials ?: strtoupper(substr($user->email ?? $roleLabel,0,1)) }}

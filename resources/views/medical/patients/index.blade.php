@@ -21,19 +21,20 @@
     .col-filter-menu {
         position: fixed;
         z-index: 1080;
-        background: #fff;
-        border: 1px solid #e9ecef;
+        background: var(--white, #fff);
+        border: 1px solid var(--border, #e9ecef);
         border-radius: 10px;
         box-shadow: 0 12px 32px rgba(0,0,0,.15);
         min-width: 180px;
         max-width: 240px;
         padding: 6px;
     }
+    html.monetix-dark .col-filter-menu { box-shadow: 0 12px 32px rgba(0,0,0,.45); }
     .col-filter-menu .menu-title {
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: .05em;
-        color: #888;
+        color: var(--muted, #888);
         padding: 6px 10px 4px;
     }
     .col-filter-menu a.menu-item {
@@ -44,7 +45,7 @@
         padding: 7px 10px;
         border-radius: 7px;
         font-size: 13.5px;
-        color: #212529;
+        color: var(--text, #212529);
         text-decoration: none;
         white-space: nowrap;
     }

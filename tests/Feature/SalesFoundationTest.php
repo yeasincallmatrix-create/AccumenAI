@@ -33,7 +33,10 @@ class SalesFoundationTest extends TestCase
     private function institute(?Country $c = null): Institute
     {
         $c ??= $this->country();
-        return Institute::create(['name' => 'Sales Inst '.uniqid(), 'slug' => 'sales-'.uniqid(), 'country' => $c->name, 'country_id' => $c->id, 'status' => 'active']);
+        $inst = Institute::create(['name' => 'Sales Inst '.uniqid(), 'slug' => 'sales-'.uniqid(), 'country' => $c->name, 'country_id' => $c->id, 'status' => 'active']);
+        app(\App\Services\ModuleAccessService::class)->enableModule($inst, 'sales');
+
+        return $inst;
     }
 
     private function branch(Institute $i, string $name = 'Branch'): Branch

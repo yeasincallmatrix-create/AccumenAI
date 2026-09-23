@@ -33,15 +33,20 @@ Navbar
 
 .navbar{
 
-background:#fff !important;
+background:var(--white, #fff) !important;
 box-shadow:0 2px 15px rgba(0,0,0,.06);
 
+}
+
+html.monetix-dark .navbar{
+background:#1a1d27 !important;
+box-shadow:0 2px 15px rgba(0,0,0,.4);
 }
 
 .navbar-nav .nav-link{
 
 position:relative;
-color:#222 !important;
+color:var(--text, #222) !important;
 font-weight:600;
 margin:0 6px;
 padding-bottom:4px;
@@ -607,7 +612,7 @@ FEATURED COURSES
 ========================================== */
 
 .featured-courses{
-background:#f8f9fa;
+background:var(--surface-alt, #f8f9fa);
 }
 
 .section-badge{
@@ -628,18 +633,19 @@ font-weight:700;
 .section-subtitle{
 max-width:700px;
 margin:auto;
-color:#666;
+color:var(--muted, #666);
 font-size:18px;
 }
 
 .course-card{
-background:#fff;
+background:var(--white, #fff);
 border-radius:20px;
 overflow:hidden;
 transition:.35s;
 box-shadow:0 8px 30px rgba(0,0,0,.08);
 height:100%;
 }
+html.monetix-dark .course-card{ box-shadow:0 8px 30px rgba(0,0,0,.35); }
 
 .course-card:hover{
 transform:translateY(-10px);
@@ -734,15 +740,16 @@ max-width:640px;
 }
 
 .catalog-section{
-background:#f8f9fa;
+background:var(--surface-alt, #f8f9fa);
 }
 
 .filter-card{
-background:#fff;
+background:var(--white, #fff);
 border-radius:20px;
 box-shadow:0 8px 30px rgba(0,0,0,.08);
 padding:25px;
 }
+html.monetix-dark .filter-card{ box-shadow:0 8px 30px rgba(0,0,0,.35); }
 
 .catalog-card{
 display:flex;
@@ -922,11 +929,11 @@ font-size:16px;
 .detail-stat span{
 display:block;
 font-size:13px;
-color:#666;
+color:var(--muted, #666);
 }
 
 .detail-card{
-background:#fff;
+background:var(--white, #fff);
 border-radius:20px;
 overflow:hidden;
 box-shadow:0 12px 35px rgba(0,0,0,.1);
@@ -956,7 +963,7 @@ color:#0d6efd;
 }
 
 .detail-body{
-background:#fff;
+background:var(--white, #fff);
 }
 
 .detail-block{
@@ -968,11 +975,11 @@ font-size:24px;
 font-weight:700;
 margin-bottom:18px;
 padding-bottom:12px;
-border-bottom:2px solid #eef0f4;
+border-bottom:2px solid var(--border, #eef0f4);
 }
 
 .detail-prose{
-color:#555;
+color:var(--muted, #555);
 line-height:1.8;
 font-size:15px;
 }
@@ -982,8 +989,8 @@ row-gap:1rem;
 }
 
 .overview-item{
-background:#f8f9fa;
-border:1px solid #eef0f4;
+background:var(--surface-alt, #f8f9fa);
+border:1px solid var(--border, #eef0f4);
 border-radius:14px;
 padding:16px;
 }

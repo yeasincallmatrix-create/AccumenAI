@@ -53,6 +53,7 @@ class GoodsReceiptTest extends TestCase
         ]);
 
         app(AccountingSetupService::class)->setupForInstitute($this->institute->id, null);
+        app(\App\Services\ModuleAccessService::class)->enableModule($this->institute, 'purchase');
 
         $role = Role::where('slug', 'institute-owner')->firstOrFail();
 

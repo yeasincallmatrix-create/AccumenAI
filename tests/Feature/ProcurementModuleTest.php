@@ -57,6 +57,7 @@ class ProcurementModuleTest extends TestCase
         ]);
 
         app(AccountingSetupService::class)->setupForInstitute($inst->id, null);
+        app(\App\Services\ModuleAccessService::class)->enableModule($inst, 'purchase');
 
         return $inst;
     }

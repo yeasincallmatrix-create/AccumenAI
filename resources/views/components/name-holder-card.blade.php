@@ -175,6 +175,9 @@ html.monetix-dark .name-holder-card { background: #1a1d27; border-color: #2a2f3a
 html.monetix-dark .name-holder-name { color: #e9ecef; }
 html.monetix-dark .name-holder-line { background: #2a2f3a; }
 html.monetix-dark .name-holder-badge { background: #222633; border-color: #2a2f3a; color: #adb5bd; }
+html.monetix-dark .name-holder-subtitle,
+html.monetix-dark .name-holder-footer { color: #8ba0b8; }
+html.monetix-dark .name-holder-pin { background: #2a2f3a; border-color: #37415c; }
 </style>
 @endpush
 @endonce
