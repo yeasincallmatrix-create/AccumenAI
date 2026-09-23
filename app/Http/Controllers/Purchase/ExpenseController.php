@@ -60,6 +60,19 @@ class ExpenseController extends Controller
         ]);
     }
 
+    public function show(Request $request, Expense $expense): View
+    {
+        $this->requirePermission('purchase.expenses.view', 'purchase.view', 'purchase.manage');
+        $institute = $this->requireInstitute($request);
+        abort_unless($expense->institute_id === $institute->id, 404);
+        $expense->load(['customer', 'expenseAccount']);
+
+        return view('purchase.expenses.show', [
+            'institute' => $institute,
+            'expense' => $expense,
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $this->requirePermission('purchase.expenses.create', 'purchase.manage');

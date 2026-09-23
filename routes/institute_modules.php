@@ -302,7 +302,7 @@ Route::middleware($tenant)->group(function () {
     Route::post('crm/notes', [$crmNote, 'store'])->name('crm.notes.store');
     }); // end module_access:crm
 
-    // ─── SALES ─────────────────────────────────────────────────────────────
+    // ─── SALES (QuickBooks-style: 7 groups) ────────────────────────────────
     $salesOrder = \App\Http\Controllers\Sales\SalesOrderController::class;
     $salesDel = \App\Http\Controllers\Sales\DeliveryController::class;
     $salesQuot = \App\Http\Controllers\Sales\QuotationController::class;
@@ -312,14 +312,16 @@ Route::middleware($tenant)->group(function () {
     $salesInv = \App\Http\Controllers\Sales\SalesInvoiceController::class;
     $salesReport = \App\Http\Controllers\Sales\SalesReportController::class;
     $salesSettings = \App\Http\Controllers\Sales\SalesSettingsController::class;
+    $salesPay = \App\Http\Controllers\Sales\ReceivePaymentController::class;
+    $salesRcpt = \App\Http\Controllers\Sales\SalesReceiptController::class;
 
-    Route::middleware('module_access:sales')->group(function () use ($salesOrder, $salesDel, $salesQuot, $salesRet, $salesLead, $salesCust, $salesInv, $salesReport, $salesSettings) {
+    Route::middleware('module_access:sales')->group(function () use ($salesOrder, $salesDel, $salesQuot, $salesRet, $salesLead, $salesCust, $salesInv, $salesReport, $salesSettings, $salesPay, $salesRcpt) {
 
-    // Sales Settings
+    // Sales Settings (no sub-module key — parent only)
     Route::match(['put', 'post'], 'sales/settings', [$salesSettings, 'update'])->middleware('permission:sales.manage')->name('sales.settings.update');
 
-    // Sales Reports
-    Route::prefix('sales/reports')->name('sales.reports.')->middleware('permission:sales.view')->group(function () use ($salesReport) {
+    // Sales Reports — sub-module: sales.reports
+    Route::prefix('sales/reports')->name('sales.reports.')->middleware(['permission:sales.view', 'module_access:sales.reports,sales'])->group(function () use ($salesReport) {
         Route::get('/', [$salesReport, 'dashboard'])->name('dashboard');
         Route::get('daily', [$salesReport, 'daily'])->name('daily');
         Route::get('weekly', [$salesReport, 'weekly'])->name('weekly');
@@ -335,7 +337,22 @@ Route::middleware($tenant)->group(function () {
         Route::get('statement', [$salesReport, 'statement'])->name('statement');
     });
 
-    // Sales Quotations
+    // Estimates (QuickBooks) — sub-module: sales.quotations — legacy: sales.quotations.*
+    Route::prefix('sales/estimates')->name('sales.estimates.')->middleware(['permission:sales.view', 'module_access:sales.quotations,sales'])->group(function () use ($salesQuot) {
+        Route::get('/', [$salesQuot, 'index'])->name('index');
+        Route::get('create', [$salesQuot, 'create'])->name('create');
+        Route::post('/', [$salesQuot, 'store'])->name('store');
+        Route::get('{quotation}', [$salesQuot, 'show'])->name('show');
+        Route::get('{quotation}/edit', [$salesQuot, 'edit'])->name('edit');
+        Route::put('{quotation}', [$salesQuot, 'update'])->name('update');
+        Route::post('{quotation}/send', [$salesQuot, 'send'])->name('send');
+        Route::post('{quotation}/accept', [$salesQuot, 'accept'])->name('accept');
+        Route::post('{quotation}/reject', [$salesQuot, 'reject'])->name('reject');
+        Route::post('{quotation}/cancel', [$salesQuot, 'cancel'])->name('cancel');
+        Route::post('{quotation}/expire', [$salesQuot, 'expire'])->name('expire');
+        Route::get('{quotation}/print', [$salesQuot, 'print'])->name('print');
+    });
+    // Legacy aliases: sales.quotations.* (same handlers, old URI)
     Route::prefix('sales/quotations')->name('sales.quotations.')->middleware('permission:sales.view')->group(function () use ($salesQuot) {
         Route::get('/', [$salesQuot, 'index'])->name('index');
         Route::get('create', [$salesQuot, 'create'])->name('create');
@@ -351,8 +368,8 @@ Route::middleware($tenant)->group(function () {
         Route::get('{quotation}/print', [$salesQuot, 'print'])->name('print');
     });
 
-    // Sales Orders
-    Route::prefix('sales/orders')->name('sales.orders.')->group(function () use ($salesOrder) {
+    // Sales Orders — sub-module: sales.orders
+    Route::prefix('sales/orders')->name('sales.orders.')->middleware('module_access:sales.orders,sales')->group(function () use ($salesOrder) {
         Route::get('/', [$salesOrder, 'index'])->middleware('permission:sales.view')->name('index');
         Route::get('create', [$salesOrder, 'create'])->middleware('permission:sales.create')->name('create');
         Route::post('/', [$salesOrder, 'store'])->middleware('permission:sales.create')->name('store');
@@ -370,8 +387,8 @@ Route::middleware($tenant)->group(function () {
         Route::post('convert/{quotation}', [$salesOrder, 'convert'])->middleware('permission:sales.create')->name('convert');
     });
 
-    // Sales Deliveries
-    Route::prefix('sales/deliveries')->name('sales.deliveries.')->group(function () use ($salesDel, $salesInv) {
+    // Sales Deliveries — sub-module: sales.deliveries
+    Route::prefix('sales/deliveries')->name('sales.deliveries.')->middleware('module_access:sales.deliveries,sales')->group(function () use ($salesDel, $salesInv) {
         Route::get('/', [$salesDel, 'index'])->name('index');
         Route::get('create', [$salesDel, 'create'])->name('create');
         Route::post('/', [$salesDel, 'store'])->name('store');
@@ -379,10 +396,10 @@ Route::middleware($tenant)->group(function () {
         Route::post('{delivery}/confirm', [$salesDel, 'confirm'])->name('confirm');
         Route::post('{delivery}/cancel', [$salesDel, 'cancel'])->name('cancel');
         Route::get('{delivery}/print', [$salesDel, 'print'])->name('print');
-        Route::post('{delivery}/invoice', [\App\Http\Controllers\Sales\SalesInvoiceController::class, 'storeForDelivery'])->name('invoice');
+        Route::post('{delivery}/invoice', [$salesInv, 'storeForDelivery'])->name('invoice');
     });
 
-    // Sales Invoices
+    // Sales Invoices (no sub-module key — parent only)
     Route::prefix('sales/invoices')->name('sales.invoices.')->group(function () use ($salesInv) {
         Route::get('/', [$salesInv, 'index'])->middleware('permission:sales.invoices.view')->name('index');
         Route::get('create', [$salesInv, 'createForOrder'])->name('create');
@@ -390,21 +407,36 @@ Route::middleware($tenant)->group(function () {
         Route::get('{invoice}', [$salesInv, 'show'])->middleware('permission:sales.invoices.view')->name('show');
     });
 
-    // Receive Payments
-    Route::prefix('sales/payments')->name('sales.payments.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Sales\ReceivePaymentController::class, 'index'])->middleware('permission:sales.payments.view')->name('index');
-        Route::get('create', [\App\Http\Controllers\Sales\ReceivePaymentController::class, 'create'])->middleware('permission:sales.payments.create')->name('create');
-        Route::post('/', [\App\Http\Controllers\Sales\ReceivePaymentController::class, 'store'])->middleware('permission:sales.payments.create')->name('store');
+    // Receive Payments (no sub-module key — parent only)
+    Route::prefix('sales/payments')->name('sales.payments.')->group(function () use ($salesPay) {
+        Route::get('/', [$salesPay, 'index'])->middleware('permission:sales.payments.view')->name('index');
+        Route::get('create', [$salesPay, 'create'])->middleware('permission:sales.payments.create')->name('create');
+        Route::get('{payment}', [$salesPay, 'show'])->middleware('permission:sales.payments.view')->name('show');
+        Route::post('/', [$salesPay, 'store'])->middleware('permission:sales.payments.create')->name('store');
     });
 
-    // Sales Receipts
-    Route::prefix('sales/receipts')->name('sales.receipts.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Sales\SalesReceiptController::class, 'index'])->middleware('permission:sales.receipts.view')->name('index');
-        Route::get('create', [\App\Http\Controllers\Sales\SalesReceiptController::class, 'create'])->middleware('permission:sales.receipts.create')->name('create');
-        Route::post('/', [\App\Http\Controllers\Sales\SalesReceiptController::class, 'store'])->middleware('permission:sales.receipts.create')->name('store');
+    // Sales Receipts (no sub-module key — parent only)
+    Route::prefix('sales/receipts')->name('sales.receipts.')->group(function () use ($salesRcpt) {
+        Route::get('/', [$salesRcpt, 'index'])->middleware('permission:sales.receipts.view')->name('index');
+        Route::get('create', [$salesRcpt, 'create'])->middleware('permission:sales.receipts.create')->name('create');
+        Route::get('{receipt}', [$salesRcpt, 'show'])->middleware('permission:sales.receipts.view')->name('show');
+        Route::post('/', [$salesRcpt, 'store'])->middleware('permission:sales.receipts.create')->name('store');
     });
 
-    // Sales Returns
+    // Credit Memos (QuickBooks) — sub-module: sales.returns — legacy: sales.returns.*
+    Route::prefix('sales/credit-memos')->name('sales.credit-memos.')->middleware(['permission:sales.view', 'module_access:sales.returns,sales'])->group(function () use ($salesRet) {
+        Route::get('/', [$salesRet, 'index'])->name('index');
+        Route::get('create', [$salesRet, 'create'])->name('create');
+        Route::post('/', [$salesRet, 'store'])->name('store');
+        Route::get('{return}', [$salesRet, 'show'])->name('show');
+        Route::post('{return}/credit-note', [$salesRet, 'creditNote'])->name('credit-note');
+        Route::post('{return}/approve', [$salesRet, 'approve'])->name('approve');
+        Route::post('{return}/post', [$salesRet, 'post'])->name('post');
+        Route::post('{return}/cancel', [$salesRet, 'cancel'])->name('cancel');
+        Route::post('{return}/reverse', [$salesRet, 'reverse'])->name('reverse');
+        Route::post('{return}/refund', [$salesRet, 'refund'])->name('refund');
+    });
+    // Legacy aliases: sales.returns.* (same handlers, old URI)
     Route::prefix('sales/returns')->name('sales.returns.')->middleware('permission:sales.view')->group(function () use ($salesRet) {
         Route::get('/', [$salesRet, 'index'])->name('index');
         Route::get('create', [$salesRet, 'create'])->name('create');
@@ -418,8 +450,8 @@ Route::middleware($tenant)->group(function () {
         Route::post('{return}/refund', [$salesRet, 'refund'])->name('refund');
     });
 
-    // Sales Leads
-    Route::prefix('sales/leads')->name('sales.leads.')->middleware('permission:sales.view')->group(function () use ($salesLead) {
+    // Sales Leads — sub-module: sales.leads
+    Route::prefix('sales/leads')->name('sales.leads.')->middleware(['permission:sales.view', 'module_access:sales.leads,sales'])->group(function () use ($salesLead) {
         Route::get('/', [$salesLead, 'index'])->name('index');
         Route::get('create', [$salesLead, 'create'])->name('create');
         Route::post('/', [$salesLead, 'store'])->name('store');
@@ -427,7 +459,17 @@ Route::middleware($tenant)->group(function () {
         Route::post('{lead}/convert', [$salesLead, 'convertToQuotation'])->name('convert');
     });
 
-    // Sales Customers (manage)
+    // Customers (QuickBooks) — sub-module: sales.customers — distinct URI from legacy /manage
+    // NOTE: sales.customers.show stays the lookup JSON route (tests depend). CRUD show = sales.customers.manage.show.
+    Route::prefix('sales/customers')->name('sales.customers.')->middleware(['permission:sales.customers.manage', 'module_access:sales.customers,sales'])->group(function () use ($salesCust) {
+        Route::get('/', [$salesCust, 'index'])->name('index');
+        Route::get('create', [$salesCust, 'create'])->name('create');
+        Route::post('/', [$salesCust, 'store'])->name('store');
+        Route::get('{customer}/edit', [$salesCust, 'edit'])->name('edit');
+        Route::put('{customer}', [$salesCust, 'update'])->name('update');
+        Route::delete('{customer}', [$salesCust, 'destroy'])->name('destroy');
+    });
+    // Legacy aliases: sales.customers.manage.* (same handlers — views/tests depend on these exact names)
     Route::prefix('sales/customers/manage')->name('sales.customers.manage.')->middleware('permission:sales.customers.manage')->group(function () use ($salesCust) {
         Route::get('/', [$salesCust, 'index'])->name('index');
         Route::get('create', [$salesCust, 'create'])->name('create');
@@ -437,7 +479,8 @@ Route::middleware($tenant)->group(function () {
         Route::put('{customer}', [$salesCust, 'update'])->name('update');
     });
 
-    // Sales Lookup (JSON selectors — customers / CRM / items)
+    // Sales Lookup (JSON selectors — customers / CRM / items) — parent only
+    // sales.customers.show MUST remain the lookup JSON endpoint (SalesCustomerProductTest).
     $salesLookup = \App\Http\Controllers\Sales\SalesLookupController::class;
     Route::prefix('sales')->name('sales.')->middleware('permission:sales.view')->group(function () use ($salesLookup) {
         Route::get('customers/search', [$salesLookup, 'customers'])->name('customers.search');
@@ -449,7 +492,7 @@ Route::middleware($tenant)->group(function () {
     });
     }); // end module_access:sales
 
-    // ─── PURCHASE ──────────────────────────────────────────────────────────
+    // ─── PURCHASE (QuickBooks-style: 6 groups) ─────────────────────────────
     $poCtrl = \App\Http\Controllers\Purchase\PurchaseOrderController::class;
     $pInv = \App\Http\Controllers\Purchase\PurchaseInvoiceController::class;
     $pQuot = \App\Http\Controllers\Purchase\PurchaseQuotationController::class;
@@ -458,11 +501,13 @@ Route::middleware($tenant)->group(function () {
     $pRcpt = \App\Http\Controllers\Purchase\GoodsReceiptWebController::class;
     $pRep = \App\Http\Controllers\Purchase\PurchaseReportController::class;
     $pSup = \App\Http\Controllers\Purchase\SuppliersController::class;
+    $pExp = \App\Http\Controllers\Purchase\ExpenseController::class;
+    $pBillPay = \App\Http\Controllers\Purchase\BillPaymentController::class;
 
-    Route::middleware('module_access:purchase')->group(function () use ($poCtrl, $pInv, $pQuot, $pReq, $pRet, $pRcpt, $pRep, $pSup) {
+    Route::middleware('module_access:purchase')->group(function () use ($poCtrl, $pInv, $pQuot, $pReq, $pRet, $pRcpt, $pRep, $pSup, $pExp, $pBillPay) {
 
-    // Purchase Orders
-    Route::prefix('purchase/orders')->name('purchase.orders.')->group(function () use ($poCtrl) {
+    // Purchase Orders — sub-module: purchase.orders
+    Route::prefix('purchase/orders')->name('purchase.orders.')->middleware('module_access:purchase.orders,purchase')->group(function () use ($poCtrl) {
         Route::get('/', [$poCtrl, 'index'])->middleware('permission:purchase.view')->name('index');
         Route::get('create', [$poCtrl, 'create'])->middleware('permission:purchase.create')->name('create');
         Route::post('/', [$poCtrl, 'store'])->middleware('permission:purchase.create')->name('store');
@@ -477,7 +522,20 @@ Route::middleware($tenant)->group(function () {
         Route::get('{order}/print', [$poCtrl, 'print'])->middleware('permission:purchase.view')->name('print');
     });
 
-    // Purchase Invoices
+    // Bills (QuickBooks) — sub-module: purchase.invoices — legacy: purchase.invoices.*
+    Route::prefix('purchase/bills')->name('purchase.bills.')->middleware('module_access:purchase.invoices,purchase')->group(function () use ($pInv) {
+        Route::get('/', [$pInv, 'index'])->name('index');
+        Route::get('create', [$pInv, 'create'])->name('create');
+        Route::post('/', [$pInv, 'store'])->name('store');
+        Route::get('{invoice}', [$pInv, 'show'])->name('show');
+        Route::post('{invoice}/post', [$pInv, 'post'])->name('post');
+        Route::post('{invoice}/cancel', [$pInv, 'cancel'])->name('cancel');
+        Route::get('{invoice}/print', [$pInv, 'print'])->name('print');
+        Route::post('{invoice}/reverse', [$pInv, 'reverse'])->name('reverse');
+        Route::post('{invoice}/pay', [$pInv, 'pay'])->name('pay');
+        Route::post('{invoice}/reverse-payment', [$pInv, 'reversePayment'])->name('reverse-payment');
+    });
+    // Legacy aliases: purchase.invoices.* (same handlers, old URI — views/tests depend)
     Route::prefix('purchase/invoices')->name('purchase.invoices.')->group(function () use ($pInv) {
         Route::get('/', [$pInv, 'index'])->name('index');
         Route::get('create', [$pInv, 'create'])->name('create');
@@ -491,8 +549,8 @@ Route::middleware($tenant)->group(function () {
         Route::post('{invoice}/reverse-payment', [$pInv, 'reversePayment'])->name('reverse-payment');
     });
 
-    // Purchase Quotations
-    Route::prefix('purchase/quotations')->name('purchase.quotations.')->group(function () use ($pQuot) {
+    // Purchase Quotations — sub-module: purchase.quotations
+    Route::prefix('purchase/quotations')->name('purchase.quotations.')->middleware('module_access:purchase.quotations,purchase')->group(function () use ($pQuot) {
         Route::get('/', [$pQuot, 'index'])->name('index');
         Route::get('create', [$pQuot, 'create'])->name('create');
         Route::post('/', [$pQuot, 'store'])->name('store');
@@ -507,8 +565,8 @@ Route::middleware($tenant)->group(function () {
         Route::post('{quotation}/convert', [$pQuot, 'convert'])->name('convert');
     });
 
-    // Purchase Requests
-    Route::prefix('purchase/requests')->name('purchase.requests.')->group(function () use ($pReq) {
+    // Purchase Requests — sub-module: purchase.requests
+    Route::prefix('purchase/requests')->name('purchase.requests.')->middleware('module_access:purchase.requests,purchase')->group(function () use ($pReq) {
         Route::get('/', [$pReq, 'index'])->name('index');
         Route::get('create', [$pReq, 'create'])->name('create');
         Route::post('/', [$pReq, 'store'])->name('store');
@@ -517,7 +575,23 @@ Route::middleware($tenant)->group(function () {
         Route::post('{purchaseRequest}/convert', [$pReq, 'convertToOrder'])->name('convert');
     });
 
-    // Purchase Returns
+    // Vendor Credits (QuickBooks) — sub-module: purchase.returns — legacy: purchase.returns.*
+    Route::prefix('purchase/vendor-credits')->name('purchase.vendor-credits.')->middleware('module_access:purchase.returns,purchase')->group(function () use ($pRet) {
+        Route::get('/', [$pRet, 'index'])->name('index');
+        Route::get('create', [$pRet, 'create'])->name('create');
+        Route::post('/', [$pRet, 'store'])->name('store');
+        Route::get('{return}', [$pRet, 'show'])->name('show');
+        Route::post('{return}/submit', [$pRet, 'submit'])->name('submit');
+        Route::post('{return}/approve', [$pRet, 'approve'])->name('approve');
+        Route::post('{return}/post', [$pRet, 'post'])->name('post');
+        Route::post('{return}/cancel', [$pRet, 'cancel'])->name('cancel');
+        Route::post('{return}/reverse', [$pRet, 'reverse'])->name('reverse');
+        Route::post('{return}/credit-note', [$pRet, 'creditNote'])->name('credit-note');
+        Route::get('{return}/print', [$pRet, 'print'])->name('print');
+        Route::post('{return}/refund', [$pRet, 'refund'])->name('refund');
+        Route::post('{return}/adjust', [$pRet, 'adjust'])->name('adjust');
+    });
+    // Legacy aliases: purchase.returns.* (same handlers, old URI — views/tests depend)
     Route::prefix('purchase/returns')->name('purchase.returns.')->group(function () use ($pRet) {
         Route::get('/', [$pRet, 'index'])->name('index');
         Route::get('create', [$pRet, 'create'])->name('create');
@@ -534,8 +608,8 @@ Route::middleware($tenant)->group(function () {
         Route::post('{return}/adjust', [$pRet, 'adjust'])->name('adjust');
     });
 
-    // Purchase Goods Receipts
-    Route::prefix('purchase/receipts')->name('purchase.receipts.')->group(function () use ($pRcpt) {
+    // Goods Receipts — sub-module: purchase.receipts
+    Route::prefix('purchase/receipts')->name('purchase.receipts.')->middleware('module_access:purchase.receipts,purchase')->group(function () use ($pRcpt) {
         Route::get('/', [$pRcpt, 'index'])->middleware('permission:purchase.view')->name('index');
         Route::get('create', [$pRcpt, 'create'])->middleware('permission:purchase.create')->name('create');
         Route::post('/', [$pRcpt, 'store'])->middleware('permission:purchase.create')->name('store');
@@ -546,7 +620,7 @@ Route::middleware($tenant)->group(function () {
         Route::get('{receipt}/print', [$pRcpt, 'print'])->name('print');
     });
 
-    // Purchase Reports
+    // Purchase Reports (no sub-module key — parent only)
     Route::prefix('purchase/reports')->name('purchase.reports.')->middleware('permission:purchase.view')->group(function () use ($pRep) {
         Route::get('/', [$pRep, 'dashboard'])->name('dashboard');
         Route::get('daily', [$pRep, 'daily'])->name('daily');
@@ -559,27 +633,38 @@ Route::middleware($tenant)->group(function () {
         Route::get('supplierStatement', [$pRep, 'supplierStatement'])->name('supplierStatement');
     });
 
-    // Purchase Payments
-    Route::post('purchase/payments/reverse', [$pRet, 'reverse'])->middleware('module_access:purchase')->name('purchase.payments.reverse');
+    // Bill payment reverse (legacy path kept)
+    Route::post('purchase/payments/reverse', [$pRet, 'reverse'])->name('purchase.payments.reverse');
 
-    // Purchase Expenses
-    Route::prefix('purchase/expenses')->name('purchase.expenses.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Purchase\ExpenseController::class, 'index'])->middleware('permission:purchase.expenses.view')->name('index');
-        Route::get('create', [\App\Http\Controllers\Purchase\ExpenseController::class, 'create'])->middleware('permission:purchase.expenses.create')->name('create');
-        Route::post('/', [\App\Http\Controllers\Purchase\ExpenseController::class, 'store'])->middleware('permission:purchase.expenses.create')->name('store');
+    // Expenses (no sub-module key — parent only)
+    Route::prefix('purchase/expenses')->name('purchase.expenses.')->group(function () use ($pExp) {
+        Route::get('/', [$pExp, 'index'])->middleware('permission:purchase.expenses.view')->name('index');
+        Route::get('create', [$pExp, 'create'])->middleware('permission:purchase.expenses.create')->name('create');
+        Route::get('{expense}', [$pExp, 'show'])->middleware('permission:purchase.expenses.view')->name('show');
+        Route::post('/', [$pExp, 'store'])->middleware('permission:purchase.expenses.create')->name('store');
     });
 
-    // Bill Payments
-    Route::prefix('purchase/bill-payments')->name('purchase.payments.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Purchase\BillPaymentController::class, 'index'])->middleware('permission:purchase.payments.view')->name('index');
-        Route::get('create', [\App\Http\Controllers\Purchase\BillPaymentController::class, 'create'])->middleware('permission:purchase.payments.create')->name('create');
-        Route::post('/', [\App\Http\Controllers\Purchase\BillPaymentController::class, 'store'])->middleware('permission:purchase.payments.create')->name('store');
+    // Bill Payments (no sub-module key — parent only)
+    Route::prefix('purchase/bill-payments')->name('purchase.payments.')->group(function () use ($pBillPay) {
+        Route::get('/', [$pBillPay, 'index'])->middleware('permission:purchase.payments.view')->name('index');
+        Route::get('create', [$pBillPay, 'create'])->middleware('permission:purchase.payments.create')->name('create');
+        Route::get('{payment}', [$pBillPay, 'show'])->middleware('permission:purchase.payments.view')->name('show');
+        Route::post('/', [$pBillPay, 'store'])->middleware('permission:purchase.payments.create')->name('store');
     });
 
     // Purchase Credit
-    Route::post('purchase/credit/adjust', [$pRet, 'adjust'])->middleware('module_access:purchase')->name('purchase.credit.adjust');
+    Route::post('purchase/credit/adjust', [$pRet, 'adjust'])->name('purchase.credit.adjust');
 
-    // Purchase Suppliers
+    // Vendors (QuickBooks) — no sub-module key — distinct URI from legacy /suppliers
+    Route::prefix('purchase/vendors')->name('purchase.vendors.')->group(function () use ($pSup) {
+        Route::get('/', [$pSup, 'index'])->middleware('permission:purchase.view')->name('index');
+        Route::post('/', [$pSup, 'store'])->middleware('permission:purchase.vendors.manage')->name('store');
+        Route::get('{id}', [$pSup, 'show'])->middleware('permission:purchase.view')->name('show');
+        Route::put('{id}', [$pSup, 'update'])->middleware('permission:purchase.vendors.manage')->name('update');
+        Route::delete('{id}', [$pSup, 'destroy'])->middleware('permission:purchase.vendors.manage')->name('destroy');
+        Route::put('{id}/restore', [$pSup, 'restore'])->middleware('permission:purchase.vendors.manage')->name('restore');
+    });
+    // Legacy aliases: purchase.suppliers.* (same handlers — views/tests depend)
     Route::prefix('purchase/suppliers')->name('purchase.suppliers.')->group(function () use ($pSup) {
         Route::get('/', [$pSup, 'index'])->middleware('permission:purchase.view')->name('index');
         Route::post('/', [$pSup, 'store'])->middleware('permission:purchase.vendors.manage')->name('store');
@@ -1683,12 +1768,11 @@ Route::middleware($tenant)->group(function () {
 
     // ─── SALES RETURNS EXTRA (unique) ───────────────────────────────────────
     Route::post('sales/returns/{return}/invoice', [\App\Http\Controllers\Sales\SalesReturnController::class, 'invoiceLines'])->middleware('module_access:sales')->name('sales.returns.invoice');
+    // Credit-memos URI alias for invoiceLines (QuickBooks path)
+    Route::post('sales/credit-memos/{return}/invoice', [\App\Http\Controllers\Sales\SalesReturnController::class, 'invoiceLines'])->middleware('module_access:sales')->name('sales.credit-memos.invoice');
 
     // ─── PURCHASE QUOTATIONS EXTRA (unique) ─────────────────────────────────
     Route::get('purchase/quotations/{quotation}/print', [\App\Http\Controllers\Purchase\PurchaseQuotationController::class, 'print'])->middleware('module_access:purchase')->name('purchase.quotations.print');
-
-    // ─── PURCHASE REPORTS EXTRA (unique) ────────────────────────────────────
-    Route::get('purchase/reports/export', [\App\Http\Controllers\Purchase\PurchaseReportController::class, 'export'])->middleware(['module_access:purchase', 'permission:purchase.view'])->name('purchase.reports.export');
 
     // ─── ACADEMIC STRUCTURE OPTIONS (JSON API) ────────────────────────────────
     Route::get('academic/structure/options', [\App\Http\Controllers\AcademicStructureController::class, 'options'])->name('academic.structure.options');

@@ -75,6 +75,19 @@ class ReceivePaymentController extends Controller
         ]);
     }
 
+    public function show(Request $request, Payment $payment): View
+    {
+        $this->requirePermission('sales.payments.view', 'sales.view', 'sales.manage');
+        $institute = $this->requireInstitute($request);
+        abort_unless($payment->institute_id === $institute->id, 404);
+        $payment->load(['party', 'invoice', 'paymentMethod']);
+
+        return view('sales.payments.show', [
+            'institute' => $institute,
+            'payment' => $payment,
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $this->requirePermission('sales.payments.create', 'sales.manage');

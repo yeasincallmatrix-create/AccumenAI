@@ -54,6 +54,19 @@ class SalesReceiptController extends Controller
         ]);
     }
 
+    public function show(Request $request, CashMemo $receipt): View
+    {
+        $this->requirePermission('sales.receipts.view', 'sales.view', 'sales.manage');
+        $institute = $this->requireInstitute($request);
+        abort_unless($receipt->institute_id === $institute->id, 404);
+        $receipt->load('party');
+
+        return view('sales.receipts.show', [
+            'institute' => $institute,
+            'receipt' => $receipt,
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $this->requirePermission('sales.receipts.create', 'sales.manage');

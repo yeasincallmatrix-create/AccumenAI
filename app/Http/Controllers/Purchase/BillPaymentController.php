@@ -68,6 +68,19 @@ class BillPaymentController extends Controller
         ]);
     }
 
+    public function show(Request $request, PurchaseSupplierPayment $payment): View
+    {
+        $this->requirePermission('purchase.payments.view', 'purchase.view', 'purchase.manage');
+        $institute = $this->requireInstitute($request);
+        abort_unless($payment->institute_id === $institute->id, 404);
+        $payment->load(['supplier', 'purchaseInvoice', 'paymentMethod']);
+
+        return view('purchase.payments.show', [
+            'institute' => $institute,
+            'payment' => $payment,
+        ]);
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $this->requirePermission('purchase.payments.create', 'purchase.manage');

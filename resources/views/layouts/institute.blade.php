@@ -617,8 +617,26 @@
                             <i class="bi bi-chevron-down small sidebar-label nav-caret"></i>
                         </button>
                         <div class="collapse {{ $salesOpen ? 'show' : '' }}" id="salesNavGroup">
-                            <a class="nav-link sub {{ request()->routeIs('sales.*') ? 'active' : '' }}" href="{{ route('sales.settings.index') }}">
-                                <i class="bi bi-cart-fill"></i><span class="sidebar-label">Sales</span>
+                            <a class="nav-link sub {{ request()->routeIs('sales.invoices.*') ? 'active' : '' }}" href="{{ route('sales.invoices.index') }}">
+                                <i class="bi bi-receipt"></i><span class="sidebar-label">Invoice</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('sales.payments.*') ? 'active' : '' }}" href="{{ route('sales.payments.index') }}">
+                                <i class="bi bi-cash"></i><span class="sidebar-label">Receive Payment</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('sales.estimates.*','sales.quotations.*') ? 'active' : '' }}" href="{{ route('sales.estimates.index') }}">
+                                <i class="bi bi-file-earmark-text"></i><span class="sidebar-label">Estimate</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('sales.orders.*') ? 'active' : '' }}" href="{{ route('sales.orders.index') }}">
+                                <i class="bi bi-cart-check"></i><span class="sidebar-label">Sales Order</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('sales.credit-memos.*','sales.returns.*') ? 'active' : '' }}" href="{{ route('sales.credit-memos.index') }}">
+                                <i class="bi bi-arrow-return-left"></i><span class="sidebar-label">Credit Memo</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('sales.receipts.*') ? 'active' : '' }}" href="{{ route('sales.receipts.index') }}">
+                                <i class="bi bi-cash-coin"></i><span class="sidebar-label">Sales Receipt</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('sales.customers.*','sales.customers.manage.*') ? 'active' : '' }}" href="{{ route('sales.customers.index') }}">
+                                <i class="bi bi-people"></i><span class="sidebar-label">Add Customer</span>
                             </a>
                         </div>
                     </div>
@@ -631,8 +649,23 @@
                             <i class="bi bi-chevron-down small sidebar-label nav-caret"></i>
                         </button>
                         <div class="collapse {{ $purchaseOpen ? 'show' : '' }}" id="purchaseNavGroup">
-                            <a class="nav-link sub {{ request()->routeIs('purchase.orders.*','purchase.quotations.*','purchase.returns.*') ? 'active' : '' }}" href="{{ route('purchase.orders.index') }}">
-                                <i class="bi bi-bag-fill"></i><span class="sidebar-label">Purchase</span>
+                            <a class="nav-link sub {{ request()->routeIs('purchase.expenses.*') ? 'active' : '' }}" href="{{ route('purchase.expenses.index') }}">
+                                <i class="bi bi-dash-circle"></i><span class="sidebar-label">Expense</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('purchase.bills.*','purchase.invoices.*') ? 'active' : '' }}" href="{{ route('purchase.bills.index') }}">
+                                <i class="bi bi-receipt-cutoff"></i><span class="sidebar-label">Bill</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('purchase.payments.*') ? 'active' : '' }}" href="{{ route('purchase.payments.index') }}">
+                                <i class="bi bi-cash-stack"></i><span class="sidebar-label">Pay Bills</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('purchase.orders.*') ? 'active' : '' }}" href="{{ route('purchase.orders.index') }}">
+                                <i class="bi bi-cart-check"></i><span class="sidebar-label">Purchase Order</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('purchase.vendor-credits.*','purchase.returns.*') ? 'active' : '' }}" href="{{ route('purchase.vendor-credits.index') }}">
+                                <i class="bi bi-arrow-return-left"></i><span class="sidebar-label">Vendor Credit</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('purchase.vendors.*','purchase.suppliers.*') ? 'active' : '' }}" href="{{ route('purchase.vendors.index') }}">
+                                <i class="bi bi-person-plus"></i><span class="sidebar-label">Add Vendor</span>
                             </a>
                         </div>
                     </div>
