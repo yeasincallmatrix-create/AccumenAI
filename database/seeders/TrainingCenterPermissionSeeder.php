@@ -16,6 +16,8 @@ class TrainingCenterPermissionSeeder extends Seeder
             ['slug' => 'training.manage',              'name' => 'Manage Training',              'module' => 'training'],
             ['slug' => 'classes.view',                 'name' => 'View Classes',                 'module' => 'training'],
             ['slug' => 'classes.manage',               'name' => 'Manage Classes',               'module' => 'training'],
+            ['slug' => 'trainees.view',                'name' => 'View Trainees',                'module' => 'training'],
+            ['slug' => 'trainees.manage',              'name' => 'Manage Trainees',              'module' => 'training'],
             ['slug' => 'enrollments.view',             'name' => 'View Enrollments',             'module' => 'training'],
             ['slug' => 'enrollments.manage',           'name' => 'Manage Enrollments',           'module' => 'training'],
             ['slug' => 'marks.view',                   'name' => 'View Marks',                   'module' => 'training'],
