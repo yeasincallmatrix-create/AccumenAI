@@ -69,3 +69,5 @@ tmp_task_*.json
 reports/*.json
 
 tmp_verification_report.json
+
+/storage/tmp/
