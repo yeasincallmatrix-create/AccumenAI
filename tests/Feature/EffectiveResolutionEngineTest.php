@@ -492,7 +492,7 @@ class EffectiveResolutionEngineTest extends TestCase
 
     public function test_b10_module_grant_respects_gate1(): void
     {
-        $inst = $this->makeInstitute($this->package('free'));
+        $inst = $this->makeInstitute($this->package('free'), ['industry' => 'real_estate']);
 
         $this->grant($inst, 'module', 'medical');
 
@@ -932,7 +932,7 @@ class EffectiveResolutionEngineTest extends TestCase
 
     public function test_d06_module_grant_parent_disabled_blocked(): void
     {
-        $inst = $this->makeInstitute($this->package('free'));
+        $inst = $this->makeInstitute($this->package('free'), ['industry' => 'real_estate']);
 
         $this->grant($inst, 'module', 'medical');
 

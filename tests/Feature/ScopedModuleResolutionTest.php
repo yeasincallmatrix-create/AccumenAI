@@ -275,7 +275,20 @@ class ScopedModuleResolutionTest extends TestCase
 
         $enabled = $this->service->getEnabledModules($inst);
 
-        $this->assertEqualsCanonicalizing(['reports', 'notifications'], $enabled);
+        // Phase 3: resolveEnabled also layers core + industry defaults.
+        $core = config('industry-modules.core', []);
+        $healthcareDefaults = config('industry-modules.healthcare.default', []);
+        $expected = array_values(array_unique(array_merge(
+            ['reports', 'notifications'],
+            $core,
+            $healthcareDefaults,
+        )));
+
+        $this->assertEqualsCanonicalizing($expected, $enabled);
+        $this->assertContains('reports', $enabled);
+        $this->assertContains('notifications', $enabled);
+        $this->assertContains('crm', $enabled);
+        $this->assertContains('medical', $enabled);
     }
 
     public function test_free_package_scoping(): void

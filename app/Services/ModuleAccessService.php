@@ -35,13 +35,6 @@ class ModuleAccessService
 
     protected string $featureCachePrefix = 'feature_access:';
 
-    /**
-     * For education industry these modules are disabled by default regardless of package.
-     * Admin can re-enable via InstituteModuleOverride (enableModule) or entitlement grant.
-     * See resolveEnabled() step 1b and isEducationIndustry().
-     */
-    protected const EDUCATION_DISABLED_MODULES = ['sales', 'purchase', 'hr', 'crm'];
-
     public function isEnabled(Institute $institute, string $moduleKey): bool
     {
         $enabled = $this->getEnabledModules($institute);
@@ -256,57 +249,73 @@ class ModuleAccessService
     public function resolveEnabled(Institute $institute): array
     {
         $allModules = ModuleRegistry::all()->keyBy('key');
+        $industry = $institute->industry ?? 'real_estate';
+        $config = $this->getIndustryConfig($industry);
 
-        // SaaS subscription enforcement — expired/cancelled falls back to FREE (P0 fix, Step 60)
-        // Legacy institutes without package are also treated as FREE tier.
-        // Scope-aware dual-read with legacy fallback (Phase 6).
-        $packageModules = $this->resolvePackageModules($institute);
+        // Step 1: Core modules (always enabled)
+        $candidate = [];
+        foreach ($this->getCoreModules() as $key) {
+            $candidate[$key] = true;
+        }
 
-        // Education industry: disable sales/purchase/hr/crm by default regardless of package.
-        // Package base is filtered; override/entitlement can still re-enable (steps 2 & 3).
-        if ($this->isEducationIndustry($institute)) {
-            $packageModules = array_values(array_diff($packageModules, self::EDUCATION_DISABLED_MODULES));
+        // Step 2: Industry default modules
+        foreach ($this->resolveIndustryDefaults($industry) as $key) {
+            $candidate[$key] = true;
+        }
+
+        // Step 3: Package modules
+        foreach ($this->resolvePackageModules($institute) as $key) {
+            $candidate[$key] = true;
         }
 
         $overrides = InstituteModuleOverride::where('institute_id', $institute->id)
             ->get()
             ->keyBy('module_key');
 
-        // Individual entitlements (63A/63B) — active grants/denials, deterministic latest wins
-        $entitlementMap = $this->getActiveEntitlementMap($institute);
+        // Step 4: Tenant overrides — optional modules may be toggled on;
+        // any override also applies (enable adds / disable removes).
+        foreach ($this->resolveIndustryOptional($industry) as $key) {
+            if (isset($overrides[$key]) && $overrides[$key]->enabled) {
+                $candidate[$key] = true;
+            }
+        }
 
-        $result = [];
-
-        foreach ($allModules as $key => $module) {
-            // 1. Package base
-            $baseState = in_array($key, $packageModules, true);
-
-            // 2. Legacy permanent override
-            if ($overrides->has($key)) {
-                $override = $overrides->get($key);
-                $finalState = (bool) $override->enabled;
+        foreach ($overrides as $key => $override) {
+            if ($override->enabled) {
+                $candidate[$key] = true;
             } else {
-                $finalState = $baseState;
+                unset($candidate[$key]);
             }
+        }
 
-            // 3. Active individual entitlement (grant/deny) — takes precedence over override
-            if (isset($entitlementMap[$key])) {
-                $ent = $entitlementMap[$key];
-                $finalState = (bool) $ent->is_grant;
+        // Step 5: Entitlements (grant/deny)
+        foreach ($this->getActiveEntitlementMap($institute) as $key => $entitlement) {
+            if ($entitlement->is_grant) {
+                $candidate[$key] = true;
+            } else {
+                unset($candidate[$key]);
             }
+        }
 
-            // 4. Industry compatibility — entitlements cannot bypass industry rules
+        // Step 6: Remove industry-disabled modules
+        foreach ($this->resolveIndustryDisabled($industry) as $key) {
+            unset($candidate[$key]);
+        }
+
+        // Steps 7–8: industry compatibility, dependency closure, parent gate
+        $result = [];
+        foreach ($allModules as $key => $module) {
+            $finalState = isset($candidate[$key]);
+
             if ($finalState && ! $this->isIndustryCompatible($institute, $key)) {
                 $finalState = false;
             }
 
-            // 5. Dependency closure — preserve existing checkDependencies, run after entitlement
             $missingDeps = $this->checkDependencies($key, array_keys(array_filter($result)));
             if (! empty($missingDeps)) {
                 $finalState = false;
             }
 
-            // 6. Parent dependency — child module requires parent to be enabled
             if ($finalState && ! empty($module->parent_key)) {
                 $parentEnabled = $result[$module->parent_key] ?? false;
                 if (! $parentEnabled) {
@@ -318,6 +327,54 @@ class ModuleAccessService
         }
 
         return $result;
+    }
+
+    /**
+     * Get industry module config
+     */
+    protected function getIndustryConfig(string $industry): array
+    {
+        return config("industry-modules.{$industry}") ?? [];
+    }
+
+    /**
+     * Get core modules (always available)
+     */
+    protected function getCoreModules(): array
+    {
+        return config('industry-modules.core', []);
+    }
+
+    /**
+     * Check if module is core
+     */
+    public function isCoreModule(string $moduleKey): bool
+    {
+        return in_array($moduleKey, $this->getCoreModules(), true);
+    }
+
+    /**
+     * Resolve industry default modules
+     */
+    protected function resolveIndustryDefaults(string $industry): array
+    {
+        return $this->getIndustryConfig($industry)['default'] ?? [];
+    }
+
+    /**
+     * Resolve industry optional modules
+     */
+    protected function resolveIndustryOptional(string $industry): array
+    {
+        return $this->getIndustryConfig($industry)['optional'] ?? [];
+    }
+
+    /**
+     * Resolve industry disabled modules
+     */
+    protected function resolveIndustryDisabled(string $industry): array
+    {
+        return $this->getIndustryConfig($industry)['disabled'] ?? [];
     }
 
     /**
@@ -333,42 +390,77 @@ class ModuleAccessService
     public function resolveEnabledWithReasons(Institute $institute): array
     {
         $allModules = ModuleRegistry::all()->keyBy('key');
+        $industry = $institute->industry ?? 'real_estate';
+        $config = $this->getIndustryConfig($industry);
 
-        $packageModules = $this->resolvePackageModules($institute);
-
-        if ($this->isEducationIndustry($institute)) {
-            $packageModules = array_values(array_diff($packageModules, self::EDUCATION_DISABLED_MODULES));
+        $candidate = [];
+        foreach ($this->getCoreModules() as $key) {
+            $candidate[$key] = true;
+        }
+        foreach ($this->resolveIndustryDefaults($industry) as $key) {
+            $candidate[$key] = true;
+        }
+        foreach ($this->resolvePackageModules($institute) as $key) {
+            $candidate[$key] = true;
         }
 
         $overrides = InstituteModuleOverride::where('institute_id', $institute->id)
             ->get()
             ->keyBy('module_key');
 
+        foreach ($this->resolveIndustryOptional($industry) as $key) {
+            if (isset($overrides[$key]) && $overrides[$key]->enabled) {
+                $candidate[$key] = true;
+            }
+        }
+
+        foreach ($overrides as $key => $override) {
+            if ($override->enabled) {
+                $candidate[$key] = true;
+            } else {
+                unset($candidate[$key]);
+            }
+        }
+
         $entitlementMap = $this->getActiveEntitlementMap($institute);
+        foreach ($entitlementMap as $key => $ent) {
+            if ($ent->is_grant) {
+                $candidate[$key] = true;
+            } else {
+                unset($candidate[$key]);
+            }
+        }
+
+        foreach ($this->resolveIndustryDisabled($industry) as $key) {
+            unset($candidate[$key]);
+        }
 
         $result = [];
         $reasons = [];
 
         foreach ($allModules as $key => $module) {
-            $baseState = in_array($key, $packageModules, true);
+            $inCandidate = isset($candidate[$key]);
+            $finalState = $inCandidate;
 
-            if ($overrides->has($key)) {
-                $override = $overrides->get($key);
-                $finalState = (bool) $override->enabled;
-                $reasons[$key] = $finalState
+            if (! $inCandidate) {
+                $reasons[$key] = AccessDecisionContext::REASON_PACKAGE_FEATURE_NOT_ENTITLED;
+            } elseif (isset($overrides[$key])) {
+                $reasons[$key] = $overrides[$key]->enabled
                     ? AccessDecisionContext::REASON_OVERRIDE_ENABLED
                     : AccessDecisionContext::REASON_OVERRIDE_DISABLED;
+            } elseif (in_array($key, $this->resolveIndustryDisabled($industry), true)) {
+                $reasons[$key] = AccessDecisionContext::REASON_INDUSTRY_VETO;
+            } elseif (isset($entitlementMap[$key])) {
+                $reasons[$key] = $entitlementMap[$key]->is_grant
+                    ? AccessDecisionContext::REASON_GRANT_APPLIED
+                    : AccessDecisionContext::REASON_DENIAL_APPLIED;
             } else {
-                $finalState = $baseState;
-                $reasons[$key] = $baseState
-                    ? AccessDecisionContext::REASON_PACKAGE_INCLUDED
-                    : AccessDecisionContext::REASON_PACKAGE_FEATURE_NOT_ENTITLED;
+                $reasons[$key] = AccessDecisionContext::REASON_PACKAGE_INCLUDED;
             }
 
             if (isset($entitlementMap[$key])) {
-                $ent = $entitlementMap[$key];
-                $finalState = (bool) $ent->is_grant;
-                $reasons[$key] = $ent->is_grant
+                $finalState = (bool) $entitlementMap[$key]->is_grant;
+                $reasons[$key] = $entitlementMap[$key]->is_grant
                     ? AccessDecisionContext::REASON_GRANT_APPLIED
                     : AccessDecisionContext::REASON_DENIAL_APPLIED;
             }
@@ -502,11 +594,6 @@ class ModuleAccessService
 
         // For modules that are not industry-specific, they are compatible by default
         return true;
-    }
-
-    protected function isEducationIndustry(Institute $institute): bool
-    {
-        return ($institute->industry ?? null) === 'education';
     }
 
     public function logAccess(

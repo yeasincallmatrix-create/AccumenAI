@@ -60,8 +60,8 @@ class GrantGateOneTest extends TestCase
     }
 
     /**
-     * Free package has no medical module, so Gate 1 blocks medical
-     * features regardless of grants.
+     * Free package has no medical module, and real_estate industry
+     * disables medical — so Gate 1 blocks medical features regardless of grants.
      */
     private function makeFreeInstitute(): Institute
     {
@@ -70,7 +70,7 @@ class GrantGateOneTest extends TestCase
         $instId = DB::table('institutes')->insertGetId([
             'name' => 'GateOne Test '.uniqid(),
             'slug' => 'gateone-test-'.uniqid(),
-            'industry' => 'healthcare',
+            'industry' => 'real_estate',
             'sub_industry' => 'hospital',
             'country' => 'Bangladesh',
             'status' => 'active',

@@ -107,16 +107,17 @@ class SaaSModuleAccessTest extends TestCase
     public function test_service_returns_false_for_unentitled_module(): void
     {
         $service = app(ModuleAccessService::class);
-        $this->assertFalse($service->isEnabled($this->institute, 'ai'));
+        // inventory is not core and not in the BASIC package.
+        $this->assertFalse($service->isEnabled($this->institute, 'inventory'));
     }
 
     public function test_enable_override_adds_access(): void
     {
         $service = app(ModuleAccessService::class);
-        $this->assertFalse($service->isEnabled($this->institute, 'ai'));
+        $this->assertFalse($service->isEnabled($this->institute, 'inventory'));
 
-        $service->enableModule($this->institute, 'ai', $this->admin->id, 'Business need');
-        $this->assertTrue($service->isEnabled($this->institute, 'ai'));
+        $service->enableModule($this->institute, 'inventory', $this->admin->id, 'Business need');
+        $this->assertTrue($service->isEnabled($this->institute, 'inventory'));
     }
 
     public function test_disable_override_removes_access(): void
@@ -271,14 +272,14 @@ class SaaSModuleAccessTest extends TestCase
     {
         $response = $this->actingAs($this->admin, 'platform_admin')
             ->put(route('admin.institutes.modules.update', $this->institute), [
-                'modules' => ['ai'],
+                'modules' => ['inventory'],
                 'reason' => 'Special case',
             ]);
 
         $response->assertRedirect();
         $this->assertDatabaseHas('institute_module_overrides', [
             'institute_id' => $this->institute->id,
-            'module_key' => 'ai',
+            'module_key' => 'inventory',
             'enabled' => true,
         ]);
     }
@@ -396,10 +397,10 @@ class SaaSModuleAccessTest extends TestCase
 
         $service = app(ModuleAccessService::class);
 
-        $service->enableModule($this->institute, 'ai', $this->admin->id, 'Only for this one');
+        $service->enableModule($this->institute, 'inventory', $this->admin->id, 'Only for this one');
 
-        $this->assertTrue($service->isEnabled($this->institute, 'ai'));
-        $this->assertFalse($service->isEnabled($otherInstitute, 'ai'));
+        $this->assertTrue($service->isEnabled($this->institute, 'inventory'));
+        $this->assertFalse($service->isEnabled($otherInstitute, 'inventory'));
     }
 
     // ─── Cache Behavior ─────────────────────────────────────
@@ -407,11 +408,11 @@ class SaaSModuleAccessTest extends TestCase
     public function test_cache_is_flushed_on_override_change(): void
     {
         $service = app(ModuleAccessService::class);
-        $service->enableModule($this->institute, 'ai', $this->admin->id);
-        $this->assertTrue($service->isEnabled($this->institute, 'ai'));
+        $service->enableModule($this->institute, 'inventory', $this->admin->id);
+        $this->assertTrue($service->isEnabled($this->institute, 'inventory'));
 
-        $service->removeOverride($this->institute, 'ai');
-        $this->assertFalse($service->isEnabled($this->institute, 'ai'));
+        $service->removeOverride($this->institute, 'inventory');
+        $this->assertFalse($service->isEnabled($this->institute, 'inventory'));
     }
 
     // ─── Edge Cases ─────────────────────────────────────────

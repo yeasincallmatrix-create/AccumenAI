@@ -16,6 +16,7 @@ class ModuleRegistry extends Model
         'parent_key',
         'name',
         'type',
+        'is_core',
         'description',
         'sort_order',
         'icon',
@@ -26,6 +27,7 @@ class ModuleRegistry extends Model
 
     protected $casts = [
         'dependencies' => 'array',
+        'is_core' => 'boolean',
     ];
 
     public function packageModules(): HasMany

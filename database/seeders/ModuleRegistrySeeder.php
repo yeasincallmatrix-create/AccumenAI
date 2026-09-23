@@ -24,6 +24,8 @@ class ModuleRegistrySeeder extends Seeder
             ['key' => 'ai', 'name' => 'AI', 'type' => 'core', 'description' => 'AI assistant & tools', 'sort_order' => 10],
             ['key' => 'vat', 'name' => 'VAT / Tax', 'type' => 'core', 'description' => 'VAT & tax configuration, returns and compliance', 'sort_order' => 11],
             ['key' => 'tds', 'name' => 'TDS / Tax', 'type' => 'core', 'description' => 'Withholding tax, advance tax, corporate tax and reconciliation', 'sort_order' => 12],
+            ['key' => 'pos', 'name' => 'POS', 'type' => 'industry', 'description' => 'Point of sale', 'sort_order' => 13],
+            ['key' => 'manufacturing', 'name' => 'Manufacturing', 'type' => 'industry', 'description' => 'Manufacturing & production', 'sort_order' => 14],
             ['key' => 'education', 'name' => 'Education', 'type' => 'industry', 'description' => 'Education management (students, exams, results, certificates)', 'sort_order' => 20],
             ['key' => 'training_center', 'name' => 'Training Center', 'type' => 'industry', 'description' => 'Training center management', 'sort_order' => 22],
             ['key' => 'medical', 'name' => 'Medical / Hospital Management', 'type' => 'industry', 'description' => 'Complete Hospital Management System (OPD, IPD, Pharmacy, Lab, Billing)', 'sort_order' => 50],
