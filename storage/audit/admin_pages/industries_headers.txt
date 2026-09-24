@@ -1,0 +1,11 @@
+HTTP/1.1 302 Found
+Date: Wed, 23 Sep 2026 17:58:18 GMT
+Server: Apache/2.4.58 (Win64) OpenSSL/3.1.3 PHP/8.2.12
+X-Powered-By: PHP/8.2.12
+Cache-Control: no-cache, private
+Location: http://localhost/AccumenAI/public/admin/login
+Set-Cookie: XSRF-TOKEN=eyJpdiI6Ikx3bllweGw0ZG0xRUZPNWhMQkU0RXc9PSIsInZhbHVlIjoiR295QzZKb3ZwcThtNlgyWjhTR1VGRVFXTWZNRGhNOFM4L0tCbHRyODBMMW9QMlQyK3JURDdDcXFubG1kRGtVZ0dvTHdNTlh1TU4rdnYxcUtBb2NGU0FhaW10eVNOdFZBamV5VzhNZ2J6SDhQdUNsR1VseTgyYjB5aWhrQmt0NC8iLCJtYWMiOiIwZWIyOWRlMzEyNmRhYWNkNjZhYzM0MTQ4NTg3MGE1Mzk2MGM1YWQ2MTRjMWJiNTcyMzlhNmU2YzRjYmJmZGQ5IiwidGFnIjoiIn0%3D; expires=Wed, 23 Sep 2026 19:58:18 GMT; Max-Age=7200; path=/; samesite=lax
+Set-Cookie: accumen-ai-session=eyJpdiI6IktGL3RleEhLemFTTkd3bnQ1aDV5QUE9PSIsInZhbHVlIjoiZFg5Mk1takxDeXNXTjJ4NEZ1S2h2N2ZnR0hCVXhTQ0xkMVV1ZEZwQkdSMkh5WDlCNnJ0aGxlaWJWMGdiWk9NOXZqRnVMWitMc3liUG9ybVJ6alN6SkhQWjdST2FlTDY2dlVtc0MxeUkrRVhydEhOek4xNUJ2alA2SjY4RTVYd2UiLCJtYWMiOiI3NDFhZjQ1YjY1YWJmMDE2YTJlOTlhNTY2ZjBjNWExOWZlODM1MGQ4YjJhYzY0NmE4NDE2ZmQxMzYxMDExYmJhIiwidGFnIjoiIn0%3D; expires=Wed, 23 Sep 2026 19:58:18 GMT; Max-Age=7200; path=/; httponly; samesite=lax
+Transfer-Encoding: chunked
+Content-Type: text/html; charset=utf-8
+

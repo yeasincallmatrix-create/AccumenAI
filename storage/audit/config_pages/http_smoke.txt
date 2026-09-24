@@ -1,0 +1,6 @@
+﻿/admin/industry-subcategories => 302 http://localhost/AccumenAI/public/admin/login
+/admin/modules => 302 http://localhost/AccumenAI/public/admin/login
+/admin/packages/4/modules => 302 http://localhost/AccumenAI/public/admin/login
+/admin/institutes/1/modules => 302 http://localhost/AccumenAI/public/admin/login
+/settings/terminology => 302 http://localhost/AccumenAI/public/login
+/settings/modules => 302 http://localhost/AccumenAI/public/login

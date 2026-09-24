@@ -1,0 +1,522 @@
+﻿
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::manager_can_create_calendar_event(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::can_create_all_day_event(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::can_create_event_with_recurrence(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::can_create_weekly_recurrence_with_days_of_week(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::can_create_monthly_recurrence(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::teacher_conflict_detected_on_create(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::room_conflict_detected_on_create(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::batch_conflict_detected_on_create(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::no_conflict_when_times_do_not_overlap(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::can_update_event(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::can_delete_event_and_cascade_children(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::can_show_event_detail(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::events_json_api_returns_formatted_events(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::events_json_includes_color_by_type(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::search_events_by_title(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::search_events_by_teacher_name(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::timetable_returns_events_grouped_by_date(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::timetable_can_filter_by_batch(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::timetable_can_filter_by_teacher(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::calendar_index_loads_with_view_options(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::calendar_index_can_filter_by_event_type(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::all_day_events_render_without_time(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::conflict_detection_excludes_self_on_update(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::cannot_create_event_without_required_fields(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::manager_can_cancel_event(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::different_tenant_cannot_access_events(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::all_event_types_are_valid(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::reminder_can_be_added_to_event(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\CalendarEventTest::events_json_filters_by_branch(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PartyTypeTest::party_can_be_customer_only(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PartyTypeTest::party_can_be_vendor_only(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PartyTypeTest::party_can_be_both(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PartyTypeTest::party_type_auto_syncs_on_update(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PartyTypeTest::customer_scope_returns_only_customers(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PartyTypeTest::supplier_scope_returns_only_vendors(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\PartyTypeTest::both_scope_returns_only_both(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\SecurityForensicTest::workspace_forgery_is_rejected_with_403(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\SecurityForensicTest::medical_models_lack_tenantscoped_trait(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\SecurityForensicTest::labtest_model_has_tenantscoped_trait(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\SecurityForensicTest::labresult_model_has_tenantscoped_trait(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\SecurityForensicTest::legacy_medical_flat_routes_lack_medical_module_middleware(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\SecurityForensicTest::finance_web_routes_lack_permission_middleware(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\SecurityForensicTest::api_routes_have_permission_middleware(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\SecurityForensicTest::branch_context_id_validates_institute_not_branch_access(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\SecurityForensicTest::new_medical_grouped_routes_have_medical_module_middleware(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\SecurityForensicTest::platform_admin_bypasses_check_permission_middleware(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\SecurityForensicTest::block_platform_admin_escalation_blocks_is_owner_injection(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\SecurityForensicTest::block_platform_admin_escalation_blocks_super_admin_injection(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\SecurityForensicTest::block_platform_admin_escalation_allows_safe_fields(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\SecurityForensicTest::platform_admin_bypasses_check_module_access(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\SecurityForensicTest::platform_admin_bypasses_check_feature_access(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\SecurityForensicTest::tenant_access_grants_use_db_transaction(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\SecurityForensicTest::tenant_access_denials_use_db_transaction(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\SecurityForensicTest::registration_flow_uses_lock_for_update(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\SecurityForensicTest::tenant_context_is_static_and_request_scoped(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\SecurityForensicTest::branch_context_is_static_and_request_scoped(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\SecurityForensicTest::tenant_context_clearance_between_requests(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   WARN  Metadata found in doc-comment for method Tests\Feature\SecurityForensicTest::platform_audit_log_records_escalation_attempts(). Metadata in doc-comments is deprecated and will no longer be supported in PHPUnit 12. Update your test code to use attributes instead.
+
+   PASS  Tests\Unit\LocaleCurrencyDefaultTest
+  Γ£ô sales default currency and override                                                                          0.33s  
+
+   PASS  Tests\Feature\AdvancedBiTest
+  Γ£ô sales funnel renders                                                                                         0.57s  
+  Γ£ô sales funnel service returns data                                                                            0.23s  
+
+   PASS  Tests\Feature\GoodsReceiptTest
+  Γ£ô list purchase orders                                                                                         0.35s  
+  Γ£ô show purchase order                                                                                          0.27s  
+  Γ£ô create purchase order                                                                                        0.28s  
+  Γ£ô submit purchase order                                                                                        0.28s  
+
+   PASS  Tests\Feature\IndustryModuleMatrixTest
+  Γ£ô healthcare gets purchase default                                                                             0.18s  
+  Γ£ô retail gets sales and purchase default                                                                       0.17s  
+  Γ£ô education does not get sales by default                                                                      0.17s  
+  Γ£ô manufacturing gets sales purchase inventory                                                                  0.17s  
+  Γ£ô sales and purchase have submodules                                                                           0.16s  
+
+   PASS  Tests\Feature\InventoryAccountingTest
+  Γ£ô cash purchase credits cash instead of ap                                                                     0.28s  
+  Γ£ô sales issue rejected when capability disabled                                                                0.21s  
+
+   PASS  Tests\Feature\MobileApiTest
+  Γ£ô sales quotations api returns json                                                                            0.25s  
+
+   PASS  Tests\Feature\NavbarNavigationTest
+  Γ£ô purchase loads                                                                                               0.93s  
+  Γ£ô sales loads                                                                                                  0.46s  
+
+   PASS  Tests\Feature\P59ProductionIntegrityTest
+  Γ£ô purchase return uses single write path                                                                       0.44s  
+  Γ£ô invoice concurrency sales                                                                                    0.41s  
+  Γ£ô purchase self approval blocked                                                                               0.30s  
+  Γ£ô purchase return self approval blocked                                                                        0.38s  
+
+   PASS  Tests\Feature\ProcurementModuleTest
+  Γ£ô purchase requests index renders                                                                              0.30s  
+  Γ£ô purchase request show renders                                                                                0.39s  
+  Γ£ô purchase request store creates                                                                               0.27s  
+  Γ£ô purchase request approve works                                                                               0.27s  
+  Γ£ô purchase invoice index renders                                                                               0.44s  
+  Γ£ô purchase quotation index renders                                                                             0.36s  
+
+   PASS  Tests\Feature\PurchaseAccountingTest
+  Γ£ô purchase posts a balanced journal to expense and ap                                                          0.25s  
+  Γ£ô purchase creates accounts payable                                                                            0.24s  
+  Γ£ô input tax books when tax account supplied                                                                    0.28s  
+  Γ£ô input tax requires a tax account                                                                             0.24s  
+  Γ£ô supplier payment reduces ap                                                                                  0.27s  
+  Γ£ô partial supplier payment leaves remaining ap                                                                 0.26s  
+  Γ£ô full supplier payment zeroes ap                                                                              0.26s  
+  Γ£ô overpayment of supplier is rejected                                                                          0.25s  
+  Γ£ô cash payment credits cash coa                                                                                0.27s  
+  Γ£ô bank payment credits bank coa                                                                                0.28s  
+  Γ£ô payment method coa mapping wins over legacy string                                                           0.26s  
+  Γ£ô purchase cancellation reverses via engine convention                                                         0.25s  
+  Γ£ô reversal nets ap to zero                                                                                     0.27s  
+  Γ£ô posted journal cannot be modified reposted or reversed twice                                                 0.30s  
+  Γ£ô duplicate posting of the same journal is rejected                                                            0.25s  
+  Γ£ô closed fiscal period rejects purchase posting                                                                0.26s  
+  Γ£ô cross tenant supplier is rejected                                                                            0.32s  
+  Γ£ô branch isolated supplier cannot be used elsewhere                                                            0.31s  
+  Γ£ô supplier ownership and type are validated                                                                    0.32s  
+  Γ£ô ap balance equals journal derived balance                                                                    0.27s  
+  Γ£ô ap aging buckets are correct                                                                                 0.27s  
+  Γ£ô full purchase payment cycle reconciles every report                                                          0.29s  
+  Γ£ô cash expense posts directly without ap                                                                       0.25s  
+  Γ£ô audit trail created for purchase payment and expense                                                         0.29s  
+  Γ£ô currency configuration is respected                                                                          0.33s  
+
+   PASS  Tests\Feature\PurchaseCycleCompleteTest
+  Γ£ô purchase orders index renders                                                                                0.51s  
+  Γ£ô purchase quotations index renders                                                                            2.87s  
+  Γ£ô goods receipts index renders                                                                                 5.63s  
+  Γ£ô purchase invoices index renders                                                                              0.73s  
+  Γ£ô purchase returns index renders                                                                               0.61s  
+  Γ£ô suppliers index renders                                                                                      0.55s  
+
+   PASS  Tests\Feature\PurchaseFinanceTest
+  Γ£ô invoice creation from grn                                                                                    0.51s  
+  Γ£ô partial invoice                                                                                              1.18s  
+  Γ£ô quantity limits exceed received                                                                              0.76s  
+  Γ£ô supplier liability journal                                                                                   0.52s  
+  Γ£ô no duplicate journal                                                                                         0.72s  
+  Γ£ô partial payment                                                                                              0.72s  
+  Γ£ô full payment                                                                                                 0.72s  
+  Γ£ô overpayment protection                                                                                       0.77s  
+  Γ£ô payment reversal                                                                                             0.82s  
+  Γ£ô inventory not double increased                                                                               0.71s  
+  Γ£ô supplier linkage                                                                                             0.56s  
+  Γ£ô tenant isolation                                                                                             0.67s  
+  Γ£ô branch isolation                                                                                             0.71s  
+  Γ£ô idempotency post twice                                                                                       0.60s  
+  Γ£ô historical immutability                                                                                      0.63s  
+  Γ£ô journal correctness                                                                                          0.66s  
+
+   PASS  Tests\Feature\PurchaseFoundationTest
+  Γ£ô guest cannot access suppliers                                                                                5.50s  
+  Γ£ô unauthorized role cannot access suppliers                                                                    0.62s  
+  Γ£ô owner and admin can manage suppliers                                                                         0.51s  
+  Γ£ô supplier crud and search                                                                                     0.73s  
+  Γ£ô tenant isolation                                                                                             0.55s  
+  Γ£ô branch isolation                                                                                             0.45s  
+  Γ£ô duplicate phone prevention                                                                                   1.10s  
+  Γ£ô party integration                                                                                            1.33s  
+  Γ£ô audit logging for suppliers                                                                                  1.00s  
+  Γ£ô branch manager limited access                                                                                0.61s  
+  Γ£ô numbering service is centralized and not in controller                                                       0.56s  
+  Γ£ô audit logging for settings                                                                                   0.58s  
+
+   PASS  Tests\Feature\PurchaseLifecycleHardeningTest
+  Γ£ô valid transitions                                                                                            1.01s  
+  Γ£ô invalid transitions blocked                                                                                  0.72s  
+  Γ£ô posted documents not editable                                                                                0.56s  
+  Γ£ô po number unique                                                                                             0.83s  
+  Γ£ô grn duplicate confirm blocked                                                                                1.02s  
+  Γ£ô invoice duplicate post blocked                                                                               0.83s  
+  Γ£ô over invoicing blocked                                                                                       0.70s  
+  Γ£ô payment overpayment blocked                                                                                  1.16s  
+  Γ£ô tenant isolation                                                                                             0.89s  
+  Γ£ô branch isolation                                                                                             0.81s  
+  Γ£ô inventory integrity                                                                                          0.82s  
+  Γ£ô audit logging                                                                                                0.64s  
+  Γ£ô historical immutability                                                                                      0.85s  
+  Γ£ô approval controls                                                                                            0.68s  
+  Γ£ô return and credit note integrity                                                                             1.09s  
+  Γ£ô finance reconciliation                                                                                       1.03s  
+  Γ£ô supplier statement correctness                                                                               0.95s  
+  Γ£ô permissions matrix                                                                                           1.64s  
+  Γ£ô readonly reporting safety                                                                                    0.79s  
+
+   PASS  Tests\Feature\PurchaseOrderTest
+  Γ£ô can create purchase order draft                                                                              0.72s  
+  Γ£ô calculation accuracy                                                                                         0.61s  
+  Γ£ô submit transitions draft to submitted                                                                        0.58s  
+  Γ£ô approve requires permission                                                                                  0.97s  
+  Γ£ô approved order cannot be edited                                                                              0.70s  
+  Γ£ô cancel draft                                                                                                 0.79s  
+  Γ£ô cancel submitted                                                                                             1.07s  
+  Γ£ô cancel approved                                                                                              0.36s  
+  Γ£ô cannot cancel fully received or closed                                                                       0.35s  
+  Γ£ô reject submitted                                                                                             0.38s  
+  Γ£ô tenant isolation                                                                                             0.50s  
+  Γ£ô branch isolation                                                                                             0.44s  
+  Γ£ô supplier validation                                                                                          0.42s  
+  Γ£ô item validation                                                                                              0.44s  
+  Γ£ô no inventory mutation on approve                                                                             0.39s  
+  Γ£ô no accounting mutation on create and approve                                                                 0.35s  
+  Γ£ô discount and tax calculation variants                                                                        0.35s  
+  Γ£ô lifecycle invalid transition                                                                                 0.33s  
+  Γ£ô unauthorized controller actions                                                                              1.17s  
+
+   PASS  Tests\Feature\PurchaseP4Test
+  Γ£ô quotation create and numbering                                                                               0.20s  
+  Γ£ô po create from approved quotation                                                                            0.20s  
+  Γ£ô cannot create po from draft quotation                                                                        0.18s  
+  Γ£ô direct po creation still works                                                                               0.21s  
+  Γ£ô supplier preserved and no stock no journal                                                                   0.21s  
+  Γ£ô tenant and branch isolation for quotation convert                                                            0.24s  
+
+   PASS  Tests\Feature\PurchaseReportsTest
+  Γ£ô dashboard metrics totals                                                                                     0.63s  
+  Γ£ô payable reconciliation                                                                                       0.40s  
+  Γ£ô payment reconciliation                                                                                       0.39s  
+  Γ£ô date filters                                                                                                 0.49s  
+  Γ£ô supplier product category filters                                                                            0.44s  
+  Γ£ô returns reflected                                                                                            0.47s  
+  Γ£ô supplier statement running balance                                                                           0.42s  
+  Γ£ô branch isolation                                                                                             0.47s  
+  Γ£ô tenant isolation                                                                                             0.44s  
+  Γ£ô permissions                                                                                                  0.68s  
+  Γ£ô csv escaping                                                                                                 0.40s  
+  Γ£ô read only behavior                                                                                           0.55s  
+  Γ£ô n plus one and pagination                                                                                    0.63s  
+  Γ£ô inventory reconciliation quantities                                                                          0.44s  
+
+   PASS  Tests\Feature\PurchaseReturnTest
+  Γ£ô partial return                                                                                               0.34s  
+  Γ£ô full return                                                                                                  0.34s  
+  Γ£ô excessive return rejection                                                                                   0.36s  
+  Γ£ô repeated return protection                                                                                   0.33s  
+  Γ£ô inventory deduction                                                                                          0.34s  
+  Γ£ô credit note calculation                                                                                      0.36s  
+  Γ£ô supplier credit refund                                                                                       0.36s  
+  Γ£ô finance reversal                                                                                             0.35s  
+  Γ£ô duplicate posting protection                                                                                 0.42s  
+  Γ£ô tenant isolation                                                                                             0.38s  
+  Γ£ô branch isolation                                                                                             0.36s  
+  Γ£ô historical integrity                                                                                         0.44s  
+
+   PASS  Tests\Feature\SaasCheckoutTest
+  Γ£ô basic purchase creates invoice and attempt                                                                   0.21s  
+  Γ£ô advanced purchase                                                                                            0.18s  
+  Γ£ô premium purchase                                                                                             0.17s  
+
+   PASS  Tests\Feature\SalesCrmModuleTest
+  Γ£ô customers index renders                                                                                      0.60s  
+  Γ£ô customer show renders                                                                                        0.55s  
+  Γ£ô customer store creates                                                                                       0.30s  
+  Γ£ô leads index renders                                                                                          0.33s  
+  Γ£ô lead store creates                                                                                           0.29s  
+  Γ£ô quotations index renders                                                                                     0.60s  
+  Γ£ô orders index renders                                                                                         0.65s  
+  Γ£ô tenant isolation sales crm                                                                                   0.93s  
+
+   PASS  Tests\Feature\SalesCustomerProductTest
+  Γ£ô customer lookup text search and pagination                                                                   0.25s  
+  Γ£ô crm linked customer                                                                                          0.24s  
+  Γ£ô product lookup text and sku search                                                                           0.24s  
+  Γ£ô service item lookup non stockable                                                                            0.22s  
+  Γ£ô stockable vs non stockable availability                                                                      0.28s  
+  Γ£ô tenant isolation customer and product                                                                        0.30s  
+  Γ£ô branch isolation                                                                                             0.25s  
+  Γ£ô permission checks                                                                                            0.24s  
+  Γ£ô no inventory mutation on availability check                                                                  0.22s  
+  Γ£ô no finance mutation on customer lookup                                                                       0.23s  
+  Γ£ô item availability returns correct payload                                                                    0.22s  
+
+   PASS  Tests\Feature\SalesCycleCompleteTest
+  Γ£ô sales quotations index renders                                                                               0.44s  
+  Γ£ô sales orders index renders                                                                                   0.42s  
+  Γ£ô sales deliveries index renders                                                                               0.62s  
+  Γ£ô sales returns index renders                                                                                  0.51s  
+  Γ£ô customers index renders                                                                                      0.36s  
+  Γ£ô leads index renders                                                                                          0.31s  
+
+   PASS  Tests\Feature\SalesDeliveryTest
+  Γ£ô full delivery with stockable product                                                                         0.38s  
+  Γ£ô partial delivery                                                                                             0.34s  
+  Γ£ô multiple deliveries until fully delivered                                                                    0.42s  
+  Γ£ô non stock service no inventory movement                                                                      0.27s  
+  Γ£ô insufficient stock blocked                                                                                   0.30s  
+  Γ£ô duplicate confirmation blocked                                                                               0.40s  
+  Γ£ô delivery quantity exceeds remaining blocked                                                                  0.31s  
+  Γ£ô cancellation reverses inventory                                                                              0.34s  
+  Γ£ô cancellation of draft no inventory                                                                           0.32s  
+  Γ£ô transaction rollback on insufficient stock                                                                   0.30s  
+  Γ£ô tenant isolation                                                                                             0.32s  
+  Γ£ô branch isolation                                                                                             0.38s  
+  Γ£ô order scope enforced                                                                                         0.33s  
+  Γ£ô product scope enforced                                                                                       0.44s  
+  Γ£ô historical order quantities preserved                                                                        0.33s  
+  Γ£ô cross tenant inventory access blocked                                                                        0.34s  
+
+   PASS  Tests\Feature\SalesFoundationTest
+  Γ£ô guest cannot access sales settings                                                                           0.17s  
+  Γ£ô unauthorized role cannot access sales                                                                        0.28s  
+  Γ£ô owner and admin can manage sales                                                                             0.84s  
+  Γ£ô branch manager limited access                                                                                0.74s  
+  Γ£ô cross tenant isolation                                                                                       0.35s  
+  Γ£ô cross branch numbering isolation                                                                             0.20s  
+  Γ£ô request id spoofing is ignored                                                                               0.25s  
+  Γ£ô numbering service is centralized and not in controller                                                       0.19s  
+  Γ£ô audit logging for sales settings                                                                             0.23s  
+  Γ£ô sales module sidebar visibility                                                                              0.97s  
+  Γ£ô inventory integration point exists                                                                           0.15s  
+
+   PASS  Tests\Feature\SalesInvoiceTest
+  Γ£ô service order direct invoice creates finance invoice                                                         0.34s  
+  Γ£ô delivered order invoice via delivery                                                                         0.40s  
+  Γ£ô service invoice without delivery                                                                             0.29s  
+  Γ£ô invoice respects draft auto post setting                                                                     0.35s  
+  Γ£ô historical values preserved                                                                                  0.30s  
+  Γ£ô duplicate invoicing prevented                                                                                0.32s  
+  Γ£ô quantity tampering exceeds ordered blocked                                                                   0.33s  
+  Γ£ô quantity exceeds delivered blocked for stockable                                                             0.37s  
+  Γ£ô tenant isolation                                                                                             0.37s  
+  Γ£ô branch isolation                                                                                             0.42s  
+  Γ£ô customer party linkage                                                                                       0.30s  
+  Γ£ô closed period blocks invoicing                                                                               0.25s  
+  Γ£ô partial payment and reports                                                                                  0.47s  
+  Γ£ô no duplicate journal entries                                                                                 0.31s  
+  Γ£ô invoice cancellation via finance                                                                             0.29s  
+  Γ£ô unauthorized posting blocked                                                                                 0.39s  
+  Γ£ô sales invoice appears in finance reports                                                                     0.30s  
+  Γ£ô branch restricted user cannot view other branch order invoice                                                0.35s  
+
+   PASS  Tests\Feature\SalesLifecycleHardeningTest
+  Γ£ô valid transitions                                                                                            0.58s  
+  Γ£ô invalid transitions rejected                                                                                 0.27s  
+  Γ£ô posted order cannot be edited                                                                                0.26s  
+  Γ£ô self approval blocked                                                                                        0.33s  
+  Γ£ô approval permissions                                                                                         0.36s  
+  Γ£ô posting idempotency                                                                                          0.45s  
+  Γ£ô inventory idempotency                                                                                        0.46s  
+  Γ£ô return refund integrity                                                                                      0.45s  
+  Γ£ô cancellation reversal                                                                                        0.31s  
+  Γ£ô tenant isolation                                                                                             0.57s  
+  Γ£ô branch isolation                                                                                             0.56s  
+  Γ£ô authorization                                                                                                0.31s  
+  Γ£ô audit logging                                                                                                0.27s  
+  Γ£ô finance reconciliation                                                                                       0.52s  
+  Γ£ô inventory reconciliation                                                                                     0.46s  
+  Γ£ô historical immutability                                                                                      0.49s  
+  Γ£ô reports are readonly                                                                                         0.42s  
+
+   PASS  Tests\Feature\SalesOrderTest
+  Γ£ô create draft calculates totals                                                                               0.23s  
+  Γ£ô server recalculates tampered totals                                                                          0.23s  
+  Γ£ô line discount percent and tax                                                                                0.21s  
+  Γ£ô direct order without quotation                                                                               0.19s  
+  Γ£ô quotation conversion preserves values                                                                        0.22s  
+  Γ£ô quotation conversion copies historical prices                                                                0.20s  
+  Γ£ô duplicate quotation conversion blocked                                                                       0.29s  
+  Γ£ô non accepted quotation cannot convert                                                                        0.20s  
+  Γ£ô workflow full lifecycle                                                                                      0.22s  
+  Γ£ô reject and resubmit                                                                                          0.22s  
+  Γ£ô invalid transitions rejected                                                                                 0.35s  
+  Γ£ô self approval blocked                                                                                        0.40s  
+  Γ£ô edit only draft or rejected                                                                                  0.44s  
+  Γ£ô approved order values not silently changed                                                                   0.45s  
+  Γ£ô tenant isolation                                                                                             0.42s  
+  Γ£ô branch isolation                                                                                             0.38s  
+  Γ£ô customer scope enforced                                                                                      0.42s  
+  Γ£ô product scope enforced                                                                                       0.49s  
+  Γ£ô unauthorized approval blocked via http                                                                       0.51s  
+  Γ£ô request id spoofing blocked                                                                                  0.48s  
+  Γ£ô tampered totals ignored on update                                                                            0.31s  
+  Γ£ô unauthorized editing after approval blocked via http                                                         0.36s  
+  Γ£ô audit logged                                                                                                 0.32s  
+  Γ£ô no inventory reduction on creation or approval                                                               0.33s  
+  Γ£ô no finance posting on approval                                                                               0.32s  
+  Γ£ô branch scope create and view                                                                                 0.38s  
+  Γ£ô permissions enforced on routes                                                                               1.55s  
+  Γ£ô numbering unique                                                                                             0.33s  
+  Γ£ô cancel from various states                                                                                   0.36s  
+  Γ£ô decimal precision                                                                                            0.39s  
+  Γ£ô http create and convert flow                                                                                 0.45s  
+  Γ£ô http submit approve reject processing flow                                                                   0.45s  
+
+   PASS  Tests\Feature\SalesPurchaseSubModuleInfrastructureTest
+  Γ£ô sales parent exists                                                                                          0.33s  
+  Γ£ô purchase parent exists                                                                                       0.29s  
+  Γ£ô 7 sales sub modules seeded                                                                                   0.29s  
+  Γ£ô 6 purchase sub modules seeded                                                                                0.29s  
+  Γ£ô sub modules are active with icons and routes                                                                 0.29s  
+  Γ£ô sales mapped to advanced and premium only                                                                    0.30s  
+  Γ£ô purchase mapped to premium only                                                                              0.29s  
+  Γ£ô feature registry entries active                                                                              0.29s  
+  Γ£ô seeders idempotent                                                                                           0.33s  
+
+   PASS  Tests\Feature\SalesQuotationFkTest
+  Γ£ô valid sales order reference                                                                                  0.29s  
+  Γ£ô null reference                                                                                               0.29s  
+  Γ£ô null on delete behavior                                                                                      0.30s  
+  Γ£ô cross tenant relationship protection                                                                         0.32s  
+  Γ£ô fk exists and is set null                                                                                    0.24s  
+
+   PASS  Tests\Feature\SalesQuotationTest
+  Γ£ô create draft calculates totals                                                                               0.30s  
+  Γ£ô server recalculates tampered totals                                                                          0.30s  
+  Γ£ô line discount percent and tax                                                                                0.30s  
+  Γ£ô workflow draft sent accepted                                                                                 0.30s  
+  Γ£ô invalid transition rejected                                                                                  0.30s  
+  Γ£ô reject and cancel                                                                                            0.31s  
+  Γ£ô expire                                                                                                       0.30s  
+  Γ£ô edit only draft                                                                                              0.30s  
+  Γ£ô historical safety preserves values                                                                           0.31s  
+  Γ£ô tenant isolation                                                                                             0.35s  
+  Γ£ô branch isolation                                                                                             0.30s  
+  Γ£ô customer scope enforced                                                                                      0.37s  
+  Γ£ô product scope enforced                                                                                       0.39s  
+  Γ£ô duplicate submission numbering unique                                                                        0.32s  
+  Γ£ô tampered line price ignored                                                                                  0.39s  
+  Γ£ô conversion readiness                                                                                         0.32s  
+  Γ£ô audit logged                                                                                                 0.32s  
+  Γ£ô decimal precision                                                                                            0.32s  
+
+   PASS  Tests\Feature\SalesReportTest
+  Γ£ô dashboard totals                                                                                             1.36s  
+  Γ£ô date filters                                                                                                 7.09s  
+  Γ£ô customer product filters                                                                                     0.71s  
+  Γ£ô branch isolation                                                                                             0.89s  
+  Γ£ô tenant isolation                                                                                             0.85s  
+  Γ£ô returns reflected correctly                                                                                  1.08s  
+  Γ£ô customer statement correctness                                                                               1.42s  
+  Γ£ô csv escaping                                                                                                 0.78s  
+  Γ£ô permissions gated                                                                                            1.33s  
+  Γ£ô large data paginated and no n1                                                                               0.94s  
+  Γ£ô returns pagination and csv                                                                                   0.87s  
+  Γ£ô finance totals agree                                                                                         0.61s  
+
+   PASS  Tests\Feature\SalesReturnTest
+  Γ£ô partial return                                                                                               1.02s  
+  Γ£ô full return                                                                                                  0.85s  
+  Γ£ô excessive quantity rejection                                                                                 0.81s  
+  Γ£ô duplicate repeated return protection                                                                         0.89s  
+  Γ£ô inventory restoration                                                                                        0.79s  
+  Γ£ô credit note calculation                                                                                      0.80s  
+  Γ£ô refund limits                                                                                                0.83s  
+  Γ£ô finance posting                                                                                              0.86s  
+  Γ£ô tenant isolation                                                                                             0.93s  
+  Γ£ô branch isolation                                                                                             0.79s  
+  Γ£ô permissions                                                                                                  1.01s  
+  Γ£ô read write integrity                                                                                         0.87s  
+  Γ£ô cancellation reversal behavior                                                                               1.04s  
+
+   PASS  Tests\Feature\SecurityHardeningTest
+  Γ£ô branch isolation sales order                                                                                 0.44s  
+
+  Tests:    336 passed (1171 assertions)
+  Duration: 178.05s
+

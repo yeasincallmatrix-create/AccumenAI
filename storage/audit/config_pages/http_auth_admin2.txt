@@ -1,0 +1,6 @@
+﻿login=OK
+/admin/institutes/4/modules => 200 (184989 bytes)
+/admin/institutes/5/modules => 200 (187051 bytes)
+/admin/institutes/modules-overview => 200 (80093 bytes)
+/admin/institutes/4/access-log => 200 (69286 bytes)
+/admin/modules/access-logs => 200 (159960 bytes)

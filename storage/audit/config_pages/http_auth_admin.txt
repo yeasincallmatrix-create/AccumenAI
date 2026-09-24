@@ -1,0 +1,7 @@
+﻿login=OK
+/admin/industry-subcategories => 200 (114475 bytes)
+/admin/modules => 200 (331667 bytes)
+/admin/packages/4/modules => 200 (162192 bytes)
+/admin/institutes/1/modules => 404 (6659 bytes)
+/settings/terminology => 302 (334 bytes) -> http://localhost/login
+/settings/modules => 302 (334 bytes) -> http://localhost/login

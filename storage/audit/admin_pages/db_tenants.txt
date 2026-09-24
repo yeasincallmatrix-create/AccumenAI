@@ -1,0 +1,36 @@
+﻿=== TENANTS BY PACKAGE ===
+pkg 1: 2 tenants
+pkg 4: 3 tenants
+
+=== TENANTS BY INDUSTRY ===
+industry healthcare: 2
+industry retail: 1
+industry training_center: 2
+
+=== TENANTS ON PACKAGE 4 ===
+id=189 | Central Hospital | industry: healthcare | sub: hospital
+id=191 | CENTRAL DIAGNOSTIC CENTER | industry: healthcare | sub: diagnostic_center
+id=192 | Mawa Supershop | industry: retail | sub: supermarket
+
+=== RESOLUTION SAMPLE (3 tenants) ===
+Tenant: Professional Training Center | industry: training_center | sub: professional_training_center | pkg: 1
+  Enabled: 9 modules
+  List: crm, accounting, finance, reports, notifications, ai, vat, training_center, training_center.courses
+  Sample5: crm, accounting, finance, reports, notifications
+  Cache key module_access:4 warmed, cached count: 9
+Tenant: Mawa Academy | industry: training_center | sub: professional_training_center | pkg: 1
+  Enabled: 14 modules
+  List: crm, accounting, finance, inventory, hr, sales, purchase, reports, notifications, ai, vat, training_center, training_center.courses, training_center.batches
+  Sample5: crm, accounting, finance, inventory, hr
+  Cache key module_access:5 warmed, cached count: 14
+Tenant: Central Hospital | industry: healthcare | sub: hospital | pkg: 4
+  Enabled: 26 modules
+  List: crm, accounting, finance, inventory, hr, sales, purchase, reports, notifications, ai, vat, medical, medical.opd, medical.ipd, medical.pharmacy, medical.laboratory, medical.billing, medical.emergency, medical.radiology, medical.bloodbank, medical.physiotherapy, medical.dental, medical.vaccination, medical.ambulance, medical.diet, medical.records
+  Sample5: crm, accounting, finance, inventory, hr
+  Cache key module_access:189 warmed, cached count: 26
+
+=== PACKAGE 4 TENANT RESOLUTION ===
+Institute 189 (Central Hospital): 26 enabled
+  medical modules: medical, medical.opd, medical.ipd, medical.pharmacy, medical.laboratory, medical.billing, medical.emergency, medical.radiology, medical.bloodbank, medical.physiotherapy, medical.dental, medical.vaccination, medical.ambulance, medical.diet, medical.records
+Institute 191 (CENTRAL DIAGNOSTIC CENTER): 15 enabled
+  medical modules: medical, medical.opd, medical.ipd, medical.pharmacy, medical.laboratory, medical.billing, medical.emergency

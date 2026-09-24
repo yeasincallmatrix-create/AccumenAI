@@ -1,0 +1,149 @@
+﻿=== MODULE_REGISTRY ===
+ROOT -> crm | CRM | type: core | status: active | coming_soon: NO | sort: 1
+ROOT -> accounting | Accounting | type: core | status: active | coming_soon: NO | sort: 2
+ROOT -> finance | Finance | type: core | status: active | coming_soon: NO | sort: 3
+ROOT -> inventory | Inventory | type: core | status: active | coming_soon: NO | sort: 4
+ROOT -> hr | HR | type: core | status: active | coming_soon: NO | sort: 5
+ROOT -> sales | Sales | type: core | status: active | coming_soon: NO | sort: 6
+ROOT -> purchase | Purchase | type: core | status: active | coming_soon: NO | sort: 7
+ROOT -> reports | Reports | type: core | status: active | coming_soon: NO | sort: 8
+ROOT -> notifications | Notifications | type: core | status: active | coming_soon: NO | sort: 9
+ROOT -> ai | AI | type: core | status: active | coming_soon: NO | sort: 10
+ROOT -> vat | VAT / Tax | type: core | status: active | coming_soon: NO | sort: 11
+ROOT -> tds | TDS / Tax | type: core | status: active | coming_soon: NO | sort: 12
+ROOT -> pos | POS | type: industry | status: active | coming_soon: NO | sort: 13
+ROOT -> manufacturing | Manufacturing | type: industry | status: active | coming_soon: NO | sort: 14
+ROOT -> education | Education | type: industry | status: active | coming_soon: NO | sort: 20
+education -> education.students | Students | type: industry | status: active | coming_soon: NO | sort: 21
+ROOT -> training_center | Training Center | type: industry | status: active | coming_soon: NO | sort: 22
+education -> education.classes | Classes | type: industry | status: active | coming_soon: NO | sort: 22
+education -> education.exams | Exams | type: industry | status: active | coming_soon: NO | sort: 23
+training_center -> training_center.courses | Courses | type: industry | status: active | coming_soon: NO | sort: 23
+education -> education.attendance | Attendance | type: industry | status: active | coming_soon: NO | sort: 24
+training_center -> training_center.batches | Batches | type: industry | status: active | coming_soon: NO | sort: 24
+education -> education.fees | Fees | type: industry | status: active | coming_soon: NO | sort: 25
+education -> education.guardians | Guardians | type: industry | status: active | coming_soon: NO | sort: 26
+training_center -> training_center.attendance | Attendance | type: industry | status: active | coming_soon: NO | sort: 26
+education -> education.analytics | Analytics | type: industry | status: active | coming_soon: NO | sort: 27
+training_center -> training_center.exams | Exams | type: industry | status: active | coming_soon: NO | sort: 27
+training_center -> training_center.certificates | Certificates | type: industry | status: active | coming_soon: NO | sort: 28
+training_center -> training_center.fees | Fees | type: industry | status: active | coming_soon: NO | sort: 29
+training_center -> training_center.reports | Reports | type: industry | status: active | coming_soon: NO | sort: 30
+ROOT -> medical | Medical / Hospital Management | type: industry | status: active | coming_soon: NO | sort: 50
+medical -> medical.opd | OPD | type: industry | status: active | coming_soon: NO | sort: 51
+medical -> medical.ipd | IPD | type: industry | status: active | coming_soon: NO | sort: 52
+medical -> medical.pharmacy | Pharmacy | type: industry | status: active | coming_soon: NO | sort: 53
+medical -> medical.laboratory | Laboratory | type: industry | status: active | coming_soon: NO | sort: 54
+medical -> medical.billing | Billing | type: industry | status: active | coming_soon: NO | sort: 55
+medical -> medical.emergency | Emergency | type: industry | status: active | coming_soon: NO | sort: 56
+medical -> medical.radiology | Radiology | type: industry | status: active | coming_soon: NO | sort: 57
+medical -> medical.bloodbank | Blood Bank | type: industry | status: active | coming_soon: NO | sort: 58
+medical -> medical.physiotherapy | Physiotherapy | type: industry | status: active | coming_soon: NO | sort: 59
+medical -> medical.dental | Dental | type: industry | status: active | coming_soon: NO | sort: 60
+medical -> medical.vaccination | Vaccination | type: industry | status: active | coming_soon: NO | sort: 61
+sales -> sales.quotations | Quotations | type: core | status: active | coming_soon: NO | sort: 61
+medical -> medical.ambulance | Ambulance | type: industry | status: active | coming_soon: NO | sort: 62
+sales -> sales.orders | Orders | type: core | status: active | coming_soon: NO | sort: 62
+medical -> medical.diet | Diet & Nutrition | type: industry | status: active | coming_soon: NO | sort: 63
+sales -> sales.deliveries | Deliveries | type: core | status: active | coming_soon: NO | sort: 63
+medical -> medical.records | Medical Records | type: industry | status: active | coming_soon: NO | sort: 64
+sales -> sales.returns | Returns | type: core | status: active | coming_soon: NO | sort: 64
+sales -> sales.leads | Leads | type: core | status: active | coming_soon: NO | sort: 65
+sales -> sales.customers | Customers | type: core | status: active | coming_soon: NO | sort: 66
+sales -> sales.reports | Reports | type: core | status: active | coming_soon: NO | sort: 67
+purchase -> purchase.quotations | Quotations | type: core | status: active | coming_soon: NO | sort: 71
+purchase -> purchase.orders | Orders | type: core | status: active | coming_soon: NO | sort: 72
+purchase -> purchase.invoices | Invoices | type: core | status: active | coming_soon: NO | sort: 73
+purchase -> purchase.requests | Requests | type: core | status: active | coming_soon: NO | sort: 74
+purchase -> purchase.returns | Returns | type: core | status: active | coming_soon: NO | sort: 75
+purchase -> purchase.receipts | Goods Receipts | type: core | status: active | coming_soon: NO | sort: 76
+Total: 58
+Active: 58
+Inactive: 0
+Coming soon: 0
+Types: [{"type":"core","c":25},{"type":"industry","c":33}]
+
+=== INDUSTRIES ===
+{"id":1,"name":"Education","slug":"education","code":null,"description":null,"status":"active","sort_order":0,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45"}
+{"id":2,"name":"Training Center","slug":"training_center","code":null,"description":null,"status":"active","sort_order":1,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45"}
+{"id":3,"name":"Healthcare","slug":"healthcare","code":null,"description":null,"status":"active","sort_order":2,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45"}
+{"id":4,"name":"Information Technology","slug":"information_technology","code":null,"description":null,"status":"active","sort_order":3,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45"}
+{"id":5,"name":"Finance & Banking","slug":"finance","code":null,"description":null,"status":"active","sort_order":4,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45"}
+{"id":6,"name":"Retail","slug":"retail","code":null,"description":null,"status":"active","sort_order":5,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45"}
+{"id":7,"name":"Manufacturing","slug":"manufacturing","code":null,"description":null,"status":"active","sort_order":6,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45"}
+{"id":8,"name":"Real Estate","slug":"real_estate","code":null,"description":null,"status":"active","sort_order":7,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45"}
+{"id":9,"name":"Transportation","slug":"transportation","code":null,"description":null,"status":"active","sort_order":8,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45"}
+{"id":10,"name":"Service","slug":"service","code":null,"description":null,"status":"active","sort_order":9,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45"}
+{"id":11,"name":"Restaurant","slug":"restaurant","code":null,"description":null,"status":"active","sort_order":10,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45"}
+{"id":12,"name":"Hotels","slug":"hotels","code":null,"description":null,"status":"active","sort_order":11,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45"}
+{"id":13,"name":"Personal Finance","slug":"personal_finance","code":null,"description":null,"status":"active","sort_order":12,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45"}
+{"id":14,"name":"Other","slug":"other","code":null,"description":null,"status":"active","sort_order":13,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45"}
+Total: 14
+
+=== SUB-INDUSTRIES ===
+{"id":1,"industry_id":1,"country_id":null,"name":"School","slug":"school","code":null,"description":null,"status":"active","sort_order":0,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"1-G-school"}
+{"id":2,"industry_id":1,"country_id":null,"name":"College","slug":"college","code":null,"description":null,"status":"active","sort_order":1,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"1-G-college"}
+{"id":3,"industry_id":1,"country_id":null,"name":"Polytechnic","slug":"polytechnic","code":null,"description":null,"status":"active","sort_order":2,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"1-G-polytechnic"}
+{"id":4,"industry_id":1,"country_id":null,"name":"University","slug":"university","code":null,"description":null,"status":"active","sort_order":3,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"1-G-university"}
+{"id":5,"industry_id":1,"country_id":null,"name":"Madrasha","slug":"madrasha","code":null,"description":null,"status":"active","sort_order":4,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"1-G-madrasha"}
+{"id":6,"industry_id":1,"country_id":null,"name":"Primary School","slug":"primary_school","code":null,"description":null,"status":"active","sort_order":5,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"1-G-primary_school"}
+{"id":7,"industry_id":1,"country_id":null,"name":"Secondary \/ High School","slug":"secondary_high_school","code":null,"description":null,"status":"active","sort_order":6,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"1-G-secondary_high_school"}
+{"id":8,"industry_id":1,"country_id":null,"name":"School & College","slug":"school_college","code":null,"description":null,"status":"active","sort_order":7,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"1-G-school_college"}
+{"id":25,"industry_id":1,"country_id":21,"name":"School","slug":"school","code":null,"description":null,"status":"active","sort_order":0,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"1-21-school"}
+{"id":26,"industry_id":1,"country_id":21,"name":"College","slug":"college","code":null,"description":null,"status":"active","sort_order":1,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"1-21-college"}
+{"id":27,"industry_id":1,"country_id":21,"name":"Polytechnic","slug":"polytechnic","code":null,"description":null,"status":"active","sort_order":2,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"1-21-polytechnic"}
+{"id":28,"industry_id":1,"country_id":21,"name":"University","slug":"university","code":null,"description":null,"status":"active","sort_order":3,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"1-21-university"}
+{"id":29,"industry_id":1,"country_id":21,"name":"Madrasha","slug":"madrasha","code":null,"description":null,"status":"active","sort_order":4,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"1-21-madrasha"}
+{"id":30,"industry_id":1,"country_id":21,"name":"Primary School","slug":"primary_school","code":null,"description":null,"status":"active","sort_order":5,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"1-21-primary_school"}
+{"id":31,"industry_id":1,"country_id":21,"name":"Secondary \/ High School","slug":"secondary_high_school","code":null,"description":null,"status":"active","sort_order":6,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"1-21-secondary_high_school"}
+{"id":32,"industry_id":1,"country_id":21,"name":"School & College","slug":"school_college","code":null,"description":null,"status":"active","sort_order":7,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"1-21-school_college"}
+{"id":9,"industry_id":2,"country_id":null,"name":"Training Institute","slug":"training_institute","code":null,"description":null,"status":"active","sort_order":0,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-G-training_institute"}
+{"id":10,"industry_id":2,"country_id":null,"name":"Professional Training Center","slug":"professional_training_center","code":null,"description":null,"status":"active","sort_order":1,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-G-professional_training_center"}
+{"id":11,"industry_id":2,"country_id":null,"name":"Dance Academy","slug":"dance_academy","code":null,"description":null,"status":"active","sort_order":2,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-G-dance_academy"}
+{"id":12,"industry_id":2,"country_id":null,"name":"IT Training Center","slug":"it_training_center","code":null,"description":null,"status":"active","sort_order":3,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-G-it_training_center"}
+{"id":13,"industry_id":2,"country_id":null,"name":"Vocational Training Center","slug":"vocational_training_center","code":null,"description":null,"status":"active","sort_order":4,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-G-vocational_training_center"}
+{"id":14,"industry_id":2,"country_id":null,"name":"Institution","slug":"institution","code":null,"description":null,"status":"active","sort_order":5,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-G-institution"}
+{"id":15,"industry_id":2,"country_id":null,"name":"Professional Training Academy","slug":"professional_training_academy","code":null,"description":null,"status":"active","sort_order":6,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-G-professional_training_academy"}
+{"id":16,"industry_id":2,"country_id":null,"name":"Computer \/ IT Training Institute","slug":"computer_it_training_institute","code":null,"description":null,"status":"active","sort_order":7,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-G-computer_it_training_institute"}
+{"id":17,"industry_id":2,"country_id":null,"name":"Vocational Institute","slug":"vocational_institute","code":null,"description":null,"status":"active","sort_order":8,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-G-vocational_institute"}
+{"id":18,"industry_id":2,"country_id":null,"name":"Technical Training Center","slug":"technical_training_center","code":null,"description":null,"status":"active","sort_order":9,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-G-technical_training_center"}
+{"id":19,"industry_id":2,"country_id":null,"name":"Skill Development Center","slug":"skill_development_center","code":null,"description":null,"status":"active","sort_order":10,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-G-skill_development_center"}
+{"id":20,"industry_id":2,"country_id":null,"name":"Martial Arts","slug":"martial_arts","code":null,"description":null,"status":"active","sort_order":11,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-G-martial_arts"}
+{"id":21,"industry_id":2,"country_id":null,"name":"Music Academy","slug":"music_academy","code":null,"description":null,"status":"active","sort_order":12,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-G-music_academy"}
+{"id":22,"industry_id":2,"country_id":null,"name":"Sports Academy","slug":"sports_academy","code":null,"description":null,"status":"active","sort_order":13,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-G-sports_academy"}
+{"id":23,"industry_id":2,"country_id":null,"name":"Language Academy","slug":"language_academy","code":null,"description":null,"status":"active","sort_order":14,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-G-language_academy"}
+{"id":24,"industry_id":2,"country_id":null,"name":"Coaching Centre","slug":"coaching_centre","code":null,"description":null,"status":"active","sort_order":15,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-G-coaching_centre"}
+{"id":33,"industry_id":2,"country_id":21,"name":"Training Institute","slug":"training_institute","code":null,"description":null,"status":"active","sort_order":0,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-21-training_institute"}
+{"id":34,"industry_id":2,"country_id":21,"name":"Professional Training Center","slug":"professional_training_center","code":null,"description":null,"status":"active","sort_order":1,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-21-professional_training_center"}
+{"id":35,"industry_id":2,"country_id":21,"name":"Dance Academy","slug":"dance_academy","code":null,"description":null,"status":"active","sort_order":2,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-21-dance_academy"}
+{"id":36,"industry_id":2,"country_id":21,"name":"IT Training Center","slug":"it_training_center","code":null,"description":null,"status":"active","sort_order":3,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-21-it_training_center"}
+{"id":37,"industry_id":2,"country_id":21,"name":"Vocational Training Center","slug":"vocational_training_center","code":null,"description":null,"status":"active","sort_order":4,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-21-vocational_training_center"}
+{"id":38,"industry_id":2,"country_id":21,"name":"Institution","slug":"institution","code":null,"description":null,"status":"active","sort_order":5,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-21-institution"}
+{"id":39,"industry_id":2,"country_id":21,"name":"Professional Training Academy","slug":"professional_training_academy","code":null,"description":null,"status":"active","sort_order":6,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-21-professional_training_academy"}
+{"id":40,"industry_id":2,"country_id":21,"name":"Computer \/ IT Training Institute","slug":"computer_it_training_institute","code":null,"description":null,"status":"active","sort_order":7,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-21-computer_it_training_institute"}
+{"id":41,"industry_id":2,"country_id":21,"name":"Vocational Institute","slug":"vocational_institute","code":null,"description":null,"status":"active","sort_order":8,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-21-vocational_institute"}
+{"id":42,"industry_id":2,"country_id":21,"name":"Technical Training Center","slug":"technical_training_center","code":null,"description":null,"status":"active","sort_order":9,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-21-technical_training_center"}
+{"id":43,"industry_id":2,"country_id":21,"name":"Skill Development Center","slug":"skill_development_center","code":null,"description":null,"status":"active","sort_order":10,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-21-skill_development_center"}
+{"id":44,"industry_id":2,"country_id":21,"name":"Martial Arts","slug":"martial_arts","code":null,"description":null,"status":"active","sort_order":11,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-21-martial_arts"}
+{"id":45,"industry_id":2,"country_id":21,"name":"Music Academy","slug":"music_academy","code":null,"description":null,"status":"active","sort_order":12,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-21-music_academy"}
+{"id":46,"industry_id":2,"country_id":21,"name":"Sports Academy","slug":"sports_academy","code":null,"description":null,"status":"active","sort_order":13,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-21-sports_academy"}
+{"id":47,"industry_id":2,"country_id":21,"name":"Language Academy","slug":"language_academy","code":null,"description":null,"status":"active","sort_order":14,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-21-language_academy"}
+{"id":48,"industry_id":2,"country_id":21,"name":"Coaching Centre","slug":"coaching_centre","code":null,"description":null,"status":"active","sort_order":15,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"2-21-coaching_centre"}
+{"id":49,"industry_id":3,"country_id":21,"name":"Hospital","slug":"hospital","code":null,"description":null,"status":"active","sort_order":0,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"3-21-hospital"}
+{"id":50,"industry_id":3,"country_id":21,"name":"Clinic","slug":"clinic","code":null,"description":null,"status":"active","sort_order":1,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"3-21-clinic"}
+{"id":51,"industry_id":3,"country_id":21,"name":"Pharmacy","slug":"pharmacy","code":null,"description":null,"status":"active","sort_order":2,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"3-21-pharmacy"}
+{"id":52,"industry_id":3,"country_id":21,"name":"Diagnostic Center","slug":"diagnostic_center","code":null,"description":null,"status":"active","sort_order":3,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"3-21-diagnostic_center"}
+{"id":53,"industry_id":3,"country_id":21,"name":"Nursing Home","slug":"nursing_home","code":null,"description":null,"status":"active","sort_order":4,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"3-21-nursing_home"}
+{"id":54,"industry_id":4,"country_id":21,"name":"Software Company","slug":"software_company","code":null,"description":null,"status":"active","sort_order":0,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"4-21-software_company"}
+{"id":55,"industry_id":4,"country_id":21,"name":"IT Services","slug":"it_services","code":null,"description":null,"status":"active","sort_order":1,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"4-21-it_services"}
+{"id":56,"industry_id":4,"country_id":21,"name":"Digital Agency","slug":"digital_agency","code":null,"description":null,"status":"active","sort_order":2,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"4-21-digital_agency"}
+{"id":57,"industry_id":5,"country_id":21,"name":"Bank","slug":"bank","code":null,"description":null,"status":"active","sort_order":0,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"5-21-bank"}
+{"id":58,"industry_id":5,"country_id":21,"name":"Microfinance","slug":"microfinance","code":null,"description":null,"status":"active","sort_order":1,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"5-21-microfinance"}
+{"id":59,"industry_id":5,"country_id":21,"name":"Insurance","slug":"insurance","code":null,"description":null,"status":"active","sort_order":2,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"5-21-insurance"}
+{"id":60,"industry_id":6,"country_id":21,"name":"General Store","slug":"general_store","code":null,"description":null,"status":"active","sort_order":0,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"6-21-general_store"}
+{"id":61,"industry_id":6,"country_id":21,"name":"Supermarket","slug":"supermarket","code":null,"description":null,"status":"active","sort_order":1,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"6-21-supermarket"}
+{"id":62,"industry_id":6,"country_id":21,"name":"Electronics Store","slug":"electronics","code":null,"description":null,"status":"active","sort_order":2,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"6-21-electronics"}
+{"id":63,"industry_id":7,"country_id":21,"name":"Garments","slug":"garments","code":null,"description":null,"status":"active","sort_order":0,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"7-21-garments"}
+{"id":64,"industry_id":7,"country_id":21,"name":"Food Processing","slug":"food_processing","code":null,"description":null,"status":"active","sort_order":1,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"7-21-food_processing"}
+{"id":65,"industry_id":7,"country_id":21,"name":"Pharmaceutical","slug":"pharmaceutical","code":null,"description":null,"status":"active","sort_order":2,"created_at":"2026-09-23 15:30:45","updated_at":"2026-09-23 15:30:45","scope_hash":"7-21-pharmaceutical"}
+Total sub-industries: 65

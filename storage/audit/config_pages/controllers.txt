@@ -1,0 +1,6 @@
+﻿OK   App\Http\Controllers\Admin\IndustrySubcategoryController => index, show, create, store, edit, update, destroy
+OK   App\Http\Controllers\Admin\ModuleAdminController => index, update, packageModules, updatePackageModules, instituteModules, updateInstituteModules, removeOverride, accessLogs
+OK   App\Http\Controllers\Admin\InstituteModuleOverrideController => accessLog, overview
+OK   App\Http\Controllers\SuperAdmin\EmergencyOverrideController => create, store
+OK   App\Http\Controllers\Settings\TerminologyController => index, update
+OK   App\Http\Controllers\Settings\ModuleManagementController => index, toggle

@@ -1,0 +1,61 @@
+﻿=== industry-subcategories ===
+web.php:566: Route::get('admin/industry-subcategories', [\App\Http\Controllers\Admin\IndustrySubcategoryController::class, 'index'])->name('admin.industry-subcategories.index')->middleware($adminMiddleware);
+web.php:567: Route::get('admin/industry-subcategories/create', [\App\Http\Controllers\Admin\IndustrySubcategoryController::class, 'create'])->name('admin.industry-subcategories.create')->middleware($adminMiddleware);
+web.php:568: Route::post('admin/industry-subcategories', [\App\Http\Controllers\Admin\IndustrySubcategoryController::class, 'store'])->name('admin.industry-subcategories.store')->middleware($adminMiddleware);
+web.php:569: Route::get('admin/industry-subcategories/{id}', [\App\Http\Controllers\Admin\IndustrySubcategoryController::class, 'show'])->name('admin.industry-subcategories.show')->middleware($adminMiddleware)->whereNumber('id');
+web.php:570: Route::get('admin/industry-subcategories/{id}/edit', [\App\Http\Controllers\Admin\IndustrySubcategoryController::class, 'edit'])->name('admin.industry-subcategories.edit')->middleware($adminMiddleware)->whereNumber('id');
+web.php:571: Route::put('admin/industry-subcategories/{id}', [\App\Http\Controllers\Admin\IndustrySubcategoryController::class, 'update'])->name('admin.industry-subcategories.update')->middleware($adminMiddleware)->whereNumber('id');
+web.php:572: Route::delete('admin/industry-subcategories/{id}', [\App\Http\Controllers\Admin\IndustrySubcategoryController::class, 'destroy'])->name('admin.industry-subcategories.destroy')->middleware($adminMiddleware)->whereNumber('id');
+=== terminology ===
+web.php:245: // Phase 5 — tenant terminology overrides (Customer → Client, etc.)
+web.php:246: Route::get('settings/terminology', [\App\Http\Controllers\Settings\TerminologyController::class, 'index'])->middleware('permission:settings.manage')->name('settings.terminology.index');
+web.php:247: Route::put('settings/terminology', [\App\Http\Controllers\Settings\TerminologyController::class, 'update'])->middleware('permission:settings.manage')->name('settings.terminology.update');
+=== admin.modules ===
+web.php:549: Route::get('admin/modules', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'index'])->name('admin.modules.index')->middleware(['auth:platform_admin', 'verified']);
+web.php:550: Route::put('admin/modules/{module}', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'update'])->name('admin.modules.update')->middleware(['auth:platform_admin', 'verified'])->whereNumber('module');
+web.php:551: Route::get('admin/modules/access-logs', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'accessLogs'])->name('admin.modules.access-logs')->middleware(['auth:platform_admin', 'verified']);
+=== settings/modules ===
+web.php:242: Route::get('settings/modules', [\App\Http\Controllers\Settings\ModuleManagementController::class, 'index'])->middleware('permission:institute.settings.module.view')->name('settings.modules');
+web.php:243: Route::post('settings/modules/toggle', [\App\Http\Controllers\Settings\ModuleManagementController::class, 'toggle'])->name('settings.modules.toggle');
+=== institutes/ ===
+institute_modules.php:1770: Route::post('institutes/columns', [$adminInst, 'saveColumns'])->name('institutes.columns');
+institute_modules.php:1773: Route::get('institutes/{institute}/entitlements', [$adminEntitle, 'index'])->name('institutes.entitlements.index');
+institute_modules.php:1774: Route::get('institutes/{institute}/entitlements/create', [$adminEntitle, 'create'])->name('institutes.entitlements.create');
+institute_modules.php:1775: Route::post('institutes/{institute}/entitlements', [$adminEntitle, 'store'])->name('institutes.entitlements.store');
+institute_modules.php:1776: Route::delete('institutes/{institute}/entitlements/{entitlement}', [$adminEntitle, 'destroy'])->name('institutes.entitlements.destroy');
+institute_modules.php:1777: Route::post('institutes/{institute}/entitlements/{entitlement}/extend', [$adminEntitle, 'extend'])->name('institutes.entitlements.extend');
+institute_modules.php:1789: Route::get('institutes/{institute}/users/modules', [$adminUserMod, 'index'])->name('institutes.users.modules.index');
+institute_modules.php:1790: Route::put('institutes/{institute}/users/modules', [$adminUserMod, 'update'])->name('institutes.users.modules.update');
+web.php:41: Route::get('institutes/{institute}/emergency-override', [\App\Http\Controllers\SuperAdmin\EmergencyOverrideController::class, 'create'])->name('institutes.emergency-override.create')->whereNumber('institute');
+web.php:42: Route::post('institutes/{institute}/emergency-override', [\App\Http\Controllers\SuperAdmin\EmergencyOverrideController::class, 'store'])->name('institutes.emergency-override.store')->whereNumber('institute');
+web.php:368: Route::get('institutes/bin', [InstituteAdminController::class, 'bin'])->name('institutes.bin');
+web.php:369: Route::post('institutes/bin/batch-action', [InstituteAdminController::class, 'batchBinAction'])->name('institutes.bin.batch-action');
+web.php:370: Route::post('institutes/bin/columns', [InstituteAdminController::class, 'saveBinColumns'])->name('institutes.bin.columns');
+web.php:371: Route::post('institutes/batch-action', [InstituteAdminController::class, 'batchAction'])->name('institutes.batch-action');
+web.php:372: Route::get('institutes/{institute}', [InstituteAdminController::class, 'show'])->name('institutes.show')->whereNumber('institute');
+web.php:373: Route::get('institutes/{institute}/edit', [InstituteAdminController::class, 'edit'])->name('institutes.edit')->whereNumber('institute');
+web.php:374: Route::put('institutes/{institute}', [InstituteAdminController::class, 'update'])->name('institutes.update')->whereNumber('institute');
+web.php:375: Route::put('institutes/{institute}/certificate-approval-mode', [InstituteAdminController::class, 'updateCertificateApprovalMode'])->name('institutes.certificate-approval-mode.update')->whereNumber('institute');
+web.php:376: Route::post('institutes/{institute}/action', [InstituteAdminController::class, 'action'])->name('institutes.action')->whereNumber('institute');
+web.php:377: Route::post('institutes/{institute}/restore', [InstituteAdminController::class, 'restore'])->name('institutes.restore')->withTrashed()->whereNumber('institute');
+web.php:378: Route::delete('institutes/{institute}/force-delete', [InstituteAdminController::class, 'forceDelete'])->name('institutes.force-delete')->withTrashed()->whereNumber('institute');
+web.php:379: Route::delete('institutes/{institute}/staff/{kind}/{id}', [InstituteAdminController::class, 'destroyStaff'])->name('institutes.staff.destroy')->whereNumber('institute')->whereNumber('id');
+web.php:554: Route::get('admin/institutes/{institute}/modules', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'instituteModules'])->name('admin.institutes.modules')->middleware(['auth:platform_admin', 'verified'])->whereNumber('institute');
+web.php:555: Route::put('admin/institutes/{institute}/modules', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'updateInstituteModules'])->name('admin.institutes.modules.update')->middleware(['auth:platform_admin', 'verified'])->whereNumber('institute');
+web.php:556: Route::delete('admin/institutes/{institute}/modules/{moduleKey}', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'removeOverride'])->name('admin.institutes.modules.remove')->middleware(['auth:platform_admin', 'verified'])->whereNumber('institute');
+web.php:575: Route::get('admin/institutes/{institute}/access-log', [\App\Http\Controllers\Admin\InstituteModuleOverrideController::class, 'accessLog'])->name('admin.institutes.access-log')->middleware($adminMiddleware)->whereNumber('institute');
+web.php:576: Route::get('admin/institutes/modules-overview', [\App\Http\Controllers\Admin\InstituteModuleOverrideController::class, 'overview'])->name('admin.institutes.modules-overview')->middleware($adminMiddleware);
+web.php:593: Route::get('institutes/{institute}/access', [TenantAccessController::class, 'show'])->name('institutes.access')->whereNumber('institute');
+web.php:594: Route::post('institutes/{institute}/grants', [TenantAccessController::class, 'addGrant'])->name('institutes.grants.store')->whereNumber('institute');
+web.php:595: Route::delete('institutes/{institute}/grants/{grant}', [TenantAccessController::class, 'revokeGrant'])->name('institutes.grants.revoke')->whereNumber('institute')->whereNumber('grant');
+web.php:596: Route::post('institutes/{institute}/denials', [TenantAccessController::class, 'addDenial'])->name('institutes.denials.store')->whereNumber('institute');
+web.php:597: Route::delete('institutes/{institute}/denials/{denial}', [TenantAccessController::class, 'liftDenial'])->name('institutes.denials.lift')->whereNumber('institute')->whereNumber('denial');
+web.php:642: Route::post('institutes/logo', [\App\Http\Controllers\InstituteLogoController::class, 'upload'])->name('institute.logo.upload');
+web.php:643: Route::delete('institutes/logo', [\App\Http\Controllers\InstituteLogoController::class, 'remove'])->name('institute.logo.remove');
+=== admin/modules ===
+web.php:549: Route::get('admin/modules', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'index'])->name('admin.modules.index')->middleware(['auth:platform_admin', 'verified']);
+web.php:550: Route::put('admin/modules/{module}', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'update'])->name('admin.modules.update')->middleware(['auth:platform_admin', 'verified'])->whereNumber('module');
+web.php:551: Route::get('admin/modules/access-logs', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'accessLogs'])->name('admin.modules.access-logs')->middleware(['auth:platform_admin', 'verified']);
+=== packages/{package}/modules ===
+web.php:552: Route::get('admin/packages/{package}/modules', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'packageModules'])->name('admin.packages.modules')->middleware(['auth:platform_admin', 'verified'])->whereNumber('package');
+web.php:553: Route::put('admin/packages/{package}/modules', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'updatePackageModules'])->name('admin.packages.modules.update')->middleware(['auth:platform_admin', 'verified'])->whereNumber('package');

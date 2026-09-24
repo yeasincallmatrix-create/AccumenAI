@@ -1,0 +1,88 @@
+Array
+(
+    [q1_controllers] => Array
+        (
+            [InstituteCreationController] => EXISTS
+            [InstituteOnboardingController] => EXISTS
+        )
+
+    [q1_onboarding_country_hits] => Array
+        (
+            [0] => 16:  * Step-1 owner onboarding: pick country -> industry -> sub-industry.
+            [1] => 18:  * The choices are scoped by country (config/industry_rules.php) so the rest of
+            [2] => 19:  * the onboarding form matches the country's industry rules. They are carried
+            [3] => 53:      * Validate a country -> industry -> sub-industry selection against the
+            [4] => 61:             'country' => ['required', 'string', 'max:80', Rule::in(array_keys(config('countries', [])))],
+            [5] => 62:             'industry' => ['required', 'string', 'max:60', Rule::in(array_keys(IndustryRules::industries($input['country'] ?? null)))],
+            [6] => 66:         $country = $data['country'];
+            [7] => 68:         $subs = IndustryRules::subIndustries($country, $industry);
+            [8] => 75:                     'sub_industry' => 'Sub-industry is required for this industry in this country.',
+            [9] => 81:                     'sub_industry' => 'The selected sub-industry is not available for this industry in this country.',
+            [10] => 87:             'country' => $country,
+            [11] => 94:      * The stored, re-validated onboarding selection (country, industry,
+            [12] => 105:         $country = $selection['country'] ?? null;
+            [13] => 109:         if (! is_string($country) || ! array_key_exists($country, config('countries', []))) {
+            [14] => 113:         if (! is_string($industry) || ! array_key_exists($industry, IndustryRules::industries($country))) {
+            [15] => 117:         if ($sub !== null && ! array_key_exists($sub, IndustryRules::subIndustries($country, $industry))) {
+            [16] => 122:             'country' => $country,
+        )
+
+    [q14_middleware_country_geo] => Array
+        (
+        )
+
+    [q15_routes_country_geo] => Array
+        (
+            [institute_modules.php] => Array
+                (
+                    [0] => 1648:         Route::get('academic/country/{country}', [$adminAcadStruct, 'country'])->name('academic.country');
+                    [1] => 1649:         Route::put('academic/country/{country}', [$adminAcadStruct, 'updateCountry'])->name('academic.country.update');
+                    [2] => 1651:         Route::post('academic/country/{country}/systems', [$adminAcadStruct, 'storeSystem'])->name('academic.systems.store');
+                    [3] => 1695:     // ─── ADMIN GEO moved outside tenant — see bottom of file (public GEO section) ──
+                    [4] => 1718:     // ─── GEO (public) moved to bottom outside tenant group — see end of file
+                    [5] => 1798: // ─── GEO (public) — must be outside tenant/auth so register/address works as guest ──
+                    [6] => 1800: $geo = \App\Http\Controllers\GeoController::class;
+                    [7] => 1801: Route::get('geo/levels/{country}', [$geo, 'levels'])->name('geo.levels');
+                    [8] => 1802: Route::get('geo/units', [$geo, 'units'])->name('geo.units');
+                    [9] => 1804: // ─── ADMIN GEO (platform_admin outside tenant — fixes import not working) ──
+                    [10] => 1805: $adminGeo = \App\Http\Controllers\Admin\GeoAdminController::class;
+                    [11] => 1806: $adminGeoImp = \App\Http\Controllers\Admin\GeoImportController::class;
+                    [12] => 1807: Route::middleware(['auth:platform_admin', 'verified'])->prefix('admin')->name('admin.')->group(function () use ($adminGeo, $adminGeoImp) {
+                    [13] => 1808:     Route::get('geo', [$adminGeo, 'index'])->name('geo.index');
+                    [14] => 1809:     Route::get('geo/create', [$adminGeo, 'createCountry'])->name('geo.countries.create');
+                    [15] => 1810:     Route::post('geo/countries', [$adminGeo, 'storeCountry'])->name('geo.countries.store');
+                    [16] => 1811:     Route::get('geo/{country}/edit', [$adminGeo, 'edit'])->name('geo.edit');
+                    [17] => 1812:     Route::put('geo/{country}', [$adminGeo, 'update'])->name('geo.update');
+                    [18] => 1813:     Route::post('geo/{country}/toggle', [$adminGeo, 'toggleStatus'])->name('geo.toggle');
+                    [19] => 1814:     Route::get('geo/imports', [$adminGeoImp, 'index'])->name('geo.imports');
+                    [20] => 1815:     Route::post('geo/imports', [$adminGeoImp, 'store'])->name('geo.imports.store');
+                    [21] => 1816:     Route::get('geo/imports/source-files', [$adminGeoImp, 'sourceFiles'])->name('geo.imports.source-files');
+                    [22] => 1817:     Route::post('geo/imports/load-from-source', [$adminGeoImp, 'loadFromSource'])->name('geo.imports.load-from-source');
+                    [23] => 1818:     Route::post('geo/imports/delete-source-file', [$adminGeoImp, 'deleteSourceFile'])->name('geo.imports.delete-source-file');
+                    [24] => 1819:     Route::get('geo/imports/template', [$adminGeoImp, 'template'])->name('geo.imports.template');
+                    [25] => 1820:     Route::post('geo/imports/convert', [$adminGeoImp, 'convert'])->name('geo.imports.convert');
+                    [26] => 1821:     Route::post('geo/imports/{import}/rollback', [$adminGeoImp, 'rollback'])->name('geo.imports.rollback');
+                    [27] => 1822:     Route::get('geo/clear/preview', [$adminGeoImp, 'clearPreview'])->name('geo.clear.preview');
+                    [28] => 1823:     Route::post('geo/clear', [$adminGeoImp, 'clear'])->name('geo.clear');
+                    [29] => 1824:     Route::get('geo/duplicates', [\App\Http\Controllers\Admin\GeoDuplicatesController::class, 'index'])->name('geo.duplicates');
+                    [30] => 1825:     Route::post('geo/duplicates/merge', [\App\Http\Controllers\Admin\GeoDuplicatesController::class, 'merge'])->name('geo.duplicates.merge');
+                    [31] => 1826:     Route::delete('geo/duplicates/{unit}', [\App\Http\Controllers\Admin\GeoDuplicatesController::class, 'destroy'])->name('geo.duplicates.destroy');
+                    [32] => 1827:     Route::post('geo/imports/{import}/validate', [$adminGeoImp, 'validatePackage'])->name('geo.imports.validate');
+                    [33] => 1828:     Route::post('geo/imports/{import}/run', [$adminGeoImp, 'run'])->name('geo.imports.run');
+                    [34] => 1829:     Route::get('geo/imports/{import}/status', [$adminGeoImp, 'status'])->name('geo.imports.status');
+                )
+
+            [web.php] => Array
+                (
+                    [0] => 133:     // Resolve home page by visitor country (session cookie > platform default)
+                    [1] => 134:     $countryIso2 = $request->session()->get('visitor_country', config('app.country'));
+                    [2] => 135:     $homePage = \App\Models\HomePage::resolveForCountry($countryIso2);
+                    [3] => 159: // Workspace onboarding — owner-only pick of country/industry/sub_industry (no tenant, auth:web only)
+                    [4] => 586: // ── Admin: Country Batch Actions ──
+                    [5] => 588:     $query = \App\Models\Country::query()->withCount('educationSystems');
+                    [6] => 601: Route::post('admin/countries/batch', [\App\Http\Controllers\Admin\CountryBatchController::class, '__invoke'])
+                )
+
+        )
+
+)

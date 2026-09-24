@@ -1,0 +1,5 @@
+﻿institutes has terminology_overrides col: YES
+institutes with non-empty terminology_overrides: 0
+institutes total: 7
+super_admin_overrides rows: 0
+module_access_logs recent (last 7d): 53

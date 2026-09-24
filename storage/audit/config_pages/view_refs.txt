@@ -1,0 +1,8 @@
+﻿=== industry-subcategories === (0 hits)
+=== settings.terminology === (1 hits)
+  index.blade.php:65: <a href="{{ route('settings.terminology.index') }}" class="settings-nav-item text-decoration-none">
+=== settings.modules === (2 hits)
+  index.blade.php:61: <a href="{{ route('settings.modules') }}" class="settings-nav-item text-decoration-none">
+  modules.blade.php:100: fetch('{{ route("settings.modules.toggle") }}', {
+=== admin.institutes.modules === (0 hits)
+=== admin.packages.modules === (0 hits)

@@ -1,0 +1,17 @@
+﻿=== industry-subcategories ===
+  (none)
+=== admin.packages ===
+  admin.blade.php:357: <a class="nav-link {{ request()->routeIs('admin.modules.*', 'admin.packages.*') ? 'active' : '' }}" href="{{ route('admin.modules.index') }}">
+  institute.blade.php:1137: <a class="nav-link {{ request()->routeIs('admin.modules.*', 'admin.packages.*') ? 'active' : '' }}" href="{{ route('admin.modules.index') }}">
+=== instituteModules ===
+  (none)
+=== admin.institutes.modules ===
+  (none)
+=== settings.terminology ===
+  (none)
+=== terminology ===
+  (none)
+=== settings.modules ===
+  (none)
+=== admin.industry ===
+  (none)

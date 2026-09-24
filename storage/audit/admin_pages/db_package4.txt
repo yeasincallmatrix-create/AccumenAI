@@ -1,0 +1,154 @@
+﻿=== ALL PACKAGES ===
+1: FREE | slug: free | status: active | price_m: 0.00
+2: BASIC | slug: basic | status: active | price_m: 1500.00
+3: ADVANCED | slug: advanced | status: active | price_m: 4000.00
+4: PREMIUM | slug: premium | status: active | price_m: 9000.00
+
+=== PACKAGE 4 ===
+{
+    "id": 4,
+    "name": "PREMIUM",
+    "slug": "premium",
+    "price_monthly": "9000.00",
+    "price_yearly": "90000.00",
+    "max_students": null,
+    "max_teachers": null,
+    "max_courses": null,
+    "max_branches": null,
+    "storage_limit_mb": null,
+    "sms_limit_monthly": null,
+    "features": null,
+    "is_default": 0,
+    "status": "active",
+    "created_at": "2026-09-06 09:51:07",
+    "updated_at": "2026-09-23 20:38:24"
+}
+
+=== MODULES IN PACKAGE 4 ===
+[Y] accounting
+[Y] ai
+[Y] education
+[Y] education.analytics
+[Y] education.attendance
+[Y] education.classes
+[Y] education.exams
+[Y] education.fees
+[Y] education.guardians
+[Y] education.students
+[Y] finance
+[Y] hr
+[Y] inventory
+[Y] medical
+[Y] medical.ambulance
+[Y] medical.billing
+[Y] medical.bloodbank
+[Y] medical.dental
+[Y] medical.diet
+[Y] medical.emergency
+[Y] medical.ipd
+[Y] medical.laboratory
+[Y] medical.opd
+[Y] medical.pharmacy
+[Y] medical.physiotherapy
+[Y] medical.radiology
+[Y] medical.records
+[Y] medical.vaccination
+[Y] notifications
+[Y] purchase
+[Y] purchase.invoices
+[Y] purchase.orders
+[Y] purchase.quotations
+[Y] purchase.receipts
+[Y] purchase.requests
+[Y] purchase.returns
+[Y] reports
+[Y] sales
+[Y] sales.customers
+[Y] sales.deliveries
+[Y] sales.leads
+[Y] sales.orders
+[Y] sales.quotations
+[Y] sales.reports
+[Y] sales.returns
+[Y] tds
+[Y] training_center
+[Y] training_center.attendance
+[Y] training_center.batches
+[Y] training_center.certificates
+[Y] training_center.courses
+[Y] training_center.exams
+[Y] training_center.fees
+[Y] training_center.reports
+[Y] training_center.trainees
+[Y] vat
+Total pkg4 modules: 56
+Medical modules pkg4: 15
+  medical: ON medical
+  medical: ON medical.ambulance
+  medical: ON medical.billing
+  medical: ON medical.bloodbank
+  medical: ON medical.dental
+  medical: ON medical.diet
+  medical: ON medical.emergency
+  medical: ON medical.ipd
+  medical: ON medical.laboratory
+  medical: ON medical.opd
+  medical: ON medical.pharmacy
+  medical: ON medical.physiotherapy
+  medical: ON medical.radiology
+  medical: ON medical.records
+  medical: ON medical.vaccination
+Pharmacy in pkg4: medical.pharmacy
+
+=== PACKAGE 4 FEATURES ===
+[Y] education.analytics
+[Y] education.attendance
+[Y] education.classes
+[Y] education.exams
+[Y] education.fees
+[Y] education.guardians
+[Y] education.students
+[Y] medical.ambulance
+[Y] medical.billing
+[Y] medical.bloodbank
+[Y] medical.dental
+[Y] medical.diet
+[Y] medical.emergency
+[Y] medical.laboratory
+[Y] medical.pharmacy
+[Y] medical.physiotherapy
+[Y] medical.radiology
+[Y] medical.records
+[Y] medical.vaccination
+[Y] purchase.invoices
+[Y] purchase.orders
+[Y] purchase.quotations
+[Y] purchase.receipts
+[Y] purchase.requests
+[Y] purchase.returns
+[Y] sales.customers
+[Y] sales.deliveries
+[Y] sales.leads
+[Y] sales.orders
+[Y] sales.quotations
+[Y] sales.reports
+[Y] sales.returns
+[Y] training_center.attendance
+[Y] training_center.batches
+[Y] training_center.certificates
+[Y] training_center.classes
+[Y] training_center.courses
+[Y] training_center.exams
+[Y] training_center.fees
+[Y] training_center.reports
+[Y] training_center.students
+[Y] training_center.trainees
+Total pkg4 features: 42
+Medical features pkg4: 12 => medical.ambulance, medical.billing, medical.bloodbank, medical.dental, medical.diet, medical.emergency, medical.laboratory, medical.pharmacy, medical.physiotherapy, medical.radiology, medical.records, medical.vaccination
+
+=== PACKAGE SCOPES (package 4) ===
+Count: 1
+{"id":2,"package_id":4,"country_id":21,"industry_id":null,"sub_industry_id":null,"inherit_from_parent":1,"price_monthly":null,"price_yearly":null,"currency":null,"status":"active","scope_hash":"4-21-G-G","created_at":"2026-09-23 18:27:45","updated_at":"2026-09-23 18:27:45"}
+
+=== PACKAGE SCOPED MODULES (package 4 scopes) ===
+Count: 0

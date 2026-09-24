@@ -1,0 +1,10 @@
+﻿--- settings/index.blade.php nav lines 40-90 ---
+--- admin/modules/index.blade.php links ---
+8: <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+19: <a class="btn btn-outline-secondary btn-sm" href="{{ route('admin.modules.access-logs') }}">
+51: <form method="GET" action="{{ route('admin.modules.index') }}" class="mb-3" id="registryFilterForm">
+104: <form method="POST" action="{{ route('admin.modules.update', $module) }}" class="d-inline">
+138: <form method="GET" action="{{ route('admin.modules.index') }}" class="mb-3" id="matrixFilterForm">
+168: <a href="{{ route('admin.packages.modules', $pkg) }}" class="text-decoration-none fw-semibold">
+186: <a href="{{ route('admin.packages.modules', $pkg) }}" class="text-decoration-none">
+190: <a href="{{ route('admin.packages.modules', $pkg) }}" class="text-decoration-none">

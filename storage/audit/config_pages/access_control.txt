@@ -1,0 +1,5 @@
+﻿web login user1 = OK
+web-user /admin/modules => 302 -> http://localhost/admin/login
+web-user /admin/industry-subcategories => 302 -> http://localhost/admin/login
+web-user /settings/modules => 403
+web-user /settings/terminology => 403

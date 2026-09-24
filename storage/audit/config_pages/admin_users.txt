@@ -1,0 +1,3 @@
+﻿== platform_admins (1 rows) ==
+   1 | admin@accumen.ai
+== institute_users (0 rows) ==

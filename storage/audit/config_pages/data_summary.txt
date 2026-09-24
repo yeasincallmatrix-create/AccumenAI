@@ -1,0 +1,17 @@
+﻿module_registry: 60 rows, coming_soon=0, parents=17
+package_modules by package: 1=2 2=14 3=50 4=58 
+institute_module_overrides institutes: 6 (rows 77)
+industry_subcategories by industry: education=5 healthcare=7 manufacturing=2 real_estate=2 retail=4 training_center=3 
+module_terminology: active=16 total=16, global=13
+php :    Illuminate\Database\QueryException  SQLSTATE[42000]: Syntax error or access violation: 1064 You have an error 
+in your SQL syntax; check the manual that corresponds to your MariaDB server version for the right syntax to use near 
+'`terminology_overrides` = ?' at line 1 (Connection: mysql, Host: 127.0.0.1, Port: 3306, Database: accumen_ai, SQL: 
+select count(*) as aggregate from `institutes` where `terminology_overrides` is not null  `terminology_overrides` = 
+not in).
+At line:16 char:1
++ php artisan tinker "$env:TEMP\data.php" 2>&1 | Out-File storage\audit ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (   Illuminate\D...des` = not in).:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+

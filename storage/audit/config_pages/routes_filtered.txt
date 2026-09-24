@@ -1,0 +1,66 @@
+﻿=== industry-subcategories ===
+
+  GET|HEAD       admin/industry-subcategories admin.industry-subcategories.index ΓÇ║ 
+Admin\IndustrySubcategoryControlleΓÇª
+  POST           admin/industry-subcategories admin.industry-subcategories.store ΓÇ║ 
+Admin\IndustrySubcategoryControlleΓÇª
+  GET|HEAD       admin/industry-subcategories/create admin.industry-subcategories.create ΓÇ║ 
+Admin\IndustrySubcategoryCΓÇª
+  GET|HEAD       admin/industry-subcategories/{id} admin.industry-subcategories.show ΓÇ║ 
+Admin\IndustrySubcategoryContrΓÇª
+  PUT            admin/industry-subcategories/{id} admin.industry-subcategories.update ΓÇ║ 
+Admin\IndustrySubcategoryConΓÇª
+  DELETE         admin/industry-subcategories/{id} admin.industry-subcategories.destroy ΓÇ║ 
+Admin\IndustrySubcategoryCoΓÇª
+  GET|HEAD       admin/industry-subcategories/{id}/edit admin.industry-subcategories.edit ΓÇ║ 
+Admin\IndustrySubcategoryΓÇª
+=== admin.modules ===
+  GET|HEAD       admin/modules ............................... admin.modules.index ΓÇ║ 
+Admin\ModuleAdminController@index
+  GET|HEAD       admin/modules/access-logs ........ admin.modules.access-logs ΓÇ║ 
+Admin\ModuleAdminController@accessLogs
+  PUT            admin/modules/{module} .................... admin.modules.update ΓÇ║ 
+Admin\ModuleAdminController@update
+=== packages ===
+  GET|HEAD       admin/packages/{package}/modules admin.packages.modules ΓÇ║ Admin\ModuleAdminController@packageModules
+  PUT            admin/packages/{package}/modules admin.packages.modules.update ΓÇ║ 
+Admin\ModuleAdminController@updatePΓÇª
+  GET|HEAD       admin/packages/{package}/scopes admin.packages.scopes.index ΓÇ║ 
+Admin\PackageScopeAdminController@index
+  POST           admin/packages/{package}/scopes admin.packages.scopes.store ΓÇ║ 
+Admin\PackageScopeAdminController@store
+  GET|HEAD       admin/packages/{package}/scopes/create admin.packages.scopes.create ΓÇ║ 
+Admin\PackageScopeAdminControlΓÇª
+  GET|HEAD       admin/scopes/{scope} ..................... admin.scopes.show ΓÇ║ 
+Admin\PackageScopeAdminController@show
+  PUT            admin/scopes/{scope} ................. admin.scopes.update ΓÇ║ 
+Admin\PackageScopeAdminController@update
+  DELETE         admin/scopes/{scope} ............... admin.scopes.destroy ΓÇ║ 
+Admin\PackageScopeAdminController@destroy
+  GET|HEAD       admin/scopes/{scope}/edit ................ admin.scopes.edit ΓÇ║ 
+Admin\PackageScopeAdminController@edit
+  PUT            admin/scopes/{scope}/features admin.scopes.features.update ΓÇ║ 
+Admin\PackageScopeAdminController@updatΓÇª
+  PUT            admin/scopes/{scope}/modules admin.scopes.modules.update ΓÇ║ 
+Admin\PackageScopeAdminController@updateMΓÇª
+  GET|HEAD       saas/packages ....................................... saas.packages ΓÇ║ 
+SaasCheckoutController@packages
+=== institutes modules ===
+  GET|HEAD       admin/institutes/{institute}/modules admin.institutes.modules ΓÇ║ 
+Admin\ModuleAdminController@institutΓÇª
+  PUT            admin/institutes/{institute}/modules admin.institutes.modules.update ΓÇ║ 
+Admin\ModuleAdminController@uΓÇª
+  DELETE         admin/institutes/{institute}/modules/{moduleKey} admin.institutes.modules.remove ΓÇ║ 
+Admin\ModuleAdminΓÇª
+=== terminology ===
+  GET|HEAD       settings/terminology .............. settings.terminology.index ΓÇ║ 
+Settings\TerminologyController@index
+  PUT            settings/terminology ............ settings.terminology.update ΓÇ║ 
+Settings\TerminologyController@update
+=== settings.modules ===
+  GET|HEAD       settings/modules ....................... settings.modules ΓÇ║ 
+Settings\ModuleManagementController@index
+  POST           settings/modules/toggle ........ settings.modules.toggle ΓÇ║ 
+Settings\ModuleManagementController@toggle
+
+

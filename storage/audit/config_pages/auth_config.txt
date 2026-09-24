@@ -1,0 +1,18 @@
+﻿guards:
+  web => provider=users driver=session
+  platform_admin => provider=platform_admins driver=session
+  institute_user => provider=institute_users driver=session
+  guardian => provider=guardians driver=session
+  platform_staff => provider=platform_staffs driver=session
+  sanctum => provider=- driver=sanctum
+providers:
+  users => model=App\Models\User table=-
+  platform_admins => model=App\Models\PlatformAdmin table=-
+  institute_users => model=App\Models\InstituteUser table=-
+  guardians => model=App\Models\Guardian table=-
+  platform_staffs => model=App\Models\PlatformStaff table=-
+users rows:
+  1 | test@example.com | type=owner | status=active | deleted=no
+  2 | yeasinsheikh999@gmail.com | type=owner | status=active | deleted=no
+  312 | hobavog273@liondapt.com | type=staff | status=active | deleted=no
+  313 | nahid@doctor.com | type=staff | status=active | deleted=no

@@ -1,0 +1,36 @@
+﻿=== config-page keyword scan: storage/logs/laravel.log ===
+== industry-subcategories : 0 match(es) ==
+== IndustrySubcategory : 2 match(es) ==
+   #1 C:/xampp/htdocs/AccumenAI/database/seeders/IndustrySubcategorySeeder.php(50): Illuminate/Database/Query/Builder->__call('updateOrCreate', Array)
+   #2 C:/xampp/htdocs/AccumenAI/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(36): Database/Seeders/IndustrySubcategorySeeder->run()
+== TerminologyController : 0 match(es) ==
+== ModuleManagementController : 0 match(es) ==
+== ModuleAdminController : 0 match(es) ==
+== settings/modules : 0 match(es) ==
+== settings/terminology : 0 match(es) ==
+== package-modules : 0 match(es) ==
+== institute-modules : 0 match(es) ==
+== settings.edit : 24 match(es) ==
+   #0 C:/xampp/htdocs/AccumenAI/vendor/laravel/framework/src/Illuminate/Foundation/helpers.php(870): Illuminate/Routing/UrlGenerator->route('settings.edit', Array, true)
+   #1 C:/xampp/htdocs/AccumenAI/storage/framework/views/ab3b4d97a640fe9b158f380b1fdafddc.php(23): route('settings.edit')
+   [2026-09-25 00:29:41] testing.ERROR: Route [settings.edit] not defined. (View: C:\xampp\htdocs\AccumenAI\resources\views\settings\terminology\index.blade.php) {"userId":29813,"exception":"[object] (Illuminate\\View\\ViewException(code: 0): Route [settings.edit] not defined. (View: C:\\xampp\\htdocs\
+   [previous exception] [object] (Symfony\\Component\\Routing\\Exception\\RouteNotFoundException(code: 0): Route [settings.edit] not defined. at C:/xampp/htdocs/AccumenAI/vendor/laravel/framework/src/Illuminate/Routing/UrlGenerator.php:536)
+   #0 C:/xampp/htdocs/AccumenAI/vendor/laravel/framework/src/Illuminate/Foundation/helpers.php(870): Illuminate/Routing/UrlGenerator->route('settings.edit', Array, true)
+   #1 C:/xampp/htdocs/AccumenAI/storage/framework/views/a0d0d41f218d62ee46a93f901be9d8ba.php(92): route('settings.edit')
+== InstituteModuleOverrideController : 3 match(es) ==
+   [2026-09-25 00:11:23] local.ERROR: Class "App\Http\Controllers\Admin\InstituteModuleOverrideController" does not exist {"exception":"[object] (ReflectionException(code: -1): Class \"App\\Http\\Controllers\\Admin\\InstituteModuleOverrideController\" does not exist at C:/xampp/htdocs/AccumenAI/vendor/
+   [2026-09-25 00:11:24] local.ERROR: Class "App\Http\Controllers\Admin\InstituteModuleOverrideController" does not exist {"exception":"[object] (ReflectionException(code: -1): Class \"App\\Http\\Controllers\\Admin\\InstituteModuleOverrideController\" does not exist at C:/xampp/htdocs/AccumenAI/vendor/
+   [2026-09-25 00:11:24] local.ERROR: Class "App\Http\Controllers\Admin\InstituteModuleOverrideController" does not exist {"exception":"[object] (ReflectionException(code: -1): Class \"App\\Http\\Controllers\\Admin\\InstituteModuleOverrideController\" does not exist at C:/xampp/htdocs/AccumenAI/vendor/
+=== ERROR lines dated 2026-09-25 ===
+[2026-09-25 00:01:29] testing.ERROR: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'published_at' in 'field list' (Connection: mysql, Host: 127.0.0.1, Port: 3306, Database: monetix_test, SQL: update `training_exams` set `published_at` = 2026-09-25 00:01:29, `training_exams`.`updated_at` = 2
+[2026-09-25 00:01:45] testing.ERROR: SQLSTATE[42S22]: Column not found: 1054 Unknown column 'published_at' in 'field list' (Connection: mysql, Host: 127.0.0.1, Port: 3306, Database: monetix_test, SQL: update `training_exams` set `published_at` = 2026-09-25 00:01:45, `training_exams`.`updated_at` = 2
+[2026-09-25 00:11:23] local.ERROR: Class "App\Http\Controllers\Admin\InstituteModuleOverrideController" does not exist {"exception":"[object] (ReflectionException(code: -1): Class \"App\\Http\\Controllers\\Admin\\InstituteModuleOverrideController\" does not exist at C:/xampp/htdocs/AccumenAI/vendor/
+[2026-09-25 00:11:24] local.ERROR: Class "App\Http\Controllers\Admin\InstituteModuleOverrideController" does not exist {"exception":"[object] (ReflectionException(code: -1): Class \"App\\Http\\Controllers\\Admin\\InstituteModuleOverrideController\" does not exist at C:/xampp/htdocs/AccumenAI/vendor/
+[2026-09-25 00:11:24] local.ERROR: Class "App\Http\Controllers\Admin\InstituteModuleOverrideController" does not exist {"exception":"[object] (ReflectionException(code: -1): Class \"App\\Http\\Controllers\\Admin\\InstituteModuleOverrideController\" does not exist at C:/xampp/htdocs/AccumenAI/vendor/
+[2026-09-25 00:26:53] local.ERROR: Unclosed '[' on line 13 does not match '}' (View: C:\xampp\htdocs\AccumenAI\resources\views\training\batches\show.blade.php) {"userId":2,"exception":"[object] (Illuminate\\View\\ViewException(code: 0): Unclosed '[' on line 13 does not match '}' (View: C:\\xampp\\ht
+[2026-09-25 00:29:41] testing.ERROR: Route [settings.edit] not defined. (View: C:\xampp\htdocs\AccumenAI\resources\views\settings\terminology\index.blade.php) {"userId":29813,"exception":"[object] (Illuminate\\View\\ViewException(code: 0): Route [settings.edit] not defined. (View: C:\\xampp\\htdocs\
+[2026-09-25 00:32:09] local.ERROR: PHP Parse error: Syntax error, unexpected T_NS_SEPARATOR on line 1 {"exception":"[object] (Psy\\Exception\\ParseErrorException(code: 0): PHP Parse error: Syntax error, unexpected T_NS_SEPARATOR on line 1 at C:/xampp/htdocs/AccumenAI/vendor/psy/psysh/src/Exception/P
+[2026-09-25 01:00:38] local.ERROR: PHP Parse error: Syntax error, unexpected T_NS_SEPARATOR on line 2 {"exception":"[object] (Psy\\Exception\\ParseErrorException(code: 0): PHP Parse error: Syntax error, unexpected T_NS_SEPARATOR on line 2 at C:/xampp/htdocs/AccumenAI/vendor/psy/psysh/src/Exception/P
+[2026-09-25 01:22:31] local.ERROR: The "-e" option does not exist. {"exception":"[object] (Symfony\\Component\\Console\\Exception\\RuntimeException(code: 0): The \"-e\" option does not exist. at C:/xampp/htdocs/AccumenAI/vendor/symfony/console/Input/ArgvInput.php:211)
+[2026-09-25 02:05:04] local.ERROR: PHP Parse error: Syntax error, unexpected '=' on line 1 {"exception":"[object] (Psy\\Exception\\ParseErrorException(code: 0): PHP Parse error: Syntax error, unexpected '=' on line 1 at C:/xampp/htdocs/AccumenAI/vendor/psy/psysh/src/Exception/ParseErrorException.php
+[2026-09-25 02:10:54] local.ERROR: PHP Parse error: Syntax error, unexpected T_NS_SEPARATOR on line 2 {"exception":"[object] (Psy\\Exception\\ParseErrorException(code: 0): PHP Parse error: Syntax error, unexpected T_NS_SEPARATOR on line 2 at C:/xampp/htdocs/AccumenAI/vendor/psy/psysh/src/Exception/P

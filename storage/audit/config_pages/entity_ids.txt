@@ -1,0 +1,14 @@
+﻿== institutes ==
+  id=4
+  id=5
+  id=189
+  id=191
+  id=192
+  count=7
+== subscription_packages ==
+  id=3
+  id=2
+  id=1
+  id=4
+package_modules distinct package_id: 4
+institute_module_overrides distinct institute_id: 6

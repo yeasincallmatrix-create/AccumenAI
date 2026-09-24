@@ -1,0 +1,568 @@
+Array
+(
+    [package_tables] => Array
+        (
+            [0] => stdClass Object
+                (
+                    [Tables_in_accumen_ai (package%)] => package_features
+                )
+
+            [1] => stdClass Object
+                (
+                    [Tables_in_accumen_ai (package%)] => package_modules
+                )
+
+            [2] => stdClass Object
+                (
+                    [Tables_in_accumen_ai (package%)] => package_scoped_features
+                )
+
+            [3] => stdClass Object
+                (
+                    [Tables_in_accumen_ai (package%)] => package_scoped_modules
+                )
+
+            [4] => stdClass Object
+                (
+                    [Tables_in_accumen_ai (package%)] => package_scopes
+                )
+
+        )
+
+    [subcat_tables] => Array
+        (
+        )
+
+    [industry_tables] => Array
+        (
+            [0] => stdClass Object
+                (
+                    [Tables_in_accumen_ai (%industry%)] => industry_settings
+                )
+
+            [1] => stdClass Object
+                (
+                    [Tables_in_accumen_ai (%industry%)] => industry_template_mappings
+                )
+
+        )
+
+    [institutes_package_cols] => Array
+        (
+            [0] => stdClass Object
+                (
+                    [Field] => package_id
+                    [Type] => bigint(20) unsigned
+                    [Null] => YES
+                    [Key] => MUL
+                    [Default] => 
+                    [Extra] => 
+                )
+
+        )
+
+    [sub_industries_cols] => Array
+        (
+            [0] => stdClass Object
+                (
+                    [Field] => id
+                    [Type] => bigint(20) unsigned
+                    [Null] => NO
+                    [Key] => PRI
+                    [Default] => 
+                    [Extra] => auto_increment
+                )
+
+            [1] => stdClass Object
+                (
+                    [Field] => industry_id
+                    [Type] => bigint(20) unsigned
+                    [Null] => NO
+                    [Key] => MUL
+                    [Default] => 
+                    [Extra] => 
+                )
+
+            [2] => stdClass Object
+                (
+                    [Field] => country_id
+                    [Type] => bigint(20) unsigned
+                    [Null] => YES
+                    [Key] => MUL
+                    [Default] => 
+                    [Extra] => 
+                )
+
+            [3] => stdClass Object
+                (
+                    [Field] => name
+                    [Type] => varchar(100)
+                    [Null] => NO
+                    [Key] => 
+                    [Default] => 
+                    [Extra] => 
+                )
+
+            [4] => stdClass Object
+                (
+                    [Field] => slug
+                    [Type] => varchar(60)
+                    [Null] => NO
+                    [Key] => 
+                    [Default] => 
+                    [Extra] => 
+                )
+
+            [5] => stdClass Object
+                (
+                    [Field] => code
+                    [Type] => varchar(30)
+                    [Null] => YES
+                    [Key] => 
+                    [Default] => 
+                    [Extra] => 
+                )
+
+            [6] => stdClass Object
+                (
+                    [Field] => description
+                    [Type] => varchar(255)
+                    [Null] => YES
+                    [Key] => 
+                    [Default] => 
+                    [Extra] => 
+                )
+
+            [7] => stdClass Object
+                (
+                    [Field] => status
+                    [Type] => enum('active','inactive')
+                    [Null] => NO
+                    [Key] => 
+                    [Default] => active
+                    [Extra] => 
+                )
+
+            [8] => stdClass Object
+                (
+                    [Field] => sort_order
+                    [Type] => tinyint(4)
+                    [Null] => NO
+                    [Key] => 
+                    [Default] => 0
+                    [Extra] => 
+                )
+
+            [9] => stdClass Object
+                (
+                    [Field] => created_at
+                    [Type] => timestamp
+                    [Null] => YES
+                    [Key] => 
+                    [Default] => 
+                    [Extra] => 
+                )
+
+            [10] => stdClass Object
+                (
+                    [Field] => updated_at
+                    [Type] => timestamp
+                    [Null] => YES
+                    [Key] => 
+                    [Default] => 
+                    [Extra] => 
+                )
+
+            [11] => stdClass Object
+                (
+                    [Field] => scope_hash
+                    [Type] => varchar(120)
+                    [Null] => YES
+                    [Key] => UNI
+                    [Default] => 
+                    [Extra] => STORED GENERATED
+                )
+
+        )
+
+    [sub_industries_count] => 65
+    [package_scope_cols] => Array
+        (
+            [0] => stdClass Object
+                (
+                    [Field] => id
+                    [Type] => bigint(20) unsigned
+                    [Null] => NO
+                    [Key] => PRI
+                    [Default] => 
+                    [Extra] => auto_increment
+                )
+
+            [1] => stdClass Object
+                (
+                    [Field] => package_id
+                    [Type] => bigint(20) unsigned
+                    [Null] => NO
+                    [Key] => 
+                    [Default] => 
+                    [Extra] => 
+                )
+
+            [2] => stdClass Object
+                (
+                    [Field] => country_id
+                    [Type] => bigint(20) unsigned
+                    [Null] => YES
+                    [Key] => MUL
+                    [Default] => 
+                    [Extra] => 
+                )
+
+            [3] => stdClass Object
+                (
+                    [Field] => industry_id
+                    [Type] => bigint(20) unsigned
+                    [Null] => YES
+                    [Key] => MUL
+                    [Default] => 
+                    [Extra] => 
+                )
+
+            [4] => stdClass Object
+                (
+                    [Field] => sub_industry_id
+                    [Type] => bigint(20) unsigned
+                    [Null] => YES
+                    [Key] => MUL
+                    [Default] => 
+                    [Extra] => 
+                )
+
+            [5] => stdClass Object
+                (
+                    [Field] => inherit_from_parent
+                    [Type] => tinyint(1)
+                    [Null] => NO
+                    [Key] => 
+                    [Default] => 1
+                    [Extra] => 
+                )
+
+            [6] => stdClass Object
+                (
+                    [Field] => price_monthly
+                    [Type] => decimal(10,2)
+                    [Null] => YES
+                    [Key] => 
+                    [Default] => 
+                    [Extra] => 
+                )
+
+            [7] => stdClass Object
+                (
+                    [Field] => price_yearly
+                    [Type] => decimal(10,2)
+                    [Null] => YES
+                    [Key] => 
+                    [Default] => 
+                    [Extra] => 
+                )
+
+            [8] => stdClass Object
+                (
+                    [Field] => currency
+                    [Type] => varchar(3)
+                    [Null] => YES
+                    [Key] => 
+                    [Default] => 
+                    [Extra] => 
+                )
+
+            [9] => stdClass Object
+                (
+                    [Field] => status
+                    [Type] => enum('active','inactive')
+                    [Null] => NO
+                    [Key] => 
+                    [Default] => active
+                    [Extra] => 
+                )
+
+            [10] => stdClass Object
+                (
+                    [Field] => scope_hash
+                    [Type] => varchar(120)
+                    [Null] => NO
+                    [Key] => UNI
+                    [Default] => 
+                    [Extra] => 
+                )
+
+            [11] => stdClass Object
+                (
+                    [Field] => created_at
+                    [Type] => timestamp
+                    [Null] => YES
+                    [Key] => 
+                    [Default] => 
+                    [Extra] => 
+                )
+
+            [12] => stdClass Object
+                (
+                    [Field] => updated_at
+                    [Type] => timestamp
+                    [Null] => YES
+                    [Key] => 
+                    [Default] => 
+                    [Extra] => 
+                )
+
+        )
+
+    [module_registry_count] => 58
+    [tax_modules] => Array
+        (
+            [0] => stdClass Object
+                (
+                    [key] => vat
+                    [parent_key] => 
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [1] => stdClass Object
+                (
+                    [key] => medical.billing
+                    [parent_key] => medical
+                    [type] => industry
+                    [is_core] => 0
+                    [status] => active
+                )
+
+            [2] => stdClass Object
+                (
+                    [key] => purchase.invoices
+                    [parent_key] => purchase
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [3] => stdClass Object
+                (
+                    [key] => tds
+                    [parent_key] => 
+                    [type] => core
+                    [is_core] => 0
+                    [status] => active
+                )
+
+        )
+
+    [core_modules] => Array
+        (
+            [0] => stdClass Object
+                (
+                    [key] => accounting
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [1] => stdClass Object
+                (
+                    [key] => ai
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [2] => stdClass Object
+                (
+                    [key] => crm
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [3] => stdClass Object
+                (
+                    [key] => finance
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [4] => stdClass Object
+                (
+                    [key] => hr
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [5] => stdClass Object
+                (
+                    [key] => inventory
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [6] => stdClass Object
+                (
+                    [key] => notifications
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [7] => stdClass Object
+                (
+                    [key] => purchase
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [8] => stdClass Object
+                (
+                    [key] => purchase.invoices
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [9] => stdClass Object
+                (
+                    [key] => purchase.orders
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [10] => stdClass Object
+                (
+                    [key] => purchase.quotations
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [11] => stdClass Object
+                (
+                    [key] => purchase.receipts
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [12] => stdClass Object
+                (
+                    [key] => purchase.requests
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [13] => stdClass Object
+                (
+                    [key] => purchase.returns
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [14] => stdClass Object
+                (
+                    [key] => reports
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [15] => stdClass Object
+                (
+                    [key] => sales
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [16] => stdClass Object
+                (
+                    [key] => sales.customers
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [17] => stdClass Object
+                (
+                    [key] => sales.deliveries
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [18] => stdClass Object
+                (
+                    [key] => sales.leads
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [19] => stdClass Object
+                (
+                    [key] => sales.orders
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [20] => stdClass Object
+                (
+                    [key] => sales.quotations
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [21] => stdClass Object
+                (
+                    [key] => sales.reports
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [22] => stdClass Object
+                (
+                    [key] => sales.returns
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+            [23] => stdClass Object
+                (
+                    [key] => tds
+                    [type] => core
+                    [is_core] => 0
+                    [status] => active
+                )
+
+            [24] => stdClass Object
+                (
+                    [key] => vat
+                    [type] => core
+                    [is_core] => 1
+                    [status] => active
+                )
+
+        )
+
+)
