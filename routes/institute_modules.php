@@ -1133,7 +1133,7 @@ Route::middleware($tenant)->group(function () {
     // ─── CURRICULA ─────────────────────────────────────────────────────────
     $curric = \App\Http\Controllers\CurriculumController::class;
 
-    Route::prefix('curricula')->name('curricula.')->middleware(['domain:professional', 'module_access:education.classes'])->group(function () use ($curric) {
+    Route::prefix('curricula')->name('curricula.')->middleware('module_access:education,training_center')->group(function () use ($curric) {
         Route::get('/', [$curric, 'index'])->middleware('permission:curriculum.view')->name('index');
         Route::get('create', [$curric, 'create'])->middleware('permission:curriculum.manage')->name('create');
         Route::post('/', [$curric, 'store'])->middleware('permission:curriculum.manage')->name('store');
@@ -1161,7 +1161,7 @@ Route::middleware($tenant)->group(function () {
     $courseCatMgr = \App\Http\Controllers\CourseCategoryManageController::class;
     $courseSubCatMgr = \App\Http\Controllers\CourseSubCategoryManageController::class;
     $subjectMgmt = \App\Http\Controllers\SubjectManagementController::class;
-    Route::prefix('courses/manage')->name('courses.manage.')->middleware('domain:professional')->group(function () use ($courseMaster, $courseMat, $courseCatMgr, $courseSubCatMgr, $subjectMgmt) {
+    Route::prefix('courses/manage')->name('courses.manage.')->middleware('module_access:education,training_center')->group(function () use ($courseMaster, $courseMat, $courseCatMgr, $courseSubCatMgr, $subjectMgmt) {
         Route::get('/', [$courseMaster, 'index'])->middleware('permission:courses.view')->name('index');
         Route::get('create', [$courseMaster, 'create'])->middleware('permission:courses.view')->name('create');
         Route::post('/', [$courseMaster, 'store'])->middleware('permission:courses.manage')->name('store');
@@ -1194,6 +1194,45 @@ Route::middleware($tenant)->group(function () {
             Route::delete('{subject}', [$subjectMgmt, 'destroy'])->middleware('permission:courses.manage')->name('destroy');
             Route::post('{subject}/restore', [$subjectMgmt, 'restore'])->middleware('permission:courses.manage')->name('restore');
             Route::get('{subject}/dependencies', [$subjectMgmt, 'dependencies'])->middleware('permission:courses.view')->name('dependencies');
+        });
+    });
+
+    // ─── TRAINING COURSES (full table separation — Option B) ───────────────
+    $trainingCourse = \App\Http\Controllers\Training\TrainingCourseController::class;
+    $trainingCourseMat = \App\Http\Controllers\Training\TrainingCourseMaterialController::class;
+    $trainingCourseCat = \App\Http\Controllers\Training\TrainingCourseCategoryController::class;
+    $trainingCourseSubCat = \App\Http\Controllers\Training\TrainingCourseSubCategoryController::class;
+    $trainingSubjectMgmt = \App\Http\Controllers\Training\TrainingSubjectController::class;
+    Route::prefix('training/courses')->name('training.courses.')->middleware('module_access:training_center,training_center.courses')->group(function () use ($trainingCourse, $trainingCourseMat, $trainingCourseCat, $trainingCourseSubCat, $trainingSubjectMgmt) {
+        Route::get('/', [$trainingCourse, 'index'])->middleware('permission:training.courses.view')->name('index');
+        Route::get('create', [$trainingCourse, 'create'])->middleware('permission:training.courses.view')->name('create');
+        Route::post('/', [$trainingCourse, 'store'])->middleware('permission:training.courses.manage')->name('store');
+        Route::get('{course}/edit', [$trainingCourse, 'edit'])->middleware('permission:training.courses.view')->name('edit');
+        Route::put('{course}', [$trainingCourse, 'update'])->middleware('permission:training.courses.manage')->name('update');
+        Route::delete('{course}', [$trainingCourse, 'destroy'])->middleware('permission:training.courses.manage')->name('destroy');
+        Route::post('{course}/materials', [$trainingCourseMat, 'store'])->middleware('permission:training.courses.manage')->name('materials.store');
+        Route::delete('{course}/materials/{material}', [$trainingCourseMat, 'destroy'])->middleware('permission:training.courses.manage')->name('materials.destroy');
+        Route::prefix('categories')->name('categories.')->group(function () use ($trainingCourseCat) {
+            Route::get('/', [$trainingCourseCat, 'index'])->middleware('permission:training.courses.view')->name('index');
+            Route::post('/', [$trainingCourseCat, 'store'])->middleware('permission:training.courses.manage')->name('store');
+            Route::put('/{category}', [$trainingCourseCat, 'update'])->middleware('permission:training.courses.manage')->name('update');
+            Route::delete('/{category}', [$trainingCourseCat, 'destroy'])->middleware('permission:training.courses.manage')->name('destroy');
+        });
+        Route::prefix('sub-categories')->name('sub-categories.')->group(function () use ($trainingCourseSubCat) {
+            Route::get('/', [$trainingCourseSubCat, 'index'])->middleware('permission:training.courses.view')->name('index');
+            Route::post('/', [$trainingCourseSubCat, 'store'])->middleware('permission:training.courses.manage')->name('store');
+            Route::put('/{subCategory}', [$trainingCourseSubCat, 'update'])->middleware('permission:training.courses.manage')->name('update');
+            Route::delete('/{subCategory}', [$trainingCourseSubCat, 'destroy'])->middleware('permission:training.courses.manage')->name('destroy');
+        });
+        Route::prefix('subjects')->name('subjects.')->group(function () use ($trainingSubjectMgmt) {
+            Route::get('/', [$trainingSubjectMgmt, 'index'])->middleware('permission:training.courses.view')->name('index');
+            Route::get('create', [$trainingSubjectMgmt, 'create'])->middleware('permission:training.courses.manage')->name('create');
+            Route::post('/', [$trainingSubjectMgmt, 'store'])->middleware('permission:training.courses.manage')->name('store');
+            Route::get('{subject}/edit', [$trainingSubjectMgmt, 'edit'])->middleware('permission:training.courses.manage')->name('edit');
+            Route::put('{subject}', [$trainingSubjectMgmt, 'update'])->middleware('permission:training.courses.manage')->name('update');
+            Route::delete('{subject}', [$trainingSubjectMgmt, 'destroy'])->middleware('permission:training.courses.manage')->name('destroy');
+            Route::post('{subject}/restore', [$trainingSubjectMgmt, 'restore'])->middleware('permission:training.courses.manage')->name('restore');
+            Route::get('{subject}/dependencies', [$trainingSubjectMgmt, 'dependencies'])->middleware('permission:training.courses.view')->name('dependencies');
         });
     });
 

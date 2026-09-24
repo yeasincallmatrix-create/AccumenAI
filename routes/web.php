@@ -198,7 +198,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified', 'domain:acad
     Route::get('academic-attendance/reports', [\App\Http\Controllers\AcademicAttendanceReportController::class, 'index'])->name('academic-attendance.reports.index');
 });
 
-Route::middleware(['auth:institute_user,web', 'tenant', 'verified', 'domain:professional', 'module_access:education.classes'])->prefix('batches')->name('batches.')->group(function () {
+Route::middleware(['auth:institute_user,web', 'tenant', 'verified', 'module_access:education,training_center'])->prefix('batches')->name('batches.')->group(function () {
     Route::get('/', [BatchController::class, 'index'])->middleware('permission:batches.view')->name('index');
     Route::get('{batch}', [BatchController::class, 'show'])->middleware('permission:batches.view')->name('show');
     Route::post('/', [BatchController::class, 'store'])->middleware('permission:batches.manage')->name('store');

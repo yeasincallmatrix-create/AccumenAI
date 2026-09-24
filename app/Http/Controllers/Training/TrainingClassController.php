@@ -3,16 +3,34 @@
 namespace App\Http\Controllers\Training;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
 use App\Models\Training\TrainingClass;
 use Illuminate\Http\Request;
 
 class TrainingClassController extends Controller
 {
+    private const INDEX_COLUMNS = ['serial', 'code', 'class', 'category', 'mode', 'fee', 'subjects', 'batches', 'status'];
+
     public function index(Request $request)
     {
-        $classes = TrainingClass::where('institute_id', auth()->user()->institute_id)
+        $instituteId = auth()->user()->institute_id;
+        $q = trim((string) $request->query('q'));
+        $branchId = $request->query('branch_id');
+
+        $classes = TrainingClass::where('institute_id', $instituteId)
             ->orderByDesc('id')->paginate(20)->withQueryString();
-        return view('training.classes.index', compact('classes'));
+
+        $visibleColumns = $request->user()->preference('columns_training_classes', self::INDEX_COLUMNS);
+        $visibleColumns = array_values(array_intersect(self::INDEX_COLUMNS, (array) $visibleColumns));
+
+        return view('training.classes.index', [
+            'classes' => $classes,
+            'q' => $q,
+            'branchId' => $branchId,
+            'branches' => Branch::where('institute_id', $instituteId)->orderBy('name')->get(),
+            'visibleColumns' => $visibleColumns,
+            'classesCount' => $classes->total(),
+        ]);
     }
 
     public function create()

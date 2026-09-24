@@ -790,7 +790,7 @@
                 {{-- Professional / Training Center — operational workflow (all 5 training types via isProfessional) --}}
                 @if ($isProfessional && ($workspaceAllowedProfessional ?? false))
                     @php
-                        $trainingOpen = request()->routeIs('courses.manage.*','courses.manage.subjects.*','teachers.*','reports.hub*','training.*') ? true : false;
+                        $trainingOpen = request()->routeIs('training.courses.*','teachers.*','reports.hub*','training.*') ? true : false;
                     @endphp
                     <div class="nav-group">
                         <button class="nav-link w-100 d-flex align-items-center justify-content-between {{ $trainingOpen ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#trainingNavGroup" aria-expanded="{{ $trainingOpen ? 'true' : 'false' }}" aria-controls="trainingNavGroup">
@@ -799,10 +799,10 @@
                         </button>
                         <div class="collapse {{ $trainingOpen ? 'show' : '' }}" id="trainingNavGroup">
                             @if(($institute?->getTrainingSetting('enable_courses') ?? true))
-                            <a class="nav-link sub {{ request()->routeIs('courses.manage.*') ? 'active' : '' }}" href="{{ route('courses.manage.index') }}">
+                            <a class="nav-link sub {{ request()->routeIs('training.courses.*') && !request()->routeIs('training.courses.subjects.*') ? 'active' : '' }}" href="{{ route('training.courses.index') }}">
                                 <i class="bi bi-journal-bookmark-fill"></i><span class="sidebar-label">{{ mawa_e('sidebar.courses') }}</span>
                             </a>
-                            <a class="nav-link sub {{ request()->routeIs('courses.manage.subjects.*') ? 'active' : '' }}" href="{{ route('courses.manage.subjects.index') }}">
+                            <a class="nav-link sub {{ request()->routeIs('training.courses.subjects.*') ? 'active' : '' }}" href="{{ route('training.courses.subjects.index') }}">
                                 <i class="bi bi-collection-fill"></i><span class="sidebar-label">{{ mawa_e('subjects.tab_subjects') }}</span>
                             </a>
                             @endif

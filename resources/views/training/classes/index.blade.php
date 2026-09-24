@@ -13,10 +13,6 @@
         'inactive' => 'Inactive',
         'draft'    => 'Draft',
     ];
-    $modeLookup = [];
-    foreach ($filterModes ?? [] as $modeItem) {
-        $modeLookup[$modeItem] = ucfirst($modeItem);
-    }
 @endphp
 
 @section('content')
@@ -80,15 +76,10 @@
                     <li><h6 class="dropdown-header">{{ mawa_e('actions.show_hide_columns') }}</h6></li>
                     <li><hr class="dropdown-divider"></li>
                     @foreach ([
-                        'serial'   => '#',
-                        'code'     => mawa_e('classes.table_code'),
-                        'class'    => mawa_e('classes.table_class'),
-                        'category' => mawa_e('classes.table_category'),
-                        'mode'     => mawa_e('classes.table_mode'),
-                        'fee'      => mawa_e('classes.table_fee'),
-                        'subjects' => mawa_e('classes.table_subjects'),
-                        'batches'  => mawa_e('classes.table_batches'),
-                        'status'   => mawa_e('classes.table_status'),
+                        'serial' => '#',
+                        'code'   => mawa_e('classes.table_code'),
+                        'class'  => mawa_e('classes.table_class'),
+                        'status' => mawa_e('classes.table_status'),
                     ] as $col => $label)
                         <li>
                             <label class="dropdown-item col-toggle-item" for="class-col-{{ $col }}">
@@ -112,38 +103,35 @@
                     <th data-col="serial" class="text-muted" @if(!in_array('serial', $visibleColumns, true)) style="display:none" @endif>#</th>
                     <th data-col="code" @if(!in_array('code', $visibleColumns, true)) style="display:none" @endif>{{ mawa_e('classes.table_code') }}</th>
                     <th data-col="class" @if(!in_array('class', $visibleColumns, true)) style="display:none" @endif>{{ mawa_e('classes.table_class') }}</th>
-                    <th data-col="category" @if(!in_array('category', $visibleColumns, true)) style="display:none" @endif>{{ mawa_e('classes.table_category') }}</th>
-                    <th data-col="mode" @if(!in_array('mode', $visibleColumns, true)) style="display:none" @endif>{{ mawa_e('classes.table_mode') }}</th>
-                    <th data-col="fee" @if(!in_array('fee', $visibleColumns, true)) style="display:none" @endif>{{ mawa_e('classes.table_fee') }}</th>
-                    <th data-col="subjects" @if(!in_array('subjects', $visibleColumns, true)) style="display:none" @endif>{{ mawa_e('classes.table_subjects') }}</th>
-                    <th data-col="batches" @if(!in_array('batches', $visibleColumns, true)) style="display:none" @endif>{{ mawa_e('classes.table_batches') }}</th>
                     <th data-col="status" @if(!in_array('status', $visibleColumns, true)) style="display:none" @endif>{{ mawa_e('classes.table_status') }}</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
                 @forelse ($classes as $item)
-                    @php $course = $item->course; @endphp
                     <tr>
                         <td data-col="serial" class="text-muted" @if(!in_array('serial', $visibleColumns, true)) style="display:none" @endif>{{ $classes->firstItem() + $loop->index }}</td>
-                        <td data-col="code" class="text-muted" @if(!in_array('code', $visibleColumns, true)) style="display:none" @endif>{{ $course->course_code ?? '—' }}</td>
+                        <td data-col="code" class="text-muted" @if(!in_array('code', $visibleColumns, true)) style="display:none" @endif>{{ $item->code ?? '—' }}</td>
                         <td data-col="class" @if(!in_array('class', $visibleColumns, true)) style="display:none" @endif>
-                            <div class="fw-semibold">{{ $course->name ?? '—' }}</div>
-                            @if ($course->course_code)
-                                <div class="text-muted small">{{ $course->course_code }}</div>
+                            <div class="fw-semibold">{{ $item->name ?? '—' }}</div>
+                            @if ($item->code)
+                                <div class="text-muted small">{{ $item->code }}</div>
                             @endif
                         </td>
-                        <td data-col="category" @if(!in_array('category', $visibleColumns, true)) style="display:none" @endif>{{ $course->category->name ?? '—' }}</td>
-                        <td data-col="mode" @if(!in_array('mode', $visibleColumns, true)) style="display:none" @endif>{{ ucfirst($course->mode ?? '—') }}</td>
-                        <td data-col="fee" @if(!in_array('fee', $visibleColumns, true)) style="display:none" @endif>{{ mawa_currency_symbol($institute->country ?? null) }} {{ number_format($course->fee ?? 0, 0) }}</td>
-                        <td data-col="subjects" @if(!in_array('subjects', $visibleColumns, true)) style="display:none" @endif>{{ $course->subjects?->count() ?? 0 }}</td>
-                        <td data-col="batches" @if(!in_array('batches', $visibleColumns, true)) style="display:none" @endif>{{ $course->batches->count() }}</td>
                         <td data-col="status" @if(!in_array('status', $visibleColumns, true)) style="display:none" @endif>
-                            <span class="badge {{ $statusBadge[$course->status] ?? 'text-bg-secondary' }}">{{ $statusNames[$course->status] ?? $course->status ?? '—' }}</span>
+                            <span class="badge {{ $statusBadge[$item->status] ?? 'text-bg-secondary' }}">{{ $statusNames[$item->status] ?? $item->status ?? '—' }}</span>
+                        </td>
+                        <td class="text-end d-flex gap-1 justify-content-end">
+                            <a href="{{ route('training.classes.edit', $item->id) }}" class="btn btn-sm btn-outline-primary" title="{{ mawa_e('actions.edit') }}"><i class="bi bi-pencil"></i></a>
+                            <form method="POST" action="{{ route('training.classes.destroy', $item->id) }}" onsubmit="return confirm('Delete this class?')">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="{{ mawa_e('actions.delete') }}"><i class="bi bi-trash"></i></button>
+                            </form>
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="9" class="text-center text-muted py-4">{{ mawa_e('classes.empty') }}</td>
+                        <td colspan="5" class="text-center text-muted py-4">{{ mawa_e('classes.empty') }}</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -185,7 +173,7 @@
             fetch('{{ route('ui.columns.save') }}', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                body: JSON.stringify({ key: 'classes', columns: visible })
+                body: JSON.stringify({ key: 'columns_training_classes', columns: visible })
             });
         });
     });
