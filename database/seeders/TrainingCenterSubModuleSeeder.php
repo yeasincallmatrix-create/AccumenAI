@@ -17,7 +17,7 @@ class TrainingCenterSubModuleSeeder extends Seeder
 
         $subModules = [
             ['key' => 'training_center.courses',      'name' => 'Courses',      'sort_order' => 23, 'icon' => 'bi-book',           'index_route' => 'courses.manage.index'],
-            ['key' => 'training_center.batches',      'name' => 'Batches',      'sort_order' => 24, 'icon' => 'bi-calendar-week',  'index_route' => 'batches.index'],
+            ['key' => 'training_center.batches',      'name' => 'Batches',      'sort_order' => 24, 'icon' => 'bi-calendar-week',  'index_route' => 'training.batches.index'],
             ['key' => 'training_center.students',     'name' => 'Students',     'sort_order' => 25, 'icon' => 'bi-person-badge',   'index_route' => 'training.students.index'],
             ['key' => 'training_center.classes',      'name' => 'Classes',      'sort_order' => 26, 'icon' => 'bi-collection',     'index_route' => 'training.classes.index'],
             ['key' => 'training_center.attendance',   'name' => 'Attendance',   'sort_order' => 27, 'icon' => 'bi-calendar-check', 'index_route' => 'training.attendance.index'],

@@ -15,7 +15,65 @@ class TrainingStudentController extends Controller
     {
         $students = TrainingStudent::where('institute_id', auth()->user()->institute_id)
             ->orderByDesc('id')->paginate(20)->withQueryString();
-        return view('training.students.index', compact('students'));
+
+        $editingStudent = null;
+        $editingId = (int) old('student_id');
+        if ($editingId && $request->session()->has('errors')) {
+            $editingStudent = TrainingStudent::find($editingId);
+        }
+
+        $canManage = $request->user()->hasPermission('students.manage');
+        $editData = $students->mapWithKeys(function (TrainingStudent $student) use ($canManage) {
+            $data = [
+                'id' => $student->id,
+                'first_name' => $student->first_name,
+                'last_name' => $student->last_name,
+                'roll_number' => $student->roll_number,
+                'reg_no' => $student->reg_no,
+                'gender' => $student->gender,
+                'dob' => $student->dob?->format('Y-m-d'),
+                'admission_date' => $student->admission_date?->format('Y-m-d'),
+                'phone' => $student->phone,
+                'email' => $student->email,
+                'religion' => $student->religion,
+                'status' => $student->status,
+                'father_name' => $student->father_name,
+                'mother_name' => $student->mother_name,
+                'guardian_phone' => $student->guardian_phone,
+                'nationality' => $student->nationality,
+                'nid_number' => $student->nid_number,
+                'birth_cert_number' => $student->birth_cert_number,
+                'passport_number' => $student->passport_number,
+                'blood_group' => $student->blood_group,
+                'present_country_id' => $student->present_country_id,
+                'present_admin_1_id' => $student->present_admin_1_id,
+                'present_admin_2_id' => $student->present_admin_2_id,
+                'present_admin_3_id' => $student->present_admin_3_id,
+                'present_post_office' => $student->present_post_office,
+                'present_zip_code' => $student->present_zip_code,
+                'present_address' => $student->present_address,
+                'permanent_country_id' => $student->permanent_country_id,
+                'permanent_admin_1_id' => $student->permanent_admin_1_id,
+                'permanent_admin_2_id' => $student->permanent_admin_2_id,
+                'permanent_admin_3_id' => $student->permanent_admin_3_id,
+                'permanent_post_office' => $student->permanent_post_office,
+                'permanent_zip_code' => $student->permanent_zip_code,
+                'permanent_address' => $student->permanent_address,
+                'emergency_contact_name' => $student->emergency_contact_name,
+                'emergency_contact_phone' => $student->emergency_contact_phone,
+            ];
+            if (! $canManage) {
+                unset($data['nid_number'], $data['birth_cert_number'], $data['passport_number']);
+            }
+
+            return [$student->id => $data];
+        })->all();
+
+        $defaultCountryId = \App\Models\Institute::query()
+            ->where('id', auth()->user()->institute_id)
+            ->value('country_id');
+
+        return view('training.students.index', compact('students', 'editData', 'editingStudent', 'defaultCountryId'));
     }
 
     public function create()

@@ -52,6 +52,14 @@ return [
         'default' => [
             'training_center',
             'training_center.courses',
+            'training_center.batches',
+            'training_center.students',
+            'training_center.classes',
+            'training_center.attendance',
+            'training_center.exams',
+            'training_center.certificates',
+            'training_center.fees',
+            'training_center.reports',
         ],
         'optional' => [
             'sales',

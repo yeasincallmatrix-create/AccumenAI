@@ -18,7 +18,7 @@
 */
 
 return [
-    'defaults' => ['education', 'crm', 'accounting'],
+    'defaults' => ['education', 'crm', 'accounting', 'training_center'],
 
     'BD' => ['education', 'crm', 'accounting', 'hr'],
     'US' => ['education', 'crm', 'accounting', 'sales'],

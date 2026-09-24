@@ -217,6 +217,18 @@ return [
                 'assets.warranty' => true,
             ],
         ],
+        'training_center' => [
+            'assets' => [
+                'assets.enabled' => true,
+                'assets.depreciation' => true,
+                'assets.transfer' => true,
+                'assets.disposal' => true,
+                'assets.impairment' => false,
+                'assets.revaluation' => false,
+                'assets.qr' => true,
+                'assets.warranty' => true,
+            ],
+        ],
         'retail' => [
             'assets' => [
                 'assets.enabled' => true,
