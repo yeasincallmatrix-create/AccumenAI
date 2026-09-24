@@ -62,6 +62,10 @@
                 <i class="bi bi-grid-3x3-gap"></i>
                 <span>Modules</span>
             </a>
+            <a href="{{ route('settings.terminology.index') }}" class="settings-nav-item text-decoration-none">
+                <i class="bi bi-translate"></i>
+                <span>Terminology</span>
+            </a>
         @endif
 <button class="settings-nav-item settings-tab-btn" type="button" data-target="pane-security" aria-selected="false">
                 <i class="bi bi-shield-lock"></i>

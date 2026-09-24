@@ -644,7 +644,8 @@ class ModuleAccessService
     }
 
     /**
-     * Layer 8 — HARD country tax boundary (per module key).
+     * Layer 8 — HARD country tax boundary (per module key). PUBLIC so the
+     * admin UI can show/validate the same boundary the resolver enforces.
      *
      * Only tax modules are filtered (vat, gst, sales_tax, pst, tds); every other
      * module passes. Source of truth: country_tax_modules table, with a built-in
@@ -653,7 +654,7 @@ class ModuleAccessService
      * CANNOT be bypassed by admin/tenant overrides or entitlements — applied
      * after those layers in both resolve pipelines.
      */
-    protected function isCountryTaxAllowed(string $moduleKey, Institute $institute): bool
+    public function isCountryTaxAllowed(string $moduleKey, Institute $institute): bool
     {
         static $allTaxModules = ['vat', 'gst', 'sales_tax', 'pst', 'tds'];
 

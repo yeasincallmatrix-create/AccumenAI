@@ -119,7 +119,41 @@ class ModuleAdminController extends Controller
         $resolved = $service->resolveEnabled($institute);
         $overrides = $institute->moduleOverrides()->get()->keyBy('module_key');
 
-        return view('admin.modules.institute-modules', compact('institute', 'allModules', 'resolved', 'overrides', 'industries', 'selectedIndustry'));
+        // Phase 5 — hard-boundary flags per module (Layers 7 + 8).
+        $locked = [];
+        foreach ($allModules as $module) {
+            if (! $service->isIndustryCompatible($institute, $module->key)) {
+                $locked[$module->key] = 'industry';
+            } elseif (! $service->isCountryTaxAllowed($module->key, $institute)) {
+                $locked[$module->key] = 'country';
+            }
+        }
+
+        $subCategory = $institute->subcategory_key
+            ? \Illuminate\Support\Facades\DB::table('industry_subcategories')
+                ->where('industry_key', $institute->industry)
+                ->where('subcategory_key', $institute->subcategory_key)
+                ->first()
+            : null;
+
+        $activeEmergency = \Illuminate\Support\Facades\DB::table('super_admin_overrides')
+            ->where('institute_id', $institute->id)
+            ->where(function ($q) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            })
+            ->get();
+
+        return view('admin.modules.institute-modules', compact(
+            'institute',
+            'allModules',
+            'resolved',
+            'overrides',
+            'industries',
+            'selectedIndustry',
+            'locked',
+            'subCategory',
+            'activeEmergency'
+        ));
     }
 
     public function updateInstituteModules(Institute $institute, Request $request): RedirectResponse
@@ -131,6 +165,41 @@ class ModuleAdminController extends Controller
         ]);
 
         $service = app(ModuleAccessService::class);
+
+        // STEP 1: HARD BOUNDARY CHECK (BEFORE anything else) — admin cannot
+        // request enabling a module the resolver would veto (Layer 7 / 8).
+        // Disabling is always allowed.
+        $blocked = [];
+        foreach ((array) $request->input('modules', []) as $key) {
+            if (! $service->isIndustryCompatible($institute, $key)) {
+                $blocked[] = "{$key} (industry boundary)";
+            } elseif (! $service->isCountryTaxAllowed($key, $institute)) {
+                $blocked[] = "{$key} (country boundary)";
+            }
+        }
+
+        if ($blocked) {
+            return back()->withErrors([
+                'modules' => '❌ BLOCKED: hard boundary bypass not allowed for: ' . implode(', ', $blocked)
+                    . '. Admin cannot bypass industry/country boundaries — use Super Admin Emergency Override instead.',
+            ]);
+        }
+
+        // MEDIUM RISK: enabling a module the tenant's package does not
+        // include requires an explicit reason (audit trail).
+        $packageAdds = [];
+        foreach ((array) $request->input('modules', []) as $key) {
+            if (! $service->isEnabled($institute, $key) && ! $service->isPackageAllowed($key, $institute->id)) {
+                $packageAdds[] = $key;
+            }
+        }
+
+        if ($packageAdds && ! $request->filled('reason')) {
+            return back()->withErrors([
+                'reason' => '⚠️ Reason required (medium risk) for package additions: ' . implode(', ', $packageAdds) . '.',
+            ]);
+        }
+
         $allKeys = ModuleRegistry::where('status', 'active')->pluck('key')->toArray();
         $enabled = $request->modules ?? [];
         $actorId = $request->user()?->id;

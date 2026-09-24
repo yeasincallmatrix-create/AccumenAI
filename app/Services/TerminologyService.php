@@ -79,4 +79,22 @@ class TerminologyService
         $institute->terminology_overrides = json_encode($overrides, JSON_UNESCAPED_UNICODE);
         $institute->save();
     }
+
+    /**
+     * Remove a tenant-level term override (fall back to country/global wording).
+     */
+    public function removeOverride(Institute $institute, string $termKey): void
+    {
+        $overrides = $institute->terminology_overrides;
+        $overrides = is_string($overrides) ? (json_decode($overrides, true) ?? []) : ($overrides ?? []);
+
+        if (! isset($overrides[$termKey])) {
+            return;
+        }
+
+        unset($overrides[$termKey]);
+
+        $institute->terminology_overrides = json_encode($overrides, JSON_UNESCAPED_UNICODE);
+        $institute->save();
+    }
 }

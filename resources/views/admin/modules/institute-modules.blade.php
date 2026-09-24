@@ -14,10 +14,18 @@
             @if($institute->industry)
                 | Industry: <strong>{{ \App\Support\IndustryRules::label('', $institute->industry) ?? $institute->industry }}</strong>
             @endif
+            @if ($institute->subcategory_key)
+                | Sub-Category: <strong>{{ $subCategory->name ?? $institute->subcategory_key }}</strong>
+            @endif
+            | Country: <strong>{{ $institute->country_code ?? 'BD' }}</strong>
             — Toggle modules on/off for this institute. Package default applies; override wins.
+            🔒 = hard boundary (industry/country) — cannot be toggled by admin.
         </p>
     </div>
     <div class="page-header-actions">
+        <a class="btn btn-outline-secondary btn-sm" href="{{ route('admin.institutes.access-log', $institute) }}">
+            <i class="bi bi-clock-history"></i> Audit Log
+        </a>
         <a class="btn btn-outline-secondary btn-sm" href="{{ route('admin.institutes.show', $institute) }}">
             <i class="bi bi-arrow-left"></i> Back
         </a>
@@ -28,6 +36,24 @@
     <div class="alert alert-success alert-dismissible fade show" role="alert">
         {{ session('success') }}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+@endif
+
+@if ($errors->any())
+    <div class="alert alert-danger py-2">
+        @foreach ($errors->all() as $error)
+            <div class="small">{{ $error }}</div>
+        @endforeach
+    </div>
+@endif
+
+@if (! empty($activeEmergency) && $activeEmergency->count())
+    <div class="alert alert-warning" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i>
+        <strong>{{ $activeEmergency->count() }} active emergency override(s)</strong> (Super Admin, time-limited):
+        @foreach ($activeEmergency as $eo)
+            <code>{{ $eo->module_key }}</code><small class="text-muted">({{ $eo->override_layer }}, expires {{ $eo->expires_at ?? 'never' }})</small>{{ !$loop->last ? ',' : '' }}
+        @endforeach
     </div>
 @endif
 
@@ -76,7 +102,8 @@
                     <tr>
                         <th style="width:50px">#</th>
                         <th>Module</th>
-                        <th class="text-center" style="width:130px">Package</th>
+                        <th class="text-center" style="width:150px">Boundary</th>
+                        <th class="text-center" style="width:110px">Package</th>
                         <th class="text-center" style="width:130px">Current</th>
                         <th class="text-center" style="width:100px">Enable</th>
                     </tr>
@@ -95,14 +122,24 @@
     $override = $overrides->get($module->key);
     $hasOverride = $override !== null;
     $isEnabled = $hasOverride ? (bool) $override->enabled : $inPackage;
+    $lockReason = $locked[$module->key] ?? null;
 @endphp
-                        <tr>
+                        <tr class="{{ $lockReason ? 'table-secondary' : '' }}">
                             <td class="text-muted">{{ $loop->iteration }}</td>
                             <td>
                                 <span class="fw-semibold">{{ $module->name }}</span>
                                 <br><small class="text-muted"><code>{{ $module->key }}</code></small>
                                 @if($moduleIndustry)
                                     <br><span class="badge bg-light text-dark border mt-1" style="font-size:11px">{{ $moduleIndustry }}</span>
+                                @endif
+                            </td>
+                            <td class="text-center">
+                                @if ($lockReason === 'industry')
+                                    <span class="badge bg-danger" title="Industry boundary — admin cannot bypass">🔒 Industry</span>
+                                @elseif ($lockReason === 'country')
+                                    <span class="badge bg-danger" title="Country boundary — admin cannot bypass">🔒 Country</span>
+                                @else
+                                    <span class="badge bg-success-subtle text-success"><i class="bi bi-unlock"></i> Open</span>
                                 @endif
                             </td>
                             <td class="text-center">
@@ -123,10 +160,17 @@
                                 @endif
                             </td>
                             <td class="text-center">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" name="modules[]" value="{{ $module->key }}" id="mod_{{ $module->key }}" {{ $isEnabled ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="mod_{{ $module->key }}">{{ $isEnabled ? 'On' : 'Off' }}</label>
-                                </div>
+                                @if ($lockReason)
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" disabled id="mod_{{ $module->key }}">
+                                        <label class="form-check-label text-muted" for="mod_{{ $module->key }}">Locked</label>
+                                    </div>
+                                @else
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="modules[]" value="{{ $module->key }}" id="mod_{{ $module->key }}" {{ $isEnabled ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="mod_{{ $module->key }}">{{ $isEnabled ? 'On' : 'Off' }}</label>
+                                    </div>
+                                @endif
                             </td>
                         </tr>
                     @endforeach

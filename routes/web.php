@@ -37,6 +37,10 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth:platform_admin', 'verified'])->prefix('super-admin')->name('super-admin.')->group(function () {
+    // Phase 5 — Emergency Override (2FA + justification + typed confirmation)
+    Route::get('institutes/{institute}/emergency-override', [\App\Http\Controllers\SuperAdmin\EmergencyOverrideController::class, 'create'])->name('institutes.emergency-override.create')->whereNumber('institute');
+    Route::post('institutes/{institute}/emergency-override', [\App\Http\Controllers\SuperAdmin\EmergencyOverrideController::class, 'store'])->name('institutes.emergency-override.store')->whereNumber('institute');
+
     $ccc = DatabaseControlCenterController::class;
     Route::get('database/control-center', [$ccc, 'index'])->name('database.control-center');
     Route::get('database/control-center/json', [$ccc, 'json'])->name('database.control-center.json');
@@ -238,6 +242,9 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->group(func
     Route::get('settings/modules', [\App\Http\Controllers\Settings\ModuleManagementController::class, 'index'])->middleware('permission:institute.settings.module.view')->name('settings.modules');
     Route::post('settings/modules/toggle', [\App\Http\Controllers\Settings\ModuleManagementController::class, 'toggle'])->name('settings.modules.toggle');
     Route::get('settings/features', [\App\Http\Controllers\Institute\FeatureAccessController::class, 'index'])->middleware('permission:settings.manage')->name('settings.features');
+    // Phase 5 — tenant terminology overrides (Customer → Client, etc.)
+    Route::get('settings/terminology', [\App\Http\Controllers\Settings\TerminologyController::class, 'index'])->middleware('permission:settings.manage')->name('settings.terminology.index');
+    Route::put('settings/terminology', [\App\Http\Controllers\Settings\TerminologyController::class, 'update'])->middleware('permission:settings.manage')->name('settings.terminology.update');
     // Currency settings
     Route::get('settings/currency', [\App\Http\Controllers\Settings\CurrencySettingController::class, 'index'])->middleware('permission:settings.manage')->name('settings.currency.index');
     Route::put('settings/currency', [\App\Http\Controllers\Settings\CurrencySettingController::class, 'update'])->middleware('permission:settings.manage')->name('settings.currency.update');
@@ -554,6 +561,20 @@ Route::get('admin/features/{feature_key}', [\App\Http\Controllers\Admin\FeatureA
 Route::post('admin/features/{feature_key}/toggle-package/{package_id}', [\App\Http\Controllers\Admin\FeatureAdminController::class, 'togglePackage'])->name('admin.features.toggle-package')->middleware(['auth:platform_admin', 'verified'])->whereNumber('package_id');
 Route::post('admin/features/{feature_key}/institute-overrides', [\App\Http\Controllers\Admin\FeatureAdminController::class, 'addInstituteOverride'])->name('admin.features.institute-override.add')->middleware(['auth:platform_admin', 'verified']);
 Route::delete('admin/features/{feature_key}/institute-overrides/{institute_id}', [\App\Http\Controllers\Admin\FeatureAdminController::class, 'removeInstituteOverride'])->name('admin.features.institute-override.remove')->middleware(['auth:platform_admin', 'verified'])->whereNumber('institute_id');
+
+// �?"�?"�?" Admin: Industry Sub-Categories (Phase 5) �?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?
+Route::get('admin/industry-subcategories', [\App\Http\Controllers\Admin\IndustrySubcategoryController::class, 'index'])->name('admin.industry-subcategories.index')->middleware($adminMiddleware);
+Route::get('admin/industry-subcategories/create', [\App\Http\Controllers\Admin\IndustrySubcategoryController::class, 'create'])->name('admin.industry-subcategories.create')->middleware($adminMiddleware);
+Route::post('admin/industry-subcategories', [\App\Http\Controllers\Admin\IndustrySubcategoryController::class, 'store'])->name('admin.industry-subcategories.store')->middleware($adminMiddleware);
+Route::get('admin/industry-subcategories/{id}', [\App\Http\Controllers\Admin\IndustrySubcategoryController::class, 'show'])->name('admin.industry-subcategories.show')->middleware($adminMiddleware)->whereNumber('id');
+Route::get('admin/industry-subcategories/{id}/edit', [\App\Http\Controllers\Admin\IndustrySubcategoryController::class, 'edit'])->name('admin.industry-subcategories.edit')->middleware($adminMiddleware)->whereNumber('id');
+Route::put('admin/industry-subcategories/{id}', [\App\Http\Controllers\Admin\IndustrySubcategoryController::class, 'update'])->name('admin.industry-subcategories.update')->middleware($adminMiddleware)->whereNumber('id');
+Route::delete('admin/industry-subcategories/{id}', [\App\Http\Controllers\Admin\IndustrySubcategoryController::class, 'destroy'])->name('admin.industry-subcategories.destroy')->middleware($adminMiddleware)->whereNumber('id');
+
+// Phase 5: per-tenant audit log + bulk overview (InstituteModuleOverrideController)
+Route::get('admin/institutes/{institute}/access-log', [\App\Http\Controllers\Admin\InstituteModuleOverrideController::class, 'accessLog'])->name('admin.institutes.access-log')->middleware($adminMiddleware)->whereNumber('institute');
+Route::get('admin/institutes/modules-overview', [\App\Http\Controllers\Admin\InstituteModuleOverrideController::class, 'overview'])->name('admin.institutes.modules-overview')->middleware($adminMiddleware);
+
 
 // ── Admin: Scoped Packages (Phase 4b-6, UI-only — no new tables) ──
 Route::middleware(['auth:platform_admin', 'verified'])->prefix('admin')->name('admin.')->group(function () {
