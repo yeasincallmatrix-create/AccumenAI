@@ -35,11 +35,11 @@
     <form class="row g-2 align-items-end mb-3" method="GET" action="{{ route('calendar.timetable') }}">
         <div class="col-md-2">
             <label class="form-label mb-1 small">{{ mawa_e('calendar.from_date') }}</label>
-            <x-tdate-input class="form-control form-control-sm" name="start_date" value="{{ $startDate }}">
+            <x-tdate-input class="form-control form-control-sm" name="start_date" value="{{ $startDate }}" />
         </div>
         <div class="col-md-2">
             <label class="form-label mb-1 small">{{ mawa_e('calendar.to_date') }}</label>
-            <x-tdate-input class="form-control form-control-sm" name="end_date" value="{{ $endDate }}">
+            <x-tdate-input class="form-control form-control-sm" name="end_date" value="{{ $endDate }}" />
         </div>
         <div class="col-md-2">
             <label class="form-label mb-1 small">{{ mawa_e('calendar.branch') }}</label>

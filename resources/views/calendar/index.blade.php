@@ -138,7 +138,7 @@
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">{{ mawa_e('calendar.start_date') }} <span class="text-danger">*</span></label>
-                            <x-tdate-input class="form-control" name="start_date" required value="{{ now()->format('Y-m-d') }}">
+                            <x-tdate-input class="form-control" name="start_date" required value="{{ now()->format('Y-m-d') }}" />
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">{{ mawa_e('calendar.start_time') }}</label>
@@ -146,7 +146,7 @@
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">{{ mawa_e('calendar.end_date') }}</label>
-                            <x-tdate-input class="form-control" name="end_date">
+                            <x-tdate-input class="form-control" name="end_date" />
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">{{ mawa_e('calendar.end_time') }}</label>
@@ -239,7 +239,7 @@
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">{{ mawa_e('calendar.end_date') }}</label>
-                            <x-tdate-input class="form-control" name="recurrence_rule[end_date]">
+                            <x-tdate-input class="form-control" name="recurrence_rule[end_date]" />
                         </div>
                         <div class="col-md-3" id="daysOfWeekGroup" style="display:none;">
                             <label class="form-label">{{ mawa_e('calendar.days_of_week') }}</label>

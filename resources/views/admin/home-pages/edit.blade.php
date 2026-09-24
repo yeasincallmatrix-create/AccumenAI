@@ -43,11 +43,11 @@
                 <div class="row g-3">
                     <div class="col-md-8">
                         <label class="form-label">Page Name <span class="text-danger">*</span></label>
-                        <input type="text" name="name" class="form-control" value="{{ old('name', $homePage->name)" required>
+                        <input type="text" name="name" class="form-control" value="{{ old('name', $homePage->name) }}" required>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Slug <span class="text-danger">*</span></label>
-                        <input type="text" name="slug" id="slug" class="form-control" value="{{ old('slug', $homePage->slug)" required>
+                        <input type="text" name="slug" id="slug" class="form-control" value="{{ old('slug', $homePage->slug) }}" required>
                         <div class="form-text">View: <code>home-pages/{{ $homePage->slug }}</code></div>
                     </div>
                     <div class="col-12">
@@ -62,7 +62,7 @@
                 <div class="row g-3">
                     <div class="col-12">
                         <label class="form-label">Hero Title <span class="text-danger">*</span></label>
-                        <input type="text" name="hero_title" class="form-control" value="{{ old('hero_title', $homePage->hero_title)" required>
+                        <input type="text" name="hero_title" class="form-control" value="{{ old('hero_title', $homePage->hero_title) }}" required>
                     </div>
                     <div class="col-12">
                         <label class="form-label">Hero Subtitle</label>

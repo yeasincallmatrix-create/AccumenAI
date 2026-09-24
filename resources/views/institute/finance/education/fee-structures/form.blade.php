@@ -139,7 +139,7 @@
 (function () {
     const container = document.getElementById('itemsContainer');
     const addBtn = document.getElementById('addItemRow');
-    const heads = @json($feeHeads->map(fn ($h) => ['id' => $h->id, 'label' => $h->name.' ('.ucwords(str_replace('_', ' ', $h->type)).')']));
+    const heads = {!! json_encode($feeHeads->map(fn ($h) => ['id' => $h->id, 'label' => $h->name.' ('.ucwords(str_replace('_', ' ', $h->type)).')']), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!};
 
     function buildRow() {
         const row = document.createElement('div');
