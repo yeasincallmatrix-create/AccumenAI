@@ -21,7 +21,7 @@
         <div class="name">{{ $certificate->student->full_name ?? $certificate->student->first_name ?? 'Trainee' }}</div>
         <div class="details">
             has successfully completed the course<br>
-            <strong>{{ $certificate->course->name ?? '—' }}</strong><br>
+            <strong>{{ $certificate->course?->name ?? '—' }}</strong><br>
             Batch: <strong>{{ $certificate->batch->name ?? '—' }} ({{ $certificate->batch->batch_code ?? '' }})</strong>
         </div>
         <div class="details">

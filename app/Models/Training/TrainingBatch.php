@@ -36,11 +36,31 @@ class TrainingBatch extends Model
 
     public function enrollments(): HasMany
     {
-        return $this->hasMany(TrainingEnrollment::class);
+        return $this->hasMany(TrainingEnrollment::class, 'batch_id');
     }
 
     public function attendance(): HasMany
     {
-        return $this->hasMany(TrainingAttendance::class);
+        return $this->hasMany(TrainingAttendance::class, 'batch_id');
+    }
+
+    public function exams(): HasMany
+    {
+        return $this->hasMany(TrainingExam::class, 'batch_id');
+    }
+
+    public function certificates(): HasMany
+    {
+        return $this->hasMany(TrainingCertificate::class, 'batch_id');
+    }
+
+    /**
+     * Loose coupling to shared Course (education-owned).
+     * Column: training_batches.course_id (nullable, no FK enforced).
+     * Data coupling only — does NOT grant education module access to training.
+     */
+    public function course(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Course::class, 'course_id');
     }
 }

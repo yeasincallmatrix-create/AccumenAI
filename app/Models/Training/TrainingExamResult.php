@@ -36,11 +36,11 @@ class TrainingExamResult extends Model
 
     public function exam(): BelongsTo
     {
-        return $this->belongsTo(TrainingExam::class);
+        return $this->belongsTo(TrainingExam::class, 'exam_id');
     }
 
     public function student(): BelongsTo
     {
-        return $this->belongsTo(TrainingStudent::class);
+        return $this->belongsTo(TrainingStudent::class, 'student_id');
     }
 }

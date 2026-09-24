@@ -115,7 +115,7 @@
         $instituteName = $institute->name ?? $batch->institute->name ?? $batch->institute_name ?? 'Institute';
         $studentName = $student->full_name ?? $student->name ?? trim(($student->first_name ?? '').' '.($student->last_name ?? '')) ?: ($displayName ?? 'Trainee');
         $studentCode = $student->student_id ?? $student->reg_no ?? $student->id ?? ($traineeId ?? 'N/A');
-        $batchCourseName = $batch->course->name ?? $course->name ?? 'N/A';
+        $batchCourseName = $batch->course?->name ?? $course?->name ?? 'N/A';
         // Support both examResults (spec) and examDetails (legacy)
         $hasSpecResults = isset($examResults) && $examResults instanceof \Illuminate\Support\Collection && $examResults->isNotEmpty();
     @endphp

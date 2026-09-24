@@ -33,6 +33,30 @@ class TrainingExam extends Model
 
     public function results(): HasMany
     {
-        return $this->hasMany(TrainingExamResult::class);
+        return $this->hasMany(TrainingExamResult::class, 'exam_id');
+    }
+
+    public function batch(): BelongsTo
+    {
+        return $this->belongsTo(TrainingBatch::class, 'batch_id');
+    }
+
+    /**
+     * Loose coupling to shared Course (education-owned).
+     * Column: training_exams.course_id (nullable, no FK enforced).
+     */
+    public function course(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Course::class, 'course_id');
+    }
+
+    /**
+     * No training exam-subjects pivot exists.
+     * Returns the linked course's subjects (empty when course_id is null).
+     * Accessor (not a real relation) — do not eager-load via with('subjects').
+     */
+    public function getSubjectsAttribute()
+    {
+        return $this->course?->subjects ?? collect();
     }
 }

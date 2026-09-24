@@ -1,5 +1,9 @@
 <?php
 
+use App\Http\Controllers\Training\TrainingBatchController;
+use App\Http\Controllers\Training\TrainingClassController;
+use App\Http\Controllers\Training\TrainingExamController;
+use App\Http\Controllers\Training\TrainingStudentController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -1218,13 +1222,27 @@ Route::middleware($tenant)->group(function () {
         Route::get('reports', [\App\Http\Controllers\Training\ReportsController::class, 'index'])->name('reports.index');
 
         // ─── TRAINING STUDENTS ────────────────────────────
-        Route::resource('students', \App\Http\Controllers\Training\TrainingStudentController::class)->only(['index','create','store','edit','update','destroy'])->names('students');
-        Route::get('students/{student}', [\App\Http\Controllers\Training\TrainingStudentController::class, 'show'])->name('students.show');
+        Route::resource('students', TrainingStudentController::class)->only(['index','create','store','edit','update','destroy'])->names('students');
+        Route::get('students/{student}', [TrainingStudentController::class, 'show'])->name('students.show');
+
+        // ─── TRAINING STUDENT — ACTIONS ───────────────────
+        Route::post('students/{student}/transfer',  [TrainingStudentController::class, 'transfer'])
+            ->name('students.transfer');
+        Route::post('students/{student}/withdraw',  [TrainingStudentController::class, 'withdraw'])
+            ->name('students.withdraw');
+        Route::post('students/{student}/photo',     [TrainingStudentController::class, 'photo'])
+            ->name('students.photo');
+        Route::post('students/{student}/enroll',    [TrainingStudentController::class, 'enroll'])
+            ->name('students.enroll');
 
         // ─── TRAINING CLASSES ─────────────────────────────
-        Route::resource('classes', \App\Http\Controllers\Training\TrainingClassController::class)->only(['index','create','store','edit','update','destroy'])->names('classes');
-        Route::get('classes/{class}/subjects', [\App\Http\Controllers\Training\TrainingClassController::class, 'subjects'])->name('classes.subjects');
-        Route::get('classes/{class}/batches', [\App\Http\Controllers\Training\TrainingClassController::class, 'batches'])->name('classes.batches');
+        Route::resource('classes', TrainingClassController::class)->only(['index','create','store','edit','update','destroy'])->names('classes');
+
+        // ─── TRAINING BATCHES ─────────────────────────────
+        Route::resource('batches', TrainingBatchController::class)->names('batches');
+
+        // ─── TRAINING EXAMS — SHOW ────────────────────────
+        Route::get('exams/{exam}', [TrainingExamController::class, 'show'])->name('exams.show');
     });
 
     // Course Subjects (institute)

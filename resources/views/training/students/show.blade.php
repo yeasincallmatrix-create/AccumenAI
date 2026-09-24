@@ -58,41 +58,26 @@
         <h4 class="page-header-title">
             {{ $student->full_name }}
             <span class="badge {{ $statusBadge[$student->status] ?? 'bg-secondary' }} ms-1">{{ ucfirst($student->status) }}</span>
-            @if ($lifecycle['outcome'] !== 'active')
+            @if (($lifecycle['outcome'] ?? 'active') !== 'active')
                 <span class="badge bg-info ms-1">{{ ucwords(str_replace('_', ' ', $lifecycle['outcome'])) }}</span>
             @endif
         </h4>
     </div>
     <div class="d-flex flex-wrap gap-2">
-        @if($isAcademic)
-        @if ($user->hasPermission('students.view'))
-            <a href="{{ route('students.academic-history', $student) }}" class="btn btn-outline-primary">
-                <i class="bi bi-mortarboard me-1"></i>Academic History
-            </a>
-        @endif
-        @endif
-        @if($isAcademic)
-        @if ($user->hasPermission('education.manage'))
-            <a href="{{ route('settings.academic.placements.create', ['student' => $student->id]) }}" class="btn btn-outline-success">
-                <i class="bi bi-mortarboard me-1"></i>Academic Placement
-            </a>
-        @endif
-        @endif
-        @if($isAcademic)
-        @if ($user->hasPermission('students.manage') && $lifecycle['outcome'] === 'active' && $lifecycle['hasActivePlacement'])
-            <form method="POST" action="{{ route('students.academic-transfer', $student) }}" class="d-inline" onsubmit="return confirm('Mark {{ $student->full_name }} as transferred from the current academic placement? This is an official lifecycle state and the placement history is preserved.');">
+        @if($user->hasPermission('students.manage') && ($lifecycle['outcome'] ?? 'active') === 'active' && ($lifecycle['hasActivePlacement'] ?? false))
+            <form method="POST" action="{{ route('training.students.transfer', $student) }}" class="d-inline" onsubmit="return confirm('Transfer {{ $student->full_name }} to another batch?');">
                 @csrf
+                <input type="hidden" name="batch_id" value="{{ old('batch_id', $student->preferred_batch_id) }}">
                 <button type="submit" class="btn btn-outline-primary">
                     <i class="bi bi-arrow-left-right me-1"></i>Transfer
                 </button>
             </form>
-            <form method="POST" action="{{ route('students.academic-withdraw', $student) }}" class="d-inline" onsubmit="return confirm('Withdraw {{ $student->full_name }} from the academic program? This is an official lifecycle state and their placement, marks and results are preserved.');">
+            <form method="POST" action="{{ route('training.students.withdraw', $student) }}" class="d-inline" onsubmit="return confirm('Withdraw {{ $student->full_name }} from the training program?');">
                 @csrf
                 <button type="submit" class="btn btn-outline-secondary">
                     <i class="bi bi-box-arrow-right me-1"></i>Withdraw
                 </button>
             </form>
-        @endif
         @endif
         @if ($user->hasPermission('students.manage'))
             <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#assignBatchModal">
@@ -151,17 +136,14 @@
                     </dl>
                 </div>
             </div>
-            <form id="photoUploadForm" class="mt-3 pt-3 border-top" method="POST" action="{{ route('students.photo', $student) }}" enctype="multipart/form-data" data-ajax-upload>
+            <form id="photoUploadForm" class="mt-3 pt-3 border-top" method="POST" action="{{ route('training.students.photo', $student) }}" enctype="multipart/form-data">
                 @csrf
                 <div class="input-group input-group-sm">
-                    <input id="e_photo_upload" type="file" name="photo" class="form-control" accept=".jpg,.jpeg,.png,.webp" aria-label="Upload photo" data-crop-auto-submit onchange="openPhotoCropper(this)">
+                    <input id="e_photo_upload" type="file" name="photo" class="form-control" accept=".jpg,.jpeg,.png,.webp" aria-label="Upload photo" required>
                     <button type="submit" class="btn btn-outline-primary" id="photoUploadBtn">Upload Photo</button>
                 </div>
                 <div class="form-text mt-1" id="photoHelpText">Passport-size portrait photo recommended. Ratio 7:9 · 350 × 450 px · below 50 KB (max 100 KB) · JPG, PNG or WebP</div>
                 <div class="text-danger small mt-1 d-none" id="photoWarning" role="alert">Please select an image to upload first.</div>
-                <div class="progress mt-2 d-none" id="photoProgressWrap">
-                    <div class="progress-bar" id="photoProgressBar" role="progressbar" style="width:0%">0%</div>
-                </div>
                 <div class="text-danger small mt-1 d-none" id="photoUploadError" role="alert"></div>
                 @error('photo') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
             </form>
@@ -233,6 +215,42 @@
     </div>
 
 </div>
+
+@if ($user->hasPermission('students.manage'))
+    <!-- Assign to Batch modal -->
+    <div class="modal fade" id="assignBatchModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <form class="modal-content" method="POST" action="{{ route('training.students.enroll', $student) }}">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title">Assign to Batch</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        <i class="bi bi-person me-1"></i>{{ $student->full_name }}
+                    </p>
+                    <div class="mb-3">
+                        <label class="form-label" for="ab_batch_id">Batch *</label>
+                        <select id="ab_batch_id" name="batch_id" class="form-select" required>
+                            <option value="">Select batch</option>
+                            @foreach ($batches as $batch)
+                                <option value="{{ $batch->id }}" @selected($student->preferred_batch_id == $batch->id)>
+                                    {{ $batch->name }}{{ $batch->batch_code ? ' (' . $batch->batch_code . ')' : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('batch_id') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Assign to Batch</button>
+                </div>
+            </form>
+        </div>
+    </div>
+@endif
 
 <!-- Courses / Certificates tabs -->
 <div class="mt-4">
@@ -378,140 +396,13 @@
 </div>
 
 @if ($user->hasPermission('students.manage'))
-    <!-- Assign to Batch modal -->
-    <div class="modal fade" id="assignBatchModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <form class="modal-content" method="POST" action="{{ route('students.enroll', $student) }}" id="assignBatchForm" data-ajax-enabled>
-                @csrf
-
-                <div class="modal-header">
-                    <h5 class="modal-title">Assign to Batch</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="text-muted small mb-3">
-                        <i class="bi bi-person me-1"></i>{{ $student->full_name }}
-                    </p>
-                    <div class="mb-3">
-                        <label class="form-label" for="ab_batch_id">Batch *</label>
-                        <select id="ab_batch_id" name="batch_id" class="form-select" required>
-                            <option value="">Select batch</option>
-                            @foreach ($batches as $batch)
-                                <option value="{{ $batch->id }}">
-                                    {{ $batch->name }} ({{ $batch->batch_code }}) — {{ $batch->course?->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('batch_id') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
-                    </div>
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label" for="ab_roll_number">Roll Number</label>
-                            <input id="ab_roll_number" type="text" name="roll_number" class="form-control" maxlength="20" placeholder="Auto">
-                            @error('roll_number') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label" for="ab_enrollment_date">Enrollment Date *</label>
-                            <x-tdate-input id="ab_enrollment_date" name="enrollment_date" class="form-control" required />
-                            @error('enrollment_date') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label" for="ab_fee_payable">Fee Payable</label>
-                            <input id="ab_fee_payable" type="number" name="fee_payable" step="0.01" min="0" class="form-control" value="0">
-                            @error('fee_payable') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label" for="ab_discount">Discount</label>
-                            <input id="ab_discount" type="number" name="discount" step="0.01" min="0" class="form-control" value="0">
-                            @error('discount') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Assign to Batch</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    @include('students._edit_modal', ['student' => $student])
+    @include('training.students._edit_modal', ['student' => $student])
 @endif
 
-@include('components.photo-crop-modal')
 @endsection
 
 @push('scripts')
-<script src="{{ asset('js/photo-crop.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/photo-crop.js')) }}"></script>
 <script>
-document.getElementById('assignBatchModal')?.addEventListener('show.bs.modal', function () {
-    var d = document.getElementById('ab_enrollment_date');
-    if (d && !d.value) { d.value = new Date().toISOString().slice(0, 10); }
-    if (window.tdateSync) { window.tdateSync('ab_enrollment_date'); }
-});
-
-(function () {
-    var form = document.getElementById('assignBatchForm');
-    var modalEl = document.getElementById('assignBatchModal');
-    if (!form || !modalEl || !window.Monetix || !Monetix.request) { return; }
-
-    function clearErrors() {
-        form.querySelectorAll('.is-invalid').forEach(function (el) { el.classList.remove('is-invalid'); });
-        form.querySelectorAll('.text-danger.small').forEach(function (el) { el.remove(); });
-    }
-
-    form.addEventListener('submit', function (e) {
-        if (!form.hasAttribute('data-ajax-enabled')) { return; }
-        e.preventDefault();
-        clearErrors();
-        var submitBtn = form.querySelector('[type="submit"]');
-        var restore = Monetix.loading(submitBtn, 'Assigning…');
-        Monetix.request(form.action, { method: 'POST', body: new FormData(form) })
-            .then(function (res) {
-                if (restore) { restore(); }
-                if (res && res.errors) {
-                    Object.keys(res.errors).forEach(function (key) {
-                        var field = form.querySelector('[name="' + key + '"]');
-                        if (field) {
-                            field.classList.add('is-invalid');
-                            var msg = document.createElement('div');
-                            msg.className = 'text-danger small mt-1';
-                            msg.textContent = (res.errors[key] || []).join(', ');
-                            field.parentNode.insertBefore(msg, field.nextSibling);
-                        }
-                    });
-                    return;
-                }
-                if (res && res.success === false) {
-                    if (Monetix.toast) { Monetix.toast(res.message || 'Could not assign the student.', 'danger'); }
-                    return;
-                }
-                var modal = bootstrap.Modal.getInstance(modalEl);
-                if (modal) { modal.hide(); }
-                if (Monetix.toast) { Monetix.toast(res && res.message, 'success'); }
-                if (Monetix.loadPage) { Monetix.loadPage(location.pathname + location.search, { preserveFocus: false }); }
-            })
-            .catch(function () {
-                if (restore) { restore(); }
-                if (Monetix.toast) { Monetix.toast('Could not assign the student. Please try again.', 'danger'); }
-            });
-    });
-})();
-
-@if ($errors->any() && !session('photo_upload_error'))
-(function () {
-    var modalEl = document.getElementById('editStudentModal');
-    if (modalEl) { new bootstrap.Modal(modalEl).show(); }
-})();
-@endif
-
-@if (request('edit'))
-(function () {
-    var modalEl = document.getElementById('editStudentModal');
-    if (modalEl) { new bootstrap.Modal(modalEl).show(); }
-})();
-@endif
-
 (function () {
     var form = document.getElementById('photoUploadForm');
     var input = document.getElementById('e_photo_upload');
@@ -554,132 +445,21 @@ document.getElementById('assignBatchModal')?.addEventListener('show.bs.modal', f
         input.focus();
     });
     input.addEventListener('change', clearWarning);
-
-    // AJAX upload with progress when JS is available.
-    if (!window.Monetix || !Monetix.request) { return; }
-    var progressWrap = document.getElementById('photoProgressWrap');
-    var progressBar = document.getElementById('photoProgressBar');
-    var errorBox = document.getElementById('photoUploadError');
-    var uploadBtn = document.getElementById('photoUploadBtn');
-    var xhr = null;
-
-    function setProgress(pct) {
-        if (!progressWrap || !progressBar) { return; }
-        progressWrap.classList.remove('d-none');
-        progressBar.style.width = pct + '%';
-        progressBar.textContent = pct + '%';
-    }
-    function showError(msg) {
-        if (!errorBox) { return; }
-        errorBox.textContent = msg || 'Upload failed. Please try again.';
-        errorBox.classList.remove('d-none');
-    }
-
-    form.addEventListener('submit', function (e) {
-        if (!(input.files && input.files.length > 0)) { return; }
-        if (e.defaultPrevented) { return; }
-        e.preventDefault();
-        clearWarning();
-        if (errorBox) { errorBox.classList.add('d-none'); }
-        if (uploadBtn) { uploadBtn.disabled = true; }
-        setProgress(0);
-
-        xhr = new XMLHttpRequest();
-        xhr.open('POST', form.action);
-        xhr.setRequestHeader('Accept', 'application/json');
-        xhr.setRequestHeader('X-CSRF-TOKEN', Monetix.csrfToken());
-        xhr.upload.onprogress = function (ev) {
-            if (ev.lengthComputable) {
-                setProgress(Math.round((ev.loaded / ev.total) * 100));
-            }
-        };
-        xhr.onload = function () {
-            var res = null;
-            try { res = JSON.parse(xhr.responseText); } catch (e) { res = null; }
-            if (uploadBtn) { uploadBtn.disabled = false; }
-            if (xhr.status === 401 || xhr.status === 419) {
-                var login = document.querySelector('meta[name="login-url"]');
-                window.location.href = (login ? login.getAttribute('content') : '/login');
-                return;
-            }
-            if (res && res.success) {
-                if (progressWrap) { progressWrap.classList.add('d-none'); }
-                var bust = (res.data.photo.indexOf('?') === -1 ? '?' : '&') + 't=' + Date.now();
-                var img = document.getElementById('studentPhotoImg');
-                var placeholder = document.getElementById('studentPhotoPlaceholder');
-                if (img) { img.src = res.data.photo + bust; }
-                if (placeholder) {
-                    var newImg = document.createElement('img');
-                    newImg.src = res.data.photo + bust;
-                    newImg.className = 'student-id-photo';
-                    newImg.id = 'studentPhotoImg';
-                    newImg.alt = placeholder.getAttribute('aria-label') || '';
-                    placeholder.parentNode.replaceChild(newImg, placeholder);
-                }
-                if (Monetix.toast) { Monetix.toast(res.message, 'success'); }
-            } else {
-                showError(res && res.message);
-                if (progressWrap) { progressWrap.classList.add('d-none'); }
-            }
-        };
-        xhr.onerror = function () {
-            if (uploadBtn) { uploadBtn.disabled = false; }
-            showError('Network error. Please try again.');
-            if (progressWrap) { progressWrap.classList.add('d-none'); }
-        };
-        var fd = new FormData(form);
-        xhr.send(fd);
-    });
 })();
 
+@if ($errors->any() && !session('photo_upload_error'))
 (function () {
-    var placeholderRatio = 7 / 9;
-    var targetW = 350;
-    var targetH = Math.round(targetW / placeholderRatio);
-    var maxBytes = 100 * 1024;
-
-    window.resizePhoto = function (input) {
-        var file = input.files && input.files[0];
-        if (!file || !/^image\//.test(file.type)) { return; }
-        var url = URL.createObjectURL(file);
-        var img = new Image();
-        img.onload = function () {
-            URL.revokeObjectURL(url);
-            var canvas = document.createElement('canvas');
-            canvas.width = targetW;
-            canvas.height = targetH;
-            var ctx = canvas.getContext('2d');
-            var srcRatio = img.width / img.height;
-            var sw, sh, sx, sy;
-            if (srcRatio > placeholderRatio) {
-                sh = img.height;
-                sw = Math.round(img.height * placeholderRatio);
-                sx = Math.round((img.width - sw) / 2);
-                sy = 0;
-            } else {
-                sw = img.width;
-                sh = Math.round(img.width / placeholderRatio);
-                sx = 0;
-                sy = Math.round((img.height - sh) / 4);
-            }
-            ctx.drawImage(img, sx, sy, sw, sh, 0, 0, targetW, targetH);
-            (function writeBlob(quality) {
-                canvas.toBlob(function (blob) {
-                    if (blob && blob.size <= maxBytes) {
-                        var resized = new File([blob], file.name.replace(/\.[^/.]+$/, '') + '.jpg', { type: 'image/jpeg' });
-                        var dt = new DataTransfer();
-                        dt.items.add(resized);
-                        input.files = dt.files;
-                    } else if (quality > 0.3) {
-                        writeBlob(quality - 0.1);
-                    }
-                }, 'image/jpeg', quality);
-            })(0.85);
-        };
-        img.onerror = function () { URL.revokeObjectURL(url); };
-        img.src = url;
-    };
+    var modalEl = document.getElementById('editStudentModal');
+    if (modalEl) { new bootstrap.Modal(modalEl).show(); }
 })();
+@endif
+
+@if (request('edit'))
+(function () {
+    var modalEl = document.getElementById('editStudentModal');
+    if (modalEl) { new bootstrap.Modal(modalEl).show(); }
+})();
+@endif
 </script>
 @endpush
 

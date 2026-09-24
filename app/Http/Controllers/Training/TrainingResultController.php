@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Training;
 
 use App\Http\Controllers\Controller;
-use App\Models\Batch;
-use App\Models\Exam;
-use App\Models\ExamResult;
-use App\Models\Training\Enrollment;
+use App\Models\Training\TrainingBatch;
+use App\Models\Training\TrainingExam;
+use App\Models\Training\TrainingExamResult;
+use App\Models\Training\TrainingEnrollment;
+use App\Models\Training\TrainingStudent;
 use App\Models\TrainingBatchResult;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -15,7 +16,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TrainingResultController extends Controller
 {
-    public function publish(Request $request, Batch $batch): RedirectResponse
+    public function publish(Request $request, TrainingBatch $batch): RedirectResponse
     {
         $instituteId = (int) $request->user()->institute_id;
         abort_unless((int) $batch->institute_id === $instituteId, 403);
@@ -26,7 +27,7 @@ class TrainingResultController extends Controller
         }
 
         // Fetch enrollments via unified enrollments table
-        $enrollments = Enrollment::where('batch_id', $batch->id)
+        $enrollments = TrainingEnrollment::where('batch_id', $batch->id)
             ->where('institute_id', $instituteId)
             ->with('student:id,first_name,last_name,full_name')
             ->get()
@@ -36,7 +37,7 @@ class TrainingResultController extends Controller
             return back()->with('error', 'No trainees enrolled in this batch. Enroll trainees first.');
         }
 
-        $exams = Exam::where('batch_id', $batch->id)->where('institute_id', $instituteId)->get();
+        $exams = TrainingExam::where('batch_id', $batch->id)->where('institute_id', $instituteId)->get();
         if ($exams->isEmpty()) {
             return back()->with('error', 'No exams found for this batch. Create exams first.');
         }
@@ -46,7 +47,7 @@ class TrainingResultController extends Controller
             $studentId = $enrollment->student_id;
 
             // Aggregate marks from ExamResults for this student (student_id is students.id)
-            $results = ExamResult::whereIn('exam_id', $exams->pluck('id'))
+            $results = TrainingExamResult::whereIn('exam_id', $exams->pluck('id'))
                 ->where('student_id', $studentId)
                 ->get();
 
@@ -85,7 +86,7 @@ class TrainingResultController extends Controller
         return back()->with('status', "Published results for $published trainee(s) in batch '{$batch->name}'.");
     }
 
-    public function reEvaluate(Request $request, Batch $batch): RedirectResponse
+    public function reEvaluate(Request $request, TrainingBatch $batch): RedirectResponse
     {
         $instituteId = (int) $request->user()->institute_id;
         abort_unless((int) $batch->institute_id === $instituteId, 403);
@@ -94,7 +95,7 @@ class TrainingResultController extends Controller
             return back()->with('error', 'Results can only be re-evaluated for completed batches.');
         }
 
-        $enrollments = Enrollment::where('batch_id', $batch->id)
+        $enrollments = TrainingEnrollment::where('batch_id', $batch->id)
             ->where('institute_id', $instituteId)
             ->get()
             ->map(fn($e) => (object)['student_id' => $e->student_id]);
@@ -103,7 +104,7 @@ class TrainingResultController extends Controller
             return back()->with('error', 'No trainees enrolled in this batch.');
         }
 
-        $exams = Exam::where('batch_id', $batch->id)->where('institute_id', $instituteId)->get();
+        $exams = TrainingExam::where('batch_id', $batch->id)->where('institute_id', $instituteId)->get();
         if ($exams->isEmpty()) {
             return back()->with('error', 'No exams found for this batch.');
         }
@@ -113,7 +114,7 @@ class TrainingResultController extends Controller
             $studentId = $enrollment->student_id;
 
             // Correct calculation: sum full_marks from exams, sum marks_obtained from ExamResult
-            $results = ExamResult::whereIn('exam_id', $exams->pluck('id'))
+            $results = TrainingExamResult::whereIn('exam_id', $exams->pluck('id'))
                 ->where('student_id', $studentId)
                 ->get();
 
@@ -154,7 +155,7 @@ class TrainingResultController extends Controller
             ->with('status', "Re-evaluated {$published} trainee(s).");
     }
 
-    public function downloadMarksheet(Request $request, Batch $batch, $trainee)
+    public function downloadMarksheet(Request $request, TrainingBatch $batch, $trainee)
     {
         $instituteId = (int) $request->user()->institute_id;
         abort_unless((int) $batch->institute_id === $instituteId, 403);
@@ -163,12 +164,12 @@ class TrainingResultController extends Controller
 
         // Eager load batch relations
         $batch->loadMissing(['course', 'institute']);
-        $student = \App\Models\Student::find($studentId);
+        $student = TrainingStudent::find($studentId);
         // Fallback to User for legacy data
         if (!$student) {
             $traineeUser = \App\Models\User::find($studentId);
             if ($traineeUser) {
-                $student = \App\Models\Student::where('user_id', $studentId)->first();
+                $student = TrainingStudent::where('user_id', $studentId)->first();
             }
             if (!$student && isset($traineeUser) && $traineeUser) {
                 $student = (object)[
@@ -206,16 +207,16 @@ class TrainingResultController extends Controller
         }
 
         // Fetch exam results for this student in this batch (via exams belonging to batch)
-        $exams = Exam::where('batch_id', $batch->id)->where('institute_id', $instituteId)->get();
+        $exams = TrainingExam::where('batch_id', $batch->id)->where('institute_id', $instituteId)->get();
         $examResults = \Illuminate\Support\Collection::make();
         if ($exams->isNotEmpty()) {
-            $examResults = ExamResult::whereIn('exam_id', $exams->pluck('id'))
+            $examResults = TrainingExamResult::whereIn('exam_id', $exams->pluck('id'))
                 ->where('student_id', $studentId)
                 ->with('exam')
                 ->get();
             if ($examResults->isEmpty()) {
                 try {
-                    $examResults = ExamResult::where('batch_id', $batch->id)
+                    $examResults = TrainingExamResult::whereIn('exam_id', $exams->pluck('id'))
                         ->where('student_id', $studentId)
                         ->with('exam')
                         ->get();
@@ -224,10 +225,10 @@ class TrainingResultController extends Controller
         }
 
         // Legacy support variables
-        $studentModel = $student instanceof \App\Models\Student ? $student : \App\Models\Student::find($studentId);
+        $studentModel = $student instanceof TrainingStudent ? $student : TrainingStudent::find($studentId);
         $traineeModel = \App\Models\User::find($studentId);
         $displayName = null;
-        if ($student instanceof \App\Models\Student || (is_object($student) && isset($student->full_name))) {
+        if ($student instanceof TrainingStudent || (is_object($student) && isset($student->full_name))) {
             $displayName = is_object($student) && property_exists($student, 'full_name') ? $student->full_name : ($student->full_name ?? '');
             if (empty($displayName) && isset($student->name)) $displayName = $student->name;
             if (empty($displayName)) $displayName = trim(($student->first_name ?? '').' '.($student->last_name ?? ''));
@@ -240,7 +241,7 @@ class TrainingResultController extends Controller
         $examDetails = [];
         $traineeId = $studentId;
         foreach ($exams as $exam) {
-            $res = ExamResult::where('exam_id', $exam->id)->where('student_id', $studentId)->get();
+            $res = TrainingExamResult::where('exam_id', $exam->id)->where('student_id', $studentId)->get();
             $obtained = $res->sum('marks_obtained');
             $examDetails[] = [
                 'title' => $exam->title,

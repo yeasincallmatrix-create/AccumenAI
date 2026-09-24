@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Training;
 
 use App\Http\Controllers\Controller;
-use App\Models\Batch;
-use App\Models\Exam;
+use App\Models\Training\TrainingBatch;
+use App\Models\Training\TrainingExam;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -14,16 +14,23 @@ class TrainingExamController extends Controller
     {
         $instituteId = (int) $request->user()->institute_id;
 
-        $exams = Exam::where('institute_id', $instituteId)
+        $exams = TrainingExam::where('institute_id', $instituteId)
             ->with(['batch.course'])
             ->orderBy('created_at', 'desc')
             ->paginate(25);
 
-        $batches = Batch::where('institute_id', $instituteId)
+        $batches = TrainingBatch::where('institute_id', $instituteId)
             ->whereIn('status', ['upcoming', 'ongoing', 'running'])
             ->orderBy('name')
             ->get();
 
         return view('training.exams.index', compact('exams', 'batches'));
+    }
+
+    public function show($id): View
+    {
+        $exam = TrainingExam::with(['results'])->findOrFail($id);
+        $exam->setRelation('batch', $exam->batch_id ? TrainingBatch::find($exam->batch_id) : null);
+        return view('training.exams.show', compact('exam'));
     }
 }

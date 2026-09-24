@@ -94,7 +94,7 @@ document.querySelectorAll('.marks-input').forEach(function(inp){
                     <td class="small">{{ $exam->batch?->name ?? '—' }}</td>
                     <td class="small text-muted">{{ $exam->course?->name ?? '—' }}</td>
                     <td>{{ $exam->results_count ?? 0 }}</td>
-                    <td class="text-end"><a href="{{ route('training.marks.index', ['exam_id' => $exam->id]) }}" class="btn btn-sm btn-outline-primary">Enter Marks</a> <a href="{{ route('exams.show', $exam->id) }}" class="btn btn-sm btn-outline-secondary">View</a></td>
+                    <td class="text-end"><a href="{{ route('training.marks.index', ['exam_id' => $exam->id]) }}" class="btn btn-sm btn-outline-primary">Enter Marks</a> <a href="{{ route('training.exams.show', $exam->id) }}" class="btn btn-sm btn-outline-secondary">View</a></td>
                 </tr>
             @empty
                 <tr><td colspan="5" class="text-center text-muted py-4">No exams yet.</td></tr>

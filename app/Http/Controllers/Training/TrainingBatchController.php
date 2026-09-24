@@ -34,8 +34,12 @@ class TrainingBatchController extends Controller
 
     public function show($id)
     {
-        $batch = TrainingBatch::findOrFail($id);
-        return view('training.batches.show', compact('batch'));
+        $batch = TrainingBatch::with(['enrollments.student'])->findOrFail($id);
+        $batch->loadCount('enrollments');
+        $exams = \App\Models\Training\TrainingExam::where('batch_id', $batch->id)
+            ->withCount('results')->orderByDesc('id')->get();
+        $availableSeats = max(0, ($batch->seat_capacity ?? 0) - $batch->enrollments_count);
+        return view('training.batches.show', compact('batch', 'exams', 'availableSeats'));
     }
 
     public function edit($id)

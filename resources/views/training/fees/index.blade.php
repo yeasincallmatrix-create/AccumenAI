@@ -22,9 +22,9 @@
                 <tr>
                     <td class="fw-semibold">{{ $batch->name }}</td>
                     <td class="small text-muted">{{ $batch->course?->name ?? '—' }}</td>
-                    <td>{{ $batch->course?->fee ? number_format($batch->course->fee,2) : '—' }}</td>
+                    <td>{{ $batch->course?->fee ? number_format($batch->course?->fee,2) : '—' }}</td>
                     <td>{{ $batch->enrollments_count }}</td>
-                    <td class="text-end"><a href="{{ route('batches.show', $batch->id) }}" class="btn btn-sm btn-outline-primary">View Batch</a> <span class="badge text-bg-light ms-1">{{ $batch->enrollments_count }} trainees</span></td>
+                    <td class="text-end"><a href="{{ route('training.batches.show', $batch->id) }}" class="btn btn-sm btn-outline-primary">View Batch</a> <span class="badge text-bg-light ms-1">{{ $batch->enrollments_count }} trainees</span></td>
                 </tr>
             @empty
                 <tr><td colspan="5" class="text-center text-muted py-4">No batches yet.</td></tr>

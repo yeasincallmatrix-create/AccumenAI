@@ -1,7 +1,7 @@
 <!-- Edit Student modal -->
 <div class="modal fade" id="editStudentModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable" id="editStudentDialog">
-        <form class="modal-content" method="POST" action="{{ route('students.update', $student->id ?? 0) }}" enctype="multipart/form-data" id="editStudentForm" data-ajax-enabled>
+        <form class="modal-content" method="POST" action="{{ route('training.students.update', $student->id ?? 0) }}" enctype="multipart/form-data" id="editStudentForm" data-ajax-enabled>
             @csrf
             @method('PUT')
             <input type="hidden" name="student_id" id="e_student_id" value="{{ old('student_id', $student->id ?? '') }}">

@@ -31,11 +31,11 @@ class TrainingAttendance extends Model
 
     public function batch(): BelongsTo
     {
-        return $this->belongsTo(TrainingBatch::class);
+        return $this->belongsTo(TrainingBatch::class, 'batch_id');
     }
 
     public function student(): BelongsTo
     {
-        return $this->belongsTo(TrainingStudent::class);
+        return $this->belongsTo(TrainingStudent::class, 'student_id');
     }
 }

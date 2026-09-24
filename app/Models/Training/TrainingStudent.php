@@ -70,4 +70,14 @@ class TrainingStudent extends Model
     {
         return $this->belongsTo(TrainingBatch::class, 'preferred_batch_id');
     }
+
+    /**
+     * Loose coupling to shared Branch (education-owned).
+     * Column: training_students.branch_id (nullable, no FK enforced)
+     * Data coupling only — does NOT grant education module access to training.
+     */
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Branch::class, 'branch_id');
+    }
 }

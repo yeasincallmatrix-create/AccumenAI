@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Training;
 
 use App\Http\Controllers\Controller;
-use App\Models\Batch;
-use App\Models\Training\Enrollment;
+use App\Models\Training\TrainingBatch;
+use App\Models\Training\TrainingEnrollment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -17,7 +17,7 @@ class EnrollmentController extends Controller
     public function index(Request $request): View
     {
         $instituteId = (int) $request->user()->institute_id;
-        $enrollments = Enrollment::with(['batch', 'trainee'])
+        $enrollments = TrainingEnrollment::with(['batch', 'trainee'])
             ->where('institute_id', $instituteId)
             ->orderByDesc('id')
             ->paginate(25);
@@ -28,17 +28,17 @@ class EnrollmentController extends Controller
     public function create(Request $request): View
     {
         $instituteId = (int) $request->user()->institute_id;
-        $batches = Batch::where('institute_id', $instituteId)
+        $batches = TrainingBatch::where('institute_id', $instituteId)
             ->whereIn('status', ['upcoming', 'ongoing', 'completed'])
             ->orderBy('name')
             ->get()
             ->map(function ($batch) {
-                $enrolled = \App\Models\Training\Enrollment::where('batch_id', $batch->id)->count();
+                $enrolled = TrainingEnrollment::where('batch_id', $batch->id)->count();
                 $batch->enrolled_count = $enrolled;
-                $batch->remaining = !empty($batch->capacity) ? max(0, (int) $batch->capacity - $enrolled) : ($batch->seat_capacity ? max(0, (int) $batch->seat_capacity - $enrolled) : null);
+                $batch->remaining = !empty($batch->seat_capacity) ? max(0, (int) $batch->seat_capacity - $enrolled) : null;
                 return $batch;
             });
-        $trainees = \App\Models\Student::withoutGlobalScope('branch')
+        $trainees = \App\Models\Training\TrainingStudent::withoutGlobalScope('branch')
             ->where('institute_id', $instituteId)
             ->where('status', 'active')
             ->orderBy('first_name')
@@ -67,20 +67,20 @@ class EnrollmentController extends Controller
         $instituteId = (int) $request->user()->institute_id;
 
         $request->validate([
-            'batch_id' => 'required|exists:batches,id',
-            'trainee_id' => 'required|exists:students,id',
+            'batch_id' => 'required|exists:training_batches,id',
+            'trainee_id' => 'required|exists:training_students,id',
             'roll_no' => [
                 'required',
                 'integer',
                 'min:1',
-                Rule::unique('enrollments')->where(function ($query) use ($request, $instituteId) {
+                Rule::unique('training_enrollments')->where(function ($query) use ($request, $instituteId) {
                     return $query->where('institute_id', $instituteId)
                         ->where('batch_id', $request->batch_id);
                 }),
             ],
         ]);
 
-        $batch = Batch::where('institute_id', $instituteId)->findOrFail($request->batch_id);
+        $batch = TrainingBatch::where('institute_id', $instituteId)->findOrFail($request->batch_id);
 
         // Tenant check for batch
         if ((int) $batch->institute_id !== $instituteId) {
@@ -88,7 +88,7 @@ class EnrollmentController extends Controller
         }
 
         // Duplicate check
-        $exists = Enrollment::where('batch_id', $batch->id)
+        $exists = TrainingEnrollment::where('batch_id', $batch->id)
             ->where('trainee_id', $request->trainee_id)
             ->exists();
         if ($exists) {
@@ -96,15 +96,15 @@ class EnrollmentController extends Controller
         }
 
         // Capacity check
-        if (!empty($batch->capacity)) {
-            $currentCount = Enrollment::where('batch_id', $batch->id)->count();
-            if ($currentCount >= (int) $batch->capacity) {
-                throw ValidationException::withMessages(['batch_id' => 'This batch has reached its maximum capacity (' . $batch->capacity . ').']);
+        if (!empty($batch->seat_capacity)) {
+            $currentCount = TrainingEnrollment::where('batch_id', $batch->id)->count();
+            if ($currentCount >= (int) $batch->seat_capacity) {
+                throw ValidationException::withMessages(['batch_id' => 'This batch has reached its maximum capacity (' . $batch->seat_capacity . ').']);
             }
         }
 
         DB::transaction(function () use ($request, $batch, $instituteId) {
-            Enrollment::create([
+            TrainingEnrollment::create([
                 'institute_id' => $instituteId,
                 'batch_id' => $batch->id,
                 'trainee_id' => $request->trainee_id,
@@ -119,7 +119,7 @@ class EnrollmentController extends Controller
         return redirect()->route('training.enrollments.index')->with('status', 'Enrollment created successfully.');
     }
 
-    public function update(Request $request, Enrollment $enrollment): RedirectResponse
+    public function update(Request $request, TrainingEnrollment $enrollment): RedirectResponse
     {
         $instituteId = (int) $request->user()->institute_id;
         if ((int) $enrollment->institute_id !== $instituteId) {
@@ -131,7 +131,7 @@ class EnrollmentController extends Controller
                 'required',
                 'integer',
                 'min:1',
-                Rule::unique('enrollments')->where(function ($query) use ($request, $instituteId, $enrollment) {
+                Rule::unique('training_enrollments')->where(function ($query) use ($request, $instituteId, $enrollment) {
                     return $query->where('institute_id', $instituteId)
                         ->where('batch_id', $enrollment->batch_id)
                         ->where('id', '!=', $enrollment->id);
@@ -146,7 +146,7 @@ class EnrollmentController extends Controller
         return redirect()->route('training.enrollments.index')->with('status', 'Enrollment updated successfully.');
     }
 
-    public function destroy(Request $request, Enrollment $enrollment): RedirectResponse
+    public function destroy(Request $request, TrainingEnrollment $enrollment): RedirectResponse
     {
         $instituteId = (int) $request->user()->institute_id;
         if ((int) $enrollment->institute_id !== $instituteId) {

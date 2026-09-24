@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Training;
 
 use App\Http\Controllers\Controller;
-use App\Models\Batch;
-use App\Models\Certificate;
-use App\Models\Exam;
-use App\Models\ExamResult;
-use App\Models\Student;
+use App\Models\Training\TrainingBatch;
+use App\Models\Training\TrainingCertificate;
+use App\Models\Training\TrainingExam;
+use App\Models\Training\TrainingExamResult;
+use App\Models\Training\TrainingStudent;
+use App\Models\Training\TrainingAttendance;
+use App\Models\Training\TrainingEnrollment;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -17,7 +19,7 @@ class TrainingCertificateController extends Controller
     public function index(Request $request): View
     {
         $instituteId = (int) $request->user()->institute_id;
-        $batches = Batch::where('institute_id', $instituteId)
+        $batches = TrainingBatch::where('institute_id', $instituteId)
             ->whereIn('status', ['completed', 'ongoing', 'upcoming'])
             ->orderBy('name')
             ->get(['id', 'name', 'batch_code']);
@@ -25,33 +27,33 @@ class TrainingCertificateController extends Controller
         $selectedBatchId = (int) ($request->query('batch_id') ?? $batches->first()?->id);
         $certTrainees = collect();
         if ($selectedBatchId) {
-            $enrolls = \App\Models\Training\Enrollment::where('batch_id', $selectedBatchId)
+            $enrolls = TrainingEnrollment::where('batch_id', $selectedBatchId)
                 ->where('institute_id', $instituteId)
                 ->with('student')
                 ->get();
 
-            $batch = Batch::find($selectedBatchId);
+            $batch = TrainingBatch::find($selectedBatchId);
             $threshold = $batch?->attendance_threshold ?? 80;
             $certTrainees = $enrolls->map(function ($enr) use ($selectedBatchId, $threshold) {
                 $traineeId = $enr->trainee_id ?? $enr->student_id;
                 $studentId = $traineeId;
 
-                $presentCount = \App\Models\Attendance::where('batch_id', $selectedBatchId)
+                $presentCount = TrainingAttendance::where('batch_id', $selectedBatchId)
                     ->where('student_id', $studentId)
                     ->where('status', 'present')
                     ->count();
-                $totalDays = \App\Models\Attendance::where('batch_id', $selectedBatchId)
+                $totalDays = TrainingAttendance::where('batch_id', $selectedBatchId)
                     ->where('student_id', $studentId)
                     ->count();
                 $attendance = $totalDays > 0 ? (int) round(($presentCount / $totalDays) * 100) : 0;
 
-                $exams = Exam::where('batch_id', $selectedBatchId)->get();
+                $exams = TrainingExam::where('batch_id', $selectedBatchId)->get();
                 $allPassed = true;
                 if ($exams->isEmpty()) {
                     $allPassed = false;
                 } else {
                     foreach ($exams as $exam) {
-                        $hasPass = ExamResult::where('exam_id', $exam->id)
+                        $hasPass = TrainingExamResult::where('exam_id', $exam->id)
                             ->where('student_id', $studentId)
                             ->where('result_status', 'pass')
                             ->exists();
@@ -72,12 +74,12 @@ class TrainingCertificateController extends Controller
             });
         }
 
-        $certificates = Certificate::where('institute_id', $instituteId)
+        $certificates = TrainingCertificate::where('institute_id', $instituteId)
             ->with(['student','course','batch'])
             ->latest('id')
             ->paginate(15);
 
-        $selectedBatch = $batches->firstWhere('id', $selectedBatchId) ?? ($selectedBatchId ? Batch::find($selectedBatchId) : null);
+        $selectedBatch = $batches->firstWhere('id', $selectedBatchId) ?? ($selectedBatchId ? TrainingBatch::find($selectedBatchId) : null);
         $threshold = $selectedBatch ? $selectedBatch->attendance_threshold : 80;
 
         return view('training.certificates.index', compact(
@@ -92,9 +94,9 @@ class TrainingCertificateController extends Controller
     public function generate(Request $request): RedirectResponse
     {
         $request->validate([
-            'batch_id' => 'required|exists:batches,id',
+            'batch_id' => 'required|exists:training_batches,id',
             'trainee_ids' => 'required|array|min:1',
-            'trainee_ids.*' => 'exists:students,id',
+            'trainee_ids.*' => 'exists:training_students,id',
             'template_id' => 'nullable|integer|in:1,2,3',
         ]);
 
@@ -104,7 +106,7 @@ class TrainingCertificateController extends Controller
         $templateId = (int) ($request->input('template_id', 1));
         $templateId = in_array($templateId, [1, 2, 3], true) ? $templateId : 1;
 
-        $batch = Batch::where('institute_id', $instituteId)->findOrFail($batchId);
+        $batch = TrainingBatch::where('institute_id', $instituteId)->findOrFail($batchId);
         $courseId = $batch->course_id;
 
         $generated = 0;
@@ -113,25 +115,25 @@ class TrainingCertificateController extends Controller
             // Try to resolve training User -> Student via email fallback
             $trainee = \App\Models\User::find($traineeId);
             if ($trainee && $trainee->email) {
-                $studentByEmail = Student::where('email', $trainee->email)->where('institute_id', $instituteId)->first();
+                $studentByEmail = TrainingStudent::where('email', $trainee->email)->where('institute_id', $instituteId)->first();
                 if ($studentByEmail) $studentId = $studentByEmail->id;
             }
 
             // Ensure student exists for FK
-            $student = Student::find($studentId);
+            $student = TrainingStudent::find($studentId);
             if (!$student) {
                 continue;
             }
 
             // Check eligibility again
-            $presentCount = \App\Models\Attendance::where('batch_id', $batchId)->where('student_id', $studentId)->where('status','present')->count();
-            $totalDays = \App\Models\Attendance::where('batch_id', $batchId)->where('student_id', $studentId)->count();
+            $presentCount = TrainingAttendance::where('batch_id', $batchId)->where('student_id', $studentId)->where('status','present')->count();
+            $totalDays = TrainingAttendance::where('batch_id', $batchId)->where('student_id', $studentId)->count();
             $attendance = $totalDays > 0 ? (int) round(($presentCount/$totalDays)*100) : 0;
 
-            $exams = Exam::where('batch_id', $batchId)->get();
+            $exams = TrainingExam::where('batch_id', $batchId)->get();
             $allPassed = !$exams->isEmpty();
             foreach ($exams as $exam) {
-                if (!ExamResult::where('exam_id', $exam->id)->where('student_id', $studentId)->where('result_status','pass')->exists()) {
+                if (!TrainingExamResult::where('exam_id', $exam->id)->where('student_id', $studentId)->where('result_status','pass')->exists()) {
                     $allPassed = false; break;
                 }
             }
@@ -141,7 +143,7 @@ class TrainingCertificateController extends Controller
             }
 
             // Avoid duplicate certificate for same student/batch/course
-            $exists = Certificate::where('institute_id', $instituteId)->where('student_id', $studentId)->where('batch_id', $batchId)->where('course_id', $courseId)->exists();
+            $exists = TrainingCertificate::where('institute_id', $instituteId)->where('student_id', $studentId)->where('batch_id', $batchId)->where('course_id', $courseId)->exists();
             if ($exists) continue;
 
             // Resolve issued_by safely — nullable FK to institute_users (same pattern as Attendance marked_by)
@@ -160,7 +162,7 @@ class TrainingCertificateController extends Controller
                 }
             }
 
-            $certificate = Certificate::create([
+            $certificate = TrainingCertificate::create([
                 'institute_id' => $instituteId,
                 'student_id' => $studentId,
                 'batch_id' => $batchId,
@@ -171,14 +173,14 @@ class TrainingCertificateController extends Controller
                 'template_id' => $templateId,
             ]);
             // Generate unique number after create (needs id/uuid)
-            $certificate->update(['certificate_number' => Certificate::numberFor($certificate)]);
+            $certificate->update(['certificate_number' => TrainingCertificate::numberFor($certificate)]);
             $generated++;
         }
 
         return redirect()->back()->with('status', $generated > 0 ? "Generated $generated certificate(s) successfully." : 'No eligible certificates generated (already issued or not eligible).');
     }
 
-    public function show(Request $request, Certificate $certificate): View
+    public function show(Request $request, TrainingCertificate $certificate): View
     {
         $instituteId = (int) $request->user()->institute_id;
         abort_unless((int) $certificate->institute_id === $instituteId, 403);
@@ -270,7 +272,7 @@ class TrainingCertificateController extends Controller
         ]);
     }
 
-    public function download(Request $request, Certificate $certificate)
+    public function download(Request $request, TrainingCertificate $certificate)
     {
         $instituteId = (int) $request->user()->institute_id;
         abort_unless((int) $certificate->institute_id === $instituteId, 403);
@@ -348,7 +350,7 @@ class TrainingCertificateController extends Controller
             ->header('Content-Disposition', 'attachment; filename="certificate-'.($certificate->certificate_number ?? $certificate->id).'.html"');
     }
 
-    public function update(Request $request, Certificate $certificate)
+    public function update(Request $request, TrainingCertificate $certificate)
     {
         $instituteId = (int) $request->user()->institute_id;
         abort_unless((int) $certificate->institute_id === $instituteId, 403);
@@ -398,7 +400,7 @@ class TrainingCertificateController extends Controller
             ->with('status', 'Certificate updated — issue date '.$certificate->issue_date->format('d M Y').'.');
     }
 
-    public function downloadQr(Request $request, Certificate $certificate)
+    public function downloadQr(Request $request, TrainingCertificate $certificate)
     {
         $instituteId = (int) $request->user()->institute_id;
         abort_unless((int) $certificate->institute_id === $instituteId, 403);

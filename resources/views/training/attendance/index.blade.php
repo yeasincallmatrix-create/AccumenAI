@@ -14,7 +14,7 @@
         <h4 class="mb-1">Training Attendance</h4>
         <p class="text-muted small mb-0">Monthly calendar — each trainee per day. Checked = Present.</p>
     </div>
-    <a href="{{ route('exams.index') }}?batch_id={{ $selectedBatchId ?? '' }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-clipboard-check me-1"></i> Add Exam</a>
+    <a href="{{ route('training.exams.index') }}?batch_id={{ $selectedBatchId ?? '' }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-clipboard-check me-1"></i> Add Exam</a>
 </div>
 
 @php
@@ -102,7 +102,7 @@
             <button type="submit" class="btn btn-primary btn-sm w-100">Load</button>
         </div>
         <div class="col-md-3 text-end">
-            <a href="{{ route('batches.show', $selectedBatchId ?? 1) }}" class="btn btn-outline-secondary btn-sm">View Batch</a>
+            <a href="{{ route('training.batches.show', $selectedBatchId ?? 1) }}" class="btn btn-outline-secondary btn-sm">View Batch</a>
         </div>
     </form>
 </div>

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Training;
 
 use App\Http\Controllers\Controller;
-use App\Models\Batch;
+use App\Models\Training\TrainingBatch;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -12,17 +12,17 @@ class ResultsController extends Controller
     public function index(Request $request): View
     {
         $instituteId = (int) $request->user()->institute_id;
-        $batches = Batch::query()
+        $batches = TrainingBatch::query()
             ->where('institute_id', $instituteId)
             ->with(['course:id,name', 'exams.results', 'enrollments'])
             ->withCount(['enrollments', 'exams'])
             ->orderBy('name')
             ->get()
-            ->map(function (Batch $batch) use ($instituteId) {
+            ->map(function (TrainingBatch $batch) use ($instituteId) {
                 $total = $batch->enrollments->count();
                 $passed = 0;
                 foreach ($batch->exams as $exam) {
-                    $passed += $exam->results->where('status', 'pass')->count();
+                    $passed += $exam->results->where('result_status', 'pass')->count();
                 }
                 $batch->setAttribute('computed_total', $total);
                 $batch->setAttribute('computed_passed', $passed);
@@ -35,16 +35,5 @@ class ResultsController extends Controller
             });
 
         return view('training.results.index', compact('batches'));
-    }
-
-    public function publish(Request $request, Batch $batch)
-    {
-        // Delegate to TrainingResultController for single responsibility
-        return app(\App\Http\Controllers\Training\TrainingResultController::class)->publish($request, $batch);
-    }
-
-    public function downloadMarksheet(Request $request, Batch $batch, $trainee)
-    {
-        return app(\App\Http\Controllers\Training\TrainingResultController::class)->downloadMarksheet($request, $batch, $trainee);
     }
 }

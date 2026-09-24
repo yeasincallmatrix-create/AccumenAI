@@ -33,11 +33,46 @@ class TrainingCertificate extends Model
 
     public function student(): BelongsTo
     {
-        return $this->belongsTo(TrainingStudent::class);
+        return $this->belongsTo(TrainingStudent::class, 'student_id');
     }
 
     public function batch(): BelongsTo
     {
-        return $this->belongsTo(TrainingBatch::class);
+        return $this->belongsTo(TrainingBatch::class, 'batch_id');
+    }
+
+    /**
+     * Loose coupling to shared Course (education-owned).
+     * Column: training_certificates.course_id (nullable, no FK enforced).
+     */
+    public function course(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Course::class, 'course_id');
+    }
+
+    public function type(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\CertificateType::class, 'certificate_type_id');
+    }
+
+    public static function numberFor($certificate = null): string
+    {
+        $characters = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $length = 6;
+        $tries = 0;
+        $maxTries = 100;
+
+        do {
+            $number = '';
+            for ($i = 0; $i < $length; $i++) {
+                $number .= $characters[random_int(0, strlen($characters) - 1)];
+            }
+            $tries++;
+            if ($tries > $maxTries) {
+                $number .= random_int(0, 9);
+            }
+        } while (self::where('certificate_number', $number)->exists());
+
+        return $number;
     }
 }

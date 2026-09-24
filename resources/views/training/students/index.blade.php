@@ -18,15 +18,15 @@
     </div>
 </div>
 
-@include('students._tabs', ['activeTab' => 'students'])
+@include('training.students._tabs', ['activeTab' => 'students'])
 
-@livewire('student-list')
+@livewire('training.student-list')
 
 @if ($user->hasPermission('students.manage'))
     @php
-        $blankStudent = new \App\Models\Student(['status' => 'active', 'admission_date' => now()]);
+        $blankStudent = new \App\Models\Training\TrainingStudent(['status' => 'active', 'admission_date' => now()]);
     @endphp
-    @include('students._edit_modal', ['student' => $blankStudent])
+    @include('training.students._edit_modal', ['student' => $blankStudent])
 @endif
 @endsection
 
@@ -34,7 +34,7 @@
 <script>
 (function () {
     var EDIT_DATA = @json($editData);
-    var EDIT_URL_BASE = @json(url('students') . '/');
+    var EDIT_URL_BASE = @json(route('training.students.index') . '/');
     var DEFAULT_COUNTRY_ID = @json($defaultCountryId ?? null);
     var modalEl = document.getElementById('editStudentModal');
     if (!modalEl) { return; }

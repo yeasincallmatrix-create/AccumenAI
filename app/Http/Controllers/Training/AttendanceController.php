@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Training;
 
 use App\Http\Controllers\Controller;
-use App\Models\Batch;
-use App\Models\Attendance;
+use App\Models\Training\TrainingBatch;
+use App\Models\Training\TrainingAttendance;
+use App\Models\Training\TrainingEnrollment;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +16,7 @@ class AttendanceController extends Controller
     public function index(Request $request): View
     {
         $instituteId = (int) $request->user()->institute_id;
-        $batches = Batch::query()
+        $batches = TrainingBatch::query()
             ->where('institute_id', $instituteId)
             ->whereIn('status', ['upcoming', 'ongoing', 'completed'])
             ->with(['course:id,name'])
@@ -77,7 +78,7 @@ class AttendanceController extends Controller
         // Fetch trainees for selected batch — unified source: enrollments table
         $trainees = collect();
         if ($selectedBatchId) {
-            $trainees = \App\Models\Training\Enrollment::where('batch_id', $selectedBatchId)
+            $trainees = TrainingEnrollment::where('batch_id', $selectedBatchId)
                 ->where('institute_id', $instituteId)
                 ->with('student:id,first_name,last_name,email,student_id,student_id_number,reg_no,user_id,full_name,name')
                 ->get()
@@ -106,12 +107,12 @@ class AttendanceController extends Controller
                 $endDate = end($days)->toDateString();
                 // Reset pointer
                 reset($days);
-                $records = Attendance::where('batch_id', $selectedBatchId)
+                $records = TrainingAttendance::where('batch_id', $selectedBatchId)
                     ->where('institute_id', $instituteId)
                     ->whereBetween('class_date', [$startDate, $endDate])
                     ->get(['student_id', 'class_date', 'status']);
             } else {
-                $records = Attendance::where('batch_id', $selectedBatchId)
+                $records = TrainingAttendance::where('batch_id', $selectedBatchId)
                     ->where('institute_id', $instituteId)
                     ->whereYear('class_date', $year)
                     ->whereMonth('class_date', $monthNum)
@@ -135,7 +136,7 @@ class AttendanceController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'batch_id' => 'required|exists:batches,id',
+            'batch_id' => 'required|exists:training_batches,id',
             'date' => 'required|date',
             'attendance' => 'required|array',
         ]);
@@ -147,7 +148,7 @@ class AttendanceController extends Controller
     public function bulkStore(Request $request)
     {
         $request->validate([
-            'batch_id' => 'required|exists:batches,id',
+            'batch_id' => 'required|exists:training_batches,id',
             'month' => 'nullable|regex:/^\d{4}-\d{2}$/',
             'view_mode' => 'nullable|in:month,week',
             'week_date' => 'nullable|regex:/^\d{4}-\d{2}-\d{2}$/',
@@ -189,10 +190,10 @@ class AttendanceController extends Controller
         }
 
         // Verify batch belongs to institute
-        $batch = Batch::where('institute_id', $instituteId)->findOrFail($batchId);
+        $batch = TrainingBatch::where('institute_id', $instituteId)->findOrFail($batchId);
 
         // Get all trainees currently enrolled (to handle unchecked = absent)
-        $enrolledIds = \App\Models\Training\Enrollment::where('batch_id', $batchId)
+        $enrolledIds = TrainingEnrollment::where('batch_id', $batchId)
             ->where('institute_id', $instituteId)
             ->pluck('student_id')
             ->toArray();
@@ -240,9 +241,9 @@ class AttendanceController extends Controller
                 } elseif (isset($attendanceInput[$traineeId][(string)$dayNum]) && $attendanceInput[$traineeId][(string)$dayNum] === 'present') {
                     $isPresent = true;
                 }
-                $status = $isPresent ? Attendance::STATUS_PRESENT : Attendance::STATUS_ABSENT;
+                $status = $isPresent ? 'present' : 'absent';
 
-                Attendance::updateOrCreate(
+                TrainingAttendance::updateOrCreate(
                     [
                         'institute_id' => $instituteId,
                         'batch_id' => $batchId,

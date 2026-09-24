@@ -33,7 +33,7 @@ class TrainingEnrollment extends Model
 
     public function batch(): BelongsTo
     {
-        return $this->belongsTo(TrainingBatch::class);
+        return $this->belongsTo(TrainingBatch::class, 'batch_id');
     }
 
     public function trainee(): BelongsTo

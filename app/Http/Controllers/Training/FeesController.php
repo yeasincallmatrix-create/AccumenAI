@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Training;
 
 use App\Http\Controllers\Controller;
-use App\Models\Batch;
+use App\Models\Training\TrainingBatch;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -12,7 +12,7 @@ class FeesController extends Controller
     public function index(Request $request): View
     {
         $instituteId = (int) $request->user()->institute_id;
-        $batches = Batch::query()
+        $batches = TrainingBatch::query()
             ->where('institute_id', $instituteId)
             ->with(['course:id,name,fee', 'enrollments'])
             ->withCount('enrollments')

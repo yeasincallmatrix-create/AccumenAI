@@ -18,10 +18,10 @@ class TrainingBatchResult extends Model
         'percentage' => 'decimal:2',
     ];
 
-    public function batch(): BelongsTo { return $this->belongsTo(Batch::class); }
-    public function student(): BelongsTo { return $this->belongsTo(Student::class, 'student_id'); }
+    public function batch(): BelongsTo { return $this->belongsTo(\App\Models\Training\TrainingBatch::class, 'batch_id'); }
+    public function student(): BelongsTo { return $this->belongsTo(\App\Models\Training\TrainingStudent::class, 'student_id'); }
     // Legacy alias for backwards compatibility
-    public function trainee(): BelongsTo { return $this->belongsTo(Student::class, 'student_id'); }
+    public function trainee(): BelongsTo { return $this->belongsTo(\App\Models\Training\TrainingStudent::class, 'student_id'); }
     public function institute(): BelongsTo { return $this->belongsTo(Institute::class); }
 
     public function getResultStatusAttribute(): ?string

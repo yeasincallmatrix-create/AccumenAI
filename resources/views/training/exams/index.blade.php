@@ -59,17 +59,17 @@
 
 <ul class="nav nav-tabs mb-3 mt-3" role="tablist" data-tab-switch>
     <li class="nav-item" role="presentation">
-        <a class="nav-link {{ $activeTab === 'exams' ? 'active' : '' }}" href="{{ route('exams.index', ['tab' => 'exams']) }}" role="tab">
+        <a class="nav-link {{ $activeTab === 'exams' ? 'active' : '' }}" href="{{ route('training.exams.index', ['tab' => 'exams']) }}" role="tab">
             <i class="bi bi-clipboard-check me-1"></i>Exams
         </a>
     </li>
     <li class="nav-item" role="presentation">
-        <a class="nav-link {{ $activeTab === 'results' ? 'active' : '' }}" href="{{ route('exams.index', ['tab' => 'results']) }}" role="tab">
+        <a class="nav-link {{ $activeTab === 'results' ? 'active' : '' }}" href="{{ route('training.exams.index', ['tab' => 'results']) }}" role="tab">
             <i class="bi bi-bar-chart me-1"></i>Results
         </a>
     </li>
     <li class="nav-item" role="presentation">
-        <a class="nav-link {{ $activeTab === 'certificates' ? 'active' : '' }}" href="{{ route('exams.index', ['tab' => 'certificates']) }}" role="tab">
+        <a class="nav-link {{ $activeTab === 'certificates' ? 'active' : '' }}" href="{{ route('training.exams.index', ['tab' => 'certificates']) }}" role="tab">
             <i class="bi bi-patch-check-fill me-1"></i>Certificates
         </a>
     </li>
@@ -80,7 +80,7 @@
 @if ($activeTab === 'results')
 
     <div class="tab-pane active" id="tab-results-content" role="tabpanel">
-        @livewire('exam-result-list')
+        @livewire('training.exam-result-list')
     </div>
 
     <div class="print-only">
@@ -121,7 +121,7 @@
 @else
 
     <div class="tab-pane active" id="tab-exams-content" role="tabpanel">
-        @livewire('exam-list')
+        @livewire('training.exam-list')
     </div>
 
     <div class="print-only">
@@ -161,13 +161,6 @@
         </table>
     </div>
 
-@endif
-
-@if ($user->hasPermission('exams.manage'))
-    @include('exams._send_modal', [
-        'sendExamSubjects' => $sendExamSubjects ?? [],
-        'sendExamBatches' => $batches ?? [],
-    ])
 @endif
 
 @endsection

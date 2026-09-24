@@ -41,12 +41,9 @@
 </div>
 
 <div class="admin-card mb-3">
-    @include('classes._tabs', [
+    @include('training.classes._tabs', [
         'activeTab' => 'classes',
-        'classesCount' => $classesCount,
-        'subjectsCount' => $subjectsCount,
-        'batchesCount' => $batchesCount,
-        'archiveCount' => $archiveCount,
+        'classesCount' => $classesCount ?? 0,
     ])
 </div>
 
@@ -57,7 +54,7 @@
         <p class="mb-0 text-muted">{{ $classesCount }} classes · <x-tdate :value="now()" fallback="d M Y" /></p>
     </div>
 
-    <form class="d-flex flex-wrap gap-2 mb-3 align-items-end monetix-print-hidden" method="GET" action="{{ route('classes.index') }}" data-ajax-filter>
+    <form class="d-flex flex-wrap gap-2 mb-3 align-items-end monetix-print-hidden" method="GET" action="{{ route('training.classes.index') }}" data-ajax-filter>
         <div style="flex:1 1 280px;min-width:220px">
             <input type="text" name="q" class="form-control" value="{{ $q }}"
                    placeholder="{{ mawa_e('classes.search_placeholder') }}">
@@ -71,7 +68,7 @@
             </select>
         </div>
         <button type="submit" class="btn btn-primary"><i class="bi bi-search me-1"></i>{{ mawa_e('actions.search') }}</button>
-        <a class="btn btn-outline-secondary" href="{{ route('classes.index') }}" title="{{ mawa_e('actions.reset') }}">
+        <a class="btn btn-outline-secondary" href="{{ route('training.classes.index') }}" title="{{ mawa_e('actions.reset') }}">
             <i class="bi bi-arrow-counterclockwise"></i>
         </a>
         <div class="ms-auto d-flex gap-2 align-items-center">
