@@ -128,6 +128,155 @@ class ModuleResolutionTest extends TestCase
         $this->assertEquals($before, $after, 'Re-resolution after flush must be identical');
     }
 
+    // ─── Phase 6 — Layer 6.5: Super Admin override wiring ───
+
+    public function test_super_admin_override_enables_industry_blocked_module(): void
+    {
+        $inst = $this->makeSavedInstitute('education', 'school', 'BD', $this->packageId('basic'));
+        $this->assertNotContains('medical.pharmacy', $this->enabledKeys($inst), 'precondition');
+
+        $this->insertSuperAdminOverride($inst->id, 'medical.pharmacy', 'industry');
+
+        $enabled = $this->enabledKeys($inst);
+        $this->assertContains('medical.pharmacy', $enabled, 'Layer 6.5 + Layer 7 bypass must apply');
+    }
+
+    public function test_super_admin_override_enables_country_blocked_tax_module(): void
+    {
+        // US fallback allows sales_tax only — vat is a Layer 8 block.
+        $inst = $this->makeSavedInstitute('retail', 'grocery', 'US', $this->packageId('basic'));
+        $this->assertNotContains('vat', $this->enabledKeys($inst), 'precondition');
+
+        $this->insertSuperAdminOverride($inst->id, 'vat', 'country');
+
+        $this->assertContains('vat', $this->enabledKeys($inst), 'Layer 6.5 + Layer 8 bypass must apply');
+    }
+
+    public function test_expired_super_admin_override_not_applied(): void
+    {
+        $inst = $this->makeSavedInstitute('education', 'school', 'BD', $this->packageId('basic'));
+        $this->insertSuperAdminOverride($inst->id, 'medical.pharmacy', 'industry', now()->subDay());
+
+        $this->assertNotContains('medical.pharmacy', $this->enabledKeys($inst), 'expired row must be ignored');
+    }
+
+    public function test_super_admin_override_does_not_affect_other_tenant(): void
+    {
+        $a = $this->makeSavedInstitute('education', 'school', 'BD', $this->packageId('basic'));
+        $b = $this->makeSavedInstitute('education', 'school', 'BD', $this->packageId('basic'));
+
+        $this->insertSuperAdminOverride($a->id, 'medical.pharmacy', 'industry');
+
+        $this->assertContains('medical.pharmacy', $this->enabledKeys($a));
+        $this->assertNotContains('medical.pharmacy', $this->enabledKeys($b), 'tenant isolation');
+    }
+
+    public function test_resolve_enabled_with_reasons_matches_with_override(): void
+    {
+        $inst = $this->makeSavedInstitute('education', 'school', 'BD', $this->packageId('basic'));
+        $this->insertSuperAdminOverride($inst->id, 'medical.pharmacy', 'industry');
+
+        $map = array_keys(array_filter($this->service->resolveEnabled($inst)));
+        $withReasons = $this->service->resolveEnabledWithReasons($inst);
+
+        $this->assertContains('medical.pharmacy', $map);
+        $this->assertContains('medical.pharmacy', array_keys(array_filter($withReasons['map'])));
+        $this->assertSame(
+            array_keys(array_filter($this->service->resolveEnabled($inst))),
+            array_keys(array_filter($withReasons['map'])),
+            'resolveEnabledWithReasons must stay in lockstep with resolveEnabled'
+        );
+    }
+
+    public function test_super_admin_override_returns_full_registry_map(): void
+    {
+        $inst = $this->makeSavedInstitute('education', 'school', 'BD', $this->packageId('basic'));
+        $this->insertSuperAdminOverride($inst->id, 'medical.pharmacy', 'industry');
+
+        $result = $this->service->resolveEnabled($inst);
+        $registryCount = DB::table('module_registry')->count();
+
+        $this->assertCount($registryCount, $result, 'every registry key must get a boolean state');
+        $this->assertArrayHasKey('crm', $result);
+        $this->assertTrue($result['crm'], 'package modules unaffected by override');
+    }
+
+    public function test_super_admin_override_beats_tenant_disable_override(): void
+    {
+        $inst = $this->makeSavedInstitute('education', 'school', 'BD', $this->packageId('basic'));
+        $this->assertTrue(in_array('crm', $this->enabledKeys($inst)), 'precondition: crm enabled');
+
+        // Tenant disables crm, Super Admin emergency re-adds it (Layer 6.5
+        // runs AFTER the tenant override layer).
+        DB::table('institute_module_overrides')->insert([
+            'institute_id' => $inst->id,
+            'module_key' => 'crm',
+            'enabled' => false,
+            'reason' => 'phase6 probe',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $this->insertSuperAdminOverride($inst->id, 'crm', 'industry');
+
+        $this->assertContains('crm', $this->enabledKeys($inst), 'super admin wins over tenant disable');
+    }
+
+    public function test_hard_boundaries_still_hold_without_super_admin_override(): void
+    {
+        $edu = $this->makeSavedInstitute('education', 'school', 'BD', $this->packageId('basic'));
+        $us = $this->makeSavedInstitute('retail', 'grocery', 'US', $this->packageId('basic'));
+
+        $eduKeys = $this->enabledKeys($edu);
+        $usKeys = $this->enabledKeys($us);
+
+        $this->assertEmpty(
+            array_values(array_filter($eduKeys, fn ($m) => str_starts_with($m, 'medical'))),
+            'Layer 7 holds when no override exists'
+        );
+        $this->assertNotContains('vat', $usKeys, 'Layer 8 holds when no override exists');
+    }
+
+    public function test_override_for_unknown_module_key_does_not_break_resolution(): void
+    {
+        $inst = $this->makeSavedInstitute('education', 'school', 'BD', $this->packageId('basic'));
+        $this->insertSuperAdminOverride($inst->id, 'ghost.module', 'industry');
+
+        $result = $this->service->resolveEnabled($inst);
+        $registryCount = DB::table('module_registry')->count();
+
+        $this->assertCount($registryCount, $result, 'non-registry override key must be ignored safely');
+        $this->assertFalse($result['ghost.module'] ?? false);
+    }
+
+    public function test_parent_stays_disabled_while_overridden_child_enabled(): void
+    {
+        $inst = $this->makeSavedInstitute('education', 'school', 'BD', $this->packageId('basic'));
+        $this->insertSuperAdminOverride($inst->id, 'medical.pharmacy', 'industry');
+
+        $result = $this->service->resolveEnabled($inst);
+
+        $this->assertTrue($result['medical.pharmacy'], 'overridden child module is ON');
+        $this->assertFalse($result['medical'], 'parent stays OFF — bypass is per-module, not per-tree');
+    }
+
+    private function insertSuperAdminOverride(int $instituteId, string $moduleKey, string $layer, $expiresAt = null): void
+    {
+        DB::table('super_admin_overrides')->insert([
+            'institute_id' => $instituteId,
+            'module_key' => $moduleKey,
+            'override_layer' => $layer,
+            'reason' => 'Phase 6 resolution verification override',
+            'approved_by' => null,
+            'two_factor_verified' => true,
+            'started_at' => now(),
+            'expires_at' => $expiresAt ?? now()->addDays(7),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->service->flushCache($instituteId);
+    }
+
     /**
      * resolveEnabled() returns module_key => bool — extract enabled keys.
      */

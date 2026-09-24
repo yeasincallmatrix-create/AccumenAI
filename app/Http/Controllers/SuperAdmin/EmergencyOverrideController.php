@@ -109,11 +109,12 @@ class EmergencyOverrideController extends Controller
             $moduleKey,
             'emergency_override',
             $admin->id,
-            null,
-            'enabled',
-            $institute->package_id,
-            "[{$layer}] {$validated['reason']}",
-            'platform_admin'
+            previousState: null,
+            newState: 'enabled',
+            packageId: $institute->package_id,
+            notes: "[{$layer}] {$validated['reason']}",
+            actorType: 'platform_admin',
+            riskLevel: 'critical',
         );
 
         // ── Email alert ──────────────────────────────────────────────

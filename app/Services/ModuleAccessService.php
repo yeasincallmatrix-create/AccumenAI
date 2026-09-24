@@ -19,6 +19,7 @@ use App\Support\AccessDecisionContext;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Single entitlement engine for module access.
@@ -314,17 +315,26 @@ class ModuleAccessService
             unset($candidate[$key]);
         }
 
+        // Layer 6.5: Super Admin emergency overrides (time-limited) — added
+        // AFTER every denial so only a live super_admin_overrides row wins.
+        $superAdminOverrides = $this->getSuperAdminOverrides($institute);
+        foreach ($superAdminOverrides as $key) {
+            $candidate[$key] = true;
+        }
+
         // Layers 7–10: industry boundary (HARD), country filter (HARD),
-        // dependency closure, parent gate
+        // dependency closure, parent gate. Super Admin overridden keys bypass
+        // the hard boundaries and the parent gate (emergency only).
         $result = [];
         foreach ($allModules as $key => $module) {
             $finalState = isset($candidate[$key]);
+            $bypassHard = in_array($key, $superAdminOverrides, true);
 
-            if ($finalState && ! $this->isIndustryCompatible($institute, $key)) {
+            if ($finalState && ! $bypassHard && ! $this->isIndustryCompatible($institute, $key)) {
                 $finalState = false;
             }
 
-            if ($finalState && ! $this->isCountryTaxAllowed($key, $institute)) {
+            if ($finalState && ! $bypassHard && ! $this->isCountryTaxAllowed($key, $institute)) {
                 $finalState = false;
             }
 
@@ -333,7 +343,7 @@ class ModuleAccessService
                 $finalState = false;
             }
 
-            if ($finalState && ! empty($module->parent_key)) {
+            if ($finalState && ! $bypassHard && ! empty($module->parent_key)) {
                 $parentEnabled = $result[$module->parent_key] ?? false;
                 if (! $parentEnabled) {
                     $finalState = false;
@@ -344,6 +354,31 @@ class ModuleAccessService
         }
 
         return $result;
+    }
+
+    /**
+     * Layer 6.5 — active Super Admin emergency overrides for a tenant.
+     *
+     * Only non-expired rows from super_admin_overrides are returned; each
+     * key bypasses Layers 7/8 (hard boundaries) and the parent gate.
+     *
+     * @return array<int, string>
+     */
+    protected function getSuperAdminOverrides(Institute $institute): array
+    {
+        if (! Schema::hasTable('super_admin_overrides')) {
+            return [];
+        }
+
+        return DB::table('super_admin_overrides')
+            ->where('institute_id', $institute->id)
+            ->where(function ($q) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            })
+            ->pluck('module_key')
+            ->unique()
+            ->values()
+            ->toArray();
     }
 
     /**
@@ -455,12 +490,19 @@ class ModuleAccessService
             unset($candidate[$key]);
         }
 
+        // Layer 6.5: Super Admin emergency overrides (mirrors resolveEnabled)
+        $superAdminOverrides = $this->getSuperAdminOverrides($institute);
+        foreach ($superAdminOverrides as $key) {
+            $candidate[$key] = true;
+        }
+
         $result = [];
         $reasons = [];
 
         foreach ($allModules as $key => $module) {
             $inCandidate = isset($candidate[$key]);
             $finalState = $inCandidate;
+            $bypassHard = in_array($key, $superAdminOverrides, true);
 
             if (! $inCandidate) {
                 $reasons[$key] = AccessDecisionContext::REASON_PACKAGE_FEATURE_NOT_ENTITLED;
@@ -485,12 +527,12 @@ class ModuleAccessService
                     : AccessDecisionContext::REASON_DENIAL_APPLIED;
             }
 
-            if ($finalState && ! $this->isIndustryCompatible($institute, $key)) {
+            if ($finalState && ! $bypassHard && ! $this->isIndustryCompatible($institute, $key)) {
                 $finalState = false;
                 $reasons[$key] = AccessDecisionContext::REASON_INDUSTRY_VETO;
             }
 
-            if ($finalState && ! $this->isCountryTaxAllowed($key, $institute)) {
+            if ($finalState && ! $bypassHard && ! $this->isCountryTaxAllowed($key, $institute)) {
                 $finalState = false;
                 $reasons[$key] = AccessDecisionContext::REASON_COUNTRY_VETO;
             }
@@ -501,7 +543,7 @@ class ModuleAccessService
                 $reasons[$key] = AccessDecisionContext::REASON_DEPENDENCY_DISABLED;
             }
 
-            if ($finalState && ! empty($module->parent_key)) {
+            if ($finalState && ! $bypassHard && ! empty($module->parent_key)) {
                 $parentEnabled = $result[$module->parent_key] ?? false;
                 if (! $parentEnabled) {
                     $finalState = false;
@@ -729,10 +771,11 @@ class ModuleAccessService
         ?string $featureKey = null,
         ?string $decision = null,
         ?string $requestId = null,
+        ?string $riskLevel = null,
     ): void {
         $resolvedType = $actorType ?? $this->resolveActorType();
 
-        ModuleAccessLog::create([
+        $payload = [
             'institute_id' => $instituteId,
             'module_key' => $moduleKey,
             'action' => $action,
@@ -746,7 +789,15 @@ class ModuleAccessService
             'feature_key' => $featureKey,
             'decision' => $decision,
             'request_id' => $requestId,
-        ]);
+        ];
+
+        // Phase 6 — only write risk_level when explicitly provided AND the
+        // column exists (pre-migration environments stay safe).
+        if ($riskLevel !== null && Schema::hasColumn('module_access_logs', 'risk_level')) {
+            $payload['risk_level'] = $riskLevel;
+        }
+
+        ModuleAccessLog::create($payload);
     }
 
     private function resolveActorType(): ?string

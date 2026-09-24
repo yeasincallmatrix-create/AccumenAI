@@ -15,6 +15,7 @@ class ModuleAccessLog extends Model
         'institute_id',
         'module_key',
         'action',
+        'risk_level',
         'actor_id',
         'actor_type',
         'previous_state',
