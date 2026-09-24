@@ -437,7 +437,104 @@ keeps sessions recoverable:
   DB (`php artisan migrate`) → test DB (`monetix_test` via the temp-script
   pattern) → run tests.
 
+## Industry Matrix System (Phase 1-6 Complete)
+
+Six-phase feature build (2026-09-24 → 25), each phase committed + pushed to
+`dev`: `a13a2bd3` P1 schema → `d8122790` P2 services → `4dec77e2` P3 seeders →
+`76528bcd` P4 resolution verification → `ead2fabd` P5 admin UI → `7483dc0a`
+P6 override wiring + test suite.
+
+- **P1 schema**: `industry_subcategories`, `subcategory_default_modules`,
+  `country_tax_modules`, `module_terminology`, `module_rules`,
+  `super_admin_overrides` + institutes columns (`subcategory_key`,
+  `country_code`, industry/subcategory linkage). Guarded migrations, applied
+  to BOTH `accumen_ai` and `monetix_test` (tests never run migrations).
+- **P2 services**: `IndustrySubcategoryService`, `TerminologyService`,
+  `RuleEngineService`, `SuperAdminOverrideService`; `ModuleAccessService`
+  gained Layer 3 (subcategory mandatory/default) and Layer 8 (country tax
+  hard filter). Helpers `term()` / `rule()` + Blade directives `@term` / `@rule`.
+- **P3 seeders (idempotent)**: 23 sub-categories, 118 subcategory→module
+  mappings (37/49/32 mandatory/default/optional), BD `country_tax_modules`
+  (vat 15.00, tds 0.00), 16 terminology rows (13 global + 3 BD Bengali),
+  5 rules (`tax.vat.rate` BD, `medical.pharmacy.expiry_tracking` BD,
+  `education.fees.fiscal_year` BD, `sales.invoice.auto_post` global,
+  `common.numbering.format` global). Package ids: accumen_ai 1-4 /
+  monetix_test 900-903 — always resolve packages by slug in tests.
+- **P4 resolution**: `ModuleResolutionTest` proves the 10-layer resolver on
+  real seeded data. Hard boundaries: Layer 7 (medical.* only healthcare,
+  education.* only education, training_center.* only training_center —
+  root-key map in `isIndustryCompatible`) and Layer 8
+  (`isCountryTaxAllowed`, public: tax keys vat/gst/sales_tax/pst/tds only;
+  DB `country_tax_modules` first, config fallback BD/IN/US/GB — so a US
+  tenant blocks vat/tds out of the box). Boundaries veto admin/tenant
+  override rows and entitlements.
+- **P5 admin UI**: `IndustrySubcategoryController` (index/create/edit, 7
+  routes), `ModuleAdminController` hard-boundary + medium-risk reason gate
+  (PUT `admin/institutes/{id}/modules`), `InstituteModuleOverrideController`
+  (access log + overview), `EmergencyOverrideController` (2FA + ≥50-char
+  reason + typed `I UNDERSTAND THE RISK` confirmation, expiry 1/7/30/365,
+  `Mail::raw` alert, risk_level=critical audit row),
+  `Settings\TerminologyController` (nav-linked). Tests:
+  `AdminUIOverridesTest` (10).
+- **P6 wiring**: `getSuperAdminOverrides()` + **Layer 6.5** — non-expired
+  `super_admin_overrides` rows are re-added to the candidate set AFTER the
+  tenant-override layer in BOTH `resolveEnabled()` and
+  `resolveEnabledWithReasons()`; `$bypassHard` skips Layers 7/8 AND the
+  parent gate (Layer 10) for overridden keys only (dependencies gate stays;
+  per-module bypass — parent `medical` stays OFF while overridden child
+  `medical.pharmacy` turns ON). `module_access_logs.risk_level` enum
+  (low/medium/high/critical, default low) + `logAccess(..., ?string
+  $riskLevel = null)` (trailing param, `Schema::hasColumn`-guarded).
+  Migration `2026_09_25_010000_add_risk_level_to_module_access_logs` ran on
+  both DBs (run scoped on production: `php artisan migrate
+  --path=database/migrations/2026_09_25_010000_add_risk_level_to_module_access_logs.php`).
+
+### How to run / verify
+
+- Tests: `$env:DB_DATABASE='monetix_test'; php artisan test
+  tests/Feature/<File>` (sequential; parallel broken).
+- Phase tests (71 total): `IndustrySubcategoryTest` 10,
+  `TerminologyServiceTest` 8, `RuleEngineServiceTest` 8,
+  `ModuleResolutionTest` 15, `HardBoundaryTest` 12,
+  `SuperAdminOverrideTest` 8, `AdminUIOverridesTest` 10 — all green.
+- Regressions: `--filter='Sales|Purchase'` → 337 passed / 0 failed (336
+  baseline + `HardBoundaryTest::admin_cannot_grant_sales_tax_to_bd_tenant`
+  matching the name filter). `--filter='Module|Industry|Terminology|Rule'`
+  → 92 failed (pre-existing, out of scope) / 493 passed (+38 phase tests,
+  0 removed). Evidence: `storage/audit/phase6_{sales_purchase,module}.txt`.
+- Smoke: `powershell -ExecutionPolicy Bypass -File
+  storage/audit/phase6_smoke_test.ps1` → 7 categories, 44/44 PASS, exit
+  code = failures; raw output `storage/audit/phase6_smoke.txt`.
+
+### Gotchas (phase-specific)
+
+- Tinker/PowerShell: temp PHP files MUST start with `<?php` or tinker
+  echoes the source; quote-heavy SQL goes through temp .sql files piped to
+  `C:\xampp\mysql\bin\mysql.exe -u root <db>`; PS 5.1
+  `Invoke-WebRequest -MaximumRedirection 0` throws InvalidOperationException
+  on 302 — use `curl.exe -w '%{http_code}' --max-redirs 0`.
+- `institutes.subcategory_key` / `country_code` are NOT fillable — assign
+  directly; B17 auto-PREMIUM creating hook → wrap creates in
+  `Institute::withoutEvents()`.
+- `SuperAdminOverrideService::createOverride()` records `auth()->id()` as
+  `approved_by` (FK → platform_admins) — in tests call
+  `$this->actingAs($admin, 'platform_admin')` BEFORE direct service calls.
+- `settings.edit` route name is dead (duplicate `GET settings`; last wins →
+  only `settings.index` survives) — link to `route('settings.index')`.
+- `isEnabled()` reads a 1h cache — `flushCache()` after any raw DB update.
+- Emergency route: `POST super-admin.institutes.emergency-override.store`;
+  `two_factor_secret` must be a 16-char Fortify secret (32-char default
+  overflows varchar(255) when encrypted).
+- **Production deploy of Phase 6 is DEFERRED** (user decision: push dev
+  only). Production needs: migration above, then the P3 seeders, then
+  `php artisan optimize`.
+
 ## Change log (recent)
+
+- **Industry Matrix System (Phases 1-6)**: six-phase feature build complete
+  (schema → services → seeders → resolution verification → admin UI →
+  override wiring + tests). See the "Industry Matrix System (Phase 1-6
+  Complete)" section above for commits, layers, tests, and gotchas.
 
 - **Academic Promotions (Step 11)**: `PromotionPolicy` + closed-enum
   `PromotionPolicyRule` (overall_pass / gpa_threshold / max_failed_subjects /
