@@ -790,7 +790,7 @@
                 {{-- Professional / Training Center — operational workflow (all 5 training types via isProfessional) --}}
                 @if ($isProfessional && ($workspaceAllowedProfessional ?? false))
                     @php
-                        $trainingOpen = request()->routeIs('courses.manage.*','courses.manage.subjects.*','curricula.*','batches.*','exams.*','certificates.*','finance.education.*','reports.hub*','training.*') ? true : false;
+                        $trainingOpen = request()->routeIs('courses.manage.*','courses.manage.subjects.*','teachers.*','reports.hub*','training.*') ? true : false;
                     @endphp
                     <div class="nav-group">
                         <button class="nav-link w-100 d-flex align-items-center justify-content-between {{ $trainingOpen ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#trainingNavGroup" aria-expanded="{{ $trainingOpen ? 'true' : 'false' }}" aria-controls="trainingNavGroup">
@@ -805,12 +805,9 @@
                             <a class="nav-link sub {{ request()->routeIs('courses.manage.subjects.*') ? 'active' : '' }}" href="{{ route('courses.manage.subjects.index') }}">
                                 <i class="bi bi-collection-fill"></i><span class="sidebar-label">{{ mawa_e('subjects.tab_subjects') }}</span>
                             </a>
-                            <a class="nav-link sub {{ request()->routeIs('curricula.*') ? 'active' : '' }}" href="{{ route('curricula.index') }}">
-                                <i class="bi bi-journals"></i><span class="sidebar-label">Curriculum</span>
-                            </a>
                             @endif
                             @if(($institute?->getTrainingSetting('enable_batches') ?? true))
-                            <a class="nav-link sub {{ request()->routeIs('batches.*') && !in_array(request()->query('view'), ['enrollment','attendance'], true) ? 'active' : '' }}" href="{{ route('batches.index') }}" title="Batch management — create and manage batches">
+                            <a class="nav-link sub {{ request()->routeIs('training.batches.*') && !in_array(request()->query('view'), ['enrollment','attendance'], true) ? 'active' : '' }}" href="{{ route('training.batches.index') }}" title="Batch management — create and manage batches">
                                 <i class="bi bi-collection"></i><span class="sidebar-label">Batches</span>
                             </a>
                             @endif
@@ -821,7 +818,7 @@
                             @endif
                             {{-- Trainees (alias for Students) --}}
                             @if(($institute?->getTrainingSetting('enable_enrollment') ?? true))
-                            <a class="nav-link sub {{ request()->routeIs('students.*') ? 'active' : '' }}" href="{{ route('students.index') }}">
+                            <a class="nav-link sub {{ request()->routeIs('training.students.*') ? 'active' : '' }}" href="{{ route('training.students.index') }}">
                                 <i class="bi bi-people"></i><span class="sidebar-label">Trainees</span>
                             </a>
                             @endif
