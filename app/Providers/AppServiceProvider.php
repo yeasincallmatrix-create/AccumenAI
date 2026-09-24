@@ -126,6 +126,16 @@ class AppServiceProvider extends ServiceProvider
             return '<?php endif; ?>';
         });
 
+        // Blade directive: @term('medical.opd') → term()
+        \Illuminate\Support\Facades\Blade::directive('term', function (string $expression) {
+            return "<?php echo term({$expression}); ?>";
+        });
+
+        // Blade directive: @rule('tax.vat', 'rate') → rule()
+        \Illuminate\Support\Facades\Blade::directive('rule', function (string $expression) {
+            return "<?php echo rule({$expression}); ?>";
+        });
+
         // Blade directive: @dgdaEnabled ... @enddgdaEnabled
         \Illuminate\Support\Facades\Blade::directive('dgdaEnabled', function () {
             return '<?php if(\App\Support\DgdaContext::isEnabled()): ?>';

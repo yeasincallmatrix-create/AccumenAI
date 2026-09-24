@@ -48,6 +48,9 @@ final class AccessDecisionContext
     /** Module not enabled for institute (resolved disabled). */
     public const REASON_MODULE_NOT_ENABLED = 'MODULE_NOT_ENABLED';
 
+    /** Module blocked by hard country boundary (country tax filter). */
+    public const REASON_COUNTRY_VETO = 'COUNTRY_VETO';
+
     // --- Allow reasons (positive decisions) ---
 
     /** Package includes the feature. */
@@ -84,6 +87,7 @@ final class AccessDecisionContext
             self::REASON_GRANT_APPLIED,
             self::REASON_OVERRIDE_ENABLED,
             self::REASON_TIER_GRANT_APPLIED,
+            self::REASON_COUNTRY_VETO,
         ];
     }
 

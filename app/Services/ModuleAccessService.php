@@ -35,6 +35,13 @@ class ModuleAccessService
 
     protected string $featureCachePrefix = 'feature_access:';
 
+    /**
+     * Layer 8 memo — allowed tax modules per country code (per instance).
+     *
+     * @var array<string, array<int, string>>
+     */
+    protected array $countryTaxMemo = [];
+
     public function isEnabled(Institute $institute, string $moduleKey): bool
     {
         $enabled = $this->getEnabledModules($institute);
@@ -263,6 +270,11 @@ class ModuleAccessService
             $candidate[$key] = true;
         }
 
+        // Layer 3: Sub-category defaults (mandatory + default)
+        foreach ($this->resolveSubCategoryModules($institute) as $key) {
+            $candidate[$key] = true;
+        }
+
         // Step 3: Package modules
         foreach ($this->resolvePackageModules($institute) as $key) {
             $candidate[$key] = true;
@@ -302,12 +314,17 @@ class ModuleAccessService
             unset($candidate[$key]);
         }
 
-        // Steps 7–8: industry compatibility, dependency closure, parent gate
+        // Layers 7–10: industry boundary (HARD), country filter (HARD),
+        // dependency closure, parent gate
         $result = [];
         foreach ($allModules as $key => $module) {
             $finalState = isset($candidate[$key]);
 
             if ($finalState && ! $this->isIndustryCompatible($institute, $key)) {
+                $finalState = false;
+            }
+
+            if ($finalState && ! $this->isCountryTaxAllowed($key, $institute)) {
                 $finalState = false;
             }
 
@@ -400,6 +417,9 @@ class ModuleAccessService
         foreach ($this->resolveIndustryDefaults($industry) as $key) {
             $candidate[$key] = true;
         }
+        foreach ($this->resolveSubCategoryModules($institute) as $key) {
+            $candidate[$key] = true;
+        }
         foreach ($this->resolvePackageModules($institute) as $key) {
             $candidate[$key] = true;
         }
@@ -468,6 +488,11 @@ class ModuleAccessService
             if ($finalState && ! $this->isIndustryCompatible($institute, $key)) {
                 $finalState = false;
                 $reasons[$key] = AccessDecisionContext::REASON_INDUSTRY_VETO;
+            }
+
+            if ($finalState && ! $this->isCountryTaxAllowed($key, $institute)) {
+                $finalState = false;
+                $reasons[$key] = AccessDecisionContext::REASON_COUNTRY_VETO;
             }
 
             $missingDeps = $this->checkDependencies($key, array_keys(array_filter($result)));
@@ -594,6 +619,99 @@ class ModuleAccessService
 
         // For modules that are not industry-specific, they are compatible by default
         return true;
+    }
+
+    /**
+     * Layer 3 — sub-category default modules (mandatory + default).
+     *
+     * Reads industry_subcategories + subcategory_default_modules (Phase 1 tables).
+     * Returns [] when the institute has no subcategory_key or no matching row.
+     *
+     * @return array<int, string>
+     */
+    protected function resolveSubCategoryModules(Institute $institute): array
+    {
+        if (! $institute->subcategory_key) {
+            return [];
+        }
+
+        $subModules = app(IndustrySubcategoryService::class)->getModules(
+            $institute->industry ?? '',
+            $institute->subcategory_key
+        );
+
+        return array_merge($subModules['mandatory'] ?? [], $subModules['default'] ?? []);
+    }
+
+    /**
+     * Layer 8 — HARD country tax boundary (per module key).
+     *
+     * Only tax modules are filtered (vat, gst, sales_tax, pst, tds); every other
+     * module passes. Source of truth: country_tax_modules table, with a built-in
+     * fallback map while that table is unseeded (Phase 3).
+     *
+     * CANNOT be bypassed by admin/tenant overrides or entitlements — applied
+     * after those layers in both resolve pipelines.
+     */
+    protected function isCountryTaxAllowed(string $moduleKey, Institute $institute): bool
+    {
+        static $allTaxModules = ['vat', 'gst', 'sales_tax', 'pst', 'tds'];
+
+        if (! in_array($moduleKey, $allTaxModules, true)) {
+            return true;
+        }
+
+        $countryCode = $institute->country_code ?: 'BD';
+
+        $allowed = $this->allowedTaxModulesForCountry($countryCode);
+
+        return in_array($moduleKey, $allowed, true);
+    }
+
+    /**
+     * Layer 8 — allowed tax modules for a country (DB first, config fallback).
+     *
+     * Memoized per service instance (not static) so test transactions and
+     * long-lived processes never observe stale table data.
+     *
+     * @return array<int, string>
+     */
+    protected function allowedTaxModulesForCountry(string $countryCode): array
+    {
+        if (array_key_exists($countryCode, $this->countryTaxMemo)) {
+            return $this->countryTaxMemo[$countryCode];
+        }
+
+        $allowed = DB::table('country_tax_modules')
+            ->where('country_code', $countryCode)
+            ->where('is_active', true)
+            ->pluck('tax_module')
+            ->all();
+
+        if (empty($allowed)) {
+            $allowed = [
+                'BD' => ['vat', 'tds'],
+                'IN' => ['gst', 'tds'],
+                'US' => ['sales_tax'],
+                'GB' => ['vat', 'tds'],
+            ][$countryCode] ?? ['vat', 'tds'];
+        }
+
+        return $this->countryTaxMemo[$countryCode] = $allowed;
+    }
+
+    /**
+     * Layer 8 — HARD country filter over a module list (roadmap signature).
+     *
+     * @param  array<int, string>  $modules
+     * @return array<int, string>
+     */
+    protected function applyCountryFilterHard(array $modules, Institute $institute): array
+    {
+        return array_values(array_filter(
+            $modules,
+            fn ($module) => $this->isCountryTaxAllowed($module, $institute)
+        ));
     }
 
     public function logAccess(
