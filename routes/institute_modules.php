@@ -1236,8 +1236,8 @@ Route::middleware($tenant)->group(function () {
         });
     });
 
-    // ─── TRAINING ENROLLMENTS & SETTINGS (domain:professional) ───────────────
-    Route::prefix('training')->name('training.')->middleware(['domain:professional', 'module_access:training_center'])->group(function () {
+    // ─── TRAINING ENROLLMENTS & SETTINGS ───────────────────────────────────
+    Route::prefix('training')->name('training.')->middleware('module_access:training_center')->group(function () {
         Route::resource('enrollments', \App\Http\Controllers\Training\EnrollmentController::class)->only(['index','create','store','update','destroy'])->names('enrollments');
         Route::get('settings', [\App\Http\Controllers\Training\SettingController::class, 'index'])->name('settings.index');
         Route::put('settings', [\App\Http\Controllers\Training\SettingController::class, 'update'])->name('settings.update');
@@ -1296,10 +1296,10 @@ Route::middleware($tenant)->group(function () {
 
     Route::get('courses/{course}', [$course, 'show'])->name('courses.show');
 
-    // ─── CLASSES (institute) — academic domain only (domain:academic)
+    // ─── CLASSES (institute) — education module only ───────────────────────
     $cls = \App\Http\Controllers\ClassController::class;
 
-    Route::prefix('classes')->name('classes.')->middleware(['domain:academic', 'module_access:education.classes'])->group(function () use ($cls) {
+    Route::prefix('classes')->name('classes.')->middleware('module_access:education.classes')->group(function () use ($cls) {
         Route::get('/', [$cls, 'index'])->middleware('permission:courses.view')->name('index');
         Route::get('subjects', [$cls, 'subjects'])->middleware('permission:courses.view')->name('subjects');
         Route::get('batches', [$cls, 'batches'])->middleware('permission:batches.view')->name('batches');
@@ -1309,7 +1309,7 @@ Route::middleware($tenant)->group(function () {
     // ─── BATCHES (extra routes) ────────────────────────────────────────────
     $batch = \App\Http\Controllers\BatchController::class;
 
-    Route::prefix('batches')->name('batches.')->middleware('domain:professional')->group(function () use ($batch) {
+    Route::prefix('batches')->name('batches.')->middleware(['module_access:education,training_center', 'permission:batches.manage'])->group(function () use ($batch) {
         Route::post('{batch}/status', [$batch, 'changeStatus'])->name('status');
         Route::post('{batch}/transfer', [$batch, 'transferStudent'])->name('transfer');
         Route::post('{batch}/remove-student', [$batch, 'removeStudent'])->name('remove-student');
@@ -1408,20 +1408,22 @@ Route::middleware($tenant)->group(function () {
         Route::post('{teacher}/remove', [$teacher, 'remove'])->name('remove');
     });
 
-    // ─── STUDENTS (extra routes) — academic-only transcripts/history (domain:academic)
-    Route::get('students/{student}/academic-history', [\App\Http\Controllers\StudentController::class, 'academicHistory'])->middleware('domain:academic')->name('students.academic-history');
-    Route::get('students/{student}/academic-attendance', [\App\Http\Controllers\StudentController::class, 'academicAttendance'])->middleware('domain:academic')->name('students.academic-attendance');
-    Route::get('students/{student}/academic-transcript', [\App\Http\Controllers\StudentController::class, 'academicTranscript'])->middleware('domain:academic')->name('students.academic-transcript');
-    Route::post('students/{student}/academic-transfer', [\App\Http\Controllers\StudentController::class, 'transfer'])->middleware('domain:academic')->name('students.academic-transfer');
-    Route::post('students/{student}/academic-withdraw', [\App\Http\Controllers\StudentController::class, 'withdraw'])->middleware('domain:academic')->name('students.academic-withdraw');
-    Route::post('students/{student}/certificate-request', [\App\Http\Controllers\CertificateController::class, 'request'])->middleware('domain:academic')->name('students.certificate-request');
-    Route::post('certificates/{certificate}/action', [\App\Http\Controllers\CertificateController::class, 'action'])->middleware('domain:academic')->whereNumber('certificate')->name('certificates.action');
+    // ─── STUDENTS (extra routes) — academic transcripts/history ───────────
+    Route::middleware('module_access:education')->group(function () {
+        Route::get('students/{student}/academic-history', [\App\Http\Controllers\StudentController::class, 'academicHistory'])->middleware('permission:students.view')->name('students.academic-history');
+        Route::get('students/{student}/academic-attendance', [\App\Http\Controllers\StudentController::class, 'academicAttendance'])->middleware('permission:students.view')->name('students.academic-attendance');
+        Route::get('students/{student}/academic-transcript', [\App\Http\Controllers\StudentController::class, 'academicTranscript'])->middleware('permission:students.view')->name('students.academic-transcript');
+        Route::post('students/{student}/academic-transfer', [\App\Http\Controllers\StudentController::class, 'transfer'])->middleware('permission:students.manage')->name('students.academic-transfer');
+        Route::post('students/{student}/academic-withdraw', [\App\Http\Controllers\StudentController::class, 'withdraw'])->middleware('permission:students.manage')->name('students.academic-withdraw');
+        Route::post('students/{student}/certificate-request', [\App\Http\Controllers\CertificateController::class, 'request'])->middleware('permission:students.manage')->name('students.certificate-request');
+        Route::post('certificates/{certificate}/action', [\App\Http\Controllers\CertificateController::class, 'action'])->middleware('permission:certificates.manage')->whereNumber('certificate')->name('certificates.action');
+    });
 
     // ─── ACADEMIC ATTENDANCE ───────────────────────────────────────────────
     $acadAtt = \App\Http\Controllers\AcademicAttendanceController::class;
     $acadAttRep = \App\Http\Controllers\AcademicAttendanceReportController::class;
 
-    Route::prefix('academic-attendance')->name('academic-attendance.')->middleware(['domain:academic', 'module_access:education.attendance'])->group(function () use ($acadAtt, $acadAttRep) {
+    Route::prefix('academic-attendance')->name('academic-attendance.')->middleware('module_access:education.attendance')->group(function () use ($acadAtt, $acadAttRep) {
         Route::post('mark', [$acadAtt, 'store'])->name('mark.store');
         Route::get('reports/class', [$acadAttRep, 'classReport'])->name('reports.class');
         Route::get('reports/daily', [$acadAttRep, 'daily'])->name('reports.daily');
@@ -1434,7 +1436,7 @@ Route::middleware($tenant)->group(function () {
     // ─── ACADEMIC ANALYTICS ────────────────────────────────────────────────
     $acadAn = \App\Http\Controllers\AcademicAnalyticsController::class;
 
-    Route::prefix('academic/analytics')->name('academic.analytics.')->middleware(['domain:academic', 'module_access:education.analytics'])->group(function () use ($acadAn) {
+    Route::prefix('academic/analytics')->name('academic.analytics.')->middleware('module_access:education.analytics')->group(function () use ($acadAn) {
         Route::get('students', [$acadAn, 'students'])->name('students');
         Route::get('students/export', [$acadAn, 'studentsExport'])->name('students.export');
         Route::get('courses', [$acadAn, 'courses'])->name('courses');
@@ -1467,8 +1469,8 @@ Route::middleware($tenant)->group(function () {
     $setAcadPlc = \App\Http\Controllers\StudentAcademicPlacementController::class;
     $setAcadMarks = \App\Http\Controllers\AcademicMarksController::class;
 
-    // Settings - Academic Structure (education.manage required; promotions require promotion.manage) — academic domain enforced
-    Route::prefix('settings/academic')->name('settings.academic.')->middleware(['permission:education.manage', 'domain:academic', 'module_access:education.classes'])->group(function () use ($setAcadStruct, $setAcadGrading, $setAcadAgg, $setAcadAssess, $setAcadFinal, $setAcadPromo, $setAcadPlc, $setAcadMarks) {
+    // Settings - Academic Structure (education.manage required; promotions require promotion.manage)
+    Route::prefix('settings/academic')->name('settings.academic.')->middleware(['permission:education.manage', 'module_access:education.classes'])->group(function () use ($setAcadStruct, $setAcadGrading, $setAcadAgg, $setAcadAssess, $setAcadFinal, $setAcadPromo, $setAcadPlc, $setAcadMarks) {
         Route::get('/', [$setAcadStruct, 'index'])->name('index');
         Route::match(['put', 'post'], 'label', [$setAcadStruct, 'updateLabel'])->name('label');
 

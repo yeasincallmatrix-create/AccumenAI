@@ -191,7 +191,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->prefix('sy
     Route::post('{queue}/reject', [OfflineSyncController::class, 'reject'])->middleware('permission:finance.manage')->name('reject');
 });
 
-Route::middleware(['auth:institute_user,web', 'tenant', 'verified', 'domain:academic', 'module_access:education.attendance'])->group(function () {
+Route::middleware(['auth:institute_user,web', 'tenant', 'verified', 'module_access:education.attendance'])->group(function () {
     Route::get('academic/dashboard', [\App\Http\Controllers\AcademicDashboardController::class, '__invoke'])->name('academic.dashboard');
     Route::get('academic/analytics', [\App\Http\Controllers\AcademicAnalyticsController::class, 'index'])->name('academic.analytics.index');
     Route::get('academic-attendance/mark', [\App\Http\Controllers\AcademicAttendanceController::class, 'index'])->name('academic-attendance.mark.index');
@@ -223,7 +223,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->group(func
     // Legacy GET /courses (courses.index) retired — canonical is /courses/manage (courses.manage.index)
     Route::get('courses/archive', [CourseController::class, 'archive'])->middleware('permission:courses.view')->name('courses.archive');
     Route::get('courses/subjects', [CourseController::class, 'subjects'])->middleware('permission:courses.view')->name('courses.subjects');
-    Route::get('certificates', [CertificateController::class, 'index'])->middleware(['permission:certificates.view','domain:professional'])->name('certificates.index');
+    Route::get('certificates', [CertificateController::class, 'index'])->middleware('permission:certificates.view')->name('certificates.index');
     Route::get('verify', [InstituteSettingController::class, 'verify'])->name('verify');
     Route::get('settings', [InstituteSettingController::class, 'index'])->middleware('permission:settings.manage')->name('settings.edit');
     Route::put('settings', [InstituteSettingController::class, 'update'])->middleware('permission:settings.manage')->name('settings.update');

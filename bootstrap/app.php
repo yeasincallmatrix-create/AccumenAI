@@ -6,7 +6,6 @@ use App\Http\Middleware\CheckModuleAccess;
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\DenyTeacherFromFinance;
 use App\Http\Middleware\EnsureAiEnabled;
-use App\Http\Middleware\EnsureDomain;
 use App\Http\Middleware\EnsureInstituteContext;
 use App\Http\Middleware\FinanceWriteGate;
 use App\Http\Middleware\ForceJsonResponse;
@@ -57,7 +56,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'ensure.institute.context' => EnsureInstituteContext::class,
             'force.json' => ForceJsonResponse::class,
             'platform.maintenance' => PlatformMaintenance::class,
-            'domain' => EnsureDomain::class,
             // Phase 0 — HMS Foundation (no app/Http/Kernel.php on Laravel 12;
             // aliases registered here instead).
             'medical' => MedicalDomain::class,
