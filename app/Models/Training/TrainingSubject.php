@@ -7,7 +7,6 @@ use App\Models\Institute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TrainingSubject extends Model
@@ -33,6 +32,6 @@ class TrainingSubject extends Model
 
     public function courses(): BelongsToMany
     {
-        return $this->belongsToMany(TrainingCourse::class, 'training_course_subjects', 'subject_id', 'course_id')->withPivot('assigned_by')->withTimestamps();
+        return $this->belongsToMany(TrainingCourse::class, 'training_course_subjects', 'subject_id', 'course_id')->withPivot('assigned_by')->withTimestamps('created_at', false);
     }
 }

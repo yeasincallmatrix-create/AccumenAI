@@ -90,9 +90,6 @@ class TrainingSubjectController extends Controller
         return view('training.courses.subject-form', [
             'subject' => null,
             'categories' => $this->categories($instituteId),
-            'subjectTypes' => ['professional' => 'Professional'],
-            'derivedSubjectType' => 'professional',
-            'domain' => 'professional',
             'institute' => \App\Models\Institute::find($instituteId),
         ]);
     }
@@ -144,9 +141,6 @@ class TrainingSubjectController extends Controller
         return view('training.courses.subject-form', [
             'subject' => $subject,
             'categories' => $this->categories($instituteId),
-            'subjectTypes' => ['professional' => 'Professional'],
-            'derivedSubjectType' => 'professional',
-            'domain' => 'professional',
             'institute' => \App\Models\Institute::find($instituteId),
         ]);
     }

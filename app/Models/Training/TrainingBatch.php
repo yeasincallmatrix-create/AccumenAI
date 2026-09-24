@@ -54,6 +54,18 @@ class TrainingBatch extends Model
         return $this->hasMany(TrainingCertificate::class, 'batch_id');
     }
 
+    public function schedules(): HasMany
+    {
+        // Live plan: versions that have not ended yet (history rows are end-dated).
+        $today = now()->toDateString();
+
+        return $this->hasMany(TrainingSchedule::class, 'batch_id')
+            ->where(fn ($q) => $q->whereNull('effective_from')->orWhere('effective_from', '<=', $today))
+            ->where(fn ($q) => $q->whereNull('effective_to')->orWhere('effective_to', '>=', $today))
+            ->orderBy('day_of_week')
+            ->orderBy('start_time');
+    }
+
     /**
      * Loose coupling to shared Course (education-owned).
      * Column: training_batches.course_id (nullable, no FK enforced).

@@ -5,7 +5,6 @@ namespace App\Livewire\Training;
 use App\Livewire\DataTable;
 use App\Models\Training\TrainingBatch;
 use App\Models\Training\TrainingExam;
-use App\Models\Training\TrainingExamResult;
 use Illuminate\Database\Eloquent\Builder;
 
 class ExamList extends DataTable
@@ -113,7 +112,6 @@ class ExamList extends DataTable
 
         $exams = $this->getRows();
 
-        // Compute pass/fail counts from TrainingExamResult (no exam_subjects pivot in training)
         $this->attachStudentCentricCounts($exams);
 
         return view(self::VIEW, [
@@ -137,21 +135,38 @@ class ExamList extends DataTable
     }
 
     /**
-     * Attach pass_count / fail_count (result rows) to each exam in the paginator.
-     * Training has no exam_subjects pivot — counts come from TrainingExamResult.
+     * Attach student-centric pass_count / fail_count to each exam.
+     * One student can have multiple result rows (overall + per subject).
      */
     private function attachStudentCentricCounts($exams): void
     {
+        $examIds = $exams->pluck('id')->all();
+        if (empty($examIds)) {
+            return;
+        }
+
+        $examsMap = TrainingExam::query()
+            ->with([
+                'results' => fn ($q) => $q->select('id', 'exam_id', 'student_id', 'subject_id', 'marks_obtained', 'result_status'),
+                'batch.enrollments' => fn ($q) => $q->select('id', 'batch_id', 'student_id'),
+            ])
+            ->whereIn('id', $examIds)
+            ->get()
+            ->keyBy('id');
+
         foreach ($exams as $exam) {
-            $exam->pass_count = TrainingExamResult::where('exam_id', $exam->id)
-                ->where('result_status', 'pass')
-                ->count();
-            $exam->fail_count = TrainingExamResult::where('exam_id', $exam->id)
-                ->where('result_status', 'fail')
-                ->count();
-            $exam->students_count = TrainingExamResult::where('exam_id', $exam->id)
-                ->distinct()
-                ->count('student_id');
+            $fresh = $examsMap->get($exam->id);
+            if (! $fresh) {
+                $exam->pass_count = 0;
+                $exam->fail_count = 0;
+                $exam->students_count = 0;
+                continue;
+            }
+
+            $summary = $fresh->studentResultSummary();
+            $exam->pass_count = $summary['pass'];
+            $exam->fail_count = $summary['fail'];
+            $exam->students_count = $summary['students'];
         }
     }
 }

@@ -49,9 +49,13 @@
         <p class="page-header-desc mb-0">{{ mawa_e('exams.subtitle') }}</p>
     </div>
     <div class="d-flex gap-2">
-        @if ($user->hasPermission('exams.manage'))
-            <button type="button" class="btn btn-primary" data-create-exam>
+        @if ($user->hasPermission('training.exams.manage'))
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createExamModal">
                 <i class="bi bi-plus-circle me-1"></i>{{ mawa_e('exams.create_exam') }}
+            </button>
+            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#gpaModelModal"
+                    title="Configure GPA model" aria-label="Configure GPA model">
+                <i class="bi bi-gear"></i>
             </button>
         @endif
     </div>
@@ -161,6 +165,11 @@
         </table>
     </div>
 
+@endif
+
+@if ($user->hasPermission('training.exams.manage'))
+    @include('training.exams._create_modal')
+    @include('training.exams._gpa_modal')
 @endif
 
 @endsection

@@ -17,7 +17,7 @@
         'completed'   => 'bg-primary',
         'dropped'     => 'bg-secondary',
         'transferred' => 'bg-info',
-    };
+    ];
     $statusNames = [
         'upcoming'  => 'Upcoming',
         'running'   => 'Running',
@@ -50,13 +50,16 @@
             <span class="badge {{ $statusBadge[$batch->status] ?? 'bg-secondary' }} ms-1">{{ $statusNames[$batch->status] ?? $batch->status }}</span>
         </h4>
     </div>
-    @if ($user->hasPermission('batches.manage') ?? true)
-        <div class="d-flex flex-wrap gap-2">
+    <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#weeklyScheduleModal">
+            <i class="bi bi-calendar3 me-1"></i>Weekly Schedule
+        </button>
+        @if ($user->hasPermission('training_batches.manage'))
             <a href="{{ route('training.batches.edit', $batch->id) }}" class="btn btn-outline-primary">
                 <i class="bi bi-pencil me-1"></i>Edit
             </a>
-        </div>
-    @endif
+        @endif
+    </div>
 </div>
 
 <div class="row g-3 mt-1">
@@ -66,6 +69,19 @@
             <dl class="row mb-0 profile-dl">
                 <dt class="col-5">Code</dt>
                 <dd class="col-7 fw-semibold text-primary">{{ $batch->batch_code ?? '—' }}</dd>
+                <dt class="col-5">Course</dt>
+                <dd class="col-7">
+                    @if ($batch->course)
+                        <a href="{{ route('training.courses.show', $batch->course_id) }}" class="text-decoration-none fw-semibold">
+                            {{ $batch->course->name }}
+                        </a>
+                        @if ($batch->course->course_code)
+                            <span class="text-muted small d-block">{{ $batch->course->course_code }}</span>
+                        @endif
+                    @else
+                        <span class="text-muted">—</span>
+                    @endif
+                </dd>
                 <dt class="col-5">Status</dt>
                 <dd class="col-7">
                     <span class="badge {{ $statusBadge[$batch->status] ?? 'bg-secondary' }}">{{ $statusNames[$batch->status] ?? $batch->status }}</span>
@@ -188,6 +204,11 @@
                         <i class="bi bi-clipboard-check me-1"></i>Exams
                         <span class="badge bg-secondary ms-1">{{ ($exams ?? collect())->count() }}</span>
                     </h6>
+                    @if ($user->hasPermission('training.exams.manage'))
+                        <a href="{{ route('training.exams.create', ['batch_id' => $batch->id]) }}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-circle me-1"></i>Add Exam
+                        </a>
+                    @endif
                 </div>
                 <div class="table-responsive">
                     <table class="table align-middle mb-0">
@@ -231,5 +252,7 @@
         </div>
     </div>
 </div>
+
+@include('training.batches._schedule_modal')
 
 @endsection

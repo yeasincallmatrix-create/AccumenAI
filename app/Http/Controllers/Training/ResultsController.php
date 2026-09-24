@@ -22,11 +22,15 @@ class ResultsController extends Controller
                 $total = $batch->enrollments->count();
                 $passed = 0;
                 foreach ($batch->exams as $exam) {
-                    $passed += $exam->results->where('result_status', 'pass')->count();
+                    $exam->setRelation('batch', $batch);
+                    $summary = $exam->studentResultSummary();
+                    $passed += $summary['pass'];
                 }
+                $examCount = $batch->exams->count();
+                $expected = $total * max(1, $examCount);
                 $batch->setAttribute('computed_total', $total);
                 $batch->setAttribute('computed_passed', $passed);
-                $batch->setAttribute('computed_rate', $total > 0 ? round($passed / $total * 100, 1) : 0);
+                $batch->setAttribute('computed_rate', $expected > 0 ? round($passed / $expected * 100, 1) : 0);
                 // Published status from training_batch_results
                 $publishedCount = \App\Models\TrainingBatchResult::where('batch_id', $batch->id)->where('institute_id', $instituteId)->whereNotNull('published_at')->count();
                 $batch->setAttribute('published_count', $publishedCount);

@@ -116,6 +116,19 @@
                         </td>@endif
                         @if (in_array('action', $visibleColumns, true))<td class="text-end d-flex gap-1 justify-content-end">
                             <a href="{{ route('training.marks.index', ['exam_id' => $exam->id]) }}" class="btn btn-sm btn-primary" title="Enter Marks"><i class="bi bi-pencil-square me-1"></i> Marks</a>
+                            @if ($user?->hasPermission('training.exams.manage'))
+                                @if ($exam->published_at)
+                                    <span class="btn btn-sm btn-outline-success disabled" title="Published {{ $exam->published_at->format('d M Y, h:i A') }}"><i class="bi bi-check-circle me-1"></i> Published</span>
+                                @else
+                                    <form method="POST" action="{{ route('training.exams.publish', $exam) }}" class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-sm btn-success"
+                                                onclick="return confirm('Publish results for {{ addslashes($exam->title) }}?')">
+                                            <i class="bi bi-send me-1"></i> Publish
+                                        </button>
+                                    </form>
+                                @endif
+                            @endif
                             <a href="{{ route('training.exams.show', $exam) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i></a>
                         </td>@endif
                     </tr>

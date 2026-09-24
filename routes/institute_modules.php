@@ -1212,6 +1212,7 @@ Route::middleware($tenant)->group(function () {
         Route::delete('{course}', [$trainingCourse, 'destroy'])->middleware('permission:training.courses.manage')->name('destroy');
         Route::post('{course}/materials', [$trainingCourseMat, 'store'])->middleware('permission:training.courses.manage')->name('materials.store');
         Route::delete('{course}/materials/{material}', [$trainingCourseMat, 'destroy'])->middleware('permission:training.courses.manage')->name('materials.destroy');
+        Route::get('{course}', [$trainingCourse, 'show'])->whereNumber('course')->middleware('permission:training.courses.view')->name('show');
         Route::prefix('categories')->name('categories.')->group(function () use ($trainingCourseCat) {
             Route::get('/', [$trainingCourseCat, 'index'])->middleware('permission:training.courses.view')->name('index');
             Route::post('/', [$trainingCourseCat, 'store'])->middleware('permission:training.courses.manage')->name('store');
@@ -1234,6 +1235,12 @@ Route::middleware($tenant)->group(function () {
             Route::post('{subject}/restore', [$trainingSubjectMgmt, 'restore'])->middleware('permission:training.courses.manage')->name('restore');
             Route::get('{subject}/dependencies', [$trainingSubjectMgmt, 'dependencies'])->middleware('permission:training.courses.view')->name('dependencies');
         });
+        Route::prefix('{course}/subjects')->name('course-subjects.')->whereNumber('course')->group(function () use ($trainingCourse) {
+            Route::get('add', [$trainingCourse, 'addSubjects'])->middleware('permission:training.courses.view')->name('add');
+            Route::post('attach', [$trainingCourse, 'attachSubjects'])->middleware('permission:training.courses.manage')->name('attach');
+            Route::post('create', [$trainingCourse, 'createAndAttachSubject'])->middleware('permission:training.courses.manage')->name('create');
+            Route::delete('{subject}', [$trainingCourse, 'detachSubject'])->middleware('permission:training.courses.manage')->name('detach');
+        });
     });
 
     // ─── TRAINING ENROLLMENTS & SETTINGS ───────────────────────────────────
@@ -1244,6 +1251,14 @@ Route::middleware($tenant)->group(function () {
         Route::get('certificates', [\App\Http\Controllers\Training\TrainingCertificateController::class, 'index'])->name('certificates.index');
         Route::post('certificates/generate', [\App\Http\Controllers\Training\TrainingCertificateController::class, 'generate'])->name('certificates.generate');
         Route::get('exams', [\App\Http\Controllers\Training\TrainingExamController::class, 'index'])->name('exams.index');
+        Route::get('exams/create', [\App\Http\Controllers\Training\TrainingExamController::class, 'create'])->name('exams.create');
+        Route::post('exams', [\App\Http\Controllers\Training\TrainingExamController::class, 'store'])->name('exams.store');
+        Route::post('exams/gpa-model', [\App\Http\Controllers\Training\TrainingExamController::class, 'saveGpaModel'])
+            ->middleware('permission:training.exams.manage')
+            ->name('exams.gpa-model');
+        Route::post('exams/{exam}/publish', [\App\Http\Controllers\Training\TrainingExamController::class, 'publish'])
+            ->middleware('permission:training.exams.manage')
+            ->name('exams.publish');
         Route::get('attendance', [\App\Http\Controllers\Training\AttendanceController::class, 'index'])->name('attendance.index');
         Route::post('attendance', [\App\Http\Controllers\Training\AttendanceController::class, 'store'])->name('attendance.store');
         Route::post('attendance/bulk', [\App\Http\Controllers\Training\AttendanceController::class, 'bulkStore'])->name('attendance.bulk.store');
@@ -1279,6 +1294,17 @@ Route::middleware($tenant)->group(function () {
 
         // ─── TRAINING BATCHES ─────────────────────────────
         Route::resource('batches', TrainingBatchController::class)->names('batches');
+
+        // ─── TRAINING BATCH — WEEKLY SCHEDULE ─────────────
+        Route::post('batches/{batch}/schedule', [\App\Http\Controllers\Training\TrainingScheduleController::class, 'store'])
+            ->middleware('permission:training_batches.manage')
+            ->name('batches.schedule.store');
+        Route::put('batches/{batch}/schedule/{schedule}', [\App\Http\Controllers\Training\TrainingScheduleController::class, 'update'])
+            ->middleware('permission:training_batches.manage')
+            ->name('batches.schedule.update');
+        Route::delete('batches/{batch}/schedule/{schedule}', [\App\Http\Controllers\Training\TrainingScheduleController::class, 'destroy'])
+            ->middleware('permission:training_batches.manage')
+            ->name('batches.schedule.destroy');
 
         // ─── TRAINING EXAMS — SHOW ────────────────────────
         Route::get('exams/{exam}', [TrainingExamController::class, 'show'])->name('exams.show');

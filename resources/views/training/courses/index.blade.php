@@ -167,13 +167,13 @@
             </thead>
             <tbody>
                 @forelse ($courses as $index => $course)
-                    <tr>
+                    <tr class="course-row" data-href="{{ route('training.courses.show', $course) }}" style="cursor:pointer;">
                         <td class="col-handle text-center"><i class="bi bi-grip-vertical drag-handle" draggable="true" title="Drag to reorder"></i></td>
                         <td class="col-check"><input type="checkbox" class="form-check-input row-check" value="{{ $course->id }}" data-id="{{ $course->id }}" data-name="{{ $course->name }}"></td>
                         <td data-col="serial" class="text-muted">{{ $courses->firstItem() + $index }}</td>
                         <td data-col="code" class="text-muted">{{ $course->course_code ?? 'â€”' }}</td>
                         <td data-col="course">
-                            <a class="fw-semibold text-decoration-none" href="{{ route('training.courses.edit', $course) }}">{{ $course->name }}</a>
+                            <a class="fw-semibold text-decoration-none" href="{{ route('training.courses.show', $course) }}">{{ $course->name }}</a>
                             @if($course->course_code)
                                 <div class="text-muted small">{{ $course->course_code }}</div>
                             @endif
@@ -187,6 +187,7 @@
                         </td>
                         <td data-col="action" class="text-end text-nowrap col-action">
                             <a href="{{ route('curricula.index', ['course_id' => $course->id]) }}" class="btn btn-sm btn-outline-primary">Curriculum</a>
+                            <a href="{{ route('training.courses.show', $course) }}" class="btn btn-sm btn-outline-secondary">View</a>
                             <a href="{{ route('training.courses.edit', $course) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
                         </td>
                     </tr>
@@ -267,6 +268,18 @@
     if (selectAll) { selectAll.addEventListener('change', function(){ document.querySelectorAll('#courseMasterTable .row-check').forEach(function(cb){ cb.checked = selectAll.checked; }); updateBatchUI(); }); }
     document.addEventListener('change', function(e){ if(e.target && e.target.classList.contains('row-check')) updateBatchUI(); });
     updateBatchUI();
+
+    var navTable = document.getElementById('courseMasterTable');
+    var tbodyNav = navTable ? navTable.querySelector('tbody') : null;
+    if (tbodyNav) {
+        tbodyNav.addEventListener('click', function (e) {
+            if (e.target.closest('a, button, input, label, select, .drag-handle')) return;
+            var row = e.target.closest('tr.course-row');
+            if (!row) return;
+            var href = row.getAttribute('data-href');
+            if (href) window.location.href = href;
+        });
+    }
 
     var table = document.getElementById('courseMasterTable');
     var tbody = table ? table.querySelector('tbody') : null;

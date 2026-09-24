@@ -13,6 +13,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -39,7 +41,7 @@ class TrainingCourseController extends Controller
 
         $courses = TrainingCourse::query()
             ->where('institute_id', $instituteId)
-            ->withCount(['materials', 'subjects'])
+            ->withCount(['materials', 'subjects', 'batches'])
             ->with('category:id,name,subject_type')
             ->whereHas('category', fn ($q) => $q->where('subject_type', 'professional'))
             ->when($request->query('q'), fn ($query, $search) => $query
@@ -120,6 +122,189 @@ class TrainingCourseController extends Controller
             'categories' => $this->categories(),
             'subCategories' => $course->category?->subCategories ?? collect(),
         ]);
+    }
+
+    public function show(Request $request, TrainingCourse $course): View
+    {
+        $this->assertOwned($request, $course);
+        $instituteId = (int) $request->user()->institute_id;
+
+        $course->load([
+            'category:id,name,subject_type,slug',
+            'subCategory:id,name,category_id',
+            'subjects:id,name,short_name,subject_code,status',
+            'materials' => fn ($q) => $q->orderBy('display_order')->orderBy('id'),
+        ])->loadCount(['materials', 'subjects', 'batches']);
+
+        $availableSubjects = TrainingSubject::query()
+            ->where('institute_id', $instituteId)
+            ->whereNull('deleted_at')
+            ->where('status', 'active')
+            ->with('category:id,name')
+            ->orderBy('name')
+            ->get(['id', 'name', 'subject_code', 'short_name', 'category_id']);
+
+        $attachedIds = $course->subjects->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        return view('training.courses.show', [
+            'course' => $course,
+            'availableSubjects' => $availableSubjects,
+            'attachedIds' => $attachedIds,
+            'subjectCategories' => $this->categories(),
+        ]);
+    }
+
+    public function addSubjects(Request $request, TrainingCourse $course): View
+    {
+        $this->assertOwned($request, $course);
+        $instituteId = (int) $request->user()->institute_id;
+
+        $availableSubjects = TrainingSubject::query()
+            ->where('institute_id', $instituteId)
+            ->whereNull('deleted_at')
+            ->where('status', 'active')
+            ->with('category:id,name')
+            ->orderBy('name')
+            ->get(['id', 'name', 'subject_code', 'short_name', 'category_id']);
+
+        $attachedIds = $course->subjects()->pluck('training_subjects.id')->map(fn ($id) => (int) $id)->all();
+        $categories = $this->categories();
+
+        return view('training.courses.subjects-add', [
+            'course' => $course,
+            'availableSubjects' => $availableSubjects,
+            'attachedIds' => $attachedIds,
+            'categories' => $categories,
+        ]);
+    }
+
+    public function attachSubjects(Request $request, TrainingCourse $course): RedirectResponse|JsonResponse
+    {
+        $this->assertOwned($request, $course);
+        $instituteId = (int) $request->user()->institute_id;
+
+        $data = $request->validate([
+            'subjects' => ['nullable', 'array'],
+            'subjects.*' => ['integer'],
+        ]);
+
+        $requested = collect($data['subjects'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->values()
+            ->all();
+
+        $available = TrainingSubject::query()
+            ->where('institute_id', $instituteId)
+            ->whereNull('deleted_at')
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $allowed = array_values(array_intersect($requested, $available));
+        $course->subjects()->sync($allowed);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Course subjects updated.',
+                'data' => ['course_id' => $course->id, 'subject_count' => count($allowed)],
+            ]);
+        }
+
+        return redirect()->route('training.courses.show', $course)
+            ->with('status', 'Course subjects updated.');
+    }
+
+    public function createAndAttachSubject(Request $request, TrainingCourse $course): RedirectResponse|JsonResponse
+    {
+        $this->assertOwned($request, $course);
+        $instituteId = (int) $request->user()->institute_id;
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'short_name' => ['nullable', 'string', 'max:100'],
+            'subject_code' => [
+                'nullable', 'string', 'max:50',
+                Rule::unique('training_subjects', 'subject_code')->whereNull('deleted_at')->where('institute_id', $instituteId),
+            ],
+            'category_id' => [
+                'required', 'integer',
+                Rule::exists('training_course_categories', 'id')
+                    ->where('institute_id', $instituteId)
+                    ->where('subject_type', 'professional'),
+            ],
+            'description' => ['nullable', 'string'],
+        ]);
+
+        $slug = $this->uniqueSubjectSlug($data['name'], $instituteId);
+
+        $subject = TrainingSubject::create([
+            'institute_id' => $instituteId,
+            'category_id' => $data['category_id'],
+            'subject_type' => 'professional',
+            'name' => $data['name'],
+            'slug' => $slug,
+            'short_name' => $data['short_name'] ?? null,
+            'subject_code' => $data['subject_code'] ?? null,
+            'description' => $data['description'] ?? null,
+            'status' => 'active',
+        ]);
+
+        $course->subjects()->syncWithoutDetaching([$subject->id]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Subject created and attached to course.',
+                'data' => ['id' => $subject->id, 'course_id' => $course->id],
+            ]);
+        }
+
+        return redirect()->route('training.courses.show', $course)
+            ->with('status', 'Subject created and attached to course.');
+    }
+
+    public function detachSubject(Request $request, TrainingCourse $course, TrainingSubject $subject): RedirectResponse|JsonResponse
+    {
+        $this->assertOwned($request, $course);
+
+        if ((int) $subject->institute_id !== (int) $request->user()->institute_id) {
+            abort(403, 'Subject not accessible.');
+        }
+
+        $course->subjects()->detach($subject->id);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Subject removed from course.',
+                'data' => ['course_id' => $course->id, 'subject_id' => $subject->id],
+            ]);
+        }
+
+        return redirect()->route('training.courses.show', $course)
+            ->with('status', 'Subject removed from course.');
+    }
+
+    private function uniqueSubjectSlug(string $name, int $instituteId): string
+    {
+        $slug = Str::slug($name);
+        if ($slug === '') {
+            $slug = 'subject-'.Str::random(6);
+        }
+        $slug = Str::limit($slug, 170, '');
+        $base = $slug;
+        $suffix = 1;
+        while (TrainingSubject::withTrashed()
+            ->where('institute_id', $instituteId)
+            ->where('slug', $slug)
+            ->exists()) {
+            $suffix++;
+            $slug = Str::limit($base, 170 - strlen((string) $suffix) - 1, '').'-'.$suffix;
+        }
+
+        return $slug;
     }
 
     public function update(Request $request, TrainingCourse $course): RedirectResponse|JsonResponse
@@ -215,8 +400,8 @@ class TrainingCourseController extends Controller
     private function assertDeletable(TrainingCourse $course): void
     {
         $batches = 0;
-        if (\Illuminate\Support\Facades\Schema::hasTable('training_batches')) {
-            $batches = (int) \Illuminate\Support\Facades\DB::table('training_batches')
+        if (Schema::hasTable('training_batches')) {
+            $batches = (int) DB::table('training_batches')
                 ->where('course_id', $course->id)
                 ->whereNull('deleted_at')
                 ->count();

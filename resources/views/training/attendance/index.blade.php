@@ -22,6 +22,9 @@
 
     $batchId = request('batch_id', $selectedBatchId ?? null);
     $viewMode = request('view_mode', $viewMode ?? 'month');
+    $offDayMap = $offDayMap ?? [];
+    $hasSchedule = $hasSchedule ?? false;
+    $classDayCount = $classDayCount ?? count($days ?? []);
 
     if ($viewMode == 'week') {
         $weekDate = request('week_date', $weekDate ?? now()->toDateString());
@@ -113,7 +116,11 @@
             <h6 class="mb-0 small text-muted">
                 Batch: <strong>{{ $selectedBatch->name ?? '' }}</strong>
                 • {{ ($viewMode ?? 'month') == 'week' ? mawa_format_date($days[0] ?? null) . ' to ' . mawa_format_date($days[count($days)-1] ?? null) : ($month ?? '') }}
-                • {{ count($days ?? []) }} days • {{ $trainees->count() }} trainees
+                • {{ $classDayCount ?? count($days ?? []) }} class day{{ (($classDayCount ?? count($days ?? [])) === 1) ? '' : 's' }}@if(($classDayCount ?? null) !== null && $classDayCount != count($days ?? [])) <span class="text-muted">(of {{ count($days ?? []) }} days)</span>@endif
+                • {{ $trainees->count() }} trainees
+                @if($hasSchedule ?? false)
+                    <span class="ms-1"><span class="att-off-mark att-off-mark-sm" aria-hidden="true"><i class="bi bi-x-lg"></i></span> = off day (no class, not counted)</span>
+                @endif
             </h6>
         </div>
         <form method="POST" action="{{ route('training.attendance.bulk.store') }}">
@@ -129,8 +136,16 @@
                             <th style="min-width:40px;">#</th>
                             <th style="min-width:200px; position:sticky; left:0; background:var(--surface-alt,#f8f9fa); z-index:2;" class="text-nowrap">Trainee</th>
                             @foreach($days as $dateObj)
-                                <th class="text-center" style="min-width:52px;">
+                                @php
+                                    $headOff = isset($offDayMap[$dateObj->toDateString()]);
+                                @endphp
+                                <th class="text-center {{ $headOff ? 'att-off-head' : '' }}"
+                                    style="min-width:52px;"
+                                    title="{{ $headOff ? 'Off day — no class scheduled' : '' }}">
                                     {{ $dateObj->format('d') }}<br><small>{{ $dateObj->format('D') }}</small>
+                                    @if($headOff)
+                                        <div class="att-off-flag">off</div>
+                                    @endif
                                 </th>
                             @endforeach
                         </tr>
@@ -146,12 +161,16 @@
                                 @foreach($days as $dateObj)
                                     @php
                                         $dateStr = $dateObj->toDateString();
+                                        $isOffDay = isset($offDayMap[$dateStr]);
                                         $isPresent = isset($attendanceMap[$trainee->id][$dateStr]) && $attendanceMap[$trainee->id][$dateStr] === 'present';
                                         $isDisabled = false;
                                         if ($batchStart && $dateStr < $batchStart) { $isDisabled = true; }
                                         if ($batchEnd && $dateStr > $batchEnd) { $isDisabled = true; }
                                     @endphp
-                                    <td class="text-center px-0 {{ $isDisabled ? 'bg-light' : '' }}">
+                                    <td class="text-center px-0 {{ $isOffDay ? 'att-off-cell' : ($isDisabled ? 'bg-light' : '') }}">
+                                        @if($isOffDay)
+                                            <span class="att-off-mark" title="Off day — no class scheduled (not counted as a class day)"><i class="bi bi-x-lg"></i></span>
+                                        @else
                                         <input type="checkbox"
                                                name="attendance[{{ $trainee->id }}][{{ $dateObj->day }}]"
                                                value="present"
@@ -160,6 +179,7 @@
                                                title="{{ $isDisabled ? 'Outside batch duration' : $dateStr }}"
                                                class="form-check-input"
                                                style="cursor:{{ $isDisabled ? 'not-allowed' : 'pointer' }}; opacity:{{ $isDisabled ? '0.4' : '1' }};">
+                                        @endif
                                     </td>
                                 @endforeach
                             </tr>
@@ -171,7 +191,7 @@
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-save"></i> Save All Attendance
                 </button>
-                <span class="text-muted small">Checked = Present. Unchecked = Absent. Click Save All to persist.</span>
+                <span class="text-muted small">Checked = Present. Unchecked = Absent. Dark ✕ = off day (no class scheduled — not counted).</span>
             </div>
         </form>
     @else
@@ -179,3 +199,18 @@
     @endif
 </div>
 @endsection
+
+@push('styles')
+<style>
+    .att-off-head { background: #dee2e6 !important; color: #212529; }
+    .att-off-flag { font-size: .58rem; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; color: #495057; }
+    .att-off-cell { background: #f1f3f4; }
+    .att-off-mark {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 20px; height: 20px; border-radius: 4px;
+        background: #212529; color: #868e96; font-size: .62rem;
+        cursor: not-allowed; user-select: none; vertical-align: middle;
+    }
+    .att-off-mark-sm { width: 14px; height: 14px; font-size: .5rem; border-radius: 3px; }
+</style>
+@endpush

@@ -17,11 +17,11 @@
         <h4 class="page-header-title">Batches</h4>
         <p class="page-header-desc mb-0">Training batch management</p>
     </div>
-    @if ($user->hasPermission('batches.manage') ?? true)
+    @if ($user->hasPermission('training_batches.manage'))
         <div class="page-header-actions">
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#trainingBatchModal">
+            <a href="{{ route('training.batches.create') }}" class="btn btn-primary">
                 <i class="bi bi-plus-lg me-1"></i>Add Batch
-            </button>
+            </a>
         </div>
     @endif
 </div>
@@ -33,6 +33,7 @@
                 <tr>
                     <th>#</th>
                     <th>Name</th>
+                    <th>Course</th>
                     <th>Code</th>
                     <th>Status</th>
                     <th>Seats</th>
@@ -47,9 +48,10 @@
                         <td class="fw-semibold">
                             <a href="{{ route('training.batches.show', $batch->id) }}" class="text-decoration-none">{{ $batch->name }}</a>
                         </td>
+                        <td>{{ $batch->course?->name ?? '—' }}</td>
                         <td>{{ $batch->batch_code ?? '—' }}</td>
                         <td>
-                            <span class="badge {{ ($batch->status ?? '') === 'ongoing' || ($batch->status ?? '') === 'running' ? 'text-bg-success' : (($batch->status ?? '') === 'completed' ? 'text-bg-primary' : 'text-bg-secondary') }}">
+                            <span class="badge {{ in_array($batch->status ?? '', ['ongoing', 'running'], true) ? 'text-bg-success' : (($batch->status ?? '') === 'completed' ? 'text-bg-primary' : ((($batch->status ?? '') === 'cancelled' || ($batch->status ?? '') === 'archived') ? 'text-bg-danger' : 'text-bg-secondary')) }}">
                                 {{ ucfirst($batch->status ?? '—') }}
                             </span>
                         </td>
@@ -57,14 +59,14 @@
                         <td><x-tdate :value="$batch->start_date" fallback="d M Y" empty="—" /></td>
                         <td class="text-end">
                             <a href="{{ route('training.batches.show', $batch->id) }}" class="btn btn-sm btn-outline-primary">View</a>
-                            @if ($user->hasPermission('batches.manage') ?? true)
+                            @if ($user->hasPermission('training_batches.manage'))
                                 <a href="{{ route('training.batches.edit', $batch->id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
                             @endif
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="text-center text-muted py-4">No batches yet.</td>
+                        <td colspan="8" class="text-center text-muted py-4">No batches yet.</td>
                     </tr>
                 @endforelse
             </tbody>

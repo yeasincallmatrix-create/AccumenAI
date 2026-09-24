@@ -43,4 +43,9 @@ class TrainingExamResult extends Model
     {
         return $this->belongsTo(TrainingStudent::class, 'student_id');
     }
+
+    public function subject(): BelongsTo
+    {
+        return $this->belongsTo(TrainingSubject::class, 'subject_id');
+    }
 }

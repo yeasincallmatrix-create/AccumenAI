@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Training\TrainingBatch;
 use App\Models\Training\TrainingAttendance;
 use App\Models\Training\TrainingEnrollment;
+use App\Models\Training\TrainingSchedule;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -130,7 +131,18 @@ class AttendanceController extends Controller
         $batchStart = $selectedBatch?->start_date ? ( $selectedBatch->start_date instanceof \DateTimeInterface ? $selectedBatch->start_date->format('Y-m-d') : substr((string) $selectedBatch->start_date, 0, 10) ) : null;
         $batchEnd = $selectedBatch?->end_date ? ( $selectedBatch->end_date instanceof \DateTimeInterface ? $selectedBatch->end_date->format('Y-m-d') : substr((string) $selectedBatch->end_date, 0, 10) ) : null;
 
-        return view('training.attendance.index', compact('batches', 'selectedBatchId', 'selectedBatch', 'trainees', 'daysInMonth', 'year', 'monthNum', 'month', 'attendanceMap', 'batchStart', 'batchEnd', 'viewMode', 'weekDate', 'days', 'dayLabels', 'monthYear'));
+        // Weekly schedule → off days. Plan rows are effective-dated, so every date
+        // is checked against the version of the weekly plan that applied on that
+        // date: past months keep their plan, changes apply from the day they are made.
+        // A batch with no schedule rows at all keeps every day tickable.
+        $hasSchedule = $selectedBatchId ? TrainingSchedule::where('batch_id', $selectedBatchId)->exists() : false;
+        $offDayMap = array_fill_keys(
+            $this->offDatesForRange($selectedBatchId, array_map(fn ($d) => $d->toDateString(), $days)),
+            true
+        );
+        $classDayCount = count($days) - count($offDayMap);
+
+        return view('training.attendance.index', compact('batches', 'selectedBatchId', 'selectedBatch', 'trainees', 'daysInMonth', 'year', 'monthNum', 'month', 'attendanceMap', 'batchStart', 'batchEnd', 'viewMode', 'weekDate', 'days', 'dayLabels', 'monthYear', 'offDayMap', 'classDayCount', 'hasSchedule'));
     }
 
     public function store(Request $request)
@@ -191,6 +203,18 @@ class AttendanceController extends Controller
 
         // Verify batch belongs to institute
         $batch = TrainingBatch::where('institute_id', $instituteId)->findOrFail($batchId);
+
+        // Weekly schedule → off days are not class days: no rows are written for
+        // them and any stale rows are removed so they never count in totals.
+        // Each date uses the plan version that was in effect on that date.
+        $offDates = $this->offDatesForRange($batchId, $dates);
+        if ($offDates) {
+            TrainingAttendance::where('institute_id', $instituteId)
+                ->where('batch_id', $batchId)
+                ->whereIn('class_date', $offDates)
+                ->delete();
+            $dates = array_values(array_diff($dates, $offDates));
+        }
 
         // Get all trainees currently enrolled (to handle unchecked = absent)
         $enrolledIds = TrainingEnrollment::where('batch_id', $batchId)
@@ -261,7 +285,10 @@ class AttendanceController extends Controller
         if ($viewMode === 'week') {
             $startDate = $dates[0] ?? $weekDate;
             $endDate = end($dates) ?: $weekDate;
-            $msg = 'Attendance saved for '.count($enrolledIds).' trainees for week '.$startDate.' to '.$endDate.' ('.count($dates).' days).';
+            $msg = 'Attendance saved for '.count($enrolledIds).' trainees for week '.$startDate.' to '.$endDate.' ('.count($dates).' class day(s)).';
+            if ($offDates) {
+                $msg .= ' '.count($offDates).' off day(s) excluded (no class scheduled).';
+            }
             if ($skipped > 0) {
                 $msg .= ' '.$skipped.' day(s) skipped (outside batch duration: '.($batchStart ?? '—').' to '.($batchEnd ?? '—').').';
             }
@@ -269,11 +296,51 @@ class AttendanceController extends Controller
                 ->with('status', $msg);
         }
 
-        $msg = 'Attendance saved for '.count($enrolledIds).' trainees for '.$month.' ('.count($dates).' days).';
+        $msg = 'Attendance saved for '.count($enrolledIds).' trainees for '.$month.' ('.count($dates).' class day(s)).';
+        if ($offDates) {
+            $msg .= ' '.count($offDates).' off day(s) excluded (no class scheduled).';
+        }
         if ($skipped > 0) {
             $msg .= ' '.$skipped.' day(s) skipped (outside batch duration: '.($batchStart ?? '—').' to '.($batchEnd ?? '—').').';
         }
         return redirect()->route('training.attendance.index', ['batch_id' => $batchId, 'month' => $month, 'view_mode' => 'month', 'week_date' => $weekDate])
             ->with('status', $msg);
+    }
+
+    /**
+     * Dates (Y-m-d, ascending) in the range that are off days under the weekly
+     * plan version in effect on each date. Empty array = no schedule configured
+     * (every day counts as a class day).
+     */
+    private function offDatesForRange(?int $batchId, array $dates): array
+    {
+        if (!$batchId || $dates === []) {
+            return [];
+        }
+
+        $hasSchedule = TrainingSchedule::where('batch_id', $batchId)->exists();
+        if (!$hasSchedule) {
+            return [];
+        }
+
+        $minDate = $dates[0];
+        $maxDate = end($dates);
+        $planRows = TrainingSchedule::where('batch_id', $batchId)
+            ->activeBetween($minDate, $maxDate)
+            ->get(['id', 'day_of_week', 'effective_from', 'effective_to']);
+
+        $offDates = [];
+        foreach ($dates as $date) {
+            // Schedule day_of_week is 0=Mon..6=Sun, Carbon dayOfWeek is 0=Sun..6=Sat.
+            $scheduleDay = ((int) Carbon::parse($date)->dayOfWeek + 6) % 7;
+            $hasClass = $planRows->contains(
+                fn ($row) => (int) $row->day_of_week === $scheduleDay && $row->isActiveOn($date)
+            );
+            if (!$hasClass) {
+                $offDates[] = $date;
+            }
+        }
+
+        return $offDates;
     }
 }
