@@ -1,0 +1,92 @@
+﻿=== ACCUMENAI PER-INDUSTRY PACKAGE AUDIT ===
+Date: 2026-09-25
+
+--- subscription_packages ---
+id	name	slug	price_monthly	price_yearly	status
+1	FREE	free	0.00	0.00	active
+2	BASIC	basic	1500.00	15000.00	active
+3	ADVANCED	advanced	4000.00	40000.00	active
+4	PREMIUM	premium	9000.00	90000.00	active
+
+--- modules per package ---
+id	slug	modules
+1	free	1
+2	basic	13
+3	advanced	49
+4	premium	58
+
+--- features per package ---
+id	slug	features
+1	free	0
+2	basic	7
+3	advanced	36
+4	premium	42
+
+--- package tables ---
+Tables_in_accumen_ai (%package%)
+package_features
+package_modules
+package_scoped_features
+package_scoped_modules
+package_scopes
+subscription_packages
+
+--- package_scopes ---
+package_scopes
+3
+package_scoped_modules
+0
+package_scoped_features
+0
+
+--- institutes per package ---
+package_id	institutes
+1	1
+2	1
+4	5
+
+--- industries ---
+id	slug	status
+1	education	active
+2	training_center	active
+3	healthcare	active
+4	information_technology	active
+5	finance	active
+6	retail	active
+7	manufacturing	active
+8	real_estate	active
+9	transportation	active
+10	service	active
+11	restaurant	active
+12	hotels	active
+13	personal_finance	active
+14	other	active
+
+--- institutes by industry ---
+industry	c
+education	2
+healthcare	2
+retail	1
+training_center	2
+
+--- subscription_packages columns ---
+Field	Type	Null	Key	Default	Extra
+id	bigint(20) unsigned	NO	PRI	NULL	auto_increment
+name	varchar(60)	NO		NULL	
+slug	varchar(60)	NO	UNI	NULL	
+price_monthly	decimal(10,2)	NO		0.00	
+price_yearly	decimal(10,2)	NO		0.00	
+max_students	int(10) unsigned	YES		NULL	
+max_teachers	int(10) unsigned	YES		NULL	
+max_courses	int(10) unsigned	YES		NULL	
+max_branches	int(10) unsigned	YES		NULL	
+storage_limit_mb	int(10) unsigned	YES		NULL	
+sms_limit_monthly	int(10) unsigned	YES		NULL	
+features	longtext	YES		NULL	
+is_default	tinyint(1)	NO		0	
+status	enum('active','inactive')	NO		active	
+created_at	datetime	NO		current_timestamp()	
+updated_at	datetime	NO		current_timestamp()	on update current_timestamp()
+
+--- package_industries exists? ---
+

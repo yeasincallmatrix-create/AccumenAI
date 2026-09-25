@@ -575,6 +575,14 @@ Route::get('admin/module-config', [\App\Http\Controllers\Admin\UniversalModuleCo
 Route::put('admin/module-config', [\App\Http\Controllers\Admin\UniversalModuleConfigController::class, 'update'])->name('admin.module-config.update')->middleware($adminMiddleware);
 Route::post('admin/module-config/copy', [\App\Http\Controllers\Admin\UniversalModuleConfigController::class, 'copy'])->name('admin.module-config.copy')->middleware($adminMiddleware);
 
+// ── Admin: Per-Industry Package Configuration (package ↔ industry mapping, per-industry modules & pricing) ──
+Route::prefix('admin/package-industries')->name('admin.package-industries.')->middleware($adminMiddleware)->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\PackageIndustryController::class, 'index'])->name('index');
+    Route::put('/', [\App\Http\Controllers\Admin\PackageIndustryController::class, 'update'])->name('update');
+    Route::get('{package}/{industry}/modules', [\App\Http\Controllers\Admin\PackageIndustryController::class, 'showModules'])->name('show-modules')->whereNumber('package');
+    Route::put('{package}/{industry}/modules', [\App\Http\Controllers\Admin\PackageIndustryController::class, 'updateModules'])->name('update-modules')->whereNumber('package');
+});
+
 // Phase 5: per-tenant audit log + bulk overview (InstituteModuleOverrideController)
 Route::get('admin/institutes/{institute}/access-log', [\App\Http\Controllers\Admin\InstituteModuleOverrideController::class, 'accessLog'])->name('admin.institutes.access-log')->middleware($adminMiddleware)->whereNumber('institute');
 Route::get('admin/institutes/modules-overview', [\App\Http\Controllers\Admin\InstituteModuleOverrideController::class, 'overview'])->name('admin.institutes.modules-overview')->middleware($adminMiddleware);

@@ -384,6 +384,9 @@
                     <a class="nav-link {{ request()->routeIs('admin.module-config.*') ? 'active' : '' }}" href="{{ route('admin.module-config.index') }}">
                         <i class="bi bi-sliders2"></i><span class="sidebar-label">Module Config</span>
                     </a>
+                    <a class="nav-link {{ request()->routeIs('admin.package-industries.*') ? 'active' : '' }}" href="{{ route('admin.package-industries.index') }}">
+                        <i class="bi bi-box-seam"></i><span class="sidebar-label">Package by Industry</span>
+                    </a>
 
                     {{-- ═══ CONFIGURATION ═══ --}}
                     <div class="sidebar-section-label">CONFIGURATION</div>

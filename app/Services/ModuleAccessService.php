@@ -43,6 +43,22 @@ class ModuleAccessService
      */
     protected array $countryTaxMemo = [];
 
+    /**
+     * Per-industry package allow-list memo — industry slug => [package_id => true],
+     * or null when the industry has no package_industries rows (unconfigured).
+     *
+     * @var array<string, array<int, bool>|null>
+     */
+    protected array $industryPackageMapMemo = [];
+
+    /**
+     * Per-industry module set memo — "packageId|industryKey" => list of module keys,
+     * or null when the package has no explicit industry module configuration.
+     *
+     * @var array<string, array<int, string>|null>
+     */
+    protected array $industryPackageModulesMemo = [];
+
     public function isEnabled(Institute $institute, string $moduleKey): bool
     {
         $enabled = $this->getEnabledModules($institute);
@@ -1653,6 +1669,19 @@ class ModuleAccessService
             return [];
         }
 
+        // Per-industry package configuration (package_industries +
+        // package_industry_modules). Only kicks in once an industry has been
+        // configured; unconfigured industries keep the legacy behaviour below.
+        $industryKey = $institute->industry ?? '';
+        if ($industryKey !== '') {
+            $packageId = $this->applyIndustryPackageAllowList($packageId, $industryKey);
+
+            $industryModules = $this->resolveIndustryPackageModules($packageId, $industryKey);
+            if ($industryModules !== null) {
+                return $industryModules;
+            }
+        }
+
         // Resolve scope for the EFFECTIVE package (not necessarily the
         // institute's own package_id, which may be a lapsed paid tier).
         $probe = clone $institute;
@@ -1672,6 +1701,100 @@ class ModuleAccessService
             ->where('enabled', true)
             ->pluck('module_key')
             ->toArray();
+    }
+
+    /**
+     * Per-industry package allow-list (package_industries).
+     *
+     * When the industry has at least one mapped package, a tenant holding a
+     * package that is NOT offered there falls back to the FREE package.
+     * Industries without any mapping keep their current behaviour.
+     */
+    private function applyIndustryPackageAllowList(int $packageId, string $industryKey): int
+    {
+        $map = $this->industryPackageMap($industryKey);
+        if ($map === null || isset($map[$packageId])) {
+            return $packageId;
+        }
+
+        $freeId = SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['free'])->value('id');
+
+        return $freeId !== null ? (int) $freeId : $packageId;
+    }
+
+    /**
+     * Active package ids offered in an industry, or null when the industry
+     * has no package_industries configuration at all.
+     *
+     * @return array<int, bool>|null
+     */
+    private function industryPackageMap(string $industryKey): ?array
+    {
+        if (array_key_exists($industryKey, $this->industryPackageMapMemo)) {
+            return $this->industryPackageMapMemo[$industryKey];
+        }
+
+        if (! Schema::hasTable('package_industries')) {
+            return $this->industryPackageMapMemo[$industryKey] = null;
+        }
+
+        $ids = DB::table('package_industries')
+            ->where('industry_key', $industryKey)
+            ->where('is_active', true)
+            ->pluck('package_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        // No configuration for this industry → do not gate anything.
+        if ($ids === []) {
+            return $this->industryPackageMapMemo[$industryKey] = null;
+        }
+
+        return $this->industryPackageMapMemo[$industryKey] = array_fill_keys($ids, true);
+    }
+
+    /**
+     * Explicit per-industry module set for a package, or null when the
+     * package has no custom module configuration for this industry
+     * (legacy package_modules / scoped modules then apply).
+     *
+     * @return array<int, string>|null
+     */
+    private function resolveIndustryPackageModules(int $packageId, string $industryKey): ?array
+    {
+        $memoKey = $packageId . '|' . $industryKey;
+        if (array_key_exists($memoKey, $this->industryPackageModulesMemo)) {
+            return $this->industryPackageModulesMemo[$memoKey];
+        }
+
+        if (! Schema::hasTable('package_industry_modules')) {
+            return $this->industryPackageModulesMemo[$memoKey] = null;
+        }
+
+        // Configuration only applies while the package is offered in the industry.
+        $map = $this->industryPackageMap($industryKey);
+        if ($map === null || ! isset($map[$packageId])) {
+            return $this->industryPackageModulesMemo[$memoKey] = null;
+        }
+
+        $rows = DB::table('package_industry_modules')
+            ->where('package_id', $packageId)
+            ->where('industry_key', $industryKey)
+            ->get();
+
+        // No explicit configuration yet → legacy package_modules apply.
+        if ($rows->isEmpty()) {
+            return $this->industryPackageModulesMemo[$memoKey] = null;
+        }
+
+        $modules = [];
+        foreach ($rows as $row) {
+            if ($row->enabled) {
+                $modules[] = $row->module_key;
+            }
+        }
+
+        return $this->industryPackageModulesMemo[$memoKey] = $modules;
     }
 
     /**
@@ -1784,6 +1907,11 @@ class ModuleAccessService
      */
     public function resolveScopedPrice(Institute $institute): array
     {
+        $industryPrice = $this->resolveIndustryPackagePrice($institute);
+        if ($industryPrice !== null) {
+            return $industryPrice;
+        }
+
         $scope = $this->resolveScopedPackage($institute);
         if (! $scope) {
             $package = SubscriptionPackage::find($institute->package_id);
@@ -1800,6 +1928,49 @@ class ModuleAccessService
             'yearly' => $scope->effectiveYearlyPrice(),
             // 9b-3: fallback via locale config (default 'BDT', unchanged).
             'currency' => $scope->effectiveCurrency() ?? config('locale.currency.default_code', 'BDT'),
+        ];
+    }
+
+    /**
+     * Per-industry price override from package_industries, when the industry
+     * configures a price for the institute's package.
+     *
+     * @return array{monthly: float, yearly: float, currency: string}|null
+     */
+    private function resolveIndustryPackagePrice(Institute $institute): ?array
+    {
+        $packageId = $institute->package_id;
+        $industryKey = $institute->industry ?? '';
+
+        if ($packageId === null || $industryKey === '') {
+            return null;
+        }
+
+        $map = $this->industryPackageMap($industryKey);
+        if ($map === null || ! isset($map[$packageId])) {
+            return null;
+        }
+
+        if (! Schema::hasTable('package_industries')) {
+            return null;
+        }
+
+        $row = DB::table('package_industries')
+            ->where('package_id', $packageId)
+            ->where('industry_key', $industryKey)
+            ->first();
+
+        if ($row === null
+            || ($row->price_monthly === null && $row->price_yearly === null)) {
+            return null;
+        }
+
+        $package = SubscriptionPackage::find($packageId);
+
+        return [
+            'monthly' => (float) ($row->price_monthly ?? $package?->price_monthly ?? 0),
+            'yearly' => (float) ($row->price_yearly ?? $package?->price_yearly ?? 0),
+            'currency' => $row->currency ?? config('locale.currency.default_code', 'BDT'),
         ];
     }
 
