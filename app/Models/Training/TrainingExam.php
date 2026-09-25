@@ -17,12 +17,13 @@ class TrainingExam extends Model
 
     protected $fillable = [
         'institute_id', 'course_id', 'batch_id', 'title', 'exam_date', 'full_marks',
-        'pass_marks', 'written_percent', 'practical_percent', 'viva_percent', 'status', 'created_by', 'published_at',
+        'pass_marks', 'written_percent', 'practical_percent', 'viva_percent', 'weight_percent', 'status', 'created_by', 'published_at',
     ];
 
     protected $casts = [
         'exam_date' => 'date', 'full_marks' => 'decimal:2', 'pass_marks' => 'decimal:2',
         'written_percent' => 'decimal:2', 'practical_percent' => 'decimal:2', 'viva_percent' => 'decimal:2',
+        'weight_percent' => 'decimal:2',
         'is_test' => 'boolean', 'published_at' => 'datetime',
     ];
 

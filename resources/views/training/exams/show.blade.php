@@ -81,14 +81,45 @@
     <div class="col-lg-4">
         <div class="admin-card h-100">
             <h6 class="fw-bold text-primary mb-3"><i class="bi bi-pie-chart me-1"></i>Weight Distribution</h6>
-            <dl class="row mb-0 profile-dl">
-                <dt class="col-7">Written %</dt>
-                <dd class="col-5">{{ $exam->written_percent ?? 0 }}%</dd>
-                <dt class="col-7">Practical %</dt>
-                <dd class="col-5">{{ $exam->practical_percent ?? 0 }}%</dd>
-                <dt class="col-7">Viva %</dt>
-                <dd class="col-5">{{ $exam->viva_percent ?? 0 }}%</dd>
-            </dl>
+            @php
+                $weightTotal = 0.0;
+                $anyWeight = false;
+                foreach ($weightRows as $wr) {
+                    $w = (float) ($wr->weight_percent ?? 0);
+                    $weightTotal += $w;
+                    $anyWeight = $anyWeight || $w > 0;
+                }
+            @endphp
+            @if ($weightRows->isEmpty())
+                <p class="text-muted small mb-0">No exams in this batch yet.</p>
+            @else
+                <dl class="row mb-0 profile-dl">
+                    @foreach ($weightRows as $index => $wr)
+                        @php $w = (float) ($wr->weight_percent ?? 0); @endphp
+                        <dt class="col-8 {{ $wr->id === $exam->id ? 'fw-semibold' : '' }}">
+                            #{{ $index + 1 }}
+                            <span title="{{ $wr->title }}">{{ \Illuminate\Support\Str::limit($wr->title ?: 'Untitled exam', 24) }}</span>
+                            @if ($wr->id === $exam->id)
+                                <span class="badge bg-primary-subtle text-primary ms-1">this</span>
+                            @endif
+                        </dt>
+                        <dd class="col-4 text-end {{ $w > 0 ? 'fw-semibold' : 'text-muted' }}">
+                            {{ $w > 0 ? rtrim(rtrim(number_format($w, 2), '0'), '.') . '%' : '—' }}
+                        </dd>
+                    @endforeach
+                    <dt class="col-8 border-top pt-2 fw-semibold">Total</dt>
+                    <dd class="col-4 border-top pt-2 text-end fw-bold {{ $anyWeight && abs($weightTotal - 100) > 0.01 ? 'text-warning' : ($anyWeight ? 'text-success' : 'text-muted') }}">
+                        {{ rtrim(rtrim(number_format($weightTotal, 2), '0'), '.') }}%
+                    </dd>
+                </dl>
+                <div class="form-text mt-2">
+                    @if ($anyWeight)
+                        Weighted final result = &Sigma;(exam % &times; weight) &divide; {{ rtrim(rtrim(number_format($weightTotal, 2), '0'), '.') }}.
+                    @else
+                        No weights set — batch result uses the plain marks sum.
+                    @endif
+                </div>
+            @endif
         </div>
     </div>
 

@@ -58,11 +58,37 @@ class TrainingResultController extends Controller
 
             $totalMarks = 0;
             $obtainedMarks = 0;
+            $obtainedByExam = [];
+            $fullByExam = [];
             foreach ($exams as $exam) {
                 $totalMarks += (float) $exam->full_marks;
                 $examResultsForTrainee = $results->where('exam_id', $exam->id);
+                $examObtained = 0.0;
                 foreach ($examResultsForTrainee as $r) {
-                    $obtainedMarks += (float) ($r->marks_obtained ?? 0);
+                    $examObtained += (float) ($r->marks_obtained ?? 0);
+                }
+                $obtainedMarks += $examObtained;
+                $obtainedByExam[(int) $exam->id] = $examObtained;
+                $fullByExam[(int) $exam->id] = (float) $exam->full_marks;
+            }
+
+            if (\App\Support\TrainingExamWeighting::enabled($exams)) {
+                $summary = \App\Support\TrainingExamWeighting::summarize($exams, $obtainedByExam, $fullByExam);
+                if ($summary['total_marks'] > 0) {
+                    TrainingBatchResult::updateOrCreate(
+                        ['batch_id' => $batch->id, 'student_id' => $studentId],
+                        [
+                            'institute_id' => $instituteId,
+                            'total_marks' => $summary['total_marks'],
+                            'obtained_marks' => $summary['obtained_marks'],
+                            'percentage' => $summary['percentage'],
+                            'status' => $summary['percentage'] >= 40 ? 'pass' : 'fail',
+                            'published_at' => now(),
+                        ]
+                    );
+                    $published++;
+
+                    continue;
                 }
             }
 
@@ -125,10 +151,36 @@ class TrainingResultController extends Controller
 
             $fullMarks = 0;
             $totalMarks = 0;
+            $obtainedByExam = [];
+            $fullByExam = [];
             foreach ($exams as $exam) {
                 $fullMarks += (float) $exam->full_marks;
-                $totalMarks += (float) $results->where('exam_id', $exam->id)->sum('marks_obtained');
+                $examObtained = (float) $results->where('exam_id', $exam->id)->sum('marks_obtained');
+                $totalMarks += $examObtained;
+                $obtainedByExam[(int) $exam->id] = $examObtained;
+                $fullByExam[(int) $exam->id] = (float) $exam->full_marks;
             }
+
+            if (\App\Support\TrainingExamWeighting::enabled($exams)) {
+                $summary = \App\Support\TrainingExamWeighting::summarize($exams, $obtainedByExam, $fullByExam);
+                if ($summary['total_marks'] > 0) {
+                    TrainingBatchResult::updateOrCreate(
+                        ['batch_id' => $batch->id, 'student_id' => $studentId],
+                        [
+                            'institute_id' => $instituteId,
+                            'total_marks' => $summary['total_marks'],
+                            'obtained_marks' => $summary['obtained_marks'],
+                            'percentage' => $summary['percentage'],
+                            'status' => $summary['percentage'] >= 40 ? 'pass' : 'fail',
+                            'published_at' => now(),
+                        ]
+                    );
+                    $published++;
+
+                    continue;
+                }
+            }
+
             // Fallback if ExamResult has denormalized batch_id/full_marks (legacy attempts) — prefer exam-based totals
             if ($fullMarks <= 0) {
                 $fullMarks = 1;

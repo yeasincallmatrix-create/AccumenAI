@@ -69,6 +69,12 @@
                 <input type="number" id="viva_percent" name="viva_percent" class="form-control" step="0.01" min="0" max="100" value="{{ old('viva_percent', 0) }}">
                 @error('viva_percent') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
             </div>
+            <div class="col-md-4">
+                <label class="form-label" for="weight_percent">Weight % <span class="text-muted small">(toward batch final)</span></label>
+                <input type="number" id="weight_percent" name="weight_percent" class="form-control" step="0.01" min="0" max="100" value="{{ old('weight_percent') }}" placeholder="e.g. 40">
+                <div class="form-text">How much this exam counts in the weighted batch result. Leave blank for no weight.</div>
+                @error('weight_percent') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+            </div>
             <div class="col-md-6">
                 <label class="form-label" for="status">Status</label>
                 <select id="status" name="status" class="form-select">
