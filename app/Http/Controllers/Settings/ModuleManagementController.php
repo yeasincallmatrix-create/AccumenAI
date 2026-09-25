@@ -4,12 +4,12 @@ namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
 use App\Models\Institute;
-use App\Models\InstituteModuleOverride;
 use App\Models\ModuleRegistry;
+use App\Services\IndustrySubcategoryService;
 use App\Services\ModuleAccessService;
+use App\Support\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class ModuleManagementController extends Controller
 {
@@ -19,11 +19,13 @@ class ModuleManagementController extends Controller
     {
         $institute = $this->resolveInstitute();
         $user = $request->user();
+        $hiddenKeys = $this->hiddenModuleKeys($institute);
 
         $modules = ModuleRegistry::orderBy('parent_key')
             ->orderBy('sort_order')
             ->get()
             ->filter(fn ($m) => $this->moduleAccess->isIndustryCompatible($institute, $m->key))
+            ->filter(fn ($m) => ! in_array($m->key, $hiddenKeys, true))
             ->values();
 
         $enabledKeys = $this->moduleAccess->getEnabledModules($institute);
@@ -77,6 +79,13 @@ class ModuleManagementController extends Controller
         $key = $request->input('module_key');
         $enable = (bool) $request->input('enabled');
 
+        // Hidden Rule — parked by the platform for this sub-category: the
+        // tenant UI never lists it, so no legitimate toggle can arrive; block
+        // it at the backend too rather than trusting the UI.
+        if (in_array($key, $this->hiddenModuleKeys($institute), true)) {
+            return response()->json(['error' => 'This module is not available for your organization.'], 403);
+        }
+
         if (! $this->userCanToggleModule($user, $key)) {
             return response()->json(['error' => 'Permission denied.'], 403);
         }
@@ -118,6 +127,23 @@ class ModuleManagementController extends Controller
         ]);
     }
 
+    /**
+     * Hidden Rule — module keys the platform parked in the 'hidden' bucket for
+     * this institute's sub-category. Empty when the institute has no
+     * sub-category, so nothing changes for unmatched tenants.
+     *
+     * @return array<int, string>
+     */
+    protected function hiddenModuleKeys(Institute $institute): array
+    {
+        if (! $institute->subcategory_key) {
+            return [];
+        }
+
+        return app(IndustrySubcategoryService::class)
+            ->getModules($institute->industry ?? '', $institute->subcategory_key)['hidden'] ?? [];
+    }
+
     protected function userCanToggleModule($user, string $moduleKey): bool
     {
         if ($user->hasRole('institute-owner')) {
@@ -133,7 +159,8 @@ class ModuleManagementController extends Controller
 
     protected function resolveInstitute(): Institute
     {
-        $id = \App\Support\TenantContext::id();
+        $id = TenantContext::id();
+
         return Institute::withoutGlobalScopes()->findOrFail($id);
     }
 }

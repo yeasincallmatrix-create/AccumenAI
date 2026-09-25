@@ -570,6 +570,11 @@ Route::get('admin/industry-subcategories/{id}/edit', [\App\Http\Controllers\Admi
 Route::put('admin/industry-subcategories/{id}', [\App\Http\Controllers\Admin\IndustrySubcategoryController::class, 'update'])->name('admin.industry-subcategories.update')->middleware($adminMiddleware)->whereNumber('id');
 Route::delete('admin/industry-subcategories/{id}', [\App\Http\Controllers\Admin\IndustrySubcategoryController::class, 'destroy'])->name('admin.industry-subcategories.destroy')->middleware($adminMiddleware)->whereNumber('id');
 
+// ── Admin: Universal Module Config (Industry × Sub-Industry module matrix) ──
+Route::get('admin/module-config', [\App\Http\Controllers\Admin\UniversalModuleConfigController::class, 'index'])->name('admin.module-config.index')->middleware($adminMiddleware);
+Route::put('admin/module-config', [\App\Http\Controllers\Admin\UniversalModuleConfigController::class, 'update'])->name('admin.module-config.update')->middleware($adminMiddleware);
+Route::post('admin/module-config/copy', [\App\Http\Controllers\Admin\UniversalModuleConfigController::class, 'copy'])->name('admin.module-config.copy')->middleware($adminMiddleware);
+
 // Phase 5: per-tenant audit log + bulk overview (InstituteModuleOverrideController)
 Route::get('admin/institutes/{institute}/access-log', [\App\Http\Controllers\Admin\InstituteModuleOverrideController::class, 'accessLog'])->name('admin.institutes.access-log')->middleware($adminMiddleware)->whereNumber('institute');
 Route::get('admin/institutes/modules-overview', [\App\Http\Controllers\Admin\InstituteModuleOverrideController::class, 'overview'])->name('admin.institutes.modules-overview')->middleware($adminMiddleware);

@@ -9,7 +9,11 @@ class IndustrySubcategoryService
     /**
      * Get modules for a sub-category (grouped by category).
      *
-     * @return array{mandatory: array<int, string>, default: array<int, string>, optional: array<int, string>}
+     * 'hidden' holds modules the platform deliberately keeps out of the tenant
+     * UI for this sub-category — Layer 3 never auto-enables them and the tenant
+     * module screen neither lists nor toggles them.
+     *
+     * @return array{mandatory: array<int, string>, default: array<int, string>, optional: array<int, string>, hidden: array<int, string>}
      */
     public function getModules(string $industry, string $subcategory): array
     {
@@ -20,7 +24,7 @@ class IndustrySubcategoryService
             ->first();
 
         if (! $sub) {
-            return ['mandatory' => [], 'default' => [], 'optional' => []];
+            return ['mandatory' => [], 'default' => [], 'optional' => [], 'hidden' => []];
         }
 
         $modules = DB::table('subcategory_default_modules')
@@ -31,6 +35,7 @@ class IndustrySubcategoryService
             'mandatory' => $modules->where('category', 'mandatory')->pluck('module_key')->toArray(),
             'default' => $modules->where('category', 'default')->pluck('module_key')->toArray(),
             'optional' => $modules->where('category', 'optional')->pluck('module_key')->toArray(),
+            'hidden' => $modules->where('category', 'hidden')->pluck('module_key')->toArray(),
         ];
     }
 
