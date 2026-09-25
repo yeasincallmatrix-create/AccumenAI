@@ -905,72 +905,31 @@
                     </div>
                 @endif
                 @if ($workspaceAllowedFinance ?? false)
-                    @php $financeOpen = request()->routeIs('finance.*','accounting.*','finance.education.*','sync.*') ? true : false; @endphp
+                    @php
+                        $accountingNavOpen = request()->routeIs(
+                            'accounting.*',
+                            'finance.chart-of-accounts.*',
+                            'finance.journals.*',
+                            'finance.periods.*',
+                            'finance.opening-balances.*',
+                            'finance.audit.*'
+                        );
+                        $financeNavOpen = ! $accountingNavOpen && request()->routeIs('finance.*','sync.*');
+                        $canViewBudgets = $user instanceof \App\Models\InstituteUser
+                            ? $user->hasPermission('budget.view')
+                            : (\App\Support\Workspace::membership()?->hasPermission('budget.view') ?? false);
+                    @endphp
                     <div class="nav-group">
-                        <button class="nav-link w-100 d-flex align-items-center justify-content-between {{ $financeOpen ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#financeNavGroup" aria-expanded="{{ $financeOpen ? 'true' : 'false' }}" aria-controls="financeNavGroup">
-                            <span class="d-flex align-items-center gap-2"><i class="bi bi-cash-coin"></i><span class="sidebar-label fw-semibold">Finance &amp; Accounting</span></span>
+                        <button class="nav-link w-100 d-flex align-items-center justify-content-between {{ $financeNavOpen ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#financeNavGroup" aria-expanded="{{ $financeNavOpen ? 'true' : 'false' }}" aria-controls="financeNavGroup">
+                            <span class="d-flex align-items-center gap-2"><i class="bi bi-cash-coin"></i><span class="sidebar-label fw-semibold">Finance</span></span>
                             <i class="bi bi-chevron-down small sidebar-label nav-caret"></i>
                         </button>
-                        <div class="collapse {{ $financeOpen ? 'show' : '' }}" id="financeNavGroup">
+                        <div class="collapse {{ $financeNavOpen ? 'show' : '' }}" id="financeNavGroup">
                             <a class="nav-link sub {{ request()->routeIs('finance.dashboard') ? 'active' : '' }}" href="{{ route('finance.dashboard') }}">
                                 <i class="bi bi-cash-coin"></i><span class="sidebar-label">Finance Dashboard</span>
                             </a>
-                            <a class="nav-link sub {{ request()->routeIs('accounting.dashboard') ? 'active' : '' }}" href="{{ route('accounting.dashboard') }}">
-                                <i class="bi bi-graph-up"></i><span class="sidebar-label">Accounting</span>
-                            </a>
-                            @if(advanced_accounting())
-                            <a class="nav-link sub {{ request()->routeIs('accounting.reports.trial-balance') ? 'active' : '' }}" href="{{ route('accounting.reports.trial-balance') }}">
-                                <i class="bi bi-balance-scale"></i><span class="sidebar-label">Trial Balance</span>
-                            </a>
-                            @endif
-                            <a class="nav-link sub {{ request()->routeIs('accounting.reports.profit-loss') ? 'active' : '' }}" href="{{ route('accounting.reports.profit-loss') }}">
-                                <i class="bi bi-graph-up-arrow"></i><span class="sidebar-label">Profit &amp; Loss</span>
-                            </a>
-                            <a class="nav-link sub {{ request()->routeIs('accounting.reports.balance-sheet') ? 'active' : '' }}" href="{{ route('accounting.reports.balance-sheet') }}">
-                                <i class="bi bi-file-earmark-bar-graph"></i><span class="sidebar-label">Balance Sheet</span>
-                            </a>
-                            <a class="nav-link sub {{ request()->routeIs('accounting.reports.cash-flow') ? 'active' : '' }}" href="{{ route('accounting.reports.cash-flow') }}">
-                                <i class="bi bi-cash"></i><span class="sidebar-label">Cash Flow</span>
-                            </a>
-                            @if(advanced_accounting())
-                            <a class="nav-link sub {{ request()->routeIs('accounting.reports.general-ledger') ? 'active' : '' }}" href="{{ route('accounting.reports.general-ledger') }}">
-                                <i class="bi bi-journal-text"></i><span class="sidebar-label">General Ledger</span>
-                            </a>
-                            <a class="nav-link sub {{ request()->routeIs('accounting.reports.account-ledger') ? 'active' : '' }}" href="{{ route('accounting.reports.account-ledger') }}">
-                                <i class="bi bi-journal-arrow-up"></i><span class="sidebar-label">Account Ledger</span>
-                            </a>
-                            @endif
-                            <a class="nav-link sub {{ request()->routeIs('finance.chart-of-accounts.*') ? 'active' : '' }}" href="{{ route('finance.chart-of-accounts.index') }}">
-                                <i class="bi bi-list-columns-reverse"></i><span class="sidebar-label">Chart of Accounts</span>
-                            </a>
-                            @if(advanced_accounting())
-                            <a class="nav-link sub {{ request()->routeIs('finance.journals.*') ? 'active' : '' }}" href="{{ route('finance.journals.index') }}">
-                                <i class="bi bi-journal-text"></i><span class="sidebar-label">Journals</span>
-                            </a>
-                            <a class="nav-link sub {{ request()->routeIs('accounting.reports.ratios') ? 'active' : '' }}" href="{{ route('accounting.reports.ratios') }}">
-                                <i class="bi bi-pie-chart"></i><span class="sidebar-label">Ratio Analysis</span>
-                            </a>
-                            @endif
                             <a class="nav-link sub {{ request()->routeIs('finance.invoices.*') || request()->routeIs('finance.payments.*') ? 'active' : '' }}" href="{{ route('finance.invoices.index') }}">
                                 <i class="bi bi-receipt-cutoff"></i><span class="sidebar-label">Invoices</span>
-                            </a>
-                            <a class="nav-link sub {{ request()->routeIs('finance.progressive-contracts.*') ? 'active' : '' }}" href="{{ route('finance.progressive-contracts.index') }}">
-                                <i class="bi bi-building-gear"></i><span class="sidebar-label">Progressive Contracts</span>
-                            </a>
-                            <a class="nav-link sub {{ request()->routeIs('finance.recurring-templates.*') ? 'active' : '' }}" href="{{ route('finance.recurring-templates.index') }}">
-                                <i class="bi bi-arrow-repeat"></i><span class="sidebar-label">Recurring Templates</span>
-                            </a>
-                            <a class="nav-link sub {{ request()->routeIs('finance.expenses.*') ? 'active' : '' }}" href="{{ route('finance.expenses.index') }}">
-                                <i class="bi bi-receipt"></i><span class="sidebar-label">Expenses</span>
-                            </a>
-                            <a class="nav-link sub {{ request()->routeIs('finance.expenses.billable-dashboard') ? 'active' : '' }}" href="{{ route('finance.expenses.billable-dashboard') }}">
-                                <i class="bi bi-cash-coin"></i><span class="sidebar-label">Billable Expenses</span>
-                            </a>
-                            <a class="nav-link sub {{ request()->routeIs('accounting.bank-feed.*') ? 'active' : '' }}" href="{{ route('accounting.bank-feed.index') }}">
-                                <i class="bi bi-bank"></i><span class="sidebar-label">Bank Feed Import</span>
-                            </a>
-                            <a class="nav-link sub {{ request()->routeIs('accounting.bank-reconciliation.*') ? 'active' : '' }}" href="{{ route('accounting.bank-reconciliation.index') }}">
-                                <i class="bi bi-arrow-left-right"></i><span class="sidebar-label">Bank Reconciliation</span>
                             </a>
                             <a class="nav-link sub {{ request()->routeIs('finance.payments.index') ? 'active' : '' }}" href="{{ route('finance.payments.index') }}">
                                 <i class="bi bi-cash-stack"></i><span class="sidebar-label">Payments</span>
@@ -978,15 +937,29 @@
                             <a class="nav-link sub {{ request()->routeIs('finance.parties.*') ? 'active' : '' }}" href="{{ route('finance.parties.index') }}">
                                 <i class="bi bi-people"></i><span class="sidebar-label">Parties</span>
                             </a>
+                            <a class="nav-link sub {{ request()->routeIs('finance.expenses.*') ? 'active' : '' }}" href="{{ route('finance.expenses.index') }}">
+                                <i class="bi bi-receipt"></i><span class="sidebar-label">Expenses</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('finance.expenses.billable-dashboard') ? 'active' : '' }}" href="{{ route('finance.expenses.billable-dashboard') }}">
+                                <i class="bi bi-cash-coin"></i><span class="sidebar-label">Billable Expenses</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('finance.progressive-contracts.*') ? 'active' : '' }}" href="{{ route('finance.progressive-contracts.index') }}">
+                                <i class="bi bi-building-gear"></i><span class="sidebar-label">Progressive Contracts</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('finance.recurring-templates.*') ? 'active' : '' }}" href="{{ route('finance.recurring-templates.index') }}">
+                                <i class="bi bi-arrow-repeat"></i><span class="sidebar-label">Recurring Templates</span>
+                            </a>
+                            @if ($canViewBudgets)
+                                <a class="nav-link sub {{ request()->routeIs('finance.budgets.*') ? 'active' : '' }}" href="{{ route('finance.budgets.dashboard') }}">
+                                    <i class="bi bi-wallet2"></i><span class="sidebar-label">Budgets</span>
+                                </a>
+                            @endif
+                            <a class="nav-link sub {{ request()->routeIs('finance.online-payments.*') || request()->routeIs('online-payments.*') ? 'active' : '' }}" href="{{ route('finance.online-payments.gateways') }}">
+                                <i class="bi bi-credit-card"></i><span class="sidebar-label">Online Payments</span>
+                            </a>
                             @if ($workspaceAllowedAccountingManage ?? false)
                                 <a class="nav-link sub {{ request()->routeIs('finance.payment-methods.*') ? 'active' : '' }}" href="{{ route('finance.payment-methods.index') }}">
                                     <i class="bi bi-wallet2"></i><span class="sidebar-label">Payment Methods</span>
-                                </a>
-                                <a class="nav-link sub {{ request()->routeIs('finance.periods.*') ? 'active' : '' }}" href="{{ route('finance.periods.index') }}">
-                                    <i class="bi bi-calendar-range"></i><span class="sidebar-label">Fiscal Years &amp; Periods</span>
-                                </a>
-                                <a class="nav-link sub {{ request()->routeIs('finance.opening-balances.*') ? 'active' : '' }}" href="{{ route('finance.opening-balances.create') }}">
-                                    <i class="bi bi-box-arrow-in-down"></i><span class="sidebar-label">Opening Balances</span>
                                 </a>
                                 <a class="nav-link sub {{ request()->routeIs('finance.exchange-rates.*') ? 'active' : '' }}" href="{{ route('finance.exchange-rates.index') }}">
                                     <i class="bi bi-currency-exchange"></i><span class="sidebar-label">Exchange Rates</span>
@@ -994,11 +967,6 @@
                                 <a class="nav-link sub {{ request()->routeIs('finance.fx-revaluations.*') ? 'active' : '' }}" href="{{ route('finance.fx-revaluations.index') }}">
                                     <i class="bi bi-calculator"></i><span class="sidebar-label">FX Revaluation</span>
                                 </a>
-                            @endif
-                            @if(advanced_accounting())
-                            <a class="nav-link sub {{ request()->routeIs('finance.audit.*') ? 'active' : '' }}" href="{{ route('finance.audit.index') }}">
-                                <i class="bi bi-shield-lock"></i><span class="sidebar-label">Audit Trail</span>
-                            </a>
                             @endif
                             @if ($isEducation)
                                 <a class="nav-link sub {{ request()->routeIs('finance.education.dashboard') ? 'active' : '' }}" href="{{ route('finance.education.dashboard') }}">
@@ -1020,19 +988,6 @@
                                     <i class="bi bi-bar-chart"></i><span class="sidebar-label">Reports</span>
                                 </a>
                             @endif
-                            @php
-                                $canViewBudgets = $user instanceof \App\Models\InstituteUser
-                                    ? $user->hasPermission('budget.view')
-                                    : (\App\Support\Workspace::membership()?->hasPermission('budget.view') ?? false);
-                            @endphp
-                            @if ($canViewBudgets)
-                                <a class="nav-link sub {{ request()->routeIs('finance.budgets.*') ? 'active' : '' }}" href="{{ route('finance.budgets.dashboard') }}">
-                                    <i class="bi bi-wallet2"></i><span class="sidebar-label">Budgets</span>
-                                </a>
-                            @endif
-                            <a class="nav-link sub {{ request()->routeIs('finance.online-payments.*') || request()->routeIs('online-payments.*') ? 'active' : '' }}" href="{{ route('finance.online-payments.gateways') }}">
-                                <i class="bi bi-credit-card"></i><span class="sidebar-label">Online Payments</span>
-                            </a>
                             <a class="nav-link sub {{ request()->routeIs('finance.reports.*') ? 'active' : '' }}" href="{{ route('finance.reports.trial-balance') }}">
                                 <i class="bi bi-bar-chart-fill"></i><span class="sidebar-label">{{ mawa_e('sidebar.reports') }}</span>
                             </a>
@@ -1042,6 +997,67 @@
                                     <span class="badge bg-warning ms-auto">{{ $countsPendingSync }}</span>
                                 @endif
                             </a>
+                        </div>
+                    </div>
+                    <div class="nav-group">
+                        <button class="nav-link w-100 d-flex align-items-center justify-content-between {{ $accountingNavOpen ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#accountingNavGroup" aria-expanded="{{ $accountingNavOpen ? 'true' : 'false' }}" aria-controls="accountingNavGroup">
+                            <span class="d-flex align-items-center gap-2"><i class="bi bi-journal-text"></i><span class="sidebar-label fw-semibold">Accounting</span></span>
+                            <i class="bi bi-chevron-down small sidebar-label nav-caret"></i>
+                        </button>
+                        <div class="collapse {{ $accountingNavOpen ? 'show' : '' }}" id="accountingNavGroup">
+                            <a class="nav-link sub {{ request()->routeIs('accounting.dashboard') ? 'active' : '' }}" href="{{ route('accounting.dashboard') }}">
+                                <i class="bi bi-graph-up"></i><span class="sidebar-label">Accounting Dashboard</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('finance.chart-of-accounts.*') ? 'active' : '' }}" href="{{ route('finance.chart-of-accounts.index') }}">
+                                <i class="bi bi-list-columns-reverse"></i><span class="sidebar-label">Chart of Accounts</span>
+                            </a>
+                            @if(advanced_accounting())
+                            <a class="nav-link sub {{ request()->routeIs('finance.journals.*') ? 'active' : '' }}" href="{{ route('finance.journals.index') }}">
+                                <i class="bi bi-journal-text"></i><span class="sidebar-label">Journals</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('accounting.reports.general-ledger') ? 'active' : '' }}" href="{{ route('accounting.reports.general-ledger') }}">
+                                <i class="bi bi-journal-text"></i><span class="sidebar-label">General Ledger</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('accounting.reports.account-ledger') ? 'active' : '' }}" href="{{ route('accounting.reports.account-ledger') }}">
+                                <i class="bi bi-journal-arrow-up"></i><span class="sidebar-label">Account Ledger</span>
+                            </a>
+                            @endif
+                            @if(advanced_accounting())
+                            <a class="nav-link sub {{ request()->routeIs('accounting.reports.trial-balance') ? 'active' : '' }}" href="{{ route('accounting.reports.trial-balance') }}">
+                                <i class="bi bi-balance-scale"></i><span class="sidebar-label">Trial Balance</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('accounting.reports.ratios') ? 'active' : '' }}" href="{{ route('accounting.reports.ratios') }}">
+                                <i class="bi bi-pie-chart"></i><span class="sidebar-label">Ratio Analysis</span>
+                            </a>
+                            @endif
+                            <a class="nav-link sub {{ request()->routeIs('accounting.reports.profit-loss') ? 'active' : '' }}" href="{{ route('accounting.reports.profit-loss') }}">
+                                <i class="bi bi-graph-up-arrow"></i><span class="sidebar-label">Profit &amp; Loss</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('accounting.reports.balance-sheet') ? 'active' : '' }}" href="{{ route('accounting.reports.balance-sheet') }}">
+                                <i class="bi bi-file-earmark-bar-graph"></i><span class="sidebar-label">Balance Sheet</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('accounting.reports.cash-flow') ? 'active' : '' }}" href="{{ route('accounting.reports.cash-flow') }}">
+                                <i class="bi bi-cash"></i><span class="sidebar-label">Cash Flow</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('accounting.bank-feed.*') ? 'active' : '' }}" href="{{ route('accounting.bank-feed.index') }}">
+                                <i class="bi bi-bank"></i><span class="sidebar-label">Bank Feed Import</span>
+                            </a>
+                            <a class="nav-link sub {{ request()->routeIs('accounting.bank-reconciliation.*') ? 'active' : '' }}" href="{{ route('accounting.bank-reconciliation.index') }}">
+                                <i class="bi bi-arrow-left-right"></i><span class="sidebar-label">Bank Reconciliation</span>
+                            </a>
+                            @if ($workspaceAllowedAccountingManage ?? false)
+                                <a class="nav-link sub {{ request()->routeIs('finance.periods.*') ? 'active' : '' }}" href="{{ route('finance.periods.index') }}">
+                                    <i class="bi bi-calendar-range"></i><span class="sidebar-label">Fiscal Years &amp; Periods</span>
+                                </a>
+                                <a class="nav-link sub {{ request()->routeIs('finance.opening-balances.*') ? 'active' : '' }}" href="{{ route('finance.opening-balances.create') }}">
+                                    <i class="bi bi-box-arrow-in-down"></i><span class="sidebar-label">Opening Balances</span>
+                                </a>
+                            @endif
+                            @if(advanced_accounting())
+                            <a class="nav-link sub {{ request()->routeIs('finance.audit.*') ? 'active' : '' }}" href="{{ route('finance.audit.index') }}">
+                                <i class="bi bi-shield-lock"></i><span class="sidebar-label">Audit Trail</span>
+                            </a>
+                            @endif
                         </div>
                     </div>
                 @endif

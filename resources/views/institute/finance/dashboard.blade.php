@@ -1,7 +1,7 @@
 @extends('layouts.standalone')
 
 @section('title', 'Finance — AccumenAI')
-@section('page_title', 'Finance & Accounting')
+@section('page_title', 'Finance')
 
 @section('content')
 

@@ -201,14 +201,18 @@
                     </a>
                 @endif
                 @if ($workspaceAllowedFinance ?? false)
-                    <a class="nav-link {{ request()->routeIs('finance.*') ? 'active' : '' }}" href="{{ route('finance.dashboard') }}">
+                    @php
+                        $accountingNavActive = request()->routeIs(
+                            'accounting.*',
+                            'finance.chart-of-accounts.*',
+                            'finance.journals.*',
+                            'finance.periods.*',
+                            'finance.opening-balances.*',
+                            'finance.audit.*'
+                        );
+                    @endphp
+                    <a class="nav-link {{ request()->routeIs('finance.*') && ! $accountingNavActive ? 'active' : '' }}" href="{{ route('finance.dashboard') }}">
                         <i class="bi bi-cash-coin"></i><span class="sidebar-label">Finance</span>
-                    </a>
-                    <a class="nav-link sub {{ request()->routeIs('finance.chart-of-accounts.*') ? 'active' : '' }}" href="{{ route('finance.chart-of-accounts.index') }}">
-                        <i class="bi bi-list-columns-reverse"></i><span class="sidebar-label">Chart of Accounts</span>
-                    </a>
-                    <a class="nav-link sub {{ request()->routeIs('finance.journals.*') ? 'active' : '' }}" href="{{ route('finance.journals.index') }}">
-                        <i class="bi bi-journal-text"></i><span class="sidebar-label">Journals</span>
                     </a>
                     <a class="nav-link sub {{ request()->routeIs('finance.invoices.*') || request()->routeIs('finance.payments.*') ? 'active' : '' }}" href="{{ route('finance.invoices.index') }}">
                         <i class="bi bi-receipt-cutoff"></i><span class="sidebar-label">Invoices</span>
@@ -235,12 +239,6 @@
                         <a class="nav-link sub {{ request()->routeIs('finance.payment-methods.*') ? 'active' : '' }}" href="{{ route('finance.payment-methods.index') }}">
                             <i class="bi bi-wallet2"></i><span class="sidebar-label">Payment Methods</span>
                         </a>
-                        <a class="nav-link sub {{ request()->routeIs('finance.periods.*') ? 'active' : '' }}" href="{{ route('finance.periods.index') }}">
-                            <i class="bi bi-calendar-range"></i><span class="sidebar-label">Fiscal Years &amp; Periods</span>
-                        </a>
-                        <a class="nav-link sub {{ request()->routeIs('finance.opening-balances.*') ? 'active' : '' }}" href="{{ route('finance.opening-balances.create') }}">
-                            <i class="bi bi-box-arrow-in-down"></i><span class="sidebar-label">Opening Balances</span>
-                        </a>
                         <a class="nav-link sub {{ request()->routeIs('finance.exchange-rates.*') ? 'active' : '' }}" href="{{ route('finance.exchange-rates.index') }}">
                             <i class="bi bi-currency-exchange"></i><span class="sidebar-label">Exchange Rates</span>
                         </a>
@@ -248,9 +246,6 @@
                             <i class="bi bi-calculator"></i><span class="sidebar-label">FX Revaluation</span>
                         </a>
                     @endif
-                    <a class="nav-link sub {{ request()->routeIs('finance.audit.*') ? 'active' : '' }}" href="{{ route('finance.audit.index') }}">
-                        <i class="bi bi-shield-lock"></i><span class="sidebar-label">Audit Trail</span>
-                    </a>
                     @if ($isEducation)
                         <a class="nav-link sub {{ request()->routeIs('finance.education.dashboard') || request()->routeIs('finance.education.students.*') || request()->routeIs('finance.education.reports.*') ? 'active' : '' }}" href="{{ route('finance.education.dashboard') }}">
                             <i class="bi bi-mortarboard-fill"></i><span class="sidebar-label">Education Fees</span>
@@ -280,6 +275,26 @@
                     </a>
                     <a class="nav-link sub {{ request()->routeIs('finance.reports.*') ? 'active' : '' }}" href="{{ route('finance.reports.trial-balance') }}">
                         <i class="bi bi-bar-chart-fill"></i><span class="sidebar-label">{{ mawa_e('sidebar.reports') }}</span>
+                    </a>
+                    <a class="nav-link {{ $accountingNavActive ? 'active' : '' }}" href="{{ route('accounting.dashboard') }}">
+                        <i class="bi bi-journal-text"></i><span class="sidebar-label">Accounting</span>
+                    </a>
+                    <a class="nav-link sub {{ request()->routeIs('finance.chart-of-accounts.*') ? 'active' : '' }}" href="{{ route('finance.chart-of-accounts.index') }}">
+                        <i class="bi bi-list-columns-reverse"></i><span class="sidebar-label">Chart of Accounts</span>
+                    </a>
+                    <a class="nav-link sub {{ request()->routeIs('finance.journals.*') ? 'active' : '' }}" href="{{ route('finance.journals.index') }}">
+                        <i class="bi bi-journal-text"></i><span class="sidebar-label">Journals</span>
+                    </a>
+                    @if ($workspaceAllowedAccountingManage ?? false)
+                        <a class="nav-link sub {{ request()->routeIs('finance.periods.*') ? 'active' : '' }}" href="{{ route('finance.periods.index') }}">
+                            <i class="bi bi-calendar-range"></i><span class="sidebar-label">Fiscal Years &amp; Periods</span>
+                        </a>
+                        <a class="nav-link sub {{ request()->routeIs('finance.opening-balances.*') ? 'active' : '' }}" href="{{ route('finance.opening-balances.create') }}">
+                            <i class="bi bi-box-arrow-in-down"></i><span class="sidebar-label">Opening Balances</span>
+                        </a>
+                    @endif
+                    <a class="nav-link sub {{ request()->routeIs('finance.audit.*') ? 'active' : '' }}" href="{{ route('finance.audit.index') }}">
+                        <i class="bi bi-shield-lock"></i><span class="sidebar-label">Audit Trail</span>
                     </a>
                     <a class="nav-link {{ request()->routeIs('sync.*') ? 'active' : '' }}" href="{{ route('sync.index') }}">
                         <i class="bi bi-arrow-repeat"></i><span class="sidebar-label">{{ mawa_e('sidebar.offline_review') }}</span>
