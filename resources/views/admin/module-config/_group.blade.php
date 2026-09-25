@@ -44,7 +44,8 @@
                         $rowName = $groupKey . '_' . $moduleIndex;
                         $current = $matrix[$module['key']] ?? 'hidden';
                     @endphp
-                    <tr class="{{ $module['has_children'] ? 'table-light fw-semibold' : '' }}">
+                    <tr class="{{ $module['has_children'] ? 'table-light fw-semibold parent-row' : '' }}"
+                        @if ($module['has_children']) data-parent-key="{{ $module['key'] }}" @endif>
                         <td>
                             <input type="hidden" name="modules[{{ $rowName }}][module_key]" value="{{ $module['key'] }}">
                             <div class="d-flex align-items-center gap-1 flex-wrap">
@@ -76,6 +77,7 @@
                                            name="modules[{{ $rowName }}][category]"
                                            id="mc_{{ $rowName }}_{{ $category }}"
                                            value="{{ $category }}"
+                                           @if ($module['has_children']) class="parent-radio" data-parent-key="{{ $module['key'] }}" @endif
                                            {{ $current === $category ? 'checked' : '' }}>
                                     <span class="visually-hidden">{{ $categoryMeta[$category]['label'] }} — {{ $module['name'] }}</span>
                                 </label>
@@ -84,12 +86,18 @@
                     </tr>
 
                     @if ($module['has_children'])
+                        @php
+                            $parentSaved = $matrix[$module['key']] ?? 'hidden';
+                        @endphp
                         @foreach ($module['children'] as $child)
                             @php
                                 $childRowName = $groupKey . '_' . $moduleIndex . '_' . $loop->index;
                                 $childCurrent = $matrix[$child['key']] ?? 'hidden';
+                                $childOverride = $childCurrent !== $parentSaved;
                             @endphp
-                            <tr class="module-child-row" data-child-of="{{ $module['key'] }}">
+                            <tr class="module-child-row child-row{{ $childOverride ? ' child-override' : '' }}"
+                                data-child-of="{{ $module['key'] }}"
+                                data-child-key="{{ $child['key'] }}">
                                 <td>
                                     <input type="hidden" name="modules[{{ $childRowName }}][module_key]" value="{{ $child['key'] }}">
                                     <div class="ps-4 d-flex align-items-center gap-1 flex-wrap">
@@ -97,6 +105,9 @@
                                         <i class="bi {{ $child['icon'] ?: 'bi-puzzle' }} text-primary small"></i>
                                         <span>{{ $child['name'] }}</span>
                                         <code>{{ $child['key'] }}</code>
+                                        @if ($childOverride)
+                                            <span class="small text-primary child-override-label">override</span>
+                                        @endif
                                     </div>
                                 </td>
                                 @foreach ($categories as $category)
@@ -107,6 +118,9 @@
                                                    name="modules[{{ $childRowName }}][category]"
                                                    id="mc_{{ $childRowName }}_{{ $category }}"
                                                    value="{{ $category }}"
+                                                   class="child-radio"
+                                                   data-child-key="{{ $child['key'] }}"
+                                                   data-parent-key="{{ $module['key'] }}"
                                                    {{ $childCurrent === $category ? 'checked' : '' }}>
                                             <span class="visually-hidden">{{ $categoryMeta[$category]['label'] }} — {{ $child['name'] }}</span>
                                         </label>

@@ -237,4 +237,130 @@
     fillSubs(sourceIndustry.value, @json($subcategory?->subcategory_key));
 })();
 </script>
+<script>
+(function () {
+    // ─────────────────────────────────────────────────────────────
+    // Parent → children radio cascade
+    //   Rule 1: parent change cascades its value to every child
+    //   Rule 2: a child may still be set individually afterwards
+    //   Rule 3: changing the parent wipes those child overrides
+    // ─────────────────────────────────────────────────────────────
+    function cascadeToast(message, type) {
+        var toast = document.createElement('div');
+        toast.className = 'position-fixed bottom-0 end-0 m-3 alert alert-' + (type || 'info') + ' shadow';
+        toast.setAttribute('role', 'status');
+        toast.style.zIndex = '9999';
+        toast.style.maxWidth = '400px';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        window.setTimeout(function () {
+            toast.style.transition = 'opacity .3s';
+            toast.style.opacity = '0';
+            window.setTimeout(function () { toast.remove(); }, 300);
+        }, 2500);
+    }
+
+    function childRow(radio) {
+        return radio.closest('tr');
+    }
+
+    function setOverrideMarker(row, isOverride) {
+        if (!row) {
+            return;
+        }
+
+        row.classList.toggle('child-override', isOverride);
+
+        var label = row.querySelector('.child-override-label');
+        if (isOverride && !label) {
+            label = document.createElement('span');
+            label.className = 'small text-primary child-override-label';
+            label.textContent = 'override';
+            var code = row.querySelector('td:first-child code');
+            if (code && code.parentNode) {
+                code.parentNode.appendChild(label);
+            } else {
+                row.querySelector('td:first-child div')?.appendChild(label);
+            }
+        } else if (!isOverride && label) {
+            label.remove();
+        }
+    }
+
+    function parentValueOf(parentKey) {
+        var checked = document.querySelector('.parent-radio[data-parent-key="' + parentKey + '"]:checked');
+        return checked ? checked.value : null;
+    }
+
+    function cascadeToChildren(parentKey, newCategory) {
+        var children = document.querySelectorAll('.child-radio[data-parent-key="' + parentKey + '"]');
+        var childKeys = {};
+
+        children.forEach(function (childRadio) {
+            childKeys[childRadio.dataset.childKey] = true;
+
+            if (childRadio.value === newCategory) {
+                childRadio.checked = true;
+            }
+            // Rule 3 — every child override is reset by a parent change.
+            setOverrideMarker(childRow(childRadio), false);
+        });
+
+        return Object.keys(childKeys).length;
+    }
+
+    document.querySelectorAll('.parent-radio').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+            var parentKey = this.dataset.parentKey;
+            var newCategory = this.value;
+            var count = cascadeToChildren(parentKey, newCategory);
+
+            cascadeToast('Parent changed to "' + newCategory + '" — ' + count + ' children updated', 'info');
+        });
+    });
+
+    document.querySelectorAll('.child-radio').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+            var parentKey = this.dataset.parentKey;
+            var parentValue = parentValueOf(parentKey);
+            var row = childRow(this);
+
+            if (parentValue && this.value !== parentValue) {
+                setOverrideMarker(row, true);
+                cascadeToast('Child overridden (parent: ' + parentValue + ', child: ' + this.value + ')', 'warning');
+            } else {
+                setOverrideMarker(row, false);
+            }
+        });
+    });
+
+    // Re-sync override markers against the rendered state (saved matrix).
+    document.querySelectorAll('.child-radio:checked').forEach(function (radio) {
+        var parentValue = parentValueOf(radio.dataset.parentKey);
+        if (parentValue) {
+            setOverrideMarker(childRow(radio), radio.value !== parentValue);
+        }
+    });
+})();
+</script>
+<style>
+/* Override indicator for a child whose category differs from its parent */
+.child-row.child-override td:first-child::before {
+    content: '\25CF  ';
+    color: #0d6efd;
+    font-weight: bold;
+}
+.child-row.child-override {
+    background-color: #f0f7ff !important;
+}
+.child-override-label {
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    font-size: 10px;
+}
+html.monetix-dark .child-row.child-override {
+    background-color: rgba(13, 110, 253, .12) !important;
+}
+</style>
 @endsection
