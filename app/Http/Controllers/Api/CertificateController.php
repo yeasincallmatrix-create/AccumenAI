@@ -37,9 +37,13 @@ class CertificateController extends Controller
 
     public function verify(string $number): JsonResponse
     {
+        $number = strtoupper($number);
         $certificate = Certificate::with(['student', 'course', 'batch', 'type'])
             ->where('certificate_number', $number)
-            ->first();
+            ->first()
+            ?? \App\Models\Training\TrainingCertificate::with(['student', 'course', 'batch', 'type'])
+                ->where('certificate_number', $number)
+                ->first();
 
         if (! $certificate) {
             return $this->notFoundResponse('Certificate not found.');

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Certificate;
+use App\Models\Training\TrainingCertificate;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -26,10 +27,22 @@ class VerifyCertificateController extends Controller
 
     public function show(string $certificateNumber): View|Response
     {
+        $number = strtoupper($certificateNumber);
+        $relations = ['student', 'course.subjects', 'batch', 'institute', 'type'];
+
         $certificate = Certificate::query()
-            ->with(['student', 'course.subjects', 'batch', 'institute', 'type'])
-            ->where('certificate_number', strtoupper($certificateNumber))
+            ->with($relations)
+            ->where('certificate_number', $number)
             ->first();
+
+        // Training-center certificates live in their own table but are
+        // verified through this same public route (see TrainingCertificateController).
+        if ($certificate === null) {
+            $certificate = TrainingCertificate::query()
+                ->with($relations)
+                ->where('certificate_number', $number)
+                ->first();
+        }
 
         if ($certificate === null) {
             return response()->view('verify.not_found', [], Response::HTTP_NOT_FOUND);

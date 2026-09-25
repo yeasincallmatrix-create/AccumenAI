@@ -42,12 +42,14 @@ class TrainingCertificate extends Model
     }
 
     /**
-     * Loose coupling to shared Course (education-owned).
-     * Column: training_certificates.course_id (nullable, no FK enforced).
+     * The certificate's course. training_certificates.course_id stores a
+     * training_courses id (set from batch->course_id when generating),
+     * so this must resolve against TrainingCourse — not the shared
+     * education Course table — for name/subjects to be correct.
      */
     public function course(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Course::class, 'course_id');
+        return $this->belongsTo(TrainingCourse::class, 'course_id');
     }
 
     public function type(): BelongsTo
