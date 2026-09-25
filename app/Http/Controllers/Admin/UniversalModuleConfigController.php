@@ -279,28 +279,66 @@ class UniversalModuleConfigController extends Controller
      * against module_registry so unregistered (forward-looking) keys never
      * render as broken rows. Groups with no live module still render — the
      * empty state tells the admin the category exists but is unseeded.
+     *
+     * Elaboration: a module that owns active children (module_registry.parent_key)
+     * is elaborated once as a parent row carrying one indented, collapsible row
+     * per child; childless modules stay a single row. Child keys listed on their
+     * own in config are claimed by their parent first, so a module can never
+     * render twice. The registry only holds depth-2 hierarchies (parent →
+     * parent.child), so direct children are enough to elaborate a group.
      */
     private function loadModuleGroups(): array
     {
-        $registry = DB::table('module_registry')
+        $registryRows = DB::table('module_registry')
             ->where('status', 'active')
-            ->get()
-            ->keyBy('key');
+            ->orderBy('sort_order')
+            ->orderBy('key')
+            ->get();
+
+        $registry = $registryRows->keyBy('key');
+
+        $childrenByParent = $registryRows
+            ->filter(fn ($module) => $module->parent_key !== null)
+            ->groupBy('parent_key');
 
         $groups = [];
         foreach (config('module_groups', []) as $key => $group) {
-            $modules = [];
+            $configured = [];
             foreach ($group['modules'] ?? [] as $moduleKey) {
-                $module = $registry->get($moduleKey);
-                if (! $module) {
+                if ($registry->has($moduleKey)) {
+                    $configured[] = $moduleKey;
+                }
+            }
+
+            // Pass 1 — claim every configured key that will render under its parent.
+            $claimed = [];
+            foreach ($configured as $moduleKey) {
+                foreach ($childrenByParent->get($moduleKey, collect()) as $child) {
+                    $claimed[$child->key] = true;
+                }
+            }
+
+            // Pass 2 — parents (with their children) plus childless singles.
+            $modules = [];
+            foreach ($configured as $moduleKey) {
+                if (isset($claimed[$moduleKey])) {
                     continue;
                 }
+
+                $module = $registry->get($moduleKey);
+                $children = $childrenByParent->get($moduleKey, collect());
 
                 $modules[] = [
                     'key' => $module->key,
                     'name' => $module->name,
                     'icon' => $module->icon,
                     'parent_key' => $module->parent_key,
+                    'has_children' => $children->isNotEmpty(),
+                    'children' => $children->map(fn ($child) => [
+                        'key' => $child->key,
+                        'name' => $child->name,
+                        'icon' => $child->icon,
+                    ])->values()->all(),
                 ];
             }
 
@@ -309,6 +347,7 @@ class UniversalModuleConfigController extends Controller
                 'icon' => $group['icon'] ?? 'bi-puzzle',
                 'description' => $group['description'] ?? '',
                 'modules' => $modules,
+                'child_count' => array_sum(array_map(fn ($module) => count($module['children']), $modules)),
             ];
         }
 

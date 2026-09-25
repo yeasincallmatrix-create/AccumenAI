@@ -179,6 +179,31 @@
 @section('scripts')
 <script>
 (function () {
+    document.querySelectorAll('[data-module-toggle]').forEach(function (link) {
+        link.addEventListener('click', function (event) {
+            event.preventDefault();
+
+            var key = link.getAttribute('data-module-toggle');
+            var collapse = !link.classList.contains('is-collapsed');
+
+            document.querySelectorAll('[data-child-of="' + key + '"]').forEach(function (row) {
+                row.classList.toggle('d-none', collapse);
+            });
+
+            link.classList.toggle('is-collapsed', collapse);
+            link.setAttribute('aria-expanded', String(!collapse));
+
+            var caret = link.querySelector('[data-caret]');
+            if (caret) {
+                caret.classList.toggle('bi-caret-down-fill', !collapse);
+                caret.classList.toggle('bi-caret-right-fill', collapse);
+            }
+        });
+    });
+})();
+</script>
+<script>
+(function () {
     const SUB_MAP = @json($subMap);
     const sourceIndustry = document.getElementById('copySourceIndustry');
     const sourceSub = document.getElementById('copySourceSub');

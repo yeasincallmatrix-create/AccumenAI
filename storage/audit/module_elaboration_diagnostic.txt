@@ -1,0 +1,106 @@
+=== 1. Parents with children (status=active) ===
+education | Education | 7 children
+medical | Medical / Hospital Management | 14 children
+purchase | Purchase | 6 children
+sales | Sales | 7 children
+training_center | Training Center | 9 children
+
+=== 2. Top-level modules WITHOUT children (parent_key IS NULL) ===
+accounting | Accounting
+ai | AI
+crm | CRM
+finance | Finance
+hr | HR
+inventory | Inventory
+manufacturing | Manufacturing
+notifications | Notifications
+pos | POS
+reports | Reports
+tds | TDS / Tax
+vat | VAT / Tax
+
+=== 3. type=core parents -> children ===
+purchase -> purchase.invoices | Invoices
+purchase -> purchase.orders | Orders
+purchase -> purchase.quotations | Quotations
+purchase -> purchase.receipts | Goods Receipts
+purchase -> purchase.requests | Requests
+purchase -> purchase.returns | Returns
+sales -> sales.customers | Customers
+sales -> sales.deliveries | Deliveries
+sales -> sales.leads | Leads
+sales -> sales.orders | Orders
+sales -> sales.quotations | Quotations
+sales -> sales.reports | Reports
+sales -> sales.returns | Returns
+
+=== 4. Totals ===
+active modules: 60
+parents with children: 5
+top-level singles: 12
+child rows (parent_key set, any status): 43
+inactive child rows: 0
+sum(parents + singles + children) = 60
+
+=== 5. config/module_groups.php keys vs module_registry ===
+core (9 keys) | all active
+medical (15 keys) | all active
+education (8 keys) | all active
+training_center (10 keys) | all active
+sales (9 keys) | all active
+purchase (7 keys) | all active
+inventory (1 keys) | all active
+manufacturing (3 keys) | NOT active: bom, production
+real_estate (3 keys) | NOT active: property, lease, tenant
+
+=== 6. Children of each configured parent key ===
+medical :: medical -> medical.opd, medical.ipd, medical.pharmacy, medical.laboratory, medical.billing, medical.emergency, medical.radiology, medical.bloodbank, medical.physiotherapy, medical.dental, medical.vaccination, medical.ambulance, medical.diet, medical.records
+education :: education -> education.students, education.classes, education.exams, education.attendance, education.fees, education.guardians, education.analytics
+training_center :: training_center -> training_center.courses, training_center.batches, training_center.students, training_center.classes, training_center.attendance, training_center.exams, training_center.certificates, training_center.fees, training_center.reports
+sales :: sales -> sales.quotations, sales.orders, sales.deliveries, sales.returns, sales.leads, sales.customers, sales.reports
+purchase :: purchase -> purchase.quotations, purchase.orders, purchase.invoices, purchase.requests, purchase.returns, purchase.receipts
+
+=== 7. Configured keys that are children of another configured key (dedupe candidates) ===
+medical :: medical.opd (child of configured medical)
+medical :: medical.ipd (child of configured medical)
+medical :: medical.pharmacy (child of configured medical)
+medical :: medical.laboratory (child of configured medical)
+medical :: medical.billing (child of configured medical)
+medical :: medical.emergency (child of configured medical)
+medical :: medical.radiology (child of configured medical)
+medical :: medical.bloodbank (child of configured medical)
+medical :: medical.physiotherapy (child of configured medical)
+medical :: medical.dental (child of configured medical)
+medical :: medical.vaccination (child of configured medical)
+medical :: medical.ambulance (child of configured medical)
+medical :: medical.diet (child of configured medical)
+medical :: medical.records (child of configured medical)
+education :: education.students (child of configured education)
+education :: education.classes (child of configured education)
+education :: education.exams (child of configured education)
+education :: education.attendance (child of configured education)
+education :: education.fees (child of configured education)
+education :: education.guardians (child of configured education)
+education :: education.analytics (child of configured education)
+training_center :: training_center.courses (child of configured training_center)
+training_center :: training_center.batches (child of configured training_center)
+training_center :: training_center.students (child of configured training_center)
+training_center :: training_center.classes (child of configured training_center)
+training_center :: training_center.attendance (child of configured training_center)
+training_center :: training_center.exams (child of configured training_center)
+training_center :: training_center.certificates (child of configured training_center)
+training_center :: training_center.fees (child of configured training_center)
+training_center :: training_center.reports (child of configured training_center)
+sales :: sales.quotations (child of configured sales)
+sales :: sales.orders (child of configured sales)
+sales :: sales.deliveries (child of configured sales)
+sales :: sales.returns (child of configured sales)
+sales :: sales.leads (child of configured sales)
+sales :: sales.customers (child of configured sales)
+sales :: sales.reports (child of configured sales)
+purchase :: purchase.quotations (child of configured purchase)
+purchase :: purchase.orders (child of configured purchase)
+purchase :: purchase.invoices (child of configured purchase)
+purchase :: purchase.requests (child of configured purchase)
+purchase :: purchase.returns (child of configured purchase)
+purchase :: purchase.receipts (child of configured purchase)

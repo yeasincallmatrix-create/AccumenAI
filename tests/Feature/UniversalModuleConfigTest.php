@@ -266,4 +266,138 @@ class UniversalModuleConfigTest extends TestCase
             $this->assertStringContainsString($label, $html, "Missing module group on the matrix page: {$label}");
         }
     }
+
+    public function test_parent_child_hierarchy_is_elaborated_and_singles_stay_flat(): void
+    {
+        $html = $this->actingAs($this->platformAdmin(), 'platform_admin')
+            ->get(route('admin.module-config.index', [
+                'industry' => 'healthcare',
+                'subcategory' => 'pharmacy',
+            ]))
+            ->assertOk()
+            ->assertSee('data-module-toggle="medical"', false)
+            ->assertSee('data-child-of="medical"', false)
+            ->assertSee('data-module-toggle', false)
+            ->getContent();
+
+        $dom = $this->dom($html);
+        $xpath = new \DOMXPath($dom);
+
+        $this->assertSame(
+            ['education', 'medical', 'purchase', 'sales', 'training_center'],
+            $this->attributeValues($xpath, '//*[@data-module-toggle]', 'data-module-toggle'),
+            'Every module that owns children must render as a collapsible parent row',
+        );
+
+        $this->assertSame(0, $xpath->query('//*[@data-module-toggle="crm"]')->length,
+            'Childless modules must render as a single row with no toggle');
+        $this->assertSame(0, $xpath->query('//*[@data-module-toggle="inventory"]')->length,
+            'Childless modules must render as a single row with no toggle');
+
+        $this->assertSame(1, $xpath->query('//tr[@data-child-of="medical"]//code[text()="medical.pharmacy"]')->length,
+            'medical.pharmacy must render as an indented child row of medical');
+        $this->assertSame(1, $xpath->query('//tr[@data-child-of="sales"]//code[text()="sales.orders"]')->length,
+            'sales.orders must render as an indented child row of sales');
+        $this->assertSame(1, $xpath->query('//td//code[text()="medical"]')->length,
+            'The medical parent must render exactly once');
+        $this->assertSame(1, $xpath->query('//input[@type="hidden" and @value="medical.pharmacy"]')->length,
+            'A child key must submit exactly one module_key input — no duplicate rows');
+
+        $this->assertStringContainsString("row.classList.toggle('d-none'", $html,
+            'Collapsible children need the toggle handler on the page');
+    }
+
+    public function test_rendered_form_round_trips_parent_child_and_single_rows(): void
+    {
+        $id = $this->subcategoryId('healthcare', 'pharmacy');
+
+        $html = $this->actingAs($this->platformAdmin(), 'platform_admin')
+            ->get(route('admin.module-config.index', [
+                'industry' => 'healthcare',
+                'subcategory' => 'pharmacy',
+            ]))
+            ->assertOk()
+            ->getContent();
+
+        $payload = [];
+        foreach ($this->dom($html)->getElementsByTagName('input') as $input) {
+            if ($input->getAttribute('type') !== 'hidden') {
+                continue;
+            }
+            if (! preg_match('/^modules\[(.+)\]\[module_key\]$/', $input->getAttribute('name'), $m)) {
+                continue;
+            }
+
+            $key = $input->getAttribute('value');
+            $payload[$m[1]] = [
+                'module_key' => $key,
+                'category' => match ($key) {
+                    'medical' => 'mandatory',
+                    'medical.pharmacy' => 'optional',
+                    'crm' => 'default',
+                    default => 'hidden',
+                },
+            ];
+        }
+
+        $this->assertArrayHasKey('medical', $this->moduleKeyIndex($payload), 'Parent row missing from the rendered form');
+        $this->assertArrayHasKey('medical.pharmacy', $this->moduleKeyIndex($payload), 'Child row missing from the rendered form');
+        $this->assertArrayHasKey('crm', $this->moduleKeyIndex($payload), 'Single row missing from the rendered form');
+
+        $this->saveMatrix($payload)->assertRedirect(route('admin.module-config.index', [
+            'industry' => 'healthcare',
+            'subcategory' => 'pharmacy',
+        ]));
+
+        foreach (['medical' => 'mandatory', 'medical.pharmacy' => 'optional', 'crm' => 'default'] as $key => $category) {
+            $this->assertDatabaseHas('subcategory_default_modules', [
+                'subcategory_id' => $id,
+                'module_key' => $key,
+                'category' => $category,
+            ]);
+        }
+
+        $this->assertSame(count($payload), DB::table('subcategory_default_modules')
+            ->where('subcategory_id', $id)
+            ->whereIn('module_key', array_column($payload, 'module_key'))
+            ->count(), 'Every rendered row must persist exactly once');
+    }
+
+    private function dom(string $html): \DOMDocument
+    {
+        $dom = new \DOMDocument;
+        libxml_use_internal_errors(true);
+        $dom->loadHTML('<?xml encoding="utf-8" ?>'.$html, LIBXML_NOERROR | LIBXML_NOWARNING);
+        libxml_clear_errors();
+
+        return $dom;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function attributeValues(\DOMXPath $xpath, string $query, string $attribute): array
+    {
+        $values = [];
+        foreach ($xpath->query($query) as $node) {
+            $values[] = $node->getAttribute($attribute);
+        }
+        sort($values);
+
+        return $values;
+    }
+
+    /**
+     * @param  array<string, array{module_key: string, category: string}>  $payload
+     * @return array<string, string>
+     */
+    private function moduleKeyIndex(array $payload): array
+    {
+        $index = [];
+        foreach ($payload as $row) {
+            $index[$row['module_key']] = $row['category'];
+        }
+
+        return $index;
+    }
 }
