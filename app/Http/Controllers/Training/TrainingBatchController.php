@@ -13,6 +13,7 @@ class TrainingBatchController extends Controller
     public function index(Request $request)
     {
         $batches = TrainingBatch::with('course:id,name,course_code')
+            ->withCount('enrollments')
             ->where('institute_id', auth()->user()->institute_id)
             ->orderByDesc('id')->paginate(20)->withQueryString();
         return view('training.batches.index', compact('batches'));
@@ -67,14 +68,31 @@ class TrainingBatchController extends Controller
         $batch = TrainingBatch::with([
             'enrollments.student',
             'course:id,name,course_code',
-            'schedules.subject',
         ])->findOrFail($id);
         $batch->loadCount('enrollments');
         $exams = \App\Models\Training\TrainingExam::where('batch_id', $batch->id)
             ->withCount('results')->orderByDesc('id')->get();
         $availableSeats = max(0, ($batch->seat_capacity ?? 0) - ($batch->enrollments_count));
         $subjects = $this->scheduleSubjects($batch);
-        return view('training.batches.show', compact('batch', 'exams', 'availableSeats', 'subjects'));
+        // Every schedule version (history + live): the modal renders the week
+        // being viewed by evaluating effective bounds per date.
+        $scheduleRows = \App\Models\Training\TrainingSchedule::where('batch_id', $batch->id)
+            ->with('subject:id,name')
+            ->orderBy('day_of_week')->orderBy('start_time')
+            ->get()
+            ->map(fn ($s) => [
+                'id' => $s->id,
+                'day' => (int) $s->day_of_week,
+                'start' => $s->start_label,
+                'end' => $s->end_label,
+                'subject_id' => $s->subject_id,
+                'subject' => $s->subject?->name,
+                'title' => $s->title,
+                'room' => $s->room,
+                'from' => $s->effective_from,
+                'to' => $s->effective_to,
+            ]);
+        return view('training.batches.show', compact('batch', 'exams', 'availableSeats', 'subjects', 'scheduleRows'));
     }
 
     public function edit($id)

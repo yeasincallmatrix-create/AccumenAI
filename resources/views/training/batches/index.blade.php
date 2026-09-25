@@ -55,7 +55,7 @@
                                 {{ ucfirst($batch->status ?? '—') }}
                             </span>
                         </td>
-                        <td>{{ $batch->seat_filled ?? 0 }} / {{ $batch->seat_capacity ?? '—' }}</td>
+                        <td>{{ $batch->enrollments_count ?? $batch->seat_filled ?? 0 }} / {{ $batch->seat_capacity ?? '—' }}</td>
                         <td><x-tdate :value="$batch->start_date" fallback="d M Y" empty="—" /></td>
                         <td class="text-end">
                             <a href="{{ route('training.batches.show', $batch->id) }}" class="btn btn-sm btn-outline-primary">View</a>

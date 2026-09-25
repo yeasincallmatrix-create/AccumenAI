@@ -32,9 +32,12 @@
         'completed' => 'bg-success',
         'cancelled' => 'bg-danger',
     ];
-    $capacityPct = ($batch->seat_capacity ?? 0) > 0 ? min(100, (int) round(($batch->seat_filled ?? 0) / $batch->seat_capacity * 100)) : 0;
-    $capacityBarClass = $capacityPct >= 100 ? 'bg-danger' : ($capacityPct >= 80 ? 'bg-warning' : 'bg-success');
     $enrollments = $batch->enrollments;
+    // Live enrollment count: the legacy seat_filled counter is never maintained
+    // by the training enrollment flows and drifts (showed 0/30 with 1 enrolled).
+    $enrolledCount = $enrollments->count();
+    $capacityPct = ($batch->seat_capacity ?? 0) > 0 ? min(100, (int) round($enrolledCount / $batch->seat_capacity * 100)) : 0;
+    $capacityBarClass = $capacityPct >= 100 ? 'bg-danger' : ($capacityPct >= 80 ? 'bg-warning' : 'bg-success');
 @endphp
 
 <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-2">
@@ -101,7 +104,7 @@
                 <dt class="col-5">End Date</dt>
                 <dd class="col-7"><x-tdate :value="$batch->end_date" fallback="d M Y" empty="Not provided" /></dd>
                 <dt class="col-5">Seats</dt>
-                <dd class="col-7"><span class="fw-semibold text-primary">{{ $batch->seat_filled ?? 0 }}</span> / {{ $batch->seat_capacity ?? '—' }}</dd>
+                <dd class="col-7"><span class="fw-semibold text-primary">{{ $enrolledCount }}</span> / {{ $batch->seat_capacity ?? '—' }}</dd>
                 <dd class="col-12">
                     <div class="progress" style="height:8px">
                         <div class="progress-bar {{ $capacityBarClass }}" role="progressbar" style="width: {{ $capacityPct }}%" aria-valuenow="{{ $capacityPct }}" aria-valuemin="0" aria-valuemax="100"></div>
@@ -123,7 +126,7 @@
                 </div>
                 <div class="col-6">
                     <div class="border rounded p-3">
-                        <div class="fs-3 fw-bold text-success">{{ $availableSeats ?? max(0, ($batch->seat_capacity ?? 0) - ($batch->seat_filled ?? 0)) }}</div>
+                        <div class="fs-3 fw-bold text-success">{{ $availableSeats ?? max(0, ($batch->seat_capacity ?? 0) - $enrolledCount) }}</div>
                         <div class="text-muted small">Seats Left</div>
                     </div>
                 </div>

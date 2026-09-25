@@ -2,48 +2,17 @@
     $errors = $errors ?? new \Illuminate\Support\MessageBag();
     $canManage = $user->hasPermission('training_batches.manage');
     $subjects = $subjects ?? collect();
+    $scheduleRows = $scheduleRows ?? collect();
 
     $days = [0 => 'Monday', 1 => 'Tuesday', 2 => 'Wednesday', 3 => 'Thursday', 4 => 'Friday', 5 => 'Saturday', 6 => 'Sunday'];
     $dayShort = [0 => 'Mon', 1 => 'Tue', 2 => 'Wed', 3 => 'Thu', 4 => 'Fri', 5 => 'Sat', 6 => 'Sun'];
     $palette = ['#1a73e8', '#188038', '#d93025', '#a142f4', '#f9ab00', '#007b83', '#e37400'];
 
-    $schedules = $batch->schedules;
-    $byDay = $schedules->groupBy('day_of_week');
+    $todayStr = now()->toDateString();
+    $activeToday = $scheduleRows->filter(fn ($r) => ($r['from'] === null || $r['from'] <= $todayStr)
+        && ($r['to'] === null || $r['to'] >= $todayStr))->count();
 
-    $minH = 7;
-    $maxH = 21;
-    foreach ($schedules as $s) {
-        $minH = min($minH, intdiv($s->start_minutes, 60));
-        $maxH = max($maxH, intdiv($s->end_minutes, 60) + 1);
-    }
-    $minH = max(0, $minH);
-    $maxH = min(24, max($minH + 1, $maxH));
-    $hours = range($minH, $maxH - 1);
     $px = 54;
-    $gridHeight = count($hours) * $px;
-
-    $layout = [];
-    foreach ($byDay as $items) {
-        $laneEnds = [];
-        foreach ($items as $s) {
-            $lane = null;
-            foreach ($laneEnds as $li => $end) {
-                if ($end <= $s->start_minutes) {
-                    $lane = $li;
-                    break;
-                }
-            }
-            if ($lane === null) {
-                $lane = count($laneEnds);
-            }
-            $laneEnds[$lane] = $s->end_minutes;
-            $layout[$s->id] = ['lane' => $lane];
-        }
-        $lanes = max(1, count($laneEnds));
-        foreach ($items as $s) {
-            $layout[$s->id]['lanes'] = $lanes;
-        }
-    }
 @endphp
 
 <div class="modal fade" id="weeklyScheduleModal" tabindex="-1" aria-labelledby="weeklyScheduleModalLabel" aria-hidden="true">
@@ -54,9 +23,9 @@
                     <h5 class="modal-title mb-0" id="weeklyScheduleModalLabel">
                         <i class="bi bi-calendar3 me-1 text-primary"></i>Weekly Schedule
                     </h5>
-                    <div class="text-muted small">
+                    <div class="text-muted small" id="schedSubtitle">
                         {{ $batch->name }}@if ($batch->course) &middot; {{ $batch->course->name }}@endif
-                        &middot; {{ $schedules->count() }} class{{ $schedules->count() === 1 ? '' : 'es' }}/week
+                        &middot; {{ $activeToday }} class{{ $activeToday === 1 ? '' : 'es' }}/week
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -71,12 +40,23 @@
                     </div>
                 @endif
 
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-secondary" id="schedPrevWeek" title="Previous week">&lsaquo;</button>
+                        <button type="button" class="btn btn-outline-secondary" id="schedThisWeek">This week</button>
+                        <button type="button" class="btn btn-outline-secondary" id="schedNextWeek" title="Next week">&rsaquo;</button>
+                    </div>
+                    <input type="date" id="schedWeekDate" class="form-control form-control-sm" style="max-width:170px;"
+                           aria-label="Pick any date in the batch period to view"
+                           @if ($batch->start_date) min="{{ $batch->start_date->toDateString() }}" @endif
+                           @if ($batch->end_date) max="{{ $batch->end_date->toDateString() }}" @endif>
+                    <span class="badge bg-light border text-body" id="schedWeekLabel">&nbsp;</span>
+                    <span class="badge bg-success-subtle text-success border d-none" id="schedApplyNote"
+                          title="Edits made while viewing this week"></span>
+                </div>
+
                 @if ($canManage)
-                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                        <div class="text-muted small">
-                            <i class="bi bi-info-circle me-1"></i>Double-click an empty hour to add a class — click a block to edit it.
-                            <span class="d-block d-lg-inline">Changes apply from today; earlier dates keep the plan they had.</span>
-                        </div>
+                    <div class="d-flex flex-wrap justify-content-end align-items-center gap-2 mb-3">
                         <button type="button" class="btn btn-primary btn-sm" id="scheduleAddBtn">
                             <i class="bi bi-plus-lg me-1"></i>Add class
                         </button>
@@ -88,6 +68,7 @@
                                 @csrf
                                 <input type="hidden" name="_method" id="scheduleMethod" value="POST">
                                 <input type="hidden" name="edit_id" id="scheduleEditId" value="{{ old('edit_id') }}">
+                                <input type="hidden" name="apply_from" id="scheduleApplyFrom" value="">
 
                                 <div class="row g-2 align-items-end">
                                     <div class="col-md-3 col-6">
@@ -143,68 +124,20 @@
                     </div>
                 @endif
 
-                @if ($schedules->isEmpty())
-                    <div class="text-center text-muted py-4 border rounded mb-3">
-                        <i class="bi bi-calendar-x fs-3 d-block mb-2"></i>
-                        No classes scheduled yet for this batch.
-                    </div>
-                @endif
+                <div class="text-center text-muted py-4 border rounded mb-3 d-none" id="schedEmpty">
+                    <i class="bi bi-calendar-x fs-3 d-block mb-2"></i>
+                    No classes scheduled in this week.
+                </div>
 
                 <div class="sched-scroll">
-                    <div class="sched-grid" data-px="{{ $px }}" data-min-hour="{{ $minH }}"
-                         style="grid-template-columns:64px repeat(7, minmax(96px,1fr));">
-                        <div class="sched-corner"></div>
-                        @foreach ($days as $i => $label)
-                            <div class="sched-dayhead {{ in_array($i, [5, 6]) ? 'is-weekend' : '' }}">{{ $dayShort[$i] }}</div>
-                        @endforeach
-
-                        <div class="sched-gutter" style="height:{{ $gridHeight }}px;">
-                            @foreach ($hours as $h)
-                                <div class="sched-hourlabel" style="top:{{ ($h - $minH) * $px + 4 }}px;">{{ sprintf('%02d:00', $h) }}</div>
-                            @endforeach
-                        </div>
-
-                        @foreach ($days as $i => $label)
-                            <div class="sched-col {{ in_array($i, [5, 6]) ? 'is-weekend' : '' }}"
-                                 data-day="{{ $i }}"
-                                 style="height:{{ $gridHeight }}px;background-size:100% {{ $px }}px;">
-                                @foreach ($byDay[$i] ?? [] as $s)
-                                    @php
-                                        $top = (int) round(($s->start_minutes - $minH * 60) / 60 * $px);
-                                        $height = max(24, (int) round(($s->end_minutes - $s->start_minutes) / 60 * $px) - 3);
-                                        $lane = $layout[$s->id]['lane'];
-                                        $lanes = $layout[$s->id]['lanes'];
-                                        $colorKey = $s->subject_id ?: crc32((string) ($s->title ?: $s->id));
-                                        $color = $palette[abs($colorKey) % count($palette)];
-                                        $name = $s->title ?: ($s->subject?->name ?? 'Class');
-                                        $timeLabel = $s->start_label . ' – ' . $s->end_label;
-                                    @endphp
-                                    <div class="sched-event {{ $canManage ? 'is-editable' : '' }} {{ $height < 38 ? 'is-compact' : '' }}"
-                                         style="top:{{ $top }}px;height:{{ $height }}px;left:calc({{ $lane }} * (100% / {{ $lanes }}) + 3px);width:calc(100% / {{ $lanes }} - 6px);background:{{ $color }};border-left-color:{{ $color }};"
-                                         data-id="{{ $s->id }}"
-                                         data-day="{{ $s->day_of_week }}"
-                                         data-start="{{ $s->start_label }}"
-                                         data-end="{{ $s->end_label }}"
-                                         data-subject="{{ $s->subject_id }}"
-                                         data-title="{{ $s->title }}"
-                                         data-room="{{ $s->room }}"
-                                         title="{{ $timeLabel }} — {{ $name }}{{ $s->room ? ' · ' . $s->room : '' }}">
-                                        <div class="sched-event-time">{{ $timeLabel }}</div>
-                                        <div class="sched-event-title">{{ $name }}</div>
-                                        @if ($s->room && $height >= 56)
-                                            <div class="sched-event-meta"><i class="bi bi-geo-alt me-1"></i>{{ $s->room }}</div>
-                                        @endif
-                                    </div>
-                                @endforeach
-                            </div>
-                        @endforeach
-                    </div>
+                    <div class="sched-grid" data-px="{{ $px }}" data-min-hour="7"
+                         style="grid-template-columns:64px repeat(7, minmax(96px,1fr));"></div>
                 </div>
             </div>
 
             <div class="modal-footer py-2">
                 <div class="me-auto small text-muted">
-                    <span class="d-inline-block sched-dot" style="background:#1a73e8"></span> Weekly repeating schedule
+                    <span class="d-inline-block sched-dot" style="background:#1a73e8"></span> Plan effective for the selected week
                 </div>
                 <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
             </div>
@@ -215,6 +148,7 @@
                         <form id="quickAddForm" method="POST" action="{{ route('training.batches.schedule.store', $batch->id) }}">
                             @csrf
                             <input type="hidden" name="day_of_week" id="quickDay" value="0">
+                            <input type="hidden" name="apply_from" id="quickApplyFrom" value="">
                             <div class="quick-add-head">
                                 <span class="quick-add-day" id="quickDayLabel">Monday</span>
                                 <div class="quick-add-times">
@@ -250,6 +184,7 @@
 <form id="scheduleDeleteForm" method="POST" class="d-none">
     @csrf
     @method('DELETE')
+    <input type="hidden" name="apply_from" id="scheduleDeleteApplyFrom" value="">
 </form>
 
 @push('styles')
@@ -263,6 +198,7 @@
         position: sticky; top: 0; z-index: 2;
     }
     .sched-dayhead.is-weekend { background: #f1f3f4; color: #5f6368; }
+    .sched-dayhead.is-today { background: #e8f0fe; color: #1a73e8; }
     .sched-gutter { position: relative; border-right: 1px solid #e9ecef; background: #fcfcfd; }
     .sched-hourlabel { position: absolute; right: 7px; font-size: .66rem; color: #80868b; line-height: 1; }
     .sched-col {
@@ -283,6 +219,7 @@
     .sched-event-meta { font-size: .67rem; opacity: .88; }
     .sched-event.is-compact { padding: 2px 5px; }
     .sched-dot { width: 10px; height: 10px; border-radius: 3px; vertical-align: middle; }
+    #schedWeekDate { font-size: .82rem; }
 
     .quick-add { position: absolute; inset: 0; z-index: 1060; background: rgba(33,37,41,.45); display: flex; align-items: flex-start; justify-content: center; padding-top: 10vh; }
     .quick-add-dialog { width: min(360px, 92%); background: #fff; border-radius: 10px; box-shadow: 0 18px 50px rgba(0,0,0,.35); overflow: hidden; }
@@ -306,6 +243,11 @@
     var updateTpl = @json(route('training.batches.schedule.update', [$batch->id, '__schedule__']));
     var deleteTpl = @json(route('training.batches.schedule.destroy', [$batch->id, '__schedule__']));
 
+    var ROWS = {!! json_encode($scheduleRows->values()->all(), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) !!};
+    var dayNames = @json($days);
+    var dayShort = @json($dayShort);
+    var palette = @json($palette);
+
     var form = document.getElementById('scheduleForm');
     var formCard = document.getElementById('scheduleFormCard');
     var addBtn = document.getElementById('scheduleAddBtn');
@@ -321,12 +263,41 @@
     var quickOverlay = document.getElementById('quickAddOverlay');
     var quickForm = document.getElementById('quickAddForm');
     var quickOk = document.getElementById('quickOk');
-    var dayLabels = @json($days);
     var grid = document.querySelector('#weeklyScheduleModal .sched-grid');
-    var pxPerHour = grid ? parseInt(grid.dataset.px, 10) || 54 : 54;
-    var minHour = grid ? parseInt(grid.dataset.minHour, 10) || 7 : 7;
+    var emptyEl = document.getElementById('schedEmpty');
+    var subtitle = document.getElementById('schedSubtitle');
+    var weekLabel = document.getElementById('schedWeekLabel');
+    var applyNote = document.getElementById('schedApplyNote');
+    var dateInput = document.getElementById('schedWeekDate');
+
+    if (!grid) { return; }
+
+    var px = parseInt(grid.dataset.px, 10) || 54;
 
     function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+    function fmtYmd(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+
+    function parseYmd(s) { var p = String(s).split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+
+    function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+
+    function mondayOf(dateStr) {
+        var d = parseYmd(dateStr);
+        return addDays(d, -((d.getDay() + 6) % 7));
+    }
+
+    function fmtDM(dateStr) {
+        return parseYmd(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    function esc(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    function mins(t) { var p = String(t || '0:0').split(':'); return (parseInt(p[0], 10) || 0) * 60 + (parseInt(p[1], 10) || 0); }
 
     function toTime(hour, minute) {
         if (hour >= 24) { return '23:59'; }
@@ -340,10 +311,190 @@
         return pad2(Math.floor(minutes / 60)) + ':' + pad2(minutes % 60);
     }
 
+    function activeOn(row, dateStr) {
+        return (row.from === null || row.from === undefined || row.from <= dateStr)
+            && (row.to === null || row.to === undefined || row.to >= dateStr);
+    }
+
+    function colorKey(r) {
+        if (r.subject_id) { return r.subject_id; }
+        var s = String(r.title || r.id), h = 0;
+        for (var i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0; }
+        return h;
+    }
+
+    // ---- week state: bounded by the batch period (start..end) ------------
+    var todayStr = fmtYmd(new Date());
+    var batchStart = @json($batch->start_date?->toDateString());
+    var batchEnd = @json($batch->end_date?->toDateString());
+    var navMin = batchStart ? fmtYmd(mondayOf(batchStart)) : null;
+    var navMax = batchEnd ? fmtYmd(mondayOf(batchEnd)) : null;
+    var todayInRange = (!batchStart || todayStr >= batchStart) && (!batchEnd || todayStr <= batchEnd);
+    var preselect = @json(session('schedule_week'));
+    var weekStart = mondayOf(preselect || (batchStart && !todayInRange ? batchStart : todayStr));
+    if (navMin && fmtYmd(weekStart) < navMin) { weekStart = parseYmd(navMin); }
+    if (navMax && fmtYmd(weekStart) > navMax) { weekStart = parseYmd(navMax); }
+    var currentApply = weekStart;
+
+    function weekDates() {
+        var out = [];
+        for (var i = 0; i < 7; i++) { out.push(fmtYmd(addDays(weekStart, i))); }
+        return out;
+    }
+
+    function syncApplyInputs() {
+        ['scheduleApplyFrom', 'quickApplyFrom', 'scheduleDeleteApplyFrom'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) { el.value = fmtYmd(weekStart); }
+        });
+    }
+
+    function packLanes(items) {
+        items = items.slice().sort(function (a, b) { return mins(a.start) - mins(b.start); });
+        var laneEnds = [];
+        items.forEach(function (r) {
+            var s = mins(r.start), lane = -1, i;
+            for (i = 0; i < laneEnds.length; i++) {
+                if (laneEnds[i] <= s) { lane = i; break; }
+            }
+            if (lane < 0) { lane = laneEnds.length; laneEnds.push(0); }
+            laneEnds[lane] = mins(r.end);
+            r._lane = lane;
+        });
+        var lc = Math.max(1, laneEnds.length);
+        items.forEach(function (r) { r._lanes = lc; });
+        return items;
+    }
+
+    function chipHtml(r, top, height) {
+        var color = palette[Math.abs(colorKey(r)) % palette.length];
+        var name = r.title || r.subject || 'Class';
+        var tl = r.start + ' – ' + r.end;
+        var cls = 'sched-event' + (canManage ? ' is-editable' : '') + (height < 38 ? ' is-compact' : '');
+        var meta = (r.room && height >= 56)
+            ? '<div class="sched-event-meta"><i class="bi bi-geo-alt me-1"></i>' + esc(r.room) + '</div>' : '';
+        return '<div class="' + cls + '" style="top:' + top + 'px;height:' + height
+            + 'px;left:calc(' + r._lane + ' * (100% / ' + r._lanes + ') + 3px);width:calc(100% / ' + r._lanes + ' - 6px);background:'
+            + color + ';border-left-color:' + color + ';" data-id="' + r.id + '" data-day="' + r.day
+            + '" data-start="' + esc(r.start) + '" data-end="' + esc(r.end)
+            + '" data-subject="' + (r.subject_id || '') + '" data-title="' + esc(r.title)
+            + '" data-room="' + esc(r.room) + '" title="' + esc(tl + ' — ' + name + (r.room ? ' · ' + r.room : '')) + '">'
+            + '<div class="sched-event-time">' + esc(tl) + '</div>'
+            + '<div class="sched-event-title">' + esc(name) + '</div>' + meta + '</div>';
+    }
+
+    function render() {
+        var dates = weekDates();
+        var byDay = [[], [], [], [], [], [], []];
+        var i, h;
+
+        for (i = 0; i < ROWS.length; i++) {
+            var r = ROWS[i];
+            if (r.day >= 0 && r.day <= 6 && activeOn(r, dates[r.day])) { byDay[r.day].push(r); }
+        }
+
+        var minH = 7, maxH = 21, total = 0;
+        for (i = 0; i < 7; i++) {
+            total += byDay[i].length;
+            for (var j = 0; j < byDay[i].length; j++) {
+                minH = Math.min(minH, Math.floor(mins(byDay[i][j].start) / 60));
+                maxH = Math.max(maxH, Math.floor(mins(byDay[i][j].end) / 60) + 1);
+            }
+        }
+        minH = Math.max(0, minH);
+        maxH = Math.min(24, Math.max(minH + 1, maxH));
+        var gridH = (maxH - minH) * px;
+
+        var html = ['<div class="sched-corner"></div>'];
+        for (i = 0; i < 7; i++) {
+            var cls = 'sched-dayhead' + (i >= 5 ? ' is-weekend' : '') + (dates[i] === todayStr ? ' is-today' : '');
+            html.push('<div class="' + cls + '">' + dayShort[i] + ' ' + parseYmd(dates[i]).getDate() + '</div>');
+        }
+
+        var gut = ['<div class="sched-gutter" style="height:' + gridH + 'px;">'];
+        for (h = minH; h < maxH; h++) {
+            gut.push('<div class="sched-hourlabel" style="top:' + ((h - minH) * px + 4) + 'px;">' + pad2(h) + ':00</div>');
+        }
+        gut.push('</div>');
+        html.push(gut.join(''));
+
+        for (i = 0; i < 7; i++) {
+            var col = ['<div class="sched-col' + (i >= 5 ? ' is-weekend' : '') + '" data-day="' + i
+                + '" style="height:' + gridH + 'px;background-size:100% ' + px + 'px;">'];
+            packLanes(byDay[i]).forEach(function (r) {
+                var top = Math.round((mins(r.start) - minH * 60) / 60 * px);
+                var height = Math.max(24, Math.round((mins(r.end) - mins(r.start)) / 60 * px) - 3);
+                col.push(chipHtml(r, top, height));
+            });
+            col.push('</div>');
+            html.push(col.join(''));
+        }
+
+        grid.innerHTML = html.join('');
+        grid.dataset.minHour = minH;
+
+        weekLabel.textContent = 'Week of ' + fmtDM(dates[0]) + ' – ' + fmtDM(dates[6]);
+        currentApply = fmtYmd(weekStart);
+        syncApplyInputs();
+        var floorDate = navMin || todayStr;
+        var applyDate = currentApply < floorDate ? floorDate : currentApply;
+        if (navMax && applyDate > navMax) { applyDate = navMax; }
+        applyNote.textContent = applyDate === todayStr
+            ? 'Edits apply from today'
+            : 'Edits apply from ' + fmtDM(applyDate);
+        applyNote.classList.remove('d-none');
+        applyNote.title = 'Edits apply from the selected week of this batch';
+
+        if (emptyEl) { emptyEl.classList.toggle('d-none', total > 0); }
+        if (subtitle) {
+            var batchLabel = @json(trim($batch->name . ($batch->course ? ' · ' . $batch->course->name : '')));
+            subtitle.textContent = batchLabel + ' · ' + total + ' class' + (total === 1 ? '' : 'es') + '/week';
+        }
+        if (dateInput) {
+            var dv = fmtYmd(weekStart);
+            if (batchStart && dv < batchStart) { dv = batchStart; }
+            if (batchEnd && dv > batchEnd) { dv = batchEnd; }
+            if (dateInput.value !== dv) { dateInput.value = dv; }
+        }
+        if (prevBtn) { prevBtn.disabled = !!navMin && fmtYmd(weekStart) <= navMin; }
+        if (nextBtn) { nextBtn.disabled = !!navMax && fmtYmd(weekStart) >= navMax; }
+    }
+
+    function goToWeek(monday) {
+        var y = fmtYmd(monday);
+        if (navMin && y < navMin) { monday = parseYmd(navMin); }
+        if (navMax && y > navMax) { monday = parseYmd(navMax); }
+        weekStart = monday;
+        render();
+    }
+
+    if (dateInput) {
+        dateInput.addEventListener('change', function () {
+            goToWeek(mondayOf(dateInput.value || todayStr));
+        });
+    }
+    var prevBtn = document.getElementById('schedPrevWeek');
+    var nextBtn = document.getElementById('schedNextWeek');
+    var thisBtn = document.getElementById('schedThisWeek');
+    if (prevBtn) { prevBtn.addEventListener('click', function () { goToWeek(addDays(weekStart, -7)); }); }
+    if (nextBtn) { nextBtn.addEventListener('click', function () { goToWeek(addDays(weekStart, 7)); }); }
+    if (thisBtn) {
+        if (batchStart && !todayInRange) {
+            thisBtn.textContent = 'Batch start';
+            thisBtn.addEventListener('click', function () { goToWeek(parseYmd(navMin)); });
+        } else {
+            thisBtn.addEventListener('click', function () { goToWeek(mondayOf(todayStr)); });
+        }
+    }
+
+    render();
+
+    // ---- form helpers -----------------------------------------------------
     function openQuickAdd(dayIndex, hour) {
         if (!quickOverlay) { return; }
+        syncApplyInputs();
         document.getElementById('quickDay').value = dayIndex;
-        document.getElementById('quickDayLabel').textContent = dayLabels[dayIndex] || '';
+        document.getElementById('quickDayLabel').textContent = dayNames[dayIndex] || '';
         document.getElementById('quickStart').value = toTime(hour, 0);
         document.getElementById('quickEnd').value = toTime(hour + 1, 0);
         quickOverlay.classList.remove('d-none');
@@ -370,13 +521,14 @@
             document.getElementById('schedule_start').value = '09:00';
             document.getElementById('schedule_end').value = '10:00';
         }
+        syncApplyInputs();
     }
 
     function enterEdit(id, chip, refill) {
         if (!form) { return; }
         currentId = id;
         showCard();
-        if (refill) {
+        if (refill && chip) {
             document.getElementById('schedule_day').value = chip.dataset.day;
             document.getElementById('schedule_start').value = chip.dataset.start;
             document.getElementById('schedule_end').value = chip.dataset.end;
@@ -393,6 +545,8 @@
         formCard.scrollIntoView({ block: 'nearest' });
     }
 
+    if (form) { form.addEventListener('submit', syncApplyInputs); }
+
     if (canManage) {
         if (addBtn) {
             addBtn.addEventListener('click', function () {
@@ -402,8 +556,19 @@
             });
         }
 
-        document.querySelectorAll('.sched-event.is-editable').forEach(function (chip) {
-            chip.addEventListener('click', function () { enterEdit(chip.dataset.id, chip, true); });
+        grid.addEventListener('click', function (e) {
+            var chip = e.target.closest('.sched-event.is-editable');
+            if (chip) { enterEdit(chip.dataset.id, chip, true); }
+        });
+
+        grid.addEventListener('dblclick', function (e) {
+            var col = e.target.closest('.sched-col');
+            if (!col || e.target.closest('.sched-event')) { return; }
+            var minHour = parseInt(grid.dataset.minHour, 10) || 0;
+            var rect = col.getBoundingClientRect();
+            var offset = Math.floor((e.clientY - rect.top) / px);
+            var hour = Math.max(minHour, Math.min(23, minHour + offset));
+            openQuickAdd(parseInt(col.dataset.day, 10), hour);
         });
 
         if (cancelBtn) { cancelBtn.addEventListener('click', function () { resetForm(true); }); }
@@ -412,20 +577,11 @@
             deleteBtn.addEventListener('click', function () {
                 if (!currentId) { return; }
                 if (!confirm('Remove this class from the weekly schedule?')) { return; }
+                syncApplyInputs();
                 deleteForm.setAttribute('action', deleteTpl.replace('__schedule__', currentId));
                 deleteForm.submit();
             });
         }
-
-        document.querySelectorAll('#weeklyScheduleModal .sched-col').forEach(function (col) {
-            col.addEventListener('dblclick', function (e) {
-                if (e.target.closest('.sched-event')) { return; }
-                var rect = col.getBoundingClientRect();
-                var offset = Math.floor((e.clientY - rect.top) / pxPerHour);
-                var hour = Math.max(minHour, Math.min(23, minHour + offset));
-                openQuickAdd(parseInt(col.dataset.day, 10), hour);
-            });
-        });
 
         if (quickForm) {
             var quickStart = document.getElementById('quickStart');
@@ -440,6 +596,7 @@
             });
 
             quickForm.addEventListener('submit', function () {
+                syncApplyInputs();
                 quickOk.disabled = true;
             });
 
@@ -454,8 +611,8 @@
 
         @if (old('edit_id'))
         (function restoreEdit() {
-            var chip = document.querySelector('.sched-event[data-id="{{ old('edit_id') }}"]');
-            if (chip) { enterEdit('{{ old('edit_id') }}', chip, false); }
+            var chip = grid.querySelector('.sched-event[data-id="{{ old('edit_id') }}"]');
+            if (chip) { enterEdit('{{ old('edit_id') }}', chip, true); }
         })();
         @elseif ($errors->any())
         showCard();
