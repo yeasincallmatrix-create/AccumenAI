@@ -363,6 +363,9 @@
                     <a class="nav-link {{ request()->routeIs('admin.industries.*') ? 'active' : '' }}" href="{{ route('admin.industries.index') }}">
                         <i class="bi bi-diagram-3-fill"></i><span class="sidebar-label">Industries</span>
                     </a>
+                    <a class="nav-link {{ request()->routeIs('admin.industry-subcategories.*') ? 'active' : '' }}" href="{{ route('admin.industry-subcategories.index') }}">
+                        <i class="bi bi-diagram-3"></i><span class="sidebar-label">Sub-Categories</span>
+                    </a>
 
                     {{-- ═══ CONFIGURATION ═══ --}}
                     <div class="sidebar-section-label">CONFIGURATION</div>

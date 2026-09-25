@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Institute;
 use App\Models\InstituteUser;
+use App\Models\PackageModule;
 use App\Models\Role;
 use App\Models\SubscriptionPackage;
 use App\Services\ModuleAccessService;
@@ -12,9 +13,10 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 /**
- * SEC-04: the self-service module settings endpoint must route every
- * toggle through ModuleAccessService::enableModule()/disableModule()
- * (same methods as the admin path) — no raw
+ * SEC-04: the self-service module settings endpoint
+ * (POST settings/modules/toggle) must route every toggle through
+ * ModuleAccessService::enableModule()/disableModule() (same methods as the
+ * admin path) — no raw
  * DB::table('institute_module_overrides') writes.
  */
 class ModuleSettingsModuleAccessTest extends TestCase
@@ -36,10 +38,18 @@ class ModuleSettingsModuleAccessTest extends TestCase
             'slug' => 'sec04-'.uniqid(),
             'status' => 'active',
             'package_id' => $free->id,
-            'industry' => 'education',
-            'sub_industry' => 'school',
+            'industry' => 'healthcare',
             'country' => 'Bangladesh',
         ]);
+
+        // The free package does not ship these keys; isPackageAllowed() in
+        // ModuleManagementController::toggle() requires them.
+        foreach (['medical.opd', 'education'] as $key) {
+            PackageModule::updateOrCreate(
+                ['package_id' => $free->id, 'module_key' => $key],
+                ['enabled' => true]
+            );
+        }
 
         $role = Role::where('slug', 'institute-owner')->firstOrFail();
 
@@ -59,19 +69,24 @@ class ModuleSettingsModuleAccessTest extends TestCase
         if ($prev !== null) {
             TenantContext::set($prev);
         }
+
+        app(ModuleAccessService::class)->flushCache($this->institute->id);
     }
 
-    private function postModules(array $modules)
+    private function toggle(string $moduleKey, bool $enabled)
     {
         return $this->actingAs($this->user, 'institute_user')
-            ->post(route('settings.modules.update'), ['modules' => $modules]);
+            ->postJson(route('settings.modules.toggle'), [
+                'module_key' => $moduleKey,
+                'enabled' => $enabled,
+            ]);
     }
 
     public function test_enable_creates_override_row(): void
     {
-        $this->postModules(['medical.opd'])
-            ->assertRedirect()
-            ->assertSessionHas('success', 'Medical sub-modules updated successfully.');
+        $this->toggle('medical.opd', true)
+            ->assertOk()
+            ->assertJson(['status' => 'ok', 'module_key' => 'medical.opd', 'enabled' => true]);
 
         $this->assertDatabaseHas('institute_module_overrides', [
             'institute_id' => $this->institute->id,
@@ -82,16 +97,16 @@ class ModuleSettingsModuleAccessTest extends TestCase
 
     public function test_disable_sets_override_false(): void
     {
-        $this->postModules(['medical.opd']);
+        $this->toggle('medical.opd', true)->assertOk();
         $this->assertDatabaseHas('institute_module_overrides', [
             'institute_id' => $this->institute->id,
             'module_key' => 'medical.opd',
             'enabled' => true,
         ]);
 
-        $this->postModules([])
-            ->assertRedirect()
-            ->assertSessionHas('success', 'Medical sub-modules updated successfully.');
+        $this->toggle('medical.opd', false)
+            ->assertOk()
+            ->assertJson(['status' => 'ok', 'module_key' => 'medical.opd', 'enabled' => false]);
 
         $this->assertDatabaseHas('institute_module_overrides', [
             'institute_id' => $this->institute->id,
@@ -102,25 +117,26 @@ class ModuleSettingsModuleAccessTest extends TestCase
 
     public function test_industry_incompatible_module_stays_effectively_disabled(): void
     {
-        // Education institute: parent 'medical' is industry-incompatible, so
-        // the service layer records the override but resolution keeps it off.
-        // (enableModule() writes per service semantics — it does not throw;
-        // enforcement lives in resolveEnabled(), as on the admin path.)
-        $this->postModules(['medical.opd']);
+        // Healthcare institute: 'education' is industry-disabled
+        // (config industry-modules.healthcare.disabled), so the service layer
+        // records the override but resolution keeps it off.
+        $this->toggle('education', true)
+            ->assertOk()
+            ->assertJson(['status' => 'ok', 'module_key' => 'education', 'enabled' => true]);
 
         $this->assertDatabaseHas('institute_module_overrides', [
             'institute_id' => $this->institute->id,
-            'module_key' => 'medical.opd',
+            'module_key' => 'education',
             'enabled' => true,
         ]);
         $this->assertFalse(
-            app(ModuleAccessService::class)->isEnabled($this->institute->fresh(), 'medical.opd')
+            app(ModuleAccessService::class)->isEnabled($this->institute, 'education')
         );
     }
 
     public function test_enable_writes_audit_log_with_actor(): void
     {
-        $this->postModules(['medical.opd']);
+        $this->toggle('medical.opd', true)->assertOk();
 
         $this->assertDatabaseHas('module_access_logs', [
             'institute_id' => $this->institute->id,

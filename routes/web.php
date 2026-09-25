@@ -229,7 +229,6 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->group(func
     Route::get('courses/subjects', [CourseController::class, 'subjects'])->middleware('permission:courses.view')->name('courses.subjects');
     Route::get('certificates', [CertificateController::class, 'index'])->middleware('permission:certificates.view')->name('certificates.index');
     Route::get('verify', [InstituteSettingController::class, 'verify'])->name('verify');
-    Route::get('settings', [InstituteSettingController::class, 'index'])->middleware('permission:settings.manage')->name('settings.edit');
     Route::put('settings', [InstituteSettingController::class, 'update'])->middleware('permission:settings.manage')->name('settings.update');
     Route::get('settings/account', [InstituteSettingController::class, 'account'])->name('settings.account');
     Route::get('settings/appearance', [InstituteSettingController::class, 'appearance'])->name('settings.appearance');
@@ -240,7 +239,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->group(func
     // Kept for backwards compatibility (tests / cached forms); UI removed from settings.
     Route::put('settings/certificate-approval-mode', [InstituteSettingController::class, 'updateCertificateApprovalMode'])->middleware('permission:settings.manage')->name('settings.certificate-approval-mode.update');
     Route::get('settings/modules', [\App\Http\Controllers\Settings\ModuleManagementController::class, 'index'])->middleware('permission:institute.settings.module.view')->name('settings.modules');
-    Route::post('settings/modules/toggle', [\App\Http\Controllers\Settings\ModuleManagementController::class, 'toggle'])->name('settings.modules.toggle');
+    Route::post('settings/modules/toggle', [\App\Http\Controllers\Settings\ModuleManagementController::class, 'toggle'])->middleware('permission:institute.settings.module.toggle')->name('settings.modules.toggle');
     Route::get('settings/features', [\App\Http\Controllers\Institute\FeatureAccessController::class, 'index'])->middleware('permission:settings.manage')->name('settings.features');
     // Phase 5 — tenant terminology overrides (Customer → Client, etc.)
     Route::get('settings/terminology', [\App\Http\Controllers\Settings\TerminologyController::class, 'index'])->middleware('permission:settings.manage')->name('settings.terminology.index');
