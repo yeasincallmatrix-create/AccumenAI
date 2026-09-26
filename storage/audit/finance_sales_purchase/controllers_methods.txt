@@ -1,0 +1,43 @@
+﻿app\Http\Controllers\CrmLeadController.php [10]: __construct, index, create, store, show, edit, update, assign, convert, destroy
+app\Http\Controllers\EducationFinanceController.php [14]: __construct, dashboard, students, studentShow, generateInvoice, recordPayment, reversePayment, applyWaiver, batches, courses, printReceipt, feeCollection, feeCollectionStudent, collectFee
+app\Http\Controllers\ExpenseController.php [13]: __construct, index, create, store, show, edit, update, destroy, billableDashboard, markBillable, bulkMarkBillable, previewInvoice, generateInvoice
+app\Http\Controllers\FinanceAuditController.php [2]: __construct, index
+app\Http\Controllers\FinanceBudgetController.php [16]: __construct, index, create, store, show, edit, update, submit, approve, reject, lock, revise, dashboard, reports, forecast, exportComparison
+app\Http\Controllers\FinanceChartOfAccountController.php [8]: __construct, index, create, store, edit, update, toggle, destroy
+app\Http\Controllers\FinanceDashboardController.php [2]: __construct, index
+app\Http\Controllers\FinanceExchangeRateController.php [5]: __construct, index, store, update, destroy
+app\Http\Controllers\FinanceFxRevaluationController.php [4]: __construct, index, store, reverse
+app\Http\Controllers\FinanceInvoiceController.php [6]: __construct, index, create, store, show, cancel
+app\Http\Controllers\FinanceJournalController.php [8]: __construct, index, create, store, show, post, reverse, void
+app\Http\Controllers\FinanceOnlinePaymentController.php [7]: __construct, gateways, enableGateway, disableGateway, updateCredentials, webhook, attempts
+app\Http\Controllers\FinanceOpeningBalanceController.php [3]: __construct, create, store
+app\Http\Controllers\FinancePartyController.php [7]: __construct, index, create, store, edit, update, destroy
+app\Http\Controllers\FinancePaymentController.php [4]: __construct, index, store, reverse
+app\Http\Controllers\FinancePaymentMethodController.php [8]: __construct, index, create, store, edit, update, toggle, destroy
+app\Http\Controllers\FinancePeriodController.php [5]: __construct, index, store, closePeriod, reopenPeriod
+app\Http\Controllers\FinanceReportController.php [8]: __construct, trialBalance, incomeStatement, balanceSheet, ledger, cashBank, receivables, payables
+app\Http\Controllers\OnlinePaymentController.php [5]: __construct, initiate, process, status, history
+app\Http\Controllers\ProgressiveContractController.php [11]: __construct, index, create, store, show, edit, update, destroy, createInvoiceForm, storeInvoice, cancel
+app\Http\Controllers\RecurringTemplateController.php [12]: __construct, index, create, store, show, edit, update, destroy, pause, resume, cancel, generateNow
+app\Http\Controllers\Sales\CustomerController.php [6]: index, create, store, show, edit, update
+app\Http\Controllers\Sales\DeliveryController.php [8]: __construct, index, create, store, show, confirm, cancel, print
+app\Http\Controllers\Sales\LeadController.php [6]: __construct, index, create, store, show, convertToQuotation
+app\Http\Controllers\Sales\QuotationController.php [13]: __construct, index, create, store, show, edit, update, send, accept, reject, cancel, expire, print
+app\Http\Controllers\Sales\ReceivePaymentController.php [5]: __construct, index, create, show, store
+app\Http\Controllers\Sales\SalesInvoiceController.php [6]: __construct, index, show, createForOrder, storeForOrder, storeForDelivery
+app\Http\Controllers\Sales\SalesLookupController.php [7]: __construct, customers, customerShow, crmCustomers, items, itemAvailability, itemShow
+app\Http\Controllers\Sales\SalesOrderController.php [16]: __construct, index, create, store, convert, show, edit, update, submit, approve, reject, cancel, processing, readyForDelivery, complete, print
+app\Http\Controllers\Sales\SalesReceiptController.php [4]: index, create, show, store
+app\Http\Controllers\Sales\SalesReportController.php [14]: __construct, dashboard, daily, weekly, monthly, yearly, product, category, customer, salesperson, branch, warehouse, returns, statement
+app\Http\Controllers\Sales\SalesReturnController.php [12]: __construct, index, create, store, show, creditNote, approve, post, cancel, reverse, refund, invoiceLines
+app\Http\Controllers\Sales\SalesSettingsController.php [3]: __construct, index, update
+app\Http\Controllers\Purchase\BillPaymentController.php [5]: __construct, index, create, show, store
+app\Http\Controllers\Purchase\ExpenseController.php [5]: __construct, index, create, show, store
+app\Http\Controllers\Purchase\GoodsReceiptWebController.php [9]: __construct, index, create, store, show, confirm, cancel, reverse, print
+app\Http\Controllers\Purchase\PurchaseInvoiceController.php [11]: __construct, index, create, store, show, post, cancel, reverse, print, pay, reversePayment
+app\Http\Controllers\Purchase\PurchaseOrderController.php [13]: __construct, index, create, store, show, edit, update, submit, approve, reject, cancel, close, print
+app\Http\Controllers\Purchase\PurchaseQuotationController.php [13]: __construct, index, create, store, show, edit, update, send, accept, reject, cancel, expire, convert
+app\Http\Controllers\Purchase\PurchaseReportController.php [18]: __construct, dashboard, daily, weekly, monthly, yearly, supplierWise, productWise, categoryWise, branchWise, warehouseWise, returnsReport, paymentsReport, payableReport, inventoryReconciliation, supplierStatement, export, print
+app\Http\Controllers\Purchase\PurchaseRequestController.php [7]: __construct, index, create, store, show, approve, convertToOrder
+app\Http\Controllers\Purchase\PurchaseReturnController.php [14]: __construct, index, create, store, show, submit, approve, post, cancel, reverse, creditNote, print, refund, adjust
+app\Http\Controllers\Purchase\SuppliersController.php [7]: __construct, index, store, show, update, destroy, restore

@@ -112,9 +112,16 @@
             </tbody>
         </table>
     </div>
-</div>
 
-<div class="d-flex justify-content-center">
-    {{ $subcategories->links() }}
+    <div class="mt-4 d-flex flex-column align-items-center gap-2">
+        {{ $subcategories->links('pagination::bootstrap-5') }}
+        <span class="text-muted small">
+            @if ($subcategories->total() > 0)
+                Showing {{ $subcategories->firstItem() }}–{{ $subcategories->lastItem() }} of {{ $subcategories->total() }} sub-categories ({{ $subcategories->perPage() }} per page)
+            @else
+                {{ $subcategories->total() }} sub-categories
+            @endif
+        </span>
+    </div>
 </div>
 @endsection

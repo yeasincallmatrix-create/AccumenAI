@@ -1,0 +1,44 @@
+﻿615: <button class="nav-link w-100 d-flex align-items-center justify-content-between {{ $salesOpen ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#salesNavGroup" aria-expanded="{{ $salesOpen ? 'true' : 'false' }}" aria-controls="salesNavGroup">
+619: <div class="collapse {{ $salesOpen ? 'show' : '' }}" id="salesNavGroup">
+620: <a class="nav-link sub {{ request()->routeIs('sales.invoices.*') ? 'active' : '' }}" href="{{ route('sales.invoices.index') }}">
+623: <a class="nav-link sub {{ request()->routeIs('sales.payments.*') ? 'active' : '' }}" href="{{ route('sales.payments.index') }}">
+626: <a class="nav-link sub {{ request()->routeIs('sales.estimates.*','sales.quotations.*') ? 'active' : '' }}" href="{{ route('sales.estimates.index') }}">
+629: <a class="nav-link sub {{ request()->routeIs('sales.orders.*') ? 'active' : '' }}" href="{{ route('sales.orders.index') }}">
+632: <a class="nav-link sub {{ request()->routeIs('sales.credit-memos.*','sales.returns.*') ? 'active' : '' }}" href="{{ route('sales.credit-memos.index') }}">
+635: <a class="nav-link sub {{ request()->routeIs('sales.receipts.*') ? 'active' : '' }}" href="{{ route('sales.receipts.index') }}">
+638: <a class="nav-link sub {{ request()->routeIs('sales.customers.*','sales.customers.manage.*') ? 'active' : '' }}" href="{{ route('sales.customers.index') }}">
+647: <button class="nav-link w-100 d-flex align-items-center justify-content-between {{ $purchaseOpen ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#purchaseNavGroup" aria-expanded="{{ $purchaseOpen ? 'true' : 'false' }}" aria-controls="purchaseNavGroup">
+651: <div class="collapse {{ $purchaseOpen ? 'show' : '' }}" id="purchaseNavGroup">
+652: <a class="nav-link sub {{ request()->routeIs('purchase.expenses.*') ? 'active' : '' }}" href="{{ route('purchase.expenses.index') }}">
+655: <a class="nav-link sub {{ request()->routeIs('purchase.bills.*','purchase.invoices.*') ? 'active' : '' }}" href="{{ route('purchase.bills.index') }}">
+658: <a class="nav-link sub {{ request()->routeIs('purchase.payments.*') ? 'active' : '' }}" href="{{ route('purchase.payments.index') }}">
+661: <a class="nav-link sub {{ request()->routeIs('purchase.orders.*') ? 'active' : '' }}" href="{{ route('purchase.orders.index') }}">
+664: <a class="nav-link sub {{ request()->routeIs('purchase.vendor-credits.*','purchase.returns.*') ? 'active' : '' }}" href="{{ route('purchase.vendor-credits.index') }}">
+667: <a class="nav-link sub {{ request()->routeIs('purchase.vendors.*','purchase.suppliers.*') ? 'active' : '' }}" href="{{ route('purchase.vendors.index') }}">
+923: <button class="nav-link w-100 d-flex align-items-center justify-content-between {{ $financeNavOpen ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#financeNavGroup" aria-expanded="{{ $financeNavOpen ? 'true' : 'false' }}" aria-controls="financeNavGroup">
+927: <div class="collapse {{ $financeNavOpen ? 'show' : '' }}" id="financeNavGroup">
+928: <a class="nav-link sub {{ request()->routeIs('finance.dashboard') ? 'active' : '' }}" href="{{ route('finance.dashboard') }}">
+931: <a class="nav-link sub {{ request()->routeIs('finance.invoices.*') || request()->routeIs('finance.payments.*') ? 'active' : '' }}" href="{{ route('finance.invoices.index') }}">
+934: <a class="nav-link sub {{ request()->routeIs('finance.payments.index') ? 'active' : '' }}" href="{{ route('finance.payments.index') }}">
+937: <a class="nav-link sub {{ request()->routeIs('finance.parties.*') ? 'active' : '' }}" href="{{ route('finance.parties.index') }}">
+940: <a class="nav-link sub {{ request()->routeIs('finance.expenses.*') ? 'active' : '' }}" href="{{ route('finance.expenses.index') }}">
+943: <a class="nav-link sub {{ request()->routeIs('finance.expenses.billable-dashboard') ? 'active' : '' }}" href="{{ route('finance.expenses.billable-dashboard') }}">
+946: <a class="nav-link sub {{ request()->routeIs('finance.progressive-contracts.*') ? 'active' : '' }}" href="{{ route('finance.progressive-contracts.index') }}">
+949: <a class="nav-link sub {{ request()->routeIs('finance.recurring-templates.*') ? 'active' : '' }}" href="{{ route('finance.recurring-templates.index') }}">
+953: <a class="nav-link sub {{ request()->routeIs('finance.budgets.*') ? 'active' : '' }}" href="{{ route('finance.budgets.dashboard') }}">
+957: <a class="nav-link sub {{ request()->routeIs('finance.online-payments.*') || request()->routeIs('online-payments.*') ? 'active' : '' }}" href="{{ route('finance.online-payments.gateways') }}">
+961: <a class="nav-link sub {{ request()->routeIs('finance.payment-methods.*') ? 'active' : '' }}" href="{{ route('finance.payment-methods.index') }}">
+964: <a class="nav-link sub {{ request()->routeIs('finance.exchange-rates.*') ? 'active' : '' }}" href="{{ route('finance.exchange-rates.index') }}">
+967: <a class="nav-link sub {{ request()->routeIs('finance.fx-revaluations.*') ? 'active' : '' }}" href="{{ route('finance.fx-revaluations.index') }}">
+972: <a class="nav-link sub {{ request()->routeIs('finance.education.dashboard') ? 'active' : '' }}" href="{{ route('finance.education.dashboard') }}">
+975: <a class="nav-link sub {{ request()->routeIs('finance.education.fee-collection*') ? 'active' : '' }}" href="{{ route('finance.education.fee-collection') }}">
+978: <a class="nav-link sub {{ request()->routeIs('finance.education.students.*') ? 'active' : '' }}" href="{{ route('finance.education.students.index') }}">
+981: <a class="nav-link sub {{ request()->routeIs('finance.education.fee-heads.*') ? 'active' : '' }}" href="{{ route('finance.education.fee-heads.index') }}">
+984: <a class="nav-link sub {{ request()->routeIs('finance.education.fee-structures.*') ? 'active' : '' }}" href="{{ route('finance.education.fee-structures.index') }}">
+987: <a class="nav-link sub {{ request()->routeIs('finance.education.reports.*') ? 'active' : '' }}" href="{{ route('finance.education.reports.batches') }}">
+991: <a class="nav-link sub {{ request()->routeIs('finance.reports.*') ? 'active' : '' }}" href="{{ route('finance.reports.trial-balance') }}">
+1011: <a class="nav-link sub {{ request()->routeIs('finance.chart-of-accounts.*') ? 'active' : '' }}" href="{{ route('finance.chart-of-accounts.index') }}">
+1015: <a class="nav-link sub {{ request()->routeIs('finance.journals.*') ? 'active' : '' }}" href="{{ route('finance.journals.index') }}">
+1049: <a class="nav-link sub {{ request()->routeIs('finance.periods.*') ? 'active' : '' }}" href="{{ route('finance.periods.index') }}">
+1052: <a class="nav-link sub {{ request()->routeIs('finance.opening-balances.*') ? 'active' : '' }}" href="{{ route('finance.opening-balances.create') }}">
+1057: <a class="nav-link sub {{ request()->routeIs('finance.audit.*') ? 'active' : '' }}" href="{{ route('finance.audit.index') }}">

@@ -1,0 +1,23 @@
+﻿key	name	type	parent_key	status	sort_order
+accounting	Accounting	core	NULL	active	2
+finance	Finance	core	NULL	active	3
+sales	Sales	core	NULL	active	6
+purchase	Purchase	core	NULL	active	7
+finance.invoices	Invoices	core	finance	active	1
+finance.payments	Payments	core	finance	active	2
+finance.expenses	Expenses	core	finance	active	3
+finance.parties	Parties	core	finance	active	4
+finance.progressive_contracts	Progressive Contracts	core	finance	active	5
+purchase.quotations	Quotations	core	purchase	active	71
+purchase.orders	Orders	core	purchase	active	72
+purchase.invoices	Invoices	core	purchase	active	73
+purchase.requests	Requests	core	purchase	active	74
+purchase.returns	Returns	core	purchase	active	75
+purchase.receipts	Goods Receipts	core	purchase	active	76
+sales.quotations	Quotations	core	sales	active	61
+sales.orders	Orders	core	sales	active	62
+sales.deliveries	Deliveries	core	sales	active	63
+sales.returns	Returns	core	sales	active	64
+sales.leads	Leads	core	sales	active	65
+sales.customers	Customers	core	sales	active	66
+sales.reports	Reports	core	sales	active	67
