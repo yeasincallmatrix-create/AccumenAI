@@ -39,9 +39,9 @@ class RestaurantMainIndustryTest extends TestCase
     ];
 
     private const RESTAURANT_PACKAGES = [
-        'restaurant_starter' => 7,
-        'restaurant_growth' => 16,
-        'restaurant_enterprise' => 27,
+        'restaurant_starter' => 10,
+        'restaurant_growth' => 22,
+        'restaurant_enterprise' => 33,
     ];
 
     private ModuleAccessService $modules;
@@ -302,14 +302,14 @@ class RestaurantMainIndustryTest extends TestCase
         $this->assertGreaterThan($finance, $restaurant, 'restaurant group renders after finance');
     }
 
-    // 7 - 22 restaurant permissions exist.
+    // 7 - 34 restaurant permissions exist.
 
     public function test_restaurant_permissions_are_seeded(): void
     {
         $declared = RestaurantPermissionSeeder::permissions();
 
-        $this->assertCount(22, $declared, '22 declared permissions');
-        $this->assertCount(22, array_unique(array_column($declared, 'slug')), 'declared slugs unique');
+        $this->assertCount(34, $declared, '34 declared permissions');
+        $this->assertCount(34, array_unique(array_column($declared, 'slug')), 'declared slugs unique');
 
         foreach ($declared as $permission) {
             $this->assertSame('restaurant', $permission['module']);
@@ -318,10 +318,10 @@ class RestaurantMainIndustryTest extends TestCase
 
         $rows = DB::table('permissions')->where('module', 'restaurant')->get();
 
-        $this->assertCount(22, $rows, '22 restaurant permissions persisted');
-        $this->assertCount(22, $rows->pluck('slug')->unique(), 'persisted slugs unique');
+        $this->assertCount(34, $rows, '34 restaurant permissions persisted');
+        $this->assertCount(34, $rows->pluck('slug')->unique(), 'persisted slugs unique');
         $this->assertCount(
-            22,
+            34,
             $rows->filter(static fn ($row) => str_starts_with((string) $row->name, 'restaurant.')),
             'names carry the permission key'
         );

@@ -255,6 +255,10 @@ return [
             'restaurant.table',
             'restaurant.table_layout',
             'restaurant.reservation',
+            'restaurant.dine_in',
+            'restaurant.takeaway',
+            'restaurant.delivery',
+            'restaurant.order',
             // POS for billing
             'pos',
             'pos.terminal',
@@ -274,6 +278,8 @@ return [
             'inventory',
         ],
         'optional' => [
+            'restaurant.order_tracking',
+            'restaurant.pre_order',
             'pos.split_payment',
             'pos.cash_drawer',
             'pos.loyalty',

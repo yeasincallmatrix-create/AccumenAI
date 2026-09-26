@@ -33,6 +33,21 @@ return [
                 'restaurant.reservation' => ['name' => 'Reservation', 'icon' => 'bi-calendar-check', 'sort_order' => 12],
             ],
         ],
+
+        'orders' => [
+            'name' => 'Order Management',
+            'icon' => 'bi-clipboard-check',
+            'required' => true,
+            'description' => 'Dine-in, Takeaway, Delivery, Tracking',
+            'modules' => [
+                'restaurant.dine_in' => ['name' => 'Dine-in Orders', 'icon' => 'bi-shop-window', 'sort_order' => 20],
+                'restaurant.takeaway' => ['name' => 'Takeaway Orders', 'icon' => 'bi-bag', 'sort_order' => 21],
+                'restaurant.delivery' => ['name' => 'Delivery Orders', 'icon' => 'bi-truck', 'sort_order' => 22],
+                'restaurant.order' => ['name' => 'Order Management', 'icon' => 'bi-clipboard-check', 'sort_order' => 23],
+                'restaurant.order_tracking' => ['name' => 'Order Tracking', 'icon' => 'bi-geo-alt', 'sort_order' => 24],
+                'restaurant.pre_order' => ['name' => 'Pre-orders', 'icon' => 'bi-calendar-plus', 'sort_order' => 25],
+            ],
+        ],
     ],
 
     'allow_custom_modules' => true,

@@ -11,8 +11,9 @@ use Tests\TestCase;
 /**
  * Restaurant Phase 1 — Foundation: `restaurant` becomes a standalone
  * industry with 6 children (menu, menu_category, menu_item, table,
- * table_layout, reservation), config/restaurant.php exposes 2 engines and
- * the module-config matrix renders the new hierarchy.
+ * table_layout, reservation) and the module-config matrix renders the
+ * new hierarchy. Phase 2 scope (order types) is asserted in
+ * RestaurantPhase2Test — this file stays Phase 1 scoped.
  */
 class RestaurantPhase1Test extends TestCase
 {
@@ -66,6 +67,10 @@ class RestaurantPhase1Test extends TestCase
     {
         $count = DB::table('module_registry')
             ->where('parent_key', 'restaurant')
+            ->whereIn('key', [
+                'restaurant.menu', 'restaurant.menu_category', 'restaurant.menu_item',
+                'restaurant.table', 'restaurant.table_layout', 'restaurant.reservation',
+            ])
             ->where('status', 'active')
             ->count();
         $this->assertEquals(6, $count);

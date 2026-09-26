@@ -7,8 +7,8 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Restaurant module permissions (22 slugs) once restaurant is a MAIN
- * industry (Phase 2).
+ * Restaurant module permissions (34 slugs) once restaurant is a MAIN
+ * industry (Phase 2), extended with the Phase 2 order-type modules.
  *
  * Mirrors SalesPurchasePermissionSeeder: permissions only - role assignment
  * is RolePermissionSeeder / module-activator territory.
@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Schema;
 class RestaurantPermissionSeeder extends Seeder
 {
     /**
-     * Canonical 22 permissions: 6 sub-modules x (view + manage) = 12,
+     * Canonical 34 permissions: 12 sub-modules x (view + manage) = 24,
      * plus 10 module-level capabilities.
      *
      * @return array<int, array{slug: string, module: string, name: string}>
@@ -46,6 +46,20 @@ class RestaurantPermissionSeeder extends Seeder
             ['slug' => 'restaurant.table_layout.manage', 'module' => 'restaurant', 'name' => 'restaurant.table_layout.manage'],
             ['slug' => 'restaurant.reservation.view', 'module' => 'restaurant', 'name' => 'restaurant.reservation.view'],
             ['slug' => 'restaurant.reservation.manage', 'module' => 'restaurant', 'name' => 'restaurant.reservation.manage'],
+
+            // Order types (Phase 2): 6 modules x (view + manage) = 12
+            ['slug' => 'restaurant.dine_in.view', 'module' => 'restaurant', 'name' => 'restaurant.dine_in.view'],
+            ['slug' => 'restaurant.dine_in.manage', 'module' => 'restaurant', 'name' => 'restaurant.dine_in.manage'],
+            ['slug' => 'restaurant.takeaway.view', 'module' => 'restaurant', 'name' => 'restaurant.takeaway.view'],
+            ['slug' => 'restaurant.takeaway.manage', 'module' => 'restaurant', 'name' => 'restaurant.takeaway.manage'],
+            ['slug' => 'restaurant.delivery.view', 'module' => 'restaurant', 'name' => 'restaurant.delivery.view'],
+            ['slug' => 'restaurant.delivery.manage', 'module' => 'restaurant', 'name' => 'restaurant.delivery.manage'],
+            ['slug' => 'restaurant.order.view', 'module' => 'restaurant', 'name' => 'restaurant.order.view'],
+            ['slug' => 'restaurant.order.manage', 'module' => 'restaurant', 'name' => 'restaurant.order.manage'],
+            ['slug' => 'restaurant.order_tracking.view', 'module' => 'restaurant', 'name' => 'restaurant.order_tracking.view'],
+            ['slug' => 'restaurant.order_tracking.manage', 'module' => 'restaurant', 'name' => 'restaurant.order_tracking.manage'],
+            ['slug' => 'restaurant.pre_order.view', 'module' => 'restaurant', 'name' => 'restaurant.pre_order.view'],
+            ['slug' => 'restaurant.pre_order.manage', 'module' => 'restaurant', 'name' => 'restaurant.pre_order.manage'],
 
             // Module-level capabilities (10)
             ['slug' => 'restaurant.dashboard.view', 'module' => 'restaurant', 'name' => 'restaurant.dashboard.view'],
