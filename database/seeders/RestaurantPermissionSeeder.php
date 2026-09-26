@@ -7,9 +7,9 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Restaurant module permissions (45 slugs) once restaurant is a MAIN
- * industry (Phase 2), extended with the Phase 2 order-type and Phase 3
- * kitchen-operation modules.
+ * Restaurant module permissions (57 slugs) once restaurant is a MAIN
+ * industry (Phase 2), extended with the Phase 2 order-type, Phase 3
+ * kitchen-operation and Phase 4 customer/loyalty modules.
  *
  * Mirrors SalesPurchasePermissionSeeder: permissions only - role assignment
  * is RolePermissionSeeder / module-activator territory.
@@ -26,10 +26,10 @@ use Illuminate\Support\Facades\Schema;
 class RestaurantPermissionSeeder extends Seeder
 {
     /**
-     * Canonical 45 permissions: 18 sub-modules x (view + manage) = 36,
+     * Canonical 57 permissions: 24 sub-modules x (view + manage) = 48,
      * plus 10 module-level capabilities, minus 1 overlap
      * (restaurant.kitchen.view is both the kitchen view permission and the
-     * module-level kitchen capability) -> 36 + 10 - 1 = 45.
+     * module-level kitchen capability) -> 48 + 10 - 1 = 57.
      *
      * @return array<int, array{slug: string, module: string, name: string}>
      */
@@ -78,6 +78,20 @@ class RestaurantPermissionSeeder extends Seeder
             ['slug' => 'restaurant.station.manage', 'module' => 'restaurant', 'name' => 'restaurant.station.manage'],
             ['slug' => 'restaurant.recipe.view', 'module' => 'restaurant', 'name' => 'restaurant.recipe.view'],
             ['slug' => 'restaurant.recipe.manage', 'module' => 'restaurant', 'name' => 'restaurant.recipe.manage'],
+
+            // Customer & loyalty (Phase 4): 6 modules x (view + manage) = 12
+            ['slug' => 'restaurant.customer.view', 'module' => 'restaurant', 'name' => 'restaurant.customer.view'],
+            ['slug' => 'restaurant.customer.manage', 'module' => 'restaurant', 'name' => 'restaurant.customer.manage'],
+            ['slug' => 'restaurant.loyalty.view', 'module' => 'restaurant', 'name' => 'restaurant.loyalty.view'],
+            ['slug' => 'restaurant.loyalty.manage', 'module' => 'restaurant', 'name' => 'restaurant.loyalty.manage'],
+            ['slug' => 'restaurant.feedback.view', 'module' => 'restaurant', 'name' => 'restaurant.feedback.view'],
+            ['slug' => 'restaurant.feedback.manage', 'module' => 'restaurant', 'name' => 'restaurant.feedback.manage'],
+            ['slug' => 'restaurant.membership.view', 'module' => 'restaurant', 'name' => 'restaurant.membership.view'],
+            ['slug' => 'restaurant.membership.manage', 'module' => 'restaurant', 'name' => 'restaurant.membership.manage'],
+            ['slug' => 'restaurant.birthday_offer.view', 'module' => 'restaurant', 'name' => 'restaurant.birthday_offer.view'],
+            ['slug' => 'restaurant.birthday_offer.manage', 'module' => 'restaurant', 'name' => 'restaurant.birthday_offer.manage'],
+            ['slug' => 'restaurant.preference.view', 'module' => 'restaurant', 'name' => 'restaurant.preference.view'],
+            ['slug' => 'restaurant.preference.manage', 'module' => 'restaurant', 'name' => 'restaurant.preference.manage'],
 
             // Module-level capabilities (10)
             ['slug' => 'restaurant.dashboard.view', 'module' => 'restaurant', 'name' => 'restaurant.dashboard.view'],

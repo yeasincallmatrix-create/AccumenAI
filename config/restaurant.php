@@ -63,6 +63,21 @@ return [
                 'restaurant.recipe' => ['name' => 'Recipe / BOM', 'icon' => 'bi-journal-code', 'sort_order' => 35],
             ],
         ],
+
+        'customer' => [
+            'name' => 'Customer & Loyalty',
+            'icon' => 'bi-person-heart',
+            'required' => false,
+            'description' => 'Customer, Loyalty, Feedback, Membership',
+            'modules' => [
+                'restaurant.customer' => ['name' => 'Customer Management', 'icon' => 'bi-person-vcard', 'sort_order' => 40],
+                'restaurant.loyalty' => ['name' => 'Loyalty Program', 'icon' => 'bi-award', 'sort_order' => 41],
+                'restaurant.feedback' => ['name' => 'Feedback & Reviews', 'icon' => 'bi-star', 'sort_order' => 42],
+                'restaurant.membership' => ['name' => 'Membership Tiers', 'icon' => 'bi-gem', 'sort_order' => 43],
+                'restaurant.birthday_offer' => ['name' => 'Birthday Offers', 'icon' => 'bi-gift', 'sort_order' => 44],
+                'restaurant.preference' => ['name' => 'Customer Preferences', 'icon' => 'bi-sliders', 'sort_order' => 45],
+            ],
+        ],
     ],
 
     'allow_custom_modules' => true,
