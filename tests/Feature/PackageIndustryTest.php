@@ -180,12 +180,12 @@ class PackageIndustryTest extends TestCase
 
     public function test_seeder_maps_expected_industries(): void
     {
-        DB::table('package_industries')->where('industry_key', 'healthcare')->delete();
+        DB::table('package_industries')->where('industry_key', 'medical')->delete();
 
         (new PackageIndustrySeeder)->run();
 
         $expected = [
-            'healthcare' => ['free', 'basic', 'advanced', 'premium'],
+            'medical' => ['free', 'basic', 'advanced', 'premium'],
             'education' => ['free', 'basic', 'advanced'],
             'manufacturing' => ['free', 'basic', 'advanced'],
         ];

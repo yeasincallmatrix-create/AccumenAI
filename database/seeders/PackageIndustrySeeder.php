@@ -13,7 +13,7 @@ class PackageIndustrySeeder extends Seeder
      * @var array<string, array<int, string>>
      */
     protected array $mappings = [
-        'healthcare' => ['free', 'basic', 'advanced', 'premium'],
+        'medical' => ['free', 'basic', 'advanced', 'premium'],
         'education' => ['free', 'basic', 'advanced'],
         'training_center' => ['free', 'basic'],
         'retail' => ['free', 'basic', 'advanced'],
