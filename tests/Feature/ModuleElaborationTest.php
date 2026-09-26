@@ -13,10 +13,11 @@ use Tests\TestCase;
  * hierarchies so /admin/module-config renders them as collapsible groups.
  *
  * manufacturing (22 children, 5 core engines) is elaborated too; pos owns its
- * 22 children (Phase 1: terminal, register, cart, checkout, receipt; Phase 2:
+ * 27 children (Phase 1: terminal, register, cart, checkout, receipt; Phase 2:
  * cash, card, mobile_payment, split_payment, shift, cash_drawer; Phase 3:
  * customer, loyalty, discount, coupon, gift_card; Phase 4: return, refund,
- * exchange, daily_report, item_report, cashier_report).
+ * exchange, daily_report, item_report, cashier_report; Phase 5: inventory,
+ * sales, finance, accounting, crm integrations).
  */
 class ModuleElaborationTest extends TestCase
 {
@@ -34,7 +35,7 @@ class ModuleElaborationTest extends TestCase
         'finance' => 5,
         'inventory' => 9,
         'manufacturing' => 22,
-        'pos' => 22,
+        'pos' => 27,
     ];
 
     /** @var array<string, list<string>> */
@@ -79,6 +80,9 @@ class ModuleElaborationTest extends TestCase
             'pos.customer', 'pos.loyalty', 'pos.discount', 'pos.coupon', 'pos.gift_card',
             'pos.return', 'pos.refund', 'pos.exchange',
             'pos.daily_report', 'pos.item_report', 'pos.cashier_report',
+            'pos.inventory_integration', 'pos.sales_integration',
+            'pos.finance_integration', 'pos.accounting_integration',
+            'pos.crm_integration',
         ],
     ];
 
@@ -203,8 +207,8 @@ class ModuleElaborationTest extends TestCase
 
         $this->assertNotNull($row);
         $this->assertNull($row->parent_key);
-        $this->assertSame(22, DB::table('module_registry')->where('parent_key', 'pos')->count(),
-            'pos must own exactly its 22 children (Phase 1: 5, Phase 2: 6, Phase 3: 5, Phase 4: 6)');
+        $this->assertSame(27, DB::table('module_registry')->where('parent_key', 'pos')->count(),
+            'pos must own exactly its 27 children (Phase 1: 5, Phase 2: 6, Phase 3: 5, Phase 4: 6, Phase 5: 5)');
 
         $this->assertChildren('pos', self::EXPECTED_KEYS['pos']);
     }

@@ -11,7 +11,8 @@ return [
     |          Gift Card)
     | Phase 4: Returns & Reports (Return, Refund, Exchange, Daily, Item,
     |          Cashier reports)
-    | Future phases will extend this.
+    | Phase 5: Integrations + Custom (Inventory, Sales, Finance, Accounting,
+    |          CRM integrations; admin-defined custom modules)
     */
 
     'engines' => [
@@ -108,8 +109,23 @@ return [
                 'pos.cashier_report' => ['name' => 'Cashier Report', 'icon' => 'bi-person-badge', 'sort_order' => 62],
             ],
         ],
+
+        'integrations' => [
+            'name' => 'Integrations',
+            'icon' => 'bi-link-45deg',
+            'required' => false,
+            'description' => 'Connect with inventory, sales, finance, accounting, CRM',
+            'modules' => [
+                'pos.inventory_integration' => ['name' => 'Inventory Integration', 'icon' => 'bi-box', 'sort_order' => 70],
+                'pos.sales_integration' => ['name' => 'Sales Integration', 'icon' => 'bi-cart', 'sort_order' => 71],
+                'pos.finance_integration' => ['name' => 'Finance Integration', 'icon' => 'bi-cash', 'sort_order' => 72],
+                'pos.accounting_integration' => ['name' => 'Accounting Integration', 'icon' => 'bi-journal-text', 'sort_order' => 73],
+                'pos.crm_integration' => ['name' => 'CRM Integration', 'icon' => 'bi-person-lines-fill', 'sort_order' => 74],
+            ],
+        ],
     ],
 
     'allow_custom_modules' => true,
     'custom_module_prefix' => 'pos.custom.',
+    'custom_module_types' => ['payment_method', 'report', 'workflow', 'other'],
 ];

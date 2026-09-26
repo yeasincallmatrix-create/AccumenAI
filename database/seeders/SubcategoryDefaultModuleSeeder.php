@@ -167,6 +167,12 @@ class SubcategoryDefaultModuleSeeder extends Seeder
                 ['module' => 'pos.daily_report', 'category' => 'default'],
                 ['module' => 'pos.item_report', 'category' => 'default'],
                 ['module' => 'pos.cashier_report', 'category' => 'optional'],
+                // POS Phase 5 — Integrations
+                ['module' => 'pos.inventory_integration', 'category' => 'default'],
+                ['module' => 'pos.sales_integration', 'category' => 'default'],
+                ['module' => 'pos.finance_integration', 'category' => 'optional'],
+                ['module' => 'pos.accounting_integration', 'category' => 'optional'],
+                ['module' => 'pos.crm_integration', 'category' => 'optional'],
             ],
             'retail.electronics' => [
                 ['module' => 'sales', 'category' => 'mandatory'],
@@ -209,6 +215,12 @@ class SubcategoryDefaultModuleSeeder extends Seeder
                 ['module' => 'pos.daily_report', 'category' => 'default'],
                 ['module' => 'pos.item_report', 'category' => 'default'],
                 ['module' => 'pos.cashier_report', 'category' => 'optional'],
+                // POS Phase 5 — Integrations
+                ['module' => 'pos.inventory_integration', 'category' => 'default'],
+                ['module' => 'pos.sales_integration', 'category' => 'default'],
+                ['module' => 'pos.finance_integration', 'category' => 'optional'],
+                ['module' => 'pos.accounting_integration', 'category' => 'optional'],
+                ['module' => 'pos.crm_integration', 'category' => 'optional'],
             ],
 
             // ═══ MANUFACTURING ═══

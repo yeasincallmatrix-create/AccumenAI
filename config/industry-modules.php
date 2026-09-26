@@ -101,6 +101,11 @@ return [
             'pos.gift_card',
             'pos.exchange',
             'pos.cashier_report',
+            'pos.inventory_integration',
+            'pos.sales_integration',
+            'pos.finance_integration',
+            'pos.accounting_integration',
+            'pos.crm_integration',
         ],
         'disabled' => [
             'medical',
@@ -163,6 +168,11 @@ return [
             'pos.daily_report',
             'pos.item_report',
             'pos.cashier_report',
+            'pos.inventory_integration',
+            'pos.sales_integration',
+            'pos.finance_integration',
+            'pos.accounting_integration',
+            'pos.crm_integration',
         ],
         'disabled' => [
             'medical',
