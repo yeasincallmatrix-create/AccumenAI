@@ -1,0 +1,32 @@
+<?php
+
+return [
+    /*
+    |--------------------------------------------------------------------------
+    | Real Estate Module Configuration
+    |--------------------------------------------------------------------------
+    | Phase 1: Property Management (Foundation)
+    | Future phases will extend this.
+    */
+
+    'engines' => [
+        'property' => [
+            'name' => 'Property Management',
+            'icon' => 'bi-building',
+            'required' => true,
+            'description' => 'Properties, Buildings, Units, Owners',
+            'modules' => [
+                'real_estate.properties' => ['name' => 'Properties', 'icon' => 'bi-house', 'sort_order' => 1],
+                'real_estate.buildings' => ['name' => 'Buildings / Projects', 'icon' => 'bi-buildings', 'sort_order' => 2],
+                'real_estate.units' => ['name' => 'Units', 'icon' => 'bi-door-open', 'sort_order' => 3],
+                'real_estate.owners' => ['name' => 'Owners', 'icon' => 'bi-person-badge', 'sort_order' => 4],
+                'real_estate.property_types' => ['name' => 'Property Types', 'icon' => 'bi-tags', 'sort_order' => 5],
+                'real_estate.amenities' => ['name' => 'Amenities', 'icon' => 'bi-star', 'sort_order' => 6],
+                'real_estate.documents' => ['name' => 'Documents', 'icon' => 'bi-file-earmark-text', 'sort_order' => 7],
+            ],
+        ],
+    ],
+
+    'allow_custom_modules' => true,
+    'custom_module_prefix' => 'real_estate.custom.',
+];

@@ -131,10 +131,17 @@ return [
 
     'real_estate' => [
         'name' => 'Real Estate',
-        'default' => [],
+        'default' => [
+            'real_estate',
+            'real_estate.properties',
+            'real_estate.buildings',
+            'real_estate.units',
+            'real_estate.owners',
+        ],
         'optional' => [
-            'sales',
-            'purchase',
+            'real_estate.property_types',
+            'real_estate.amenities',
+            'real_estate.documents',
         ],
         'disabled' => [
             'medical',

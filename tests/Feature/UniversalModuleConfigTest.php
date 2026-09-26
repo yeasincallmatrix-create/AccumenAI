@@ -284,7 +284,7 @@ class UniversalModuleConfigTest extends TestCase
         $xpath = new \DOMXPath($dom);
 
         $this->assertSame(
-            ['accounting', 'ai', 'crm', 'education', 'finance', 'hr', 'inventory', 'manufacturing', 'medical', 'purchase', 'reports', 'sales', 'tds', 'training_center', 'vat'],
+            ['accounting', 'ai', 'crm', 'education', 'finance', 'hr', 'inventory', 'manufacturing', 'medical', 'purchase', 'real_estate', 'reports', 'sales', 'tds', 'training_center', 'vat'],
             $this->attributeValues($xpath, '//*[@data-module-toggle]', 'data-module-toggle'),
             'Every module that owns children must render as a collapsible parent row',
         );

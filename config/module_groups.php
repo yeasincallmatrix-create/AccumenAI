@@ -146,9 +146,12 @@ return [
 
     'real_estate' => [
         'label' => 'Real Estate Modules',
+        'name' => 'Real Estate Modules',
         'icon' => 'bi-building',
-        'description' => 'Property listings, leases and tenants.',
+        'parent_key' => 'real_estate',
+        'description' => 'Properties, buildings, units and owners.',
         'modules' => [
+            'real_estate',
             'property',
             'lease',
             'tenant',
