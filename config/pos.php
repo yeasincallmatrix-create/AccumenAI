@@ -7,6 +7,8 @@ return [
     |--------------------------------------------------------------------------
     | Phase 1: Foundation (Terminal, Register, Cart, Checkout, Receipt)
     | Phase 2: Payment & Sessions (Cash, Card, Mobile, Split, Shift, Drawer)
+    | Phase 3: Customer & Promotions (Customer, Loyalty, Discount, Coupon,
+    |          Gift Card)
     | Future phases will extend this.
     */
 
@@ -55,6 +57,29 @@ return [
             'modules' => [
                 'pos.shift' => ['name' => 'Shift Management', 'icon' => 'bi-clock-history', 'sort_order' => 30],
                 'pos.cash_drawer' => ['name' => 'Cash Drawer', 'icon' => 'bi-cash-stack', 'sort_order' => 31],
+            ],
+        ],
+
+        'customer' => [
+            'name' => 'Customer',
+            'icon' => 'bi-person-badge',
+            'required' => false,
+            'description' => 'Customer lookup and loyalty',
+            'modules' => [
+                'pos.customer' => ['name' => 'Customer Lookup', 'icon' => 'bi-person-badge', 'sort_order' => 40],
+                'pos.loyalty' => ['name' => 'Loyalty Program', 'icon' => 'bi-award', 'sort_order' => 41],
+            ],
+        ],
+
+        'promotions' => [
+            'name' => 'Promotions',
+            'icon' => 'bi-tag',
+            'required' => false,
+            'description' => 'Discounts, coupons, gift cards',
+            'modules' => [
+                'pos.discount' => ['name' => 'Discounts', 'icon' => 'bi-percent', 'sort_order' => 42],
+                'pos.coupon' => ['name' => 'Coupons', 'icon' => 'bi-ticket-perforated', 'sort_order' => 43],
+                'pos.gift_card' => ['name' => 'Gift Cards', 'icon' => 'bi-gift', 'sort_order' => 44],
             ],
         ],
     ],

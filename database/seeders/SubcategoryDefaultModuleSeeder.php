@@ -154,6 +154,12 @@ class SubcategoryDefaultModuleSeeder extends Seeder
                 ['module' => 'pos.split_payment', 'category' => 'optional'],
                 ['module' => 'pos.shift', 'category' => 'default'],
                 ['module' => 'pos.cash_drawer', 'category' => 'optional'],
+                // POS Phase 3 — Customer & Promotions
+                ['module' => 'pos.customer', 'category' => 'default'],
+                ['module' => 'pos.loyalty', 'category' => 'default'],
+                ['module' => 'pos.discount', 'category' => 'default'],
+                ['module' => 'pos.coupon', 'category' => 'optional'],
+                ['module' => 'pos.gift_card', 'category' => 'optional'],
             ],
             'retail.electronics' => [
                 ['module' => 'sales', 'category' => 'mandatory'],
@@ -183,6 +189,12 @@ class SubcategoryDefaultModuleSeeder extends Seeder
                 ['module' => 'pos.split_payment', 'category' => 'optional'],
                 ['module' => 'pos.shift', 'category' => 'default'],
                 ['module' => 'pos.cash_drawer', 'category' => 'optional'],
+                // POS Phase 3 — Customer & Promotions
+                ['module' => 'pos.customer', 'category' => 'default'],
+                ['module' => 'pos.loyalty', 'category' => 'default'],
+                ['module' => 'pos.discount', 'category' => 'default'],
+                ['module' => 'pos.coupon', 'category' => 'optional'],
+                ['module' => 'pos.gift_card', 'category' => 'optional'],
             ],
 
             // ═══ MANUFACTURING ═══

@@ -88,8 +88,14 @@ return [
             'pos.card',
             'pos.mobile_payment',
             'pos.shift',
+            'pos.customer',
+            'pos.loyalty',
+            'pos.discount',
         ],
-        'optional' => [],
+        'optional' => [
+            'pos.coupon',
+            'pos.gift_card',
+        ],
         'disabled' => [
             'medical',
             'medical.billing',
@@ -140,6 +146,11 @@ return [
             'pos.mobile_payment',
             'pos.shift',
             'pos.cash_drawer',
+            'pos.customer',
+            'pos.loyalty',
+            'pos.discount',
+            'pos.coupon',
+            'pos.gift_card',
         ],
         'disabled' => [
             'medical',

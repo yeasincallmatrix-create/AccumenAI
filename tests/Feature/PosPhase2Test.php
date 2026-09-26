@@ -56,13 +56,16 @@ class PosPhase2Test extends TestCase
         $this->assertEquals(6, $count);
     }
 
-    public function test_pos_has_11_children()
+    public function test_phase2_scope_is_6_children()
     {
+        $phase2 = ['pos.cash', 'pos.card', 'pos.mobile_payment', 'pos.split_payment', 'pos.shift', 'pos.cash_drawer'];
+
         $count = DB::table('module_registry')
+            ->whereIn('key', $phase2)
             ->where('parent_key', 'pos')
             ->where('status', 'active')
             ->count();
-        $this->assertEquals(11, $count);
+        $this->assertEquals(6, $count, 'Phase 2 scope is exactly its 6 keys');
     }
 
     public function test_pos_config_has_payment_engines()
