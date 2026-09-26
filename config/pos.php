@@ -9,6 +9,8 @@ return [
     | Phase 2: Payment & Sessions (Cash, Card, Mobile, Split, Shift, Drawer)
     | Phase 3: Customer & Promotions (Customer, Loyalty, Discount, Coupon,
     |          Gift Card)
+    | Phase 4: Returns & Reports (Return, Refund, Exchange, Daily, Item,
+    |          Cashier reports)
     | Future phases will extend this.
     */
 
@@ -80,6 +82,30 @@ return [
                 'pos.discount' => ['name' => 'Discounts', 'icon' => 'bi-percent', 'sort_order' => 42],
                 'pos.coupon' => ['name' => 'Coupons', 'icon' => 'bi-ticket-perforated', 'sort_order' => 43],
                 'pos.gift_card' => ['name' => 'Gift Cards', 'icon' => 'bi-gift', 'sort_order' => 44],
+            ],
+        ],
+
+        'returns' => [
+            'name' => 'Returns & Refunds',
+            'icon' => 'bi-arrow-return-left',
+            'required' => false,
+            'description' => 'Returns, refunds, exchanges',
+            'modules' => [
+                'pos.return' => ['name' => 'Returns', 'icon' => 'bi-arrow-return-left', 'sort_order' => 50],
+                'pos.refund' => ['name' => 'Refunds', 'icon' => 'bi-cash-coin', 'sort_order' => 51],
+                'pos.exchange' => ['name' => 'Exchanges', 'icon' => 'bi-arrow-left-right', 'sort_order' => 52],
+            ],
+        ],
+
+        'reports' => [
+            'name' => 'Reports & Analytics',
+            'icon' => 'bi-graph-up',
+            'required' => true,
+            'description' => 'Daily, item, cashier reports',
+            'modules' => [
+                'pos.daily_report' => ['name' => 'Daily Sales Report', 'icon' => 'bi-calendar-check', 'sort_order' => 60],
+                'pos.item_report' => ['name' => 'Item Sales Report', 'icon' => 'bi-list-ul', 'sort_order' => 61],
+                'pos.cashier_report' => ['name' => 'Cashier Report', 'icon' => 'bi-person-badge', 'sort_order' => 62],
             ],
         ],
     ],

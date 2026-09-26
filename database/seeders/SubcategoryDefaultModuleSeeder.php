@@ -160,6 +160,13 @@ class SubcategoryDefaultModuleSeeder extends Seeder
                 ['module' => 'pos.discount', 'category' => 'default'],
                 ['module' => 'pos.coupon', 'category' => 'optional'],
                 ['module' => 'pos.gift_card', 'category' => 'optional'],
+                // POS Phase 4 — Returns & Reports
+                ['module' => 'pos.return', 'category' => 'default'],
+                ['module' => 'pos.refund', 'category' => 'default'],
+                ['module' => 'pos.exchange', 'category' => 'optional'],
+                ['module' => 'pos.daily_report', 'category' => 'default'],
+                ['module' => 'pos.item_report', 'category' => 'default'],
+                ['module' => 'pos.cashier_report', 'category' => 'optional'],
             ],
             'retail.electronics' => [
                 ['module' => 'sales', 'category' => 'mandatory'],
@@ -195,6 +202,13 @@ class SubcategoryDefaultModuleSeeder extends Seeder
                 ['module' => 'pos.discount', 'category' => 'default'],
                 ['module' => 'pos.coupon', 'category' => 'optional'],
                 ['module' => 'pos.gift_card', 'category' => 'optional'],
+                // POS Phase 4 — Returns & Reports
+                ['module' => 'pos.return', 'category' => 'default'],
+                ['module' => 'pos.refund', 'category' => 'default'],
+                ['module' => 'pos.exchange', 'category' => 'optional'],
+                ['module' => 'pos.daily_report', 'category' => 'default'],
+                ['module' => 'pos.item_report', 'category' => 'default'],
+                ['module' => 'pos.cashier_report', 'category' => 'optional'],
             ],
 
             // ═══ MANUFACTURING ═══

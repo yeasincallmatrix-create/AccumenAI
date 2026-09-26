@@ -13,9 +13,10 @@ use Tests\TestCase;
  * hierarchies so /admin/module-config renders them as collapsible groups.
  *
  * manufacturing (22 children, 5 core engines) is elaborated too; pos owns its
- * 16 children (Phase 1: terminal, register, cart, checkout, receipt; Phase 2:
+ * 22 children (Phase 1: terminal, register, cart, checkout, receipt; Phase 2:
  * cash, card, mobile_payment, split_payment, shift, cash_drawer; Phase 3:
- * customer, loyalty, discount, coupon, gift_card).
+ * customer, loyalty, discount, coupon, gift_card; Phase 4: return, refund,
+ * exchange, daily_report, item_report, cashier_report).
  */
 class ModuleElaborationTest extends TestCase
 {
@@ -33,7 +34,7 @@ class ModuleElaborationTest extends TestCase
         'finance' => 5,
         'inventory' => 9,
         'manufacturing' => 22,
-        'pos' => 16,
+        'pos' => 22,
     ];
 
     /** @var array<string, list<string>> */
@@ -76,6 +77,8 @@ class ModuleElaborationTest extends TestCase
             'pos.cash', 'pos.card', 'pos.mobile_payment', 'pos.split_payment',
             'pos.shift', 'pos.cash_drawer',
             'pos.customer', 'pos.loyalty', 'pos.discount', 'pos.coupon', 'pos.gift_card',
+            'pos.return', 'pos.refund', 'pos.exchange',
+            'pos.daily_report', 'pos.item_report', 'pos.cashier_report',
         ],
     ];
 
@@ -200,8 +203,8 @@ class ModuleElaborationTest extends TestCase
 
         $this->assertNotNull($row);
         $this->assertNull($row->parent_key);
-        $this->assertSame(16, DB::table('module_registry')->where('parent_key', 'pos')->count(),
-            'pos must own exactly its 16 children (Phase 1: 5, Phase 2: 6, Phase 3: 5)');
+        $this->assertSame(22, DB::table('module_registry')->where('parent_key', 'pos')->count(),
+            'pos must own exactly its 22 children (Phase 1: 5, Phase 2: 6, Phase 3: 5, Phase 4: 6)');
 
         $this->assertChildren('pos', self::EXPECTED_KEYS['pos']);
     }
