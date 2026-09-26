@@ -44,6 +44,15 @@ class IndustrySubcategorySeeder extends Seeder
             // ═══ REAL ESTATE ═══
             ['industry_key' => 'real_estate', 'subcategory_key' => 'property', 'name' => 'Property', 'description' => 'Property sales', 'icon' => 'bi-house', 'sort_order' => 1],
             ['industry_key' => 'real_estate', 'subcategory_key' => 'rental', 'name' => 'Rental', 'description' => 'Property rental', 'icon' => 'bi-key', 'sort_order' => 2],
+
+            // ═══ RESTAURANT ═══
+            ['industry_key' => 'restaurant', 'subcategory_key' => 'fine_dining', 'name' => 'Fine Dining', 'description' => 'Fine dining restaurant', 'icon' => 'bi-utensils', 'sort_order' => 1],
+            ['industry_key' => 'restaurant', 'subcategory_key' => 'casual', 'name' => 'Casual Dining', 'description' => 'Casual / family dining', 'icon' => 'bi-shop', 'sort_order' => 2],
+            ['industry_key' => 'restaurant', 'subcategory_key' => 'fast_food', 'name' => 'Fast Food', 'description' => 'Fast food / quick service', 'icon' => 'bi-lightning-charge', 'sort_order' => 3],
+            ['industry_key' => 'restaurant', 'subcategory_key' => 'cafe', 'name' => 'Cafe / Coffee Shop', 'description' => 'Cafe and coffee shop', 'icon' => 'bi-cup', 'sort_order' => 4],
+            ['industry_key' => 'restaurant', 'subcategory_key' => 'bakery', 'name' => 'Bakery', 'description' => 'Bakery / confectionery', 'icon' => 'bi-egg-fried', 'sort_order' => 5],
+            ['industry_key' => 'restaurant', 'subcategory_key' => 'food_court', 'name' => 'Food Court', 'description' => 'Food court / multi-vendor', 'icon' => 'bi-grid-3x3', 'sort_order' => 6],
+            ['industry_key' => 'restaurant', 'subcategory_key' => 'cloud_kitchen', 'name' => 'Cloud Kitchen', 'description' => 'Delivery-only kitchen', 'icon' => 'bi-cloud', 'sort_order' => 7],
         ];
 
         foreach ($subcategories as $sub) {

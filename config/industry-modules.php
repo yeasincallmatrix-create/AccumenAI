@@ -245,6 +245,57 @@ return [
         ],
     ],
 
+    'restaurant' => [
+        'name' => 'Restaurant',
+        'default' => [
+            'restaurant',
+            'restaurant.menu',
+            'restaurant.menu_category',
+            'restaurant.menu_item',
+            'restaurant.table',
+            'restaurant.table_layout',
+            'restaurant.reservation',
+            // POS for billing
+            'pos',
+            'pos.terminal',
+            'pos.register',
+            'pos.cart',
+            'pos.checkout',
+            'pos.receipt',
+            'pos.cash',
+            'pos.card',
+            'pos.mobile_payment',
+            'pos.shift',
+            'pos.customer',
+            'pos.daily_report',
+            // Sales + Purchase
+            'sales',
+            'purchase',
+            'inventory',
+        ],
+        'optional' => [
+            'pos.split_payment',
+            'pos.cash_drawer',
+            'pos.loyalty',
+            'pos.discount',
+            'pos.coupon',
+            'pos.gift_card',
+            'pos.return',
+            'pos.refund',
+            'pos.exchange',
+            'pos.item_report',
+            'pos.cashier_report',
+            'pos.inventory_integration',
+            'pos.sales_integration',
+            'pos.finance_integration',
+            'pos.accounting_integration',
+            'pos.crm_integration',
+        ],
+        'disabled' => [
+            'medical', 'medical.billing', 'education', 'training_center',
+        ],
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Core Modules (Always available in ALL industries)

@@ -334,6 +334,68 @@ class SubcategoryDefaultModuleSeeder extends Seeder
                 ['module' => 'real_estate.crm_integration', 'category' => 'optional'],
                 ['module' => 'real_estate.inventory_integration', 'category' => 'optional'],
             ],
+
+            // ═══ RESTAURANT (Phase 1) ═══
+            'restaurant.fine_dining' => [
+                ['module' => 'restaurant.menu', 'category' => 'mandatory'],
+                ['module' => 'restaurant.menu_category', 'category' => 'mandatory'],
+                ['module' => 'restaurant.menu_item', 'category' => 'mandatory'],
+                ['module' => 'restaurant.table', 'category' => 'mandatory'],
+                ['module' => 'restaurant.table_layout', 'category' => 'default'],
+                ['module' => 'restaurant.reservation', 'category' => 'mandatory'],
+                ['module' => 'pos.cart', 'category' => 'mandatory'],
+                ['module' => 'pos.checkout', 'category' => 'mandatory'],
+            ],
+            'restaurant.casual' => [
+                ['module' => 'restaurant.menu', 'category' => 'mandatory'],
+                ['module' => 'restaurant.menu_category', 'category' => 'mandatory'],
+                ['module' => 'restaurant.menu_item', 'category' => 'mandatory'],
+                ['module' => 'restaurant.table', 'category' => 'mandatory'],
+                ['module' => 'restaurant.table_layout', 'category' => 'default'],
+                ['module' => 'restaurant.reservation', 'category' => 'default'],
+                ['module' => 'pos.cart', 'category' => 'mandatory'],
+                ['module' => 'pos.checkout', 'category' => 'mandatory'],
+            ],
+            'restaurant.fast_food' => [
+                ['module' => 'restaurant.menu', 'category' => 'mandatory'],
+                ['module' => 'restaurant.menu_category', 'category' => 'mandatory'],
+                ['module' => 'restaurant.menu_item', 'category' => 'mandatory'],
+                ['module' => 'pos.cart', 'category' => 'mandatory'],
+                ['module' => 'pos.checkout', 'category' => 'mandatory'],
+            ],
+            'restaurant.cafe' => [
+                ['module' => 'restaurant.menu', 'category' => 'mandatory'],
+                ['module' => 'restaurant.menu_category', 'category' => 'mandatory'],
+                ['module' => 'restaurant.menu_item', 'category' => 'mandatory'],
+                ['module' => 'restaurant.table', 'category' => 'default'],
+                ['module' => 'restaurant.table_layout', 'category' => 'optional'],
+                ['module' => 'restaurant.reservation', 'category' => 'optional'],
+                ['module' => 'pos.cart', 'category' => 'mandatory'],
+                ['module' => 'pos.checkout', 'category' => 'mandatory'],
+            ],
+            'restaurant.bakery' => [
+                ['module' => 'restaurant.menu', 'category' => 'mandatory'],
+                ['module' => 'restaurant.menu_category', 'category' => 'mandatory'],
+                ['module' => 'restaurant.menu_item', 'category' => 'mandatory'],
+                ['module' => 'pos.cart', 'category' => 'mandatory'],
+                ['module' => 'pos.checkout', 'category' => 'mandatory'],
+            ],
+            'restaurant.food_court' => [
+                ['module' => 'restaurant.menu', 'category' => 'mandatory'],
+                ['module' => 'restaurant.menu_category', 'category' => 'mandatory'],
+                ['module' => 'restaurant.menu_item', 'category' => 'mandatory'],
+                ['module' => 'restaurant.table', 'category' => 'optional'],
+                ['module' => 'pos.cart', 'category' => 'mandatory'],
+                ['module' => 'pos.checkout', 'category' => 'mandatory'],
+            ],
+            'restaurant.cloud_kitchen' => [
+                ['module' => 'restaurant.menu', 'category' => 'mandatory'],
+                ['module' => 'restaurant.menu_category', 'category' => 'mandatory'],
+                ['module' => 'restaurant.menu_item', 'category' => 'mandatory'],
+                ['module' => 'pos.cart', 'category' => 'mandatory'],
+                ['module' => 'pos.checkout', 'category' => 'mandatory'],
+                ['module' => 'restaurant.reservation', 'category' => 'hidden'],
+            ],
         ];
 
         $registryKeys = DB::table('module_registry')->pluck('key')->flip();

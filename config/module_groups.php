@@ -167,4 +167,15 @@ return [
             'tenant',
         ],
     ],
+
+    'restaurant' => [
+        'label' => 'Restaurant Modules',
+        'name' => 'Restaurant Modules',
+        'icon' => 'bi-shop',
+        'parent_key' => 'restaurant',
+        'description' => 'Menus, tables and reservations.',
+        'modules' => [
+            'restaurant',
+        ],
+    ],
 ];
