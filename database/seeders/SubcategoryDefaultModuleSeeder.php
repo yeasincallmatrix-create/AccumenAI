@@ -240,9 +240,14 @@ class SubcategoryDefaultModuleSeeder extends Seeder
                 ['module' => 'inventory', 'category' => 'optional'],
             ],
             'real_estate.rental' => [
-                ['module' => 'sales', 'category' => 'default'],
-                ['module' => 'purchase', 'category' => 'default'],
-                ['module' => 'inventory', 'category' => 'optional'],
+                ['module' => 'real_estate.properties', 'category' => 'mandatory'],
+                ['module' => 'real_estate.leases', 'category' => 'mandatory'],
+                ['module' => 'real_estate.tenants', 'category' => 'mandatory'],
+                ['module' => 'real_estate.rent_invoices', 'category' => 'default'],
+                ['module' => 'real_estate.rent_collection', 'category' => 'default'],
+                ['module' => 'real_estate.security_deposits', 'category' => 'optional'],
+                ['module' => 'real_estate.lease_renewals', 'category' => 'optional'],
+                ['module' => 'real_estate.utility_billing', 'category' => 'optional'],
             ],
         ];
 
@@ -260,12 +265,14 @@ class SubcategoryDefaultModuleSeeder extends Seeder
 
             if (! $sub) {
                 $this->command->warn("Sub-category not found: {$key}");
+
                 continue;
             }
 
             foreach ($modules as $m) {
                 if (! isset($registryKeys[$m['module']])) {
                     $skipped[] = "{$key} → {$m['module']}";
+
                     continue;
                 }
 
@@ -278,9 +285,9 @@ class SubcategoryDefaultModuleSeeder extends Seeder
         }
 
         if ($skipped) {
-            $this->command->warn('Skipped keys not in module_registry: ' . implode(', ', $skipped));
+            $this->command->warn('Skipped keys not in module_registry: '.implode(', ', $skipped));
         }
 
-        $this->command->info('Sub-category default modules seeded: ' . $count);
+        $this->command->info('Sub-category default modules seeded: '.$count);
     }
 }

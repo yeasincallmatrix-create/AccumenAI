@@ -34,9 +34,18 @@ class RealEstatePhase1Test extends TestCase
 
     public function test_real_estate_has_7_children()
     {
+        // Phase-scoped: later phases add children, so assert the 7 Phase 1
+        // keys are the ones registered here rather than pinning a total.
+        $phase1 = [
+            'real_estate.properties', 'real_estate.buildings', 'real_estate.units',
+            'real_estate.owners', 'real_estate.property_types', 'real_estate.amenities',
+            'real_estate.documents',
+        ];
+
         $count = DB::table('module_registry')
             ->where('parent_key', 'real_estate')
             ->where('status', 'active')
+            ->whereIn('key', $phase1)
             ->count();
         $this->assertEquals(7, $count);
     }
@@ -93,11 +102,20 @@ class RealEstatePhase1Test extends TestCase
         libxml_clear_errors();
         $xpath = new \DOMXPath($dom);
 
-        $this->assertSame(
-            7,
-            $xpath->query('//tr[@data-child-of="real_estate"]')->length,
-            'real_estate must render exactly 7 indented child rows'
-        );
+        // Phase-scoped: every Phase 1 child must render indented under the
+        // parent (later phases add rows, so no exact total is asserted here).
+        foreach ([
+            'real_estate.properties', 'real_estate.buildings', 'real_estate.units',
+            'real_estate.owners', 'real_estate.property_types', 'real_estate.amenities',
+            'real_estate.documents',
+        ] as $childKey) {
+            $this->assertSame(
+                1,
+                $xpath->query('//tr[@data-child-of="real_estate"]//code[text()="'.$childKey.'"]')->length,
+                "Phase 1 child {$childKey} must render as an indented child row"
+            );
+        }
+
         $this->assertSame(
             1,
             $xpath->query('//*[@data-module-toggle="real_estate"]')->length,
