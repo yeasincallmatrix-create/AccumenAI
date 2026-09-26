@@ -32,7 +32,7 @@ class RealEstatePhase1Test extends TestCase
         $this->assertTrue(DB::table('module_registry')->where('key', 'real_estate')->exists());
     }
 
-    public function test_real_estate_has_7_children()
+    public function test_phase1_children_count()
     {
         // Phase-scoped: later phases add children, so assert the 7 Phase 1
         // keys are the ones registered here rather than pinning a total.

@@ -141,6 +141,9 @@ return [
             'real_estate.tenants',
             'real_estate.rent_invoices',
             'real_estate.rent_collection',
+            'real_estate.leads',
+            'real_estate.site_visits',
+            'real_estate.bookings',
         ],
         'optional' => [
             'real_estate.property_types',
@@ -150,6 +153,10 @@ return [
             'real_estate.lease_renewals',
             'real_estate.utility_billing',
             'real_estate.cam_charges',
+            'real_estate.sales_agreements',
+            'real_estate.installments',
+            'real_estate.handover',
+            'real_estate.after_sales',
         ],
         'disabled' => [
             'medical',

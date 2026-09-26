@@ -7,6 +7,7 @@ return [
     |--------------------------------------------------------------------------
     | Phase 1: Property Management (Foundation)
     | Phase 2: Leasing & Rental
+    | Phase 3: Sales & CRM
     | Future phases will extend this.
     */
 
@@ -41,6 +42,22 @@ return [
                 'real_estate.lease_renewals' => ['name' => 'Lease Renewals', 'icon' => 'bi-arrow-repeat', 'sort_order' => 15],
                 'real_estate.utility_billing' => ['name' => 'Utility Billing', 'icon' => 'bi-lightning', 'sort_order' => 16],
                 'real_estate.cam_charges' => ['name' => 'CAM Charges', 'icon' => 'bi-tools', 'sort_order' => 17],
+            ],
+        ],
+
+        'sales_crm' => [
+            'name' => 'Sales & CRM',
+            'icon' => 'bi-funnel',
+            'required' => false,
+            'description' => 'Leads, Visits, Bookings, Agreements',
+            'modules' => [
+                'real_estate.leads' => ['name' => 'Leads', 'icon' => 'bi-funnel', 'sort_order' => 20],
+                'real_estate.site_visits' => ['name' => 'Site Visits', 'icon' => 'bi-geo-alt', 'sort_order' => 21],
+                'real_estate.bookings' => ['name' => 'Bookings', 'icon' => 'bi-calendar-check', 'sort_order' => 22],
+                'real_estate.sales_agreements' => ['name' => 'Sales Agreements', 'icon' => 'bi-file-earmark-check', 'sort_order' => 23],
+                'real_estate.installments' => ['name' => 'Installments', 'icon' => 'bi-calendar-range', 'sort_order' => 24],
+                'real_estate.handover' => ['name' => 'Handover', 'icon' => 'bi-box-arrow-right', 'sort_order' => 25],
+                'real_estate.after_sales' => ['name' => 'After Sales', 'icon' => 'bi-headset', 'sort_order' => 26],
             ],
         ],
     ],

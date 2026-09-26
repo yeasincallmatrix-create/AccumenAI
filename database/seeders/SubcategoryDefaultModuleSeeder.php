@@ -235,9 +235,15 @@ class SubcategoryDefaultModuleSeeder extends Seeder
 
             // ═══ REAL ESTATE ═══
             'real_estate.property' => [
-                ['module' => 'sales', 'category' => 'default'],
-                ['module' => 'purchase', 'category' => 'default'],
-                ['module' => 'inventory', 'category' => 'optional'],
+                ['module' => 'real_estate.properties', 'category' => 'mandatory'],
+                ['module' => 'real_estate.owners', 'category' => 'mandatory'],
+                ['module' => 'real_estate.leads', 'category' => 'default'],
+                ['module' => 'real_estate.site_visits', 'category' => 'default'],
+                ['module' => 'real_estate.bookings', 'category' => 'default'],
+                ['module' => 'real_estate.sales_agreements', 'category' => 'default'],
+                ['module' => 'real_estate.installments', 'category' => 'default'],
+                ['module' => 'real_estate.handover', 'category' => 'optional'],
+                ['module' => 'real_estate.after_sales', 'category' => 'optional'],
             ],
             'real_estate.rental' => [
                 ['module' => 'real_estate.properties', 'category' => 'mandatory'],
