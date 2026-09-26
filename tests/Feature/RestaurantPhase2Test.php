@@ -68,12 +68,20 @@ class RestaurantPhase2Test extends TestCase
     {
         $count = DB::table('module_registry')
             ->where('parent_key', 'restaurant')
+            ->whereIn('key', array_merge([
+                'restaurant.menu', 'restaurant.menu_category', 'restaurant.menu_item',
+                'restaurant.table', 'restaurant.table_layout', 'restaurant.reservation',
+            ], self::PHASE2_KEYS))
             ->where('status', 'active')
             ->count();
         $this->assertEquals(12, $count);
 
         $children = DB::table('module_registry')
             ->where('parent_key', 'restaurant')
+            ->whereIn('key', array_merge([
+                'restaurant.menu', 'restaurant.menu_category', 'restaurant.menu_item',
+                'restaurant.table', 'restaurant.table_layout', 'restaurant.reservation',
+            ], self::PHASE2_KEYS))
             ->where('status', 'active')
             ->orderBy('sort_order')
             ->pluck('key')
@@ -173,10 +181,17 @@ class RestaurantPhase2Test extends TestCase
         libxml_use_internal_errors(false);
         $xpath = new \DOMXPath($dom);
 
-        $this->assertSame(
+        foreach (self::PHASE2_KEYS as $key) {
+            $this->assertSame(
+                1,
+                $xpath->query('//tr[@data-child-of="restaurant"]//code[text()="'.$key.'"]')->length,
+                "phase 2 row {$key} renders as an indented child of restaurant"
+            );
+        }
+        $this->assertGreaterThanOrEqual(
             12,
             $xpath->query('//tr[@data-child-of="restaurant"]')->length,
-            'the matrix renders all 12 restaurant children (6 phase 1 + 6 phase 2)'
+            'phase 1 + phase 2 rows render (later phases only add rows)'
         );
         $this->assertSame(
             1,

@@ -7,8 +7,9 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Restaurant module permissions (34 slugs) once restaurant is a MAIN
- * industry (Phase 2), extended with the Phase 2 order-type modules.
+ * Restaurant module permissions (45 slugs) once restaurant is a MAIN
+ * industry (Phase 2), extended with the Phase 2 order-type and Phase 3
+ * kitchen-operation modules.
  *
  * Mirrors SalesPurchasePermissionSeeder: permissions only - role assignment
  * is RolePermissionSeeder / module-activator territory.
@@ -25,8 +26,10 @@ use Illuminate\Support\Facades\Schema;
 class RestaurantPermissionSeeder extends Seeder
 {
     /**
-     * Canonical 34 permissions: 12 sub-modules x (view + manage) = 24,
-     * plus 10 module-level capabilities.
+     * Canonical 45 permissions: 18 sub-modules x (view + manage) = 36,
+     * plus 10 module-level capabilities, minus 1 overlap
+     * (restaurant.kitchen.view is both the kitchen view permission and the
+     * module-level kitchen capability) -> 36 + 10 - 1 = 45.
      *
      * @return array<int, array{slug: string, module: string, name: string}>
      */
@@ -60,6 +63,21 @@ class RestaurantPermissionSeeder extends Seeder
             ['slug' => 'restaurant.order_tracking.manage', 'module' => 'restaurant', 'name' => 'restaurant.order_tracking.manage'],
             ['slug' => 'restaurant.pre_order.view', 'module' => 'restaurant', 'name' => 'restaurant.pre_order.view'],
             ['slug' => 'restaurant.pre_order.manage', 'module' => 'restaurant', 'name' => 'restaurant.pre_order.manage'],
+
+            // Kitchen operations (Phase 3): 6 modules x (view + manage) = 12,
+            // minus restaurant.kitchen.view which is already declared as a
+            // module-level capability below -> 11 new slugs.
+            ['slug' => 'restaurant.kitchen.manage', 'module' => 'restaurant', 'name' => 'restaurant.kitchen.manage'],
+            ['slug' => 'restaurant.kds.view', 'module' => 'restaurant', 'name' => 'restaurant.kds.view'],
+            ['slug' => 'restaurant.kds.manage', 'module' => 'restaurant', 'name' => 'restaurant.kds.manage'],
+            ['slug' => 'restaurant.kot.view', 'module' => 'restaurant', 'name' => 'restaurant.kot.view'],
+            ['slug' => 'restaurant.kot.manage', 'module' => 'restaurant', 'name' => 'restaurant.kot.manage'],
+            ['slug' => 'restaurant.chef.view', 'module' => 'restaurant', 'name' => 'restaurant.chef.view'],
+            ['slug' => 'restaurant.chef.manage', 'module' => 'restaurant', 'name' => 'restaurant.chef.manage'],
+            ['slug' => 'restaurant.station.view', 'module' => 'restaurant', 'name' => 'restaurant.station.view'],
+            ['slug' => 'restaurant.station.manage', 'module' => 'restaurant', 'name' => 'restaurant.station.manage'],
+            ['slug' => 'restaurant.recipe.view', 'module' => 'restaurant', 'name' => 'restaurant.recipe.view'],
+            ['slug' => 'restaurant.recipe.manage', 'module' => 'restaurant', 'name' => 'restaurant.recipe.manage'],
 
             // Module-level capabilities (10)
             ['slug' => 'restaurant.dashboard.view', 'module' => 'restaurant', 'name' => 'restaurant.dashboard.view'],

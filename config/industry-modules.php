@@ -259,6 +259,9 @@ return [
             'restaurant.takeaway',
             'restaurant.delivery',
             'restaurant.order',
+            'restaurant.kitchen',
+            'restaurant.kds',
+            'restaurant.kot',
             // POS for billing
             'pos',
             'pos.terminal',
@@ -280,6 +283,9 @@ return [
         'optional' => [
             'restaurant.order_tracking',
             'restaurant.pre_order',
+            'restaurant.chef',
+            'restaurant.station',
+            'restaurant.recipe',
             'pos.split_payment',
             'pos.cash_drawer',
             'pos.loyalty',

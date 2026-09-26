@@ -48,6 +48,21 @@ return [
                 'restaurant.pre_order' => ['name' => 'Pre-orders', 'icon' => 'bi-calendar-plus', 'sort_order' => 25],
             ],
         ],
+
+        'kitchen' => [
+            'name' => 'Kitchen Operations',
+            'icon' => 'bi-fire',
+            'required' => true,
+            'description' => 'KDS, KOT, Chef, Stations, Recipe',
+            'modules' => [
+                'restaurant.kitchen' => ['name' => 'Kitchen Management', 'icon' => 'bi-fire', 'sort_order' => 30],
+                'restaurant.kds' => ['name' => 'Kitchen Display System', 'icon' => 'bi-display', 'sort_order' => 31],
+                'restaurant.kot' => ['name' => 'Kitchen Order Ticket', 'icon' => 'bi-receipt-cutoff', 'sort_order' => 32],
+                'restaurant.chef' => ['name' => 'Chef Management', 'icon' => 'bi-person-badge', 'sort_order' => 33],
+                'restaurant.station' => ['name' => 'Kitchen Stations', 'icon' => 'bi-diagram-3', 'sort_order' => 34],
+                'restaurant.recipe' => ['name' => 'Recipe / BOM', 'icon' => 'bi-journal-code', 'sort_order' => 35],
+            ],
+        ],
     ],
 
     'allow_custom_modules' => true,
