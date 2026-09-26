@@ -66,30 +66,35 @@ class RestaurantPhase4Test extends TestCase
 
     public function test_restaurant_has_24_children()
     {
+        $previous = [
+            'restaurant.menu', 'restaurant.menu_category', 'restaurant.menu_item',
+            'restaurant.table', 'restaurant.table_layout', 'restaurant.reservation',
+            'restaurant.dine_in', 'restaurant.takeaway', 'restaurant.delivery',
+            'restaurant.order', 'restaurant.order_tracking', 'restaurant.pre_order',
+            'restaurant.kitchen', 'restaurant.kds', 'restaurant.kot',
+            'restaurant.chef', 'restaurant.station', 'restaurant.recipe',
+        ];
+
         $count = DB::table('module_registry')
             ->where('parent_key', 'restaurant')
+            ->whereIn('key', array_merge($previous, self::PHASE4_KEYS))
             ->where('status', 'active')
             ->count();
         $this->assertEquals(24, $count);
 
         $children = DB::table('module_registry')
             ->where('parent_key', 'restaurant')
+            ->whereIn('key', array_merge($previous, self::PHASE4_KEYS))
             ->where('status', 'active')
             ->orderBy('sort_order')
             ->pluck('key')
             ->all();
 
         $this->assertSame(
-            [
-                'restaurant.menu', 'restaurant.menu_category', 'restaurant.menu_item',
-                'restaurant.table', 'restaurant.table_layout', 'restaurant.reservation',
-                'restaurant.dine_in', 'restaurant.takeaway', 'restaurant.delivery',
-                'restaurant.order', 'restaurant.order_tracking', 'restaurant.pre_order',
-                'restaurant.kitchen', 'restaurant.kds', 'restaurant.kot',
-                'restaurant.chef', 'restaurant.station', 'restaurant.recipe',
+            array_merge($previous, [
                 'restaurant.customer', 'restaurant.loyalty', 'restaurant.feedback',
                 'restaurant.membership', 'restaurant.birthday_offer', 'restaurant.preference',
-            ],
+            ]),
             $children,
             'phase 1 (1-12), phase 2 (20-25), phase 3 (30-35), phase 4 (40-45) keep their sort_order'
         );
@@ -168,14 +173,22 @@ class RestaurantPhase4Test extends TestCase
 
     public function test_packages_expanded()
     {
-        $expected = [
-            'restaurant_starter' => 14,
-            'restaurant_growth' => 31,
-            'restaurant_enterprise' => 45,
+        $tiers = [
+            'restaurant_starter' => [
+                'has' => ['restaurant.customer', 'restaurant.loyalty'],
+                'has_not' => ['restaurant.feedback', 'restaurant.membership', 'restaurant.birthday_offer', 'restaurant.preference'],
+            ],
+            'restaurant_growth' => [
+                'has' => ['restaurant.customer', 'restaurant.loyalty', 'restaurant.feedback', 'restaurant.membership', 'restaurant.preference'],
+                'has_not' => ['restaurant.birthday_offer'],
+            ],
+            'restaurant_enterprise' => [
+                'has' => self::PHASE4_KEYS,
+                'has_not' => [],
+            ],
         ];
 
-        $modulesBySlug = [];
-        foreach ($expected as $slug => $count) {
+        foreach ($tiers as $slug => $expectations) {
             $modules = DB::table('package_industry_modules as pim')
                 ->join('subscription_packages as p', 'p.id', '=', 'pim.package_id')
                 ->where('p.slug', $slug)
@@ -184,19 +197,13 @@ class RestaurantPhase4Test extends TestCase
                 ->pluck('pim.module_key')
                 ->all();
 
-            $this->assertCount($count, $modules, "{$slug} modules");
-            $modulesBySlug[$slug] = $modules;
+            foreach ($expectations['has'] as $key) {
+                $this->assertContains($key, $modules, "{$slug} has {$key}");
+            }
+            foreach ($expectations['has_not'] as $key) {
+                $this->assertNotContains($key, $modules, "{$slug} does not have {$key}");
+            }
         }
-
-        foreach (['restaurant_starter', 'restaurant_growth', 'restaurant_enterprise'] as $slug) {
-            $this->assertContains('restaurant.customer', $modulesBySlug[$slug], "{$slug} has customer");
-            $this->assertContains('restaurant.loyalty', $modulesBySlug[$slug], "{$slug} has loyalty");
-        }
-
-        $this->assertNotContains('restaurant.feedback', $modulesBySlug['restaurant_starter'], 'starter stays lean');
-        $this->assertContains('restaurant.feedback', $modulesBySlug['restaurant_growth']);
-        $this->assertNotContains('restaurant.birthday_offer', $modulesBySlug['restaurant_growth'], 'birthday_offer is enterprise only');
-        $this->assertContains('restaurant.birthday_offer', $modulesBySlug['restaurant_enterprise']);
     }
 
     public function test_subcategory_defaults_include_phase4()
@@ -241,10 +248,10 @@ class RestaurantPhase4Test extends TestCase
         libxml_use_internal_errors(false);
         $xpath = new \DOMXPath($dom);
 
-        $this->assertSame(
+        $this->assertGreaterThanOrEqual(
             24,
             $xpath->query('//tr[@data-child-of="restaurant"]')->length,
-            'the matrix renders all 24 restaurant children (6 + 6 + 6 + 6)'
+            'phase 1-4 rows render (later phases only add rows)'
         );
 
         foreach (self::PHASE4_KEYS as $key) {

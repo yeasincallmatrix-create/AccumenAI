@@ -78,6 +78,21 @@ return [
                 'restaurant.preference' => ['name' => 'Customer Preferences', 'icon' => 'bi-sliders', 'sort_order' => 45],
             ],
         ],
+
+        'delivery' => [
+            'name' => 'Delivery & Online',
+            'icon' => 'bi-truck',
+            'required' => false,
+            'description' => 'Delivery zones, riders, online, QR, kiosk, tracking',
+            'modules' => [
+                'restaurant.delivery_zone' => ['name' => 'Delivery Zones', 'icon' => 'bi-geo', 'sort_order' => 50],
+                'restaurant.delivery_rider' => ['name' => 'Delivery Riders', 'icon' => 'bi-person-biking', 'sort_order' => 51],
+                'restaurant.online_order' => ['name' => 'Online Orders', 'icon' => 'bi-globe', 'sort_order' => 52],
+                'restaurant.qr_order' => ['name' => 'QR Code Ordering', 'icon' => 'bi-qr-code', 'sort_order' => 53],
+                'restaurant.kiosk' => ['name' => 'Self-Service Kiosk', 'icon' => 'bi-tablet', 'sort_order' => 54],
+                'restaurant.tracking' => ['name' => 'Live Tracking', 'icon' => 'bi-geo-alt', 'sort_order' => 55],
+            ],
+        ],
     ],
 
     'allow_custom_modules' => true,
