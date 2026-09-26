@@ -176,6 +176,13 @@ return [
             'real_estate.profit_loss',
             'real_estate.cash_flow',
             'real_estate.portfolio_report',
+            'real_estate.sales_integration',
+            'real_estate.purchase_integration',
+            'real_estate.finance_integration',
+            'real_estate.accounting_integration',
+            'real_estate.hr_integration',
+            'real_estate.crm_integration',
+            'real_estate.inventory_integration',
         ],
         'disabled' => [
             'medical',

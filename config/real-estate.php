@@ -10,6 +10,7 @@ return [
     | Phase 3: Sales & CRM
     | Phase 4: Maintenance & Operations
     | Phase 5: Accounting & Reports (5A accounting + 5B reports)
+    | Phase 6: Integrations + Custom module support (FINAL phase)
     | Future phases will extend this.
     */
 
@@ -106,6 +107,22 @@ return [
                 'real_estate.profit_loss' => ['name' => 'Profit & Loss', 'icon' => 'bi-graph-up-arrow', 'sort_order' => 53],
                 'real_estate.cash_flow' => ['name' => 'Cash Flow', 'icon' => 'bi-cash-stack', 'sort_order' => 54],
                 'real_estate.portfolio_report' => ['name' => 'Portfolio Report', 'icon' => 'bi-briefcase', 'sort_order' => 55],
+            ],
+        ],
+
+        'integrations' => [
+            'name' => 'Integrations',
+            'icon' => 'bi-link-45deg',
+            'required' => false,
+            'description' => 'Connect with other modules',
+            'modules' => [
+                'real_estate.sales_integration' => ['name' => 'Sales Integration', 'icon' => 'bi-cart', 'sort_order' => 60],
+                'real_estate.purchase_integration' => ['name' => 'Purchase Integration', 'icon' => 'bi-bag', 'sort_order' => 61],
+                'real_estate.finance_integration' => ['name' => 'Finance Integration', 'icon' => 'bi-cash', 'sort_order' => 62],
+                'real_estate.accounting_integration' => ['name' => 'Accounting Integration', 'icon' => 'bi-journal-text', 'sort_order' => 63],
+                'real_estate.hr_integration' => ['name' => 'HR Integration', 'icon' => 'bi-people', 'sort_order' => 64],
+                'real_estate.crm_integration' => ['name' => 'CRM Integration', 'icon' => 'bi-person-lines-fill', 'sort_order' => 65],
+                'real_estate.inventory_integration' => ['name' => 'Inventory Integration', 'icon' => 'bi-box', 'sort_order' => 66],
             ],
         ],
     ],

@@ -273,6 +273,14 @@ class SubcategoryDefaultModuleSeeder extends Seeder
                 ['module' => 'real_estate.profit_loss', 'category' => 'optional'],
                 ['module' => 'real_estate.cash_flow', 'category' => 'optional'],
                 ['module' => 'real_estate.portfolio_report', 'category' => 'optional'],
+                // Phase 6 — Integrations
+                ['module' => 'real_estate.sales_integration', 'category' => 'optional'],
+                ['module' => 'real_estate.purchase_integration', 'category' => 'optional'],
+                ['module' => 'real_estate.finance_integration', 'category' => 'optional'],
+                ['module' => 'real_estate.accounting_integration', 'category' => 'optional'],
+                ['module' => 'real_estate.hr_integration', 'category' => 'optional'],
+                ['module' => 'real_estate.crm_integration', 'category' => 'optional'],
+                ['module' => 'real_estate.inventory_integration', 'category' => 'optional'],
             ],
         ];
 
