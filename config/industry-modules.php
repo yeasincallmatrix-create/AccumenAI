@@ -144,6 +144,8 @@ return [
             'real_estate.leads',
             'real_estate.site_visits',
             'real_estate.bookings',
+            'real_estate.maintenance_requests',
+            'real_estate.work_orders',
         ],
         'optional' => [
             'real_estate.property_types',
@@ -157,6 +159,10 @@ return [
             'real_estate.installments',
             'real_estate.handover',
             'real_estate.after_sales',
+            'real_estate.vendors',
+            'real_estate.inspections',
+            'real_estate.assets',
+            'real_estate.preventive_maintenance',
         ],
         'disabled' => [
             'medical',

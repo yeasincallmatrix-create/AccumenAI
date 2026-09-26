@@ -254,6 +254,10 @@ class SubcategoryDefaultModuleSeeder extends Seeder
                 ['module' => 'real_estate.security_deposits', 'category' => 'optional'],
                 ['module' => 'real_estate.lease_renewals', 'category' => 'optional'],
                 ['module' => 'real_estate.utility_billing', 'category' => 'optional'],
+                ['module' => 'real_estate.maintenance_requests', 'category' => 'default'],
+                ['module' => 'real_estate.work_orders', 'category' => 'default'],
+                ['module' => 'real_estate.inspections', 'category' => 'optional'],
+                ['module' => 'real_estate.preventive_maintenance', 'category' => 'optional'],
             ],
         ];
 

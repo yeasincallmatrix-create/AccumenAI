@@ -8,12 +8,12 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * Phase 3 — Real Estate Sales & CRM.
+ * Phase 4 — Real Estate Maintenance & Operations.
  *
- * 7 more children under `real_estate` (7 + 8 + 7 = 22).
- * Phase 1 and Phase 2 rows must stay untouched.
+ * 6 more children under `real_estate` (7 + 8 + 7 + 6 = 28).
+ * Phase 1, 2 and 3 rows must stay untouched.
  */
-class RealEstatePhase3Test extends TestCase
+class RealEstatePhase4Test extends TestCase
 {
     private function platformAdmin(): PlatformAdmin
     {
@@ -27,12 +27,12 @@ class RealEstatePhase3Test extends TestCase
         ]);
     }
 
-    public function test_phase3_children_exist()
+    public function test_phase4_children_exist()
     {
         $modules = [
-            'real_estate.leads', 'real_estate.site_visits', 'real_estate.bookings',
-            'real_estate.sales_agreements', 'real_estate.installments',
-            'real_estate.handover', 'real_estate.after_sales',
+            'real_estate.maintenance_requests', 'real_estate.work_orders',
+            'real_estate.vendors', 'real_estate.inspections',
+            'real_estate.assets', 'real_estate.preventive_maintenance',
         ];
 
         foreach ($modules as $key) {
@@ -43,38 +43,44 @@ class RealEstatePhase3Test extends TestCase
         }
     }
 
-    public function test_phase3_children_count()
+    public function test_phase4_children_count()
     {
         $count = DB::table('module_registry')
             ->whereIn('key', [
-                'real_estate.leads', 'real_estate.site_visits', 'real_estate.bookings',
-                'real_estate.sales_agreements', 'real_estate.installments',
-                'real_estate.handover', 'real_estate.after_sales',
+                'real_estate.maintenance_requests', 'real_estate.work_orders',
+                'real_estate.vendors', 'real_estate.inspections',
+                'real_estate.assets', 'real_estate.preventive_maintenance',
             ])
             ->where('status', 'active')
             ->count();
-        $this->assertEquals(7, $count);
+        $this->assertEquals(6, $count);
     }
 
-    public function test_industry_config_includes_phase3()
+    public function test_industry_config_includes_phase4()
     {
         $config = config('industry-modules.real_estate');
-        $this->assertContains('real_estate.leads', $config['default']);
-        $this->assertContains('real_estate.bookings', $config['default']);
+        $this->assertContains('real_estate.maintenance_requests', $config['default']);
+        $this->assertContains('real_estate.work_orders', $config['default']);
+        $this->assertContains('real_estate.inspections', $config['optional']);
+        $this->assertContains('real_estate.vendors', $config['optional']);
     }
 
-    public function test_phase1_and_phase2_unchanged()
+    public function test_previous_phases_unchanged()
     {
+        // Phase 1
         $this->assertTrue(DB::table('module_registry')->where('key', 'real_estate.properties')->exists());
+        // Phase 2
         $this->assertTrue(DB::table('module_registry')->where('key', 'real_estate.leases')->exists());
+        // Phase 3
+        $this->assertTrue(DB::table('module_registry')->where('key', 'real_estate.leads')->exists());
     }
 
-    public function test_module_config_page_renders_phase3_children()
+    public function test_module_config_page_renders_phase4_children()
     {
         $html = $this->actingAs($this->platformAdmin(), 'platform_admin')
             ->get(route('admin.module-config.index', [
                 'industry' => 'real_estate',
-                'subcategory' => 'property',
+                'subcategory' => 'rental',
             ]))
             ->assertOk()
             ->getContent();
@@ -88,17 +94,17 @@ class RealEstatePhase3Test extends TestCase
         libxml_clear_errors();
         $xpath = new \DOMXPath($dom);
 
-        // Phase-scoped: every Phase 3 child must render indented under the
+        // Phase-scoped: every Phase 4 child must render indented under the
         // parent (later phases add rows, so no exact total is asserted here).
         foreach ([
-            'real_estate.leads', 'real_estate.site_visits', 'real_estate.bookings',
-            'real_estate.sales_agreements', 'real_estate.installments',
-            'real_estate.handover', 'real_estate.after_sales',
+            'real_estate.maintenance_requests', 'real_estate.work_orders',
+            'real_estate.vendors', 'real_estate.inspections',
+            'real_estate.assets', 'real_estate.preventive_maintenance',
         ] as $childKey) {
             $this->assertSame(
                 1,
                 $xpath->query('//tr[@data-child-of="real_estate"]//code[text()="'.$childKey.'"]')->length,
-                "Phase 3 child {$childKey} must render as an indented child row"
+                "Phase 4 child {$childKey} must render as an indented child row"
             );
         }
 

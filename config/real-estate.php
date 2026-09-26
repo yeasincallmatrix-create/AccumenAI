@@ -8,6 +8,7 @@ return [
     | Phase 1: Property Management (Foundation)
     | Phase 2: Leasing & Rental
     | Phase 3: Sales & CRM
+    | Phase 4: Maintenance & Operations
     | Future phases will extend this.
     */
 
@@ -58,6 +59,21 @@ return [
                 'real_estate.installments' => ['name' => 'Installments', 'icon' => 'bi-calendar-range', 'sort_order' => 24],
                 'real_estate.handover' => ['name' => 'Handover', 'icon' => 'bi-box-arrow-right', 'sort_order' => 25],
                 'real_estate.after_sales' => ['name' => 'After Sales', 'icon' => 'bi-headset', 'sort_order' => 26],
+            ],
+        ],
+
+        'maintenance' => [
+            'name' => 'Maintenance & Operations',
+            'icon' => 'bi-wrench',
+            'required' => false,
+            'description' => 'Maintenance, Work Orders, Inspections',
+            'modules' => [
+                'real_estate.maintenance_requests' => ['name' => 'Maintenance Requests', 'icon' => 'bi-tools', 'sort_order' => 30],
+                'real_estate.work_orders' => ['name' => 'Work Orders', 'icon' => 'bi-clipboard-check', 'sort_order' => 31],
+                'real_estate.vendors' => ['name' => 'Vendors', 'icon' => 'bi-people', 'sort_order' => 32],
+                'real_estate.inspections' => ['name' => 'Inspections', 'icon' => 'bi-search', 'sort_order' => 33],
+                'real_estate.assets' => ['name' => 'Assets', 'icon' => 'bi-box', 'sort_order' => 34],
+                'real_estate.preventive_maintenance' => ['name' => 'Preventive Maintenance', 'icon' => 'bi-calendar-check', 'sort_order' => 35],
             ],
         ],
     ],
