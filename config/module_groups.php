@@ -95,10 +95,9 @@ return [
     'sales' => [
         'label' => 'Sales Modules',
         'icon' => 'bi-graph-up',
-        'description' => 'Quotations, orders, deliveries and POS.',
+        'description' => 'Quotations, orders, deliveries and returns.',
         'modules' => [
             'sales',
-            'pos',
             'sales.quotations',
             'sales.orders',
             'sales.deliveries',
@@ -106,6 +105,17 @@ return [
             'sales.leads',
             'sales.customers',
             'sales.reports',
+        ],
+    ],
+
+    'pos' => [
+        'label' => 'POS Modules',
+        'name' => 'POS Modules',
+        'icon' => 'bi-display',
+        'parent_key' => 'pos',
+        'description' => 'Terminals, registers, cart, checkout and receipts.',
+        'modules' => [
+            'pos',
         ],
     ],
 

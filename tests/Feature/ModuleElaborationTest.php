@@ -9,11 +9,11 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * Module registry elaboration — 10 parents turned into parent → parent.child
+ * Module registry elaboration — parents turned into parent → parent.child
  * hierarchies so /admin/module-config renders them as collapsible groups.
  *
- * manufacturing (22 children, 5 core engines) is now elaborated too; pos stays
- * childless (not built yet).
+ * manufacturing (22 children, 5 core engines) is elaborated too; pos now owns
+ * its 5 Phase 1 children (terminal, register, cart, checkout, receipt).
  */
 class ModuleElaborationTest extends TestCase
 {
@@ -31,6 +31,7 @@ class ModuleElaborationTest extends TestCase
         'finance' => 5,
         'inventory' => 9,
         'manufacturing' => 22,
+        'pos' => 5,
     ];
 
     /** @var array<string, list<string>> */
@@ -67,6 +68,9 @@ class ModuleElaborationTest extends TestCase
             'manufacturing.costing', 'manufacturing.assembly_line', 'manufacturing.mold_management',
             'manufacturing.recipe', 'manufacturing.cutting', 'manufacturing.welding', 'manufacturing.finishing',
             'manufacturing.printing', 'manufacturing.packaging', 'manufacturing.warranty', 'manufacturing.reports',
+        ],
+        'pos' => [
+            'pos.terminal', 'pos.register', 'pos.cart', 'pos.checkout', 'pos.receipt',
         ],
     ];
 
@@ -185,14 +189,16 @@ class ModuleElaborationTest extends TestCase
         $this->assertSame(22, self::EXPECTED_CHILDREN['manufacturing']);
     }
 
-    public function test_pos_remains_single(): void
+    public function test_pos_has_phase1_children(): void
     {
         $row = DB::table('module_registry')->where('key', 'pos')->first();
 
         $this->assertNotNull($row);
         $this->assertNull($row->parent_key);
-        $this->assertSame(0, DB::table('module_registry')->where('parent_key', 'pos')->count(),
-            'pos must not gain children until it is built');
+        $this->assertSame(5, DB::table('module_registry')->where('parent_key', 'pos')->count(),
+            'pos must own exactly its 5 Phase 1 children');
+
+        $this->assertChildren('pos', self::EXPECTED_KEYS['pos']);
     }
 
     public function test_all_elaborated_parents_collapsible(): void
@@ -221,7 +227,7 @@ class ModuleElaborationTest extends TestCase
             );
         }
 
-        foreach (['pos', 'notifications'] as $single) {
+        foreach (['notifications'] as $single) {
             $this->assertStringNotContainsString(
                 'data-module-toggle="'.$single.'"',
                 $html,

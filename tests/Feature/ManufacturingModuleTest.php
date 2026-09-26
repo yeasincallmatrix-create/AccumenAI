@@ -186,7 +186,7 @@ class ManufacturingModuleTest extends TestCase
         $this->assertIsArray($config);
         $this->assertNotEmpty($config['default'] ?? []);
         $this->assertContains('manufacturing', $config['default']);
-        $this->assertCount(16, $config['optional'] ?? []);
+        $this->assertCount(22, $config['optional'] ?? [], '16 manufacturing optionals + 6 POS phase 1 keys');
 
         foreach ($config['default'] as $key) {
             $this->assertTrue(

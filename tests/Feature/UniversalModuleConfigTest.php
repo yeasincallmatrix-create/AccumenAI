@@ -256,6 +256,7 @@ class UniversalModuleConfigTest extends TestCase
             'Education Modules',
             'Training Center Modules',
             'Sales Modules',
+            'POS Modules',
             'Purchase Modules',
             'Inventory Modules',
             'Manufacturing Modules',
@@ -284,15 +285,17 @@ class UniversalModuleConfigTest extends TestCase
         $xpath = new \DOMXPath($dom);
 
         $this->assertSame(
-            ['accounting', 'ai', 'crm', 'education', 'finance', 'hr', 'inventory', 'manufacturing', 'medical', 'purchase', 'real_estate', 'reports', 'sales', 'tds', 'training_center', 'vat'],
+            ['accounting', 'ai', 'crm', 'education', 'finance', 'hr', 'inventory', 'manufacturing', 'medical', 'pos', 'purchase', 'real_estate', 'reports', 'sales', 'tds', 'training_center', 'vat'],
             $this->attributeValues($xpath, '//*[@data-module-toggle]', 'data-module-toggle'),
             'Every module that owns children must render as a collapsible parent row',
         );
 
         $this->assertSame(0, $xpath->query('//*[@data-module-toggle="notifications"]')->length,
             'Childless modules must render as a single row with no toggle');
-        $this->assertSame(0, $xpath->query('//*[@data-module-toggle="pos"]')->length,
-            'Not-yet-built modules must render as a single row with no toggle');
+        $this->assertSame(1, $xpath->query('//*[@data-module-toggle="pos"]')->length,
+            'pos owns its Phase 1 children and must render as a collapsible parent');
+        $this->assertSame(5, $xpath->query('//tr[@data-child-of="pos"]')->length,
+            'pos must render exactly its 5 Phase 1 children');
 
         $this->assertSame(1, $xpath->query('//tr[@data-child-of="medical"]//code[text()="medical.pharmacy"]')->length,
             'medical.pharmacy must render as an indented child row of medical');
