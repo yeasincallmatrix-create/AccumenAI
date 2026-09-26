@@ -9,6 +9,7 @@ return [
     | Phase 2: Leasing & Rental
     | Phase 3: Sales & CRM
     | Phase 4: Maintenance & Operations
+    | Phase 5: Accounting & Reports (5A accounting + 5B reports)
     | Future phases will extend this.
     */
 
@@ -74,6 +75,37 @@ return [
                 'real_estate.inspections' => ['name' => 'Inspections', 'icon' => 'bi-search', 'sort_order' => 33],
                 'real_estate.assets' => ['name' => 'Assets', 'icon' => 'bi-box', 'sort_order' => 34],
                 'real_estate.preventive_maintenance' => ['name' => 'Preventive Maintenance', 'icon' => 'bi-calendar-check', 'sort_order' => 35],
+            ],
+        ],
+
+        'accounting' => [
+            'name' => 'Accounting & Finance',
+            'icon' => 'bi-calculator',
+            'required' => true,
+            'description' => 'Rent Income, Expenses, Statements',
+            'modules' => [
+                'real_estate.rent_income' => ['name' => 'Rent Income', 'icon' => 'bi-cash-coin', 'sort_order' => 40],
+                'real_estate.property_expenses' => ['name' => 'Property Expenses', 'icon' => 'bi-wallet2', 'sort_order' => 41],
+                'real_estate.service_charges' => ['name' => 'Service Charges', 'icon' => 'bi-receipt-cutoff', 'sort_order' => 42],
+                'real_estate.tax_reports' => ['name' => 'Tax Reports', 'icon' => 'bi-percent', 'sort_order' => 43],
+                'real_estate.financial_reports' => ['name' => 'Financial Reports', 'icon' => 'bi-graph-up', 'sort_order' => 44],
+                'real_estate.owner_statements' => ['name' => 'Owner Statements', 'icon' => 'bi-file-earmark-text', 'sort_order' => 45],
+                'real_estate.tenant_statements' => ['name' => 'Tenant Statements', 'icon' => 'bi-file-earmark-text', 'sort_order' => 46],
+            ],
+        ],
+
+        'reports' => [
+            'name' => 'Reports & Analytics',
+            'icon' => 'bi-graph-up',
+            'required' => true,
+            'description' => 'Occupancy, Rent Roll, Portfolio',
+            'modules' => [
+                'real_estate.occupancy_report' => ['name' => 'Occupancy Report', 'icon' => 'bi-pie-chart', 'sort_order' => 50],
+                'real_estate.rent_roll' => ['name' => 'Rent Roll', 'icon' => 'bi-list-ul', 'sort_order' => 51],
+                'real_estate.aging_report' => ['name' => 'Aging Report', 'icon' => 'bi-clock-history', 'sort_order' => 52],
+                'real_estate.profit_loss' => ['name' => 'Profit & Loss', 'icon' => 'bi-graph-up-arrow', 'sort_order' => 53],
+                'real_estate.cash_flow' => ['name' => 'Cash Flow', 'icon' => 'bi-cash-stack', 'sort_order' => 54],
+                'real_estate.portfolio_report' => ['name' => 'Portfolio Report', 'icon' => 'bi-briefcase', 'sort_order' => 55],
             ],
         ],
     ],

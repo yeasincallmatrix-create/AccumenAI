@@ -258,6 +258,21 @@ class SubcategoryDefaultModuleSeeder extends Seeder
                 ['module' => 'real_estate.work_orders', 'category' => 'default'],
                 ['module' => 'real_estate.inspections', 'category' => 'optional'],
                 ['module' => 'real_estate.preventive_maintenance', 'category' => 'optional'],
+                // Phase 5A — Accounting
+                ['module' => 'real_estate.rent_income', 'category' => 'default'],
+                ['module' => 'real_estate.property_expenses', 'category' => 'default'],
+                ['module' => 'real_estate.owner_statements', 'category' => 'default'],
+                ['module' => 'real_estate.tenant_statements', 'category' => 'default'],
+                ['module' => 'real_estate.service_charges', 'category' => 'optional'],
+                ['module' => 'real_estate.tax_reports', 'category' => 'optional'],
+                ['module' => 'real_estate.financial_reports', 'category' => 'optional'],
+                // Phase 5B — Reports
+                ['module' => 'real_estate.occupancy_report', 'category' => 'default'],
+                ['module' => 'real_estate.rent_roll', 'category' => 'default'],
+                ['module' => 'real_estate.aging_report', 'category' => 'optional'],
+                ['module' => 'real_estate.profit_loss', 'category' => 'optional'],
+                ['module' => 'real_estate.cash_flow', 'category' => 'optional'],
+                ['module' => 'real_estate.portfolio_report', 'category' => 'optional'],
             ],
         ];
 
