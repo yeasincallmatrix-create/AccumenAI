@@ -293,9 +293,9 @@ class UniversalModuleConfigTest extends TestCase
         $this->assertSame(0, $xpath->query('//*[@data-module-toggle="notifications"]')->length,
             'Childless modules must render as a single row with no toggle');
         $this->assertSame(1, $xpath->query('//*[@data-module-toggle="pos"]')->length,
-            'pos owns its Phase 1 children and must render as a collapsible parent');
-        $this->assertSame(5, $xpath->query('//tr[@data-child-of="pos"]')->length,
-            'pos must render exactly its 5 Phase 1 children');
+            'pos owns children and must render as a collapsible parent');
+        $this->assertSame(11, $xpath->query('//tr[@data-child-of="pos"]')->length,
+            'pos must render exactly its 11 children (Phase 1 + Phase 2)');
 
         $this->assertSame(1, $xpath->query('//tr[@data-child-of="medical"]//code[text()="medical.pharmacy"]')->length,
             'medical.pharmacy must render as an indented child row of medical');

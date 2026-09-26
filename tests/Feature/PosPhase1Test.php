@@ -63,11 +63,14 @@ class PosPhase1Test extends TestCase
 
     public function test_pos_has_5_children()
     {
+        $phase1 = ['pos.terminal', 'pos.register', 'pos.cart', 'pos.checkout', 'pos.receipt'];
+
         $count = DB::table('module_registry')
+            ->whereIn('key', $phase1)
             ->where('parent_key', 'pos')
             ->where('status', 'active')
             ->count();
-        $this->assertEquals(5, $count);
+        $this->assertEquals(5, $count, 'Phase 1 scope is exactly its 5 keys');
     }
 
     public function test_pos_config_exists()
@@ -75,7 +78,8 @@ class PosPhase1Test extends TestCase
         $config = config('pos');
         $this->assertIsArray($config);
         $this->assertArrayHasKey('engines', $config);
-        $this->assertCount(2, $config['engines']);
+        $this->assertArrayHasKey('terminal', $config['engines']);
+        $this->assertArrayHasKey('sales', $config['engines']);
         $this->assertArrayHasKey('pos.terminal', $config['engines']['terminal']['modules']);
         $this->assertArrayHasKey('pos.checkout', $config['engines']['sales']['modules']);
     }

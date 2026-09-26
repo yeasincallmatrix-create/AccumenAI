@@ -12,8 +12,9 @@ use Tests\TestCase;
  * Module registry elaboration — parents turned into parent → parent.child
  * hierarchies so /admin/module-config renders them as collapsible groups.
  *
- * manufacturing (22 children, 5 core engines) is elaborated too; pos now owns
- * its 5 Phase 1 children (terminal, register, cart, checkout, receipt).
+ * manufacturing (22 children, 5 core engines) is elaborated too; pos owns its
+ * 11 children (Phase 1: terminal, register, cart, checkout, receipt; Phase 2:
+ * cash, card, mobile_payment, split_payment, shift, cash_drawer).
  */
 class ModuleElaborationTest extends TestCase
 {
@@ -31,7 +32,7 @@ class ModuleElaborationTest extends TestCase
         'finance' => 5,
         'inventory' => 9,
         'manufacturing' => 22,
-        'pos' => 5,
+        'pos' => 11,
     ];
 
     /** @var array<string, list<string>> */
@@ -71,6 +72,8 @@ class ModuleElaborationTest extends TestCase
         ],
         'pos' => [
             'pos.terminal', 'pos.register', 'pos.cart', 'pos.checkout', 'pos.receipt',
+            'pos.cash', 'pos.card', 'pos.mobile_payment', 'pos.split_payment',
+            'pos.shift', 'pos.cash_drawer',
         ],
     ];
 
@@ -189,14 +192,14 @@ class ModuleElaborationTest extends TestCase
         $this->assertSame(22, self::EXPECTED_CHILDREN['manufacturing']);
     }
 
-    public function test_pos_has_phase1_children(): void
+    public function test_pos_has_phase1_and_phase2_children(): void
     {
         $row = DB::table('module_registry')->where('key', 'pos')->first();
 
         $this->assertNotNull($row);
         $this->assertNull($row->parent_key);
-        $this->assertSame(5, DB::table('module_registry')->where('parent_key', 'pos')->count(),
-            'pos must own exactly its 5 Phase 1 children');
+        $this->assertSame(11, DB::table('module_registry')->where('parent_key', 'pos')->count(),
+            'pos must own exactly its 11 children (Phase 1: 5, Phase 2: 6)');
 
         $this->assertChildren('pos', self::EXPECTED_KEYS['pos']);
     }

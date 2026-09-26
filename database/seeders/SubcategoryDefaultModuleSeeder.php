@@ -147,6 +147,13 @@ class SubcategoryDefaultModuleSeeder extends Seeder
                 ['module' => 'purchase.invoices', 'category' => 'mandatory'],
                 ['module' => 'sales.customers', 'category' => 'default'],
                 ['module' => 'inventory', 'category' => 'default'],
+                // POS Phase 2 — Payment & Sessions
+                ['module' => 'pos.cash', 'category' => 'default'],
+                ['module' => 'pos.card', 'category' => 'default'],
+                ['module' => 'pos.mobile_payment', 'category' => 'optional'],
+                ['module' => 'pos.split_payment', 'category' => 'optional'],
+                ['module' => 'pos.shift', 'category' => 'default'],
+                ['module' => 'pos.cash_drawer', 'category' => 'optional'],
             ],
             'retail.electronics' => [
                 ['module' => 'sales', 'category' => 'mandatory'],
@@ -169,6 +176,13 @@ class SubcategoryDefaultModuleSeeder extends Seeder
                 ['module' => 'sales.customers', 'category' => 'default'],
                 ['module' => 'inventory', 'category' => 'default'],
                 ['module' => 'pos', 'category' => 'optional'],
+                // POS Phase 2 — Payment & Sessions
+                ['module' => 'pos.cash', 'category' => 'default'],
+                ['module' => 'pos.card', 'category' => 'default'],
+                ['module' => 'pos.mobile_payment', 'category' => 'optional'],
+                ['module' => 'pos.split_payment', 'category' => 'optional'],
+                ['module' => 'pos.shift', 'category' => 'default'],
+                ['module' => 'pos.cash_drawer', 'category' => 'optional'],
             ],
 
             // ═══ MANUFACTURING ═══

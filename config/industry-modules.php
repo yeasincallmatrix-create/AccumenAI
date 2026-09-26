@@ -84,6 +84,10 @@ return [
             'pos.cart',
             'pos.checkout',
             'pos.receipt',
+            'pos.cash',
+            'pos.card',
+            'pos.mobile_payment',
+            'pos.shift',
         ],
         'optional' => [],
         'disabled' => [
@@ -131,6 +135,11 @@ return [
             'pos.cart',
             'pos.checkout',
             'pos.receipt',
+            'pos.cash',
+            'pos.card',
+            'pos.mobile_payment',
+            'pos.shift',
+            'pos.cash_drawer',
         ],
         'disabled' => [
             'medical',
