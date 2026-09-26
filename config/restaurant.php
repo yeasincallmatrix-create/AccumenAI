@@ -93,9 +93,23 @@ return [
                 'restaurant.tracking' => ['name' => 'Live Tracking', 'icon' => 'bi-geo-alt', 'sort_order' => 55],
             ],
         ],
+
+        'integrations' => [
+            'name' => 'Integrations',
+            'icon' => 'bi-link-45deg',
+            'required' => false,
+            'description' => 'Connect with POS, Sales, Purchase, Finance, Accounting',
+            'modules' => [
+                'restaurant.pos_integration' => ['name' => 'POS Integration', 'icon' => 'bi-display', 'sort_order' => 60],
+                'restaurant.sales_integration' => ['name' => 'Sales Integration', 'icon' => 'bi-cart', 'sort_order' => 61],
+                'restaurant.purchase_integration' => ['name' => 'Purchase Integration', 'icon' => 'bi-bag', 'sort_order' => 62],
+                'restaurant.finance_integration' => ['name' => 'Finance Integration', 'icon' => 'bi-cash', 'sort_order' => 63],
+                'restaurant.accounting_integration' => ['name' => 'Accounting Integration', 'icon' => 'bi-journal-text', 'sort_order' => 64],
+            ],
+        ],
     ],
 
     'allow_custom_modules' => true,
     'custom_module_prefix' => 'restaurant.custom.',
-    'custom_module_types' => ['menu_type', 'table_section', 'report', 'other'],
+    'custom_module_types' => ['menu_type', 'table_section', 'report', 'workflow', 'other'],
 ];

@@ -12,8 +12,9 @@ use Tests\TestCase;
  * Restaurant Phase 5 — Delivery & Online Ordering: 6 more children under
  * `restaurant` (delivery_zone, delivery_rider, online_order, qr_order,
  * kiosk, tracking), the delivery engine in config/restaurant.php, industry
- * defaults + sub-category defaults, expanded package tiers (16/36/51) and
- * the new delivery permissions.
+ * defaults + sub-category defaults, package tier membership and the new
+ * delivery permissions. Package counts grow in later phases, so tiers are
+ * asserted by membership here.
  *
  * Phases 1-4 stay asserted in their own phase tests.
  */
@@ -66,32 +67,35 @@ class RestaurantPhase5Test extends TestCase
 
     public function test_restaurant_has_30_children()
     {
+        $previous = [
+            'restaurant.menu', 'restaurant.menu_category', 'restaurant.menu_item',
+            'restaurant.table', 'restaurant.table_layout', 'restaurant.reservation',
+            'restaurant.dine_in', 'restaurant.takeaway', 'restaurant.delivery',
+            'restaurant.order', 'restaurant.order_tracking', 'restaurant.pre_order',
+            'restaurant.kitchen', 'restaurant.kds', 'restaurant.kot',
+            'restaurant.chef', 'restaurant.station', 'restaurant.recipe',
+            'restaurant.customer', 'restaurant.loyalty', 'restaurant.feedback',
+            'restaurant.membership', 'restaurant.birthday_offer', 'restaurant.preference',
+        ];
+        $phase15 = array_merge($previous, self::PHASE5_KEYS);
+
         $count = DB::table('module_registry')
             ->where('parent_key', 'restaurant')
+            ->whereIn('key', $phase15)
             ->where('status', 'active')
             ->count();
         $this->assertEquals(30, $count);
 
         $children = DB::table('module_registry')
             ->where('parent_key', 'restaurant')
+            ->whereIn('key', $phase15)
             ->where('status', 'active')
             ->orderBy('sort_order')
             ->pluck('key')
             ->all();
 
         $this->assertSame(
-            [
-                'restaurant.menu', 'restaurant.menu_category', 'restaurant.menu_item',
-                'restaurant.table', 'restaurant.table_layout', 'restaurant.reservation',
-                'restaurant.dine_in', 'restaurant.takeaway', 'restaurant.delivery',
-                'restaurant.order', 'restaurant.order_tracking', 'restaurant.pre_order',
-                'restaurant.kitchen', 'restaurant.kds', 'restaurant.kot',
-                'restaurant.chef', 'restaurant.station', 'restaurant.recipe',
-                'restaurant.customer', 'restaurant.loyalty', 'restaurant.feedback',
-                'restaurant.membership', 'restaurant.birthday_offer', 'restaurant.preference',
-                'restaurant.delivery_zone', 'restaurant.delivery_rider', 'restaurant.online_order',
-                'restaurant.qr_order', 'restaurant.kiosk', 'restaurant.tracking',
-            ],
+            $phase15,
             $children,
             'phase 1 (1-12), phase 2 (20-25), phase 3 (30-35), phase 4 (40-45), phase 5 (50-55) keep their sort_order'
         );
@@ -172,14 +176,22 @@ class RestaurantPhase5Test extends TestCase
 
     public function test_packages_expanded()
     {
-        $expected = [
-            'restaurant_starter' => 16,
-            'restaurant_growth' => 36,
-            'restaurant_enterprise' => 51,
+        $tiers = [
+            'restaurant_starter' => [
+                'has' => ['restaurant.delivery_zone', 'restaurant.online_order'],
+                'has_not' => ['restaurant.qr_order', 'restaurant.kiosk', 'restaurant.tracking'],
+            ],
+            'restaurant_growth' => [
+                'has' => ['restaurant.delivery_zone', 'restaurant.delivery_rider', 'restaurant.online_order', 'restaurant.qr_order', 'restaurant.tracking'],
+                'has_not' => ['restaurant.kiosk'],
+            ],
+            'restaurant_enterprise' => [
+                'has' => self::PHASE5_KEYS,
+                'has_not' => [],
+            ],
         ];
 
-        $modulesBySlug = [];
-        foreach ($expected as $slug => $count) {
+        foreach ($tiers as $slug => $expectations) {
             $modules = DB::table('package_industry_modules as pim')
                 ->join('subscription_packages as p', 'p.id', '=', 'pim.package_id')
                 ->where('p.slug', $slug)
@@ -188,20 +200,13 @@ class RestaurantPhase5Test extends TestCase
                 ->pluck('pim.module_key')
                 ->all();
 
-            $this->assertCount($count, $modules, "{$slug} modules");
-            $modulesBySlug[$slug] = $modules;
+            foreach ($expectations['has'] as $key) {
+                $this->assertContains($key, $modules, "{$slug} has {$key}");
+            }
+            foreach ($expectations['has_not'] as $key) {
+                $this->assertNotContains($key, $modules, "{$slug} does not have {$key}");
+            }
         }
-
-        foreach (['restaurant_starter', 'restaurant_growth', 'restaurant_enterprise'] as $slug) {
-            $this->assertContains('restaurant.delivery_zone', $modulesBySlug[$slug], "{$slug} has delivery_zone");
-            $this->assertContains('restaurant.online_order', $modulesBySlug[$slug], "{$slug} has online_order");
-        }
-
-        $this->assertNotContains('restaurant.qr_order', $modulesBySlug['restaurant_starter'], 'starter stays lean');
-        $this->assertContains('restaurant.qr_order', $modulesBySlug['restaurant_growth']);
-        $this->assertNotContains('restaurant.kiosk', $modulesBySlug['restaurant_growth'], 'kiosk is enterprise only');
-        $this->assertContains('restaurant.kiosk', $modulesBySlug['restaurant_enterprise']);
-        $this->assertContains('restaurant.tracking', $modulesBySlug['restaurant_enterprise']);
     }
 
     public function test_subcategory_defaults_include_phase5()
@@ -255,10 +260,10 @@ class RestaurantPhase5Test extends TestCase
         libxml_use_internal_errors(false);
         $xpath = new \DOMXPath($dom);
 
-        $this->assertSame(
+        $this->assertGreaterThanOrEqual(
             30,
             $xpath->query('//tr[@data-child-of="restaurant"]')->length,
-            'the matrix renders all 30 restaurant children (6 x 5 phases)'
+            'phase 1-5 rows render (later phases only add rows)'
         );
 
         foreach (self::PHASE5_KEYS as $key) {

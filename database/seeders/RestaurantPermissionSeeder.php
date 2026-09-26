@@ -7,10 +7,10 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Restaurant module permissions (69 slugs) once restaurant is a MAIN
+ * Restaurant module permissions (79 slugs) once restaurant is a MAIN
  * industry (Phase 2), extended with the Phase 2 order-type, Phase 3
- * kitchen-operation, Phase 4 customer/loyalty and Phase 5 delivery/online
- * modules.
+ * kitchen-operation, Phase 4 customer/loyalty, Phase 5 delivery/online and
+ * Phase 6 integration modules.
  *
  * Mirrors SalesPurchasePermissionSeeder: permissions only - role assignment
  * is RolePermissionSeeder / module-activator territory.
@@ -27,10 +27,10 @@ use Illuminate\Support\Facades\Schema;
 class RestaurantPermissionSeeder extends Seeder
 {
     /**
-     * Canonical 69 permissions: 30 sub-modules x (view + manage) = 60,
+     * Canonical 79 permissions: 35 sub-modules x (view + manage) = 70,
      * plus 10 module-level capabilities, minus 1 overlap
      * (restaurant.kitchen.view is both the kitchen view permission and the
-     * module-level kitchen capability) -> 60 + 10 - 1 = 69.
+     * module-level kitchen capability) -> 70 + 10 - 1 = 79.
      *
      * @return array<int, array{slug: string, module: string, name: string}>
      */
@@ -107,6 +107,18 @@ class RestaurantPermissionSeeder extends Seeder
             ['slug' => 'restaurant.kiosk.manage', 'module' => 'restaurant', 'name' => 'restaurant.kiosk.manage'],
             ['slug' => 'restaurant.tracking.view', 'module' => 'restaurant', 'name' => 'restaurant.tracking.view'],
             ['slug' => 'restaurant.tracking.manage', 'module' => 'restaurant', 'name' => 'restaurant.tracking.manage'],
+
+            // Integrations (Phase 6): 5 modules x (view + manage) = 10
+            ['slug' => 'restaurant.pos_integration.view', 'module' => 'restaurant', 'name' => 'restaurant.pos_integration.view'],
+            ['slug' => 'restaurant.pos_integration.manage', 'module' => 'restaurant', 'name' => 'restaurant.pos_integration.manage'],
+            ['slug' => 'restaurant.sales_integration.view', 'module' => 'restaurant', 'name' => 'restaurant.sales_integration.view'],
+            ['slug' => 'restaurant.sales_integration.manage', 'module' => 'restaurant', 'name' => 'restaurant.sales_integration.manage'],
+            ['slug' => 'restaurant.purchase_integration.view', 'module' => 'restaurant', 'name' => 'restaurant.purchase_integration.view'],
+            ['slug' => 'restaurant.purchase_integration.manage', 'module' => 'restaurant', 'name' => 'restaurant.purchase_integration.manage'],
+            ['slug' => 'restaurant.finance_integration.view', 'module' => 'restaurant', 'name' => 'restaurant.finance_integration.view'],
+            ['slug' => 'restaurant.finance_integration.manage', 'module' => 'restaurant', 'name' => 'restaurant.finance_integration.manage'],
+            ['slug' => 'restaurant.accounting_integration.view', 'module' => 'restaurant', 'name' => 'restaurant.accounting_integration.view'],
+            ['slug' => 'restaurant.accounting_integration.manage', 'module' => 'restaurant', 'name' => 'restaurant.accounting_integration.manage'],
 
             // Module-level capabilities (10)
             ['slug' => 'restaurant.dashboard.view', 'module' => 'restaurant', 'name' => 'restaurant.dashboard.view'],

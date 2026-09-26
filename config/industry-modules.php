@@ -266,6 +266,8 @@ return [
             'restaurant.loyalty',
             'restaurant.delivery_zone',
             'restaurant.online_order',
+            'restaurant.pos_integration',
+            'restaurant.sales_integration',
             // POS for billing
             'pos',
             'pos.terminal',
@@ -298,6 +300,9 @@ return [
             'restaurant.qr_order',
             'restaurant.kiosk',
             'restaurant.tracking',
+            'restaurant.purchase_integration',
+            'restaurant.finance_integration',
+            'restaurant.accounting_integration',
             'pos.split_payment',
             'pos.cash_drawer',
             'pos.loyalty',
