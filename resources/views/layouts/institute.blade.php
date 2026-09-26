@@ -1061,6 +1061,38 @@
                         </div>
                     </div>
                 @endif
+                @php
+                    $restaurantNavItems = [];
+                    $restaurantNavMap = [
+                        'restaurant.menu.index' => ['icon' => 'bi-journal-text', 'label' => 'Menu'],
+                        'restaurant.menu-category.index' => ['icon' => 'bi-tags', 'label' => 'Categories'],
+                        'restaurant.menu-item.index' => ['icon' => 'bi-egg-fried', 'label' => 'Items'],
+                        'restaurant.table.index' => ['icon' => 'bi-grid-3x3', 'label' => 'Tables'],
+                        'restaurant.table-layout.index' => ['icon' => 'bi-layout-text-window', 'label' => 'Table Layout'],
+                        'restaurant.reservation.index' => ['icon' => 'bi-calendar-check', 'label' => 'Reservations'],
+                    ];
+                    foreach ($restaurantNavMap as $restaurantRoute => $restaurantItem) {
+                        if (Route::has($restaurantRoute)) {
+                            $restaurantNavItems[$restaurantRoute] = $restaurantItem;
+                        }
+                    }
+                    $restaurantNavOpen = request()->routeIs('restaurant.*');
+                @endphp
+                @if ($restaurantNavItems !== [] && moduleEnabled('restaurant'))
+                    <div class="nav-group">
+                        <button class="nav-link w-100 d-flex align-items-center justify-content-between {{ $restaurantNavOpen ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#restaurantNavGroup" aria-expanded="{{ $restaurantNavOpen ? 'true' : 'false' }}" aria-controls="restaurantNavGroup">
+                            <span class="d-flex align-items-center gap-2"><i class="bi bi-shop"></i><span class="sidebar-label fw-semibold">Restaurant</span></span>
+                            <i class="bi bi-chevron-down small sidebar-label nav-caret"></i>
+                        </button>
+                        <div class="collapse {{ $restaurantNavOpen ? 'show' : '' }}" id="restaurantNavGroup">
+                            @foreach ($restaurantNavItems as $restaurantRoute => $restaurantItem)
+                                <a class="nav-link sub {{ request()->routeIs($restaurantRoute) ? 'active' : '' }}" href="{{ route($restaurantRoute) }}">
+                                    <i class="bi {{ $restaurantItem['icon'] }}"></i><span class="sidebar-label">{{ $restaurantItem['label'] }}</span>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
                 @if ($user && $user->hasPermission('tax.view'))
                     @php $taxOpen = request()->routeIs('accounting.reports.tax.*','settings.tds*','settings.tds-receivable*','settings.tds-certificates*','settings.corporate-tax*','settings.tax-reports*','settings.tax-reconciliation*') ? true : false; @endphp
                     <div class="nav-group">

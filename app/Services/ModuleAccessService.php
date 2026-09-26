@@ -665,6 +665,7 @@ class ModuleAccessService
             'education' => 'education',
             'medical' => 'healthcare',
             'training_center' => 'training_center',
+            'restaurant' => 'restaurant',
         ];
 
         // Resolve child modules to their parent for map lookup
