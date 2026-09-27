@@ -9,7 +9,7 @@
 # Checks: deployed code, .env keys, caches, runtime config, live page markup,
 # and whether Google accepts the secret key. Never prints the secret itself.
 
-set -uo pipefail
+set -u
 
 RED=$'\033[31m'; GRN=$'\033[32m'; YEL=$'\033[33m'; RST=$'\033[0m'
 FAILS=0
@@ -23,11 +23,11 @@ has()  { command -v "$1" >/dev/null 2>&1; }
 echo "== 1. Deployed code =="
 if git rev-parse --git-dir >/dev/null 2>&1; then
   echo "   HEAD: $(git log --oneline -1)"
-  if git ls-tree -r HEAD --name-only | grep -q 'app/Services/Auth/RecaptchaService.php'; then
-    ok "captcha code is committed"
-  else
-    bad "captcha code not in HEAD - git pull first"
-  fi
+  TREE=$(git ls-tree -r HEAD --name-only 2>/dev/null || true)
+  case "$TREE" in
+    *app/Services/Auth/RecaptchaService.php*) ok "captcha code is committed" ;;
+    *) bad "captcha code not in HEAD - git pull first" ;;
+  esac
   DIRTY=$(git status --porcelain -- app/Http/Controllers/Auth resources/views/auth config/services.php app/Http/Middleware/SecurityHeaders.php)
   [ -z "$DIRTY" ] && ok "no local edits over captcha files" || warn "local edits present: $DIRTY"
 else
@@ -99,16 +99,20 @@ echo "== 6. Live page markup =="
 URL=${1:-https://www.accumenai.com/login}
 if has curl; then
   HTML=$(curl -sk --max-time 20 -A "Mozilla/5.0" "$URL")
-  if echo "$HTML" | grep -qi 'one moment'; then
-    warn "$URL is serving a maintenance page - nothing to verify yet"
-  else
-    echo "$HTML" | grep -q 'g-recaptcha-response' \
-      && ok "page has the hidden token field" \
-      || bad "page missing captcha markup - deploy/caches stale"
-    echo "$HTML" | grep -q 'recaptcha/api.js?render=' \
-      && ok "v3 script tag present" \
-      || bad "v3 script tag missing"
-  fi
+  case "$HTML" in
+    *[Oo]ne\ moment*)
+      warn "$URL is serving a maintenance page - nothing to verify yet" ;;
+    *)
+      case "$HTML" in
+        *g-recaptcha-response*)   ok "page has the hidden token field" ;;
+        *)                        bad "page missing captcha markup - deploy/caches stale" ;;
+      esac
+      case "$HTML" in
+        *recaptcha/api.js?render=*) ok "v3 script tag present" ;;
+        *)                          bad "v3 script tag missing" ;;
+      esac
+      ;;
+  esac
 else
   warn "curl not available - open $URL and view-source, search for g-recaptcha-response"
 fi
