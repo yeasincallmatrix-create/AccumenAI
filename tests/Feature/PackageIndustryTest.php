@@ -136,7 +136,7 @@ class PackageIndustryTest extends TestCase
 
         $this->get(route('admin.package-industries.show-modules', [
             'package' => $package->id,
-            'industry' => 'healthcare',
+            'industry' => 'medical',
         ]))->assertOk()->assertSee('Modules');
 
         $moduleKey = DB::table('module_registry')
@@ -148,18 +148,18 @@ class PackageIndustryTest extends TestCase
 
         $this->put(route('admin.package-industries.update-modules', [
             'package' => $package->id,
-            'industry' => 'healthcare',
+            'industry' => 'medical',
         ]), [
             'modules' => [$moduleKey],
         ])->assertRedirect(route('admin.package-industries.show-modules', [
             'package' => $package->id,
-            'industry' => 'healthcare',
+            'industry' => 'medical',
         ]));
 
         $this->assertTrue(
             DB::table('package_industry_modules')
                 ->where('package_id', $package->id)
-                ->where('industry_key', 'healthcare')
+                ->where('industry_key', 'medical')
                 ->where('module_key', $moduleKey)
                 ->where('enabled', true)
                 ->exists()
