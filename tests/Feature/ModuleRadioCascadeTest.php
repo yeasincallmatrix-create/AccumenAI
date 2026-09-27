@@ -194,7 +194,7 @@ class ModuleRadioCascadeTest extends TestCase
             ->pluck('key')
             ->all();
 
-        $this->assertCount(28, $accountingChildren);
+        $this->assertCount(33, $accountingChildren);
 
         // Exactly what the browser sends after Rule 1 fires: parent + every child.
         $payload = ['row0' => ['module_key' => 'accounting', 'category' => 'hidden']];

@@ -25,7 +25,7 @@ class ModuleElaborationTest extends TestCase
 
     /** @var array<string, int> */
     private const EXPECTED_CHILDREN = [
-        'accounting' => 28,
+        'accounting' => 33,
         'hr' => 7,
         'ai' => 4,
         'reports' => 6,
@@ -49,6 +49,8 @@ class ModuleElaborationTest extends TestCase
             'accounting.cash_flow', 'accounting.ratios', 'accounting.tax_reports', 'accounting.vat_input',
             'accounting.vat_output', 'accounting.vat_summary', 'accounting.executive_dashboard',
             'accounting.approvals', 'accounting.security_audit',
+            'accounting.ar_aging', 'accounting.ap_aging', 'accounting.invoice_aging',
+            'accounting.aging_summary', 'accounting.aging_config',
         ],
         'hr' => [
             'hr.employees', 'hr.attendance', 'hr.payroll', 'hr.leaves',
@@ -156,10 +158,10 @@ class ModuleElaborationTest extends TestCase
         $this->assertSame([], $mismatched->all(), 'Children must inherit the parent module type');
     }
 
-    public function test_accounting_has_28_children(): void
+    public function test_accounting_has_33_children(): void
     {
         $this->assertChildren('accounting', self::EXPECTED_KEYS['accounting']);
-        $this->assertSame(28, self::EXPECTED_CHILDREN['accounting']);
+        $this->assertSame(33, self::EXPECTED_CHILDREN['accounting']);
     }
 
     public function test_hr_has_7_children(): void
