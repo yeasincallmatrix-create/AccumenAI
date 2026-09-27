@@ -360,7 +360,49 @@ class RestaurantMainIndustryTest extends TestCase
 
     public function test_restaurant_seeders_are_idempotent(): void
     {
-        $before = [
+        // First run may legitimately add rows for a country that became
+        // resolvable after the DB was seeded (config/industry_rules.php grows
+        // country entries — e.g. the US entry once 2026_09_27_380000 added the
+        // United States row, +38 sub-industries). That is a one-off catch-up,
+        // not non-idempotency, so it must not be part of the assertion.
+        (new PackageSeeder)->run();
+        (new RestaurantPermissionSeeder)->run();
+        (new IndustryTaxonomySeeder)->run();
+
+        $firstRun = $this->seederCounts();
+
+        (new PackageSeeder)->run();
+        (new RestaurantPermissionSeeder)->run();
+        (new IndustryTaxonomySeeder)->run();
+
+        $this->assertSame(
+            $firstRun,
+            $this->seederCounts(),
+            're-running the restaurant seeders must not change row counts'
+        );
+
+        // Sanity: the 7 canonical restaurant sub-industries are present.
+        // sub_industries has no industry_key column — join on industries.slug.
+        $restaurantSubs = DB::table('sub_industries as s')
+            ->join('industries as i', 'i.id', '=', 's.industry_id')
+            ->where('i.slug', 'restaurant')
+            ->count();
+
+        $this->assertGreaterThanOrEqual(
+            7,
+            $restaurantSubs,
+            'restaurant sub-industries must be seeded'
+        );
+    }
+
+    /**
+     * Row counts for everything the three seeders touch.
+     *
+     * @return array<string, int>
+     */
+    private function seederCounts(): array
+    {
+        return [
             'packages' => DB::table('subscription_packages')->count(),
             'package_industries' => DB::table('package_industries')->count(),
             'package_industry_modules' => DB::table('package_industry_modules')->count(),
@@ -369,24 +411,6 @@ class RestaurantMainIndustryTest extends TestCase
             'sub_industries' => DB::table('sub_industries')->count(),
             'industry_subcategories' => DB::table('industry_subcategories')->count(),
         ];
-
-        (new PackageSeeder)->run();
-        (new RestaurantPermissionSeeder)->run();
-        (new IndustryTaxonomySeeder)->run();
-
-        (new PackageSeeder)->run();
-        (new RestaurantPermissionSeeder)->run();
-        (new IndustryTaxonomySeeder)->run();
-
-        $this->assertSame($before, [
-            'packages' => DB::table('subscription_packages')->count(),
-            'package_industries' => DB::table('package_industries')->count(),
-            'package_industry_modules' => DB::table('package_industry_modules')->count(),
-            'package_modules' => DB::table('package_modules')->count(),
-            'permissions' => DB::table('permissions')->count(),
-            'sub_industries' => DB::table('sub_industries')->count(),
-            'industry_subcategories' => DB::table('industry_subcategories')->count(),
-        ], 're-running the restaurant seeders must not change row counts');
     }
 
     /**
