@@ -10,6 +10,8 @@ use Tests\TestCase;
  *
  * Together with the seven SAARC countries this is 26 countries x 25 packages
  * = 650 rows in `package_country_prices`.
+ *
+ * Phase 5 (EU) added 14 more countries: 40 x 25 = 1000 rows.
  */
 class GlobalPricingTest extends TestCase
 {
@@ -30,12 +32,12 @@ class GlobalPricingTest extends TestCase
         'NP' => 'NPR', 'BT' => 'BTN', 'MV' => 'MVR',
     ];
 
-    public function test_total_rows_650(): void
+    public function test_total_rows_1000(): void
     {
         $this->assertEquals(
-            650,
+            1000,
             DB::table('package_country_prices')->count(),
-            'package_country_prices should hold 26 countries x 25 packages'
+            'package_country_prices should hold 40 countries x 25 packages'
         );
     }
 

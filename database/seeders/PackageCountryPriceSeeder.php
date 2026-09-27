@@ -47,6 +47,22 @@ class PackageCountryPriceSeeder extends Seeder
         'FR' => 8.00,   // France
         'SG' => 6.00,   // Singapore
         'NL' => 8.00,   // Netherlands
+
+        // Phase 5 — European Union
+        'IT' => 7.50,   // Italy
+        'ES' => 7.00,   // Spain
+        'PL' => 5.00,   // Poland
+        'SE' => 8.00,   // Sweden
+        'BE' => 8.00,   // Belgium
+        'AT' => 8.00,   // Austria
+        'DK' => 8.00,   // Denmark
+        'FI' => 8.00,   // Finland
+        'IE' => 8.00,   // Ireland
+        'PT' => 5.50,   // Portugal
+        'GR' => 5.00,   // Greece
+        'CZ' => 5.00,   // Czech Republic
+        'RO' => 3.50,   // Romania
+        'HU' => 4.00,   // Hungary
     ];
 
     /**
@@ -87,6 +103,22 @@ class PackageCountryPriceSeeder extends Seeder
         'FR' => 'EUR',
         'SG' => 'SGD',
         'NL' => 'EUR',
+
+        // Phase 5 — European Union
+        'IT' => 'EUR',
+        'ES' => 'EUR',
+        'PL' => 'PLN',
+        'SE' => 'SEK',
+        'BE' => 'EUR',
+        'AT' => 'EUR',
+        'DK' => 'DKK',
+        'FI' => 'EUR',
+        'IE' => 'EUR',
+        'PT' => 'EUR',
+        'GR' => 'EUR',
+        'CZ' => 'CZK',
+        'RO' => 'RON',
+        'HU' => 'HUF',
     ];
 
     public function run(): void

@@ -28,6 +28,7 @@ class PackageIndustryController extends Controller
         'Gulf' => ['AE', 'SA', 'QA', 'KW', 'BH', 'OM'],
         'Southeast Asia' => ['MY', 'TH', 'ID', 'PH', 'VN'],
         'First World' => ['US', 'GB', 'CA', 'AU', 'DE', 'FR', 'SG', 'NL'],
+        'European Union' => ['IT', 'ES', 'PL', 'SE', 'BE', 'AT', 'DK', 'FI', 'IE', 'PT', 'GR', 'CZ', 'RO', 'HU'],
     ];
 
     /**
