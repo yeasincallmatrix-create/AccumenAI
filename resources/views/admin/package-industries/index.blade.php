@@ -43,7 +43,7 @@
         @foreach ($industries as $ind)
             <li class="nav-item" role="presentation">
                 <a class="nav-link {{ $ind->slug === $industry ? 'active' : '' }}"
-                   href="{{ route('admin.package-industries.index', ['industry' => $ind->slug]) }}">
+                   href="{{ route('admin.package-industries.index', array_filter(['industry' => $ind->slug, 'country' => $country])) }}">
                     {{ $ind->name }}
                 </a>
             </li>
@@ -72,8 +72,29 @@
                 INDUSTRY: <strong>{{ $industryName }}</strong>
                 <span class="badge text-bg-primary badge-soft ms-2">{{ $totals['enabled'] }} / {{ $totals['packages'] }} packages enabled</span>
             </div>
-            <div>
-                <button type="submit" class="btn btn-primary btn-sm">
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+                <label class="text-muted small mb-0" for="priceCountry">
+                    <i class="bi bi-globe2"></i> Country
+                </label>
+                <select class="form-select form-select-sm w-auto" id="priceCountry" aria-label="Pricing country">
+                    <option value="" {{ $country === '' ? 'selected' : '' }}>Industry default (BDT)</option>
+                    @foreach ($countries as $region => $group)
+                        <optgroup label="{{ $region }}">
+                            @foreach ($group as $code => $meta)
+                                <option value="{{ $code }}" {{ $code === $country ? 'selected' : '' }}>
+                                    {{ $meta['name'] }} ({{ $meta['currency'] }})
+                                </option>
+                            @endforeach
+                        </optgroup>
+                    @endforeach
+                </select>
+                @if ($country !== '')
+                    <span class="badge text-bg-secondary badge-soft">{{ $countryCurrency }}</span>
+                    <button type="button" class="btn btn-primary btn-sm" id="saveCountryPrices">
+                        <i class="bi bi-currency-exchange"></i> Save {{ $countryCurrency }} prices
+                    </button>
+                @endif
+                <button type="submit" class="btn btn-outline-primary btn-sm">
                     <i class="bi bi-check-lg"></i> Save Configuration
                 </button>
             </div>
@@ -86,8 +107,8 @@
                         <th style="width:70px">Offer</th>
                         <th>Package</th>
                         <th style="width:140px">Modules</th>
-                        <th style="width:170px">Price / month</th>
-                        <th style="width:170px">Price / year</th>
+                        <th style="width:170px">Price / month <span class="text-muted small">({{ $country !== '' ? $countryCurrency : 'BDT' }})</span></th>
+                        <th style="width:170px">Price / year <span class="text-muted small">({{ $country !== '' ? $countryCurrency : 'BDT' }})</span></th>
                         <th style="width:110px">Sort</th>
                         <th style="width:190px"></th>
                     </tr>
@@ -123,6 +144,17 @@
                                 </div>
                             </td>
                             <td>
+                                @if ($country !== '')
+                                    <div class="input-group input-group-sm mb-1">
+                                        <span class="input-group-text">{{ $countryCurrency }}</span>
+                                        <input type="number" step="0.01" min="0" class="form-control js-country-price"
+                                               data-package="{{ $pkg->id }}"
+                                               data-field="monthly"
+                                               value="{{ $countryPrices->get($pkg->id)?->price_monthly ?? '' }}"
+                                               aria-label="{{ $pkg->name }} {{ $country }} price per month">
+                                    </div>
+                                    <div class="text-muted small js-price-status" data-for="{{ $pkg->id }}">country price</div>
+                                @endif
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text">BDT</span>
                                     <input type="number" step="0.01" min="0" class="form-control"
@@ -137,6 +169,17 @@
                                 @endif
                             </td>
                             <td>
+                                @if ($country !== '')
+                                    <div class="input-group input-group-sm mb-1">
+                                        <span class="input-group-text">{{ $countryCurrency }}</span>
+                                        <input type="number" step="0.01" min="0" class="form-control js-country-price"
+                                               data-package="{{ $pkg->id }}"
+                                               data-field="yearly"
+                                               value="{{ $countryPrices->get($pkg->id)?->price_yearly ?? '' }}"
+                                               aria-label="{{ $pkg->name }} {{ $country }} price per year">
+                                    </div>
+                                    <div class="text-muted small js-price-status" data-for="{{ $pkg->id }}">country price</div>
+                                @endif
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text">BDT</span>
                                     <input type="number" step="0.01" min="0" class="form-control"
@@ -178,3 +221,87 @@
     </div>
 </form>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    var country = @json($country);
+    var endpoint = @json(route('admin.package-industries.country-prices.save'));
+    var csrf = @json(csrf_token());
+    var select = document.getElementById('priceCountry');
+
+    if (select) {
+        select.addEventListener('change', function () {
+            var url = new URL(window.location.href);
+            if (this.value) {
+                url.searchParams.set('country', this.value);
+            } else {
+                url.searchParams.delete('country');
+            }
+            window.location.href = url.toString();
+        });
+    }
+
+    var saveBtn = document.getElementById('saveCountryPrices');
+    if (!saveBtn || !country) {
+        return;
+    }
+
+    saveBtn.addEventListener('click', function () {
+        var byPackage = {};
+
+        document.querySelectorAll('.js-country-price').forEach(function (input) {
+            var packageId = input.getAttribute('data-package');
+            if (!byPackage[packageId]) {
+                byPackage[packageId] = { package_id: parseInt(packageId, 10), monthly: null, yearly: null };
+            }
+            var value = input.value === '' ? null : input.value;
+            if (input.getAttribute('data-field') === 'monthly') {
+                byPackage[packageId].monthly = value;
+            } else {
+                byPackage[packageId].yearly = value;
+            }
+        });
+
+        var prices = Object.keys(byPackage).map(function (key) { return byPackage[key]; });
+        if (!prices.length) {
+            return;
+        }
+
+        saveBtn.disabled = true;
+
+        fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrf
+            },
+            body: JSON.stringify({ country: country, prices: prices })
+        })
+            .then(function (res) {
+                return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+            })
+            .then(function (result) {
+                if (!result.ok) {
+                    var message = result.data && result.data.errors
+                        ? Object.values(result.data.errors).join(' ')
+                        : ((result.data && result.data.message) || 'Save failed');
+                    throw new Error(message);
+                }
+                document.querySelectorAll('.js-price-status').forEach(function (el) {
+                    el.innerHTML = '<span class="text-success">saved</span>';
+                });
+            })
+            .catch(function (err) {
+                document.querySelectorAll('.js-price-status').forEach(function (el) {
+                    el.innerHTML = '<span class="text-danger">' + err.message + '</span>';
+                });
+            })
+            .finally(function () {
+                saveBtn.disabled = false;
+            });
+    });
+})();
+</script>
+@endpush

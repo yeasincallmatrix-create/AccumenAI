@@ -18,6 +18,19 @@ use Illuminate\View\View;
 class PackageIndustryController extends Controller
 {
     /**
+     * Pricing selector region buckets (ISO2 lists).
+     *
+     * Only used to order/group the country dropdown — availability itself
+     * comes from `package_country_prices`.
+     */
+    private const COUNTRY_REGIONS = [
+        'SAARC' => ['BD', 'IN', 'PK', 'LK', 'NP', 'BT', 'MV'],
+        'Gulf' => ['AE', 'SA', 'QA', 'KW', 'BH', 'OM'],
+        'Southeast Asia' => ['MY', 'TH', 'ID', 'PH', 'VN'],
+        'First World' => ['US', 'GB', 'CA', 'AU', 'DE', 'FR', 'SG', 'NL'],
+    ];
+
+    /**
      * Show the per-industry package configuration screen.
      */
     public function index(Request $request): View
@@ -33,6 +46,27 @@ class PackageIndustryController extends Controller
         if (! $industries->contains('slug', $industry)) {
             $industry = $industries->first()->slug;
         }
+
+        $countryGroups = $this->pricingCountryGroups();
+
+        $countries = [];
+        foreach ($countryGroups as $group) {
+            foreach ($group as $code => $meta) {
+                $countries[$code] = $meta;
+            }
+        }
+
+        $country = (string) $request->query('country', '');
+        if (! isset($countries[$country])) {
+            $country = '';
+        }
+
+        $countryPrices = $country === ''
+            ? collect()
+            : DB::table('package_country_prices')
+                ->where('country_code', $country)
+                ->get()
+                ->keyBy('package_id');
 
         $packages = DB::table('subscription_packages')
             ->where('status', 'active')
@@ -88,6 +122,10 @@ class PackageIndustryController extends Controller
             'industryName' => $industries->firstWhere('slug', $industry)?->name ?? $industry,
             'rows' => $rows,
             'totals' => $totals,
+            'countries' => $countryGroups,
+            'country' => $country,
+            'countryPrices' => $countryPrices,
+            'countryCurrency' => $country !== '' ? $countries[$country]['currency'] : 'BDT',
         ]);
     }
 
@@ -346,6 +384,67 @@ class PackageIndustryController extends Controller
         }
 
         return $stats;
+    }
+
+    /**
+     * Countries offered in the pricing selector, grouped for <optgroup>s.
+     *
+     * Source of truth: every country that actually has price rows in
+     * `package_country_prices`, so the selector always matches what is
+     * editable (SAARC + Gulf + Southeast Asia + First World, plus any
+     * future region).
+     *
+     * @return array<string, array<string, array{name: string, currency: string}>>
+     */
+    private function pricingCountryGroups(): array
+    {
+        $codes = DB::table('package_country_prices')
+            ->distinct()
+            ->orderBy('country_code')
+            ->pluck('country_code')
+            ->all();
+
+        if ($codes === []) {
+            return [];
+        }
+
+        $mapped = DB::table('country_currency_map')
+            ->whereIn('country_code', $codes)
+            ->get()
+            ->keyBy('country_code');
+
+        $names = DB::table('countries')
+            ->whereIn('iso2', $codes)
+            ->get()
+            ->keyBy('iso2');
+
+        $groups = [];
+        foreach (self::COUNTRY_REGIONS as $region => $regionCodes) {
+            $groups[$region] = [];
+        }
+        $groups['Other'] = [];
+
+        foreach ($codes as $code) {
+            if (! isset($mapped[$code])) {
+                continue;
+            }
+
+            $meta = [
+                'name' => $names[$code]->name ?? $mapped[$code]->country_name,
+                'currency' => $mapped[$code]->currency_code,
+            ];
+
+            foreach (self::COUNTRY_REGIONS as $region => $regionCodes) {
+                if (in_array($code, $regionCodes, true)) {
+                    $groups[$region][$code] = $meta;
+                    continue 2;
+                }
+            }
+
+            $groups['Other'][$code] = $meta;
+        }
+
+        return array_filter($groups, static fn (array $group): bool => $group !== []);
     }
 
     private function normalizePrice(mixed $value): ?float

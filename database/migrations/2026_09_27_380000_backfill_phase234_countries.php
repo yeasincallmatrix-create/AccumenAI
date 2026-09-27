@@ -15,25 +15,25 @@ return new class extends Migration
      *   - test (monetix_test): 19 inserted (only BD + the 6 SAARC rows existed)
      */
     private array $countries = [
-        'AE' => ['name' => 'United Arab Emirates', 'iso3' => 'ARE', 'phone_code' => '+971'],
-        'SA' => ['name' => 'Saudi Arabia',         'iso3' => 'SAU', 'phone_code' => '+966'],
-        'QA' => ['name' => 'Qatar',                'iso3' => 'QAT', 'phone_code' => '+974'],
-        'KW' => ['name' => 'Kuwait',               'iso3' => 'KWT', 'phone_code' => '+965'],
-        'BH' => ['name' => 'Bahrain',              'iso3' => 'BHR', 'phone_code' => '+973'],
-        'OM' => ['name' => 'Oman',                 'iso3' => 'OMN', 'phone_code' => '+968'],
-        'MY' => ['name' => 'Malaysia',             'iso3' => 'MYS', 'phone_code' => '+60'],
-        'TH' => ['name' => 'Thailand',             'iso3' => 'THA', 'phone_code' => '+66'],
-        'ID' => ['name' => 'Indonesia',            'iso3' => 'IDN', 'phone_code' => '+62'],
-        'PH' => ['name' => 'Philippines',          'iso3' => 'PHL', 'phone_code' => '+63'],
-        'VN' => ['name' => 'Vietnam',              'iso3' => 'VNM', 'phone_code' => '+84'],
-        'US' => ['name' => 'United States',        'iso3' => 'USA', 'phone_code' => '+1'],
-        'GB' => ['name' => 'United Kingdom',       'iso3' => 'GBR', 'phone_code' => '+44'],
-        'CA' => ['name' => 'Canada',               'iso3' => 'CAN', 'phone_code' => '+1'],
-        'AU' => ['name' => 'Australia',            'iso3' => 'AUS', 'phone_code' => '+61'],
-        'DE' => ['name' => 'Germany',              'iso3' => 'DEU', 'phone_code' => '+49'],
-        'FR' => ['name' => 'France',               'iso3' => 'FRA', 'phone_code' => '+33'],
-        'SG' => ['name' => 'Singapore',            'iso3' => 'SGP', 'phone_code' => '+65'],
-        'NL' => ['name' => 'Netherlands',          'iso3' => 'NLD', 'phone_code' => '+31'],
+        'AE' => ['name' => 'United Arab Emirates', 'iso3' => 'ARE', 'phone_code' => '971'],
+        'SA' => ['name' => 'Saudi Arabia',         'iso3' => 'SAU', 'phone_code' => '966'],
+        'QA' => ['name' => 'Qatar',                'iso3' => 'QAT', 'phone_code' => '974'],
+        'KW' => ['name' => 'Kuwait',               'iso3' => 'KWT', 'phone_code' => '965'],
+        'BH' => ['name' => 'Bahrain',              'iso3' => 'BHR', 'phone_code' => '973'],
+        'OM' => ['name' => 'Oman',                 'iso3' => 'OMN', 'phone_code' => '968'],
+        'MY' => ['name' => 'Malaysia',             'iso3' => 'MYS', 'phone_code' => '60'],
+        'TH' => ['name' => 'Thailand',             'iso3' => 'THA', 'phone_code' => '66'],
+        'ID' => ['name' => 'Indonesia',            'iso3' => 'IDN', 'phone_code' => '62'],
+        'PH' => ['name' => 'Philippines',          'iso3' => 'PHL', 'phone_code' => '63'],
+        'VN' => ['name' => 'Vietnam',              'iso3' => 'VNM', 'phone_code' => '84'],
+        'US' => ['name' => 'United States',        'iso3' => 'USA', 'phone_code' => '1'],
+        'GB' => ['name' => 'United Kingdom',       'iso3' => 'GBR', 'phone_code' => '44'],
+        'CA' => ['name' => 'Canada',               'iso3' => 'CAN', 'phone_code' => '1'],
+        'AU' => ['name' => 'Australia',            'iso3' => 'AUS', 'phone_code' => '61'],
+        'DE' => ['name' => 'Germany',              'iso3' => 'DEU', 'phone_code' => '49'],
+        'FR' => ['name' => 'France',               'iso3' => 'FRA', 'phone_code' => '33'],
+        'SG' => ['name' => 'Singapore',            'iso3' => 'SGP', 'phone_code' => '65'],
+        'NL' => ['name' => 'Netherlands',          'iso3' => 'NLD', 'phone_code' => '31'],
     ];
 
     /**
@@ -77,6 +77,6 @@ return new class extends Migration
             ->whereIn('iso2', $this->missingAtAudit)
             ->delete();
 
-        echo "Phase 2-4 country backfill reverted ({$this->missingAtAudit} rows removed).\n";
+        echo 'Phase 2-4 country backfill reverted ('.count($this->missingAtAudit)." rows removed).\n";
     }
 };

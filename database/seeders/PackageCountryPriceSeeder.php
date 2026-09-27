@@ -14,6 +14,7 @@ class PackageCountryPriceSeeder extends Seeder
      * Adjust these as needed based on purchasing power parity.
      */
     private array $multipliers = [
+        // Phase 1 — SAARC
         'BD' => 1.00,   // Base
         'IN' => 0.75,   // India — 75% of BD
         'PK' => 0.85,   // Pakistan — 85%
@@ -21,6 +22,31 @@ class PackageCountryPriceSeeder extends Seeder
         'NP' => 0.70,   // Nepal — 70%
         'BT' => 0.75,   // Bhutan — 75% (pegged INR)
         'MV' => 1.30,   // Maldives — 130% (higher GDP/capita)
+
+        // Phase 2 — Gulf
+        'AE' => 3.50,   // UAE
+        'SA' => 3.00,   // Saudi Arabia
+        'QA' => 3.50,   // Qatar
+        'KW' => 3.50,   // Kuwait
+        'BH' => 3.00,   // Bahrain
+        'OM' => 3.00,   // Oman
+
+        // Phase 3 — Southeast Asia
+        'MY' => 1.50,   // Malaysia
+        'TH' => 1.50,   // Thailand
+        'ID' => 1.00,   // Indonesia
+        'PH' => 1.00,   // Philippines
+        'VN' => 0.80,   // Vietnam
+
+        // Phase 4 — First World
+        'US' => 10.00,  // United States
+        'GB' => 8.00,   // United Kingdom
+        'CA' => 8.00,   // Canada
+        'AU' => 8.00,   // Australia
+        'DE' => 8.00,   // Germany
+        'FR' => 8.00,   // France
+        'SG' => 6.00,   // Singapore
+        'NL' => 8.00,   // Netherlands
     ];
 
     /**
@@ -28,6 +54,7 @@ class PackageCountryPriceSeeder extends Seeder
      * country_currency_map has no row for the country).
      */
     private array $fallbackCurrencies = [
+        // Phase 1 — SAARC
         'BD' => 'BDT',
         'IN' => 'INR',
         'PK' => 'PKR',
@@ -35,6 +62,31 @@ class PackageCountryPriceSeeder extends Seeder
         'NP' => 'NPR',
         'BT' => 'BTN',
         'MV' => 'MVR',
+
+        // Phase 2 — Gulf
+        'AE' => 'AED',
+        'SA' => 'SAR',
+        'QA' => 'QAR',
+        'KW' => 'KWD',
+        'BH' => 'BHD',
+        'OM' => 'OMR',
+
+        // Phase 3 — Southeast Asia
+        'MY' => 'MYR',
+        'TH' => 'THB',
+        'ID' => 'IDR',
+        'PH' => 'PHP',
+        'VN' => 'VND',
+
+        // Phase 4 — First World
+        'US' => 'USD',
+        'GB' => 'GBP',
+        'CA' => 'CAD',
+        'AU' => 'AUD',
+        'DE' => 'EUR',
+        'FR' => 'EUR',
+        'SG' => 'SGD',
+        'NL' => 'EUR',
     ];
 
     public function run(): void

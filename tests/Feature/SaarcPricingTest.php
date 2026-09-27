@@ -28,9 +28,10 @@ class SaarcPricingTest extends TestCase
         }
     }
 
-    public function test_total_rows_175()
+    public function test_total_rows_650()
     {
-        $this->assertEquals(175, DB::table('package_country_prices')->count());
+        // 26 countries (SAARC 7 + Gulf 6 + Southeast Asia 5 + First World 8) x 25 packages.
+        $this->assertEquals(650, DB::table('package_country_prices')->count());
     }
 
     public function test_bd_unchanged()
