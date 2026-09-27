@@ -185,6 +185,7 @@ class PackageSeeder extends Seeder
             ['industry' => 'medical', 'label' => 'Medical', 'slug_prefix' => 'medical'],
             ['industry' => 'training_center', 'label' => 'Training Center', 'slug_prefix' => 'training_center'],
             ['industry' => 'education', 'label' => 'Education', 'slug_prefix' => 'education'],
+            ['industry' => 'retail', 'label' => 'Retail', 'slug_prefix' => 'retail'],
         ];
     }
 

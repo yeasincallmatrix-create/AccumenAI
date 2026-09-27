@@ -83,9 +83,10 @@ class Part2IndustryPackagesTest extends TestCase
         $this->assertEquals(4, $count);
     }
 
-    public function test_total_packages_is_25()
+    public function test_total_packages_is_28()
     {
-        $this->assertEquals(25, DB::table('subscription_packages')->count());
+        // Wave 2: +3 retail tiers (25 -> 28).
+        $this->assertEquals(28, DB::table('subscription_packages')->count());
     }
 
     public function test_page_renders_all_industries()

@@ -16,7 +16,7 @@ class PackageIndustrySeeder extends Seeder
         'medical' => ['free', 'basic', 'advanced', 'premium'],
         'education' => ['free', 'basic', 'advanced'],
         'training_center' => ['free', 'basic'],
-        'retail' => ['free', 'basic', 'advanced'],
+        'retail' => ['free', 'basic', 'advanced', 'premium'],
         'manufacturing' => ['free', 'basic', 'advanced'],
         'real_estate' => ['free', 'basic'],
     ];

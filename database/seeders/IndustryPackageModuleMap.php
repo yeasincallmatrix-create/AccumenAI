@@ -168,6 +168,46 @@ class IndustryPackageModuleMap
                     'education.guardians', 'education.analytics',
                 ],
             ],
+
+            'retail' => [
+                'starter' => [
+                    'sales', 'purchase.invoices', 'inventory', 'sales.customers',
+                    'pos.terminal', 'pos.register', 'pos.cart', 'pos.checkout',
+                    'pos.receipt', 'pos.shift',
+                ],
+                'growth' => [
+                    'sales', 'purchase.invoices', 'inventory', 'sales.customers',
+                    'pos.terminal', 'pos.register', 'pos.cart', 'pos.checkout',
+                    'pos.receipt', 'pos.shift',
+                    'pos.cash', 'pos.card', 'pos.customer', 'pos.discount',
+                    'pos.loyalty', 'pos.return', 'pos.refund',
+                    'pos.daily_report', 'pos.item_report',
+                    'pos.sales_integration', 'pos.inventory_integration',
+                    'sales.orders', 'purchase.orders',
+                ],
+                'enterprise' => [
+                    'sales', 'purchase.invoices', 'inventory', 'sales.customers',
+                    'pos.terminal', 'pos.register', 'pos.cart', 'pos.checkout',
+                    'pos.receipt', 'pos.shift',
+                    'pos.cash', 'pos.card', 'pos.customer', 'pos.discount',
+                    'pos.loyalty', 'pos.return', 'pos.refund',
+                    'pos.daily_report', 'pos.item_report',
+                    'pos.sales_integration', 'pos.inventory_integration',
+                    'sales.orders', 'purchase.orders',
+                    'pos.mobile_payment', 'pos.split_payment', 'pos.cash_drawer',
+                    'pos.coupon', 'pos.gift_card', 'pos.exchange',
+                    'pos.cashier_report', 'pos.finance_integration',
+                    'pos.accounting_integration', 'pos.crm_integration',
+                    'inventory.items', 'inventory.stock_ledger',
+                    'inventory.warehouses', 'inventory.adjustments',
+                    'inventory.batches', 'inventory.transfers',
+                    'inventory.barcode', 'inventory.counts', 'inventory.reports',
+                    'sales.quotations', 'sales.deliveries', 'sales.returns',
+                    'sales.leads', 'sales.reports',
+                    'purchase.quotations', 'purchase.requests',
+                    'purchase.returns', 'purchase.receipts',
+                ],
+            ],
         ];
     }
 
