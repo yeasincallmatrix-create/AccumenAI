@@ -185,9 +185,9 @@ class PackageIndustryTest extends TestCase
         (new PackageIndustrySeeder)->run();
 
         $expected = [
-            'medical' => ['free', 'basic', 'advanced', 'premium'],
-            'education' => ['free', 'basic', 'advanced'],
-            'manufacturing' => ['free', 'basic', 'advanced'],
+            'medical' => ['free', 'basic', 'advanced', 'premium', 'medical_starter', 'medical_growth', 'medical_enterprise'],
+            'education' => ['free', 'basic', 'advanced', 'education_starter', 'education_growth', 'education_enterprise'],
+            'manufacturing' => ['free', 'basic', 'advanced', 'manufacturing_starter', 'manufacturing_growth', 'manufacturing_enterprise'],
         ];
 
         foreach ($expected as $industry => $slugs) {
