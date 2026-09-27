@@ -55,6 +55,8 @@ class RegistrationFlowController extends Controller
 
     public function storeAccount(Request $request): RedirectResponse
     {
+        app(\App\Services\Auth\RecaptchaService::class)->assertValid($request);
+
         // Layered abuse protection: per-IP and per-normalized-email
         $ipKey = 'register_account_ip:' . $request->ip();
         if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($ipKey, 10)) {

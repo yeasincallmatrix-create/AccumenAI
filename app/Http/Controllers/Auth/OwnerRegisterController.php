@@ -46,6 +46,8 @@ class OwnerRegisterController extends Controller
 
     public function select(Request $request): RedirectResponse
     {
+        app(\App\Services\Auth\RecaptchaService::class)->assertValid($request);
+
         $validated = InstituteOnboardingController::validatedSelection($request->all());
 
         session([InstituteOnboardingController::SESSION_KEY => $validated]);

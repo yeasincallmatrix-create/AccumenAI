@@ -106,6 +106,8 @@
                         </div>
                         <x-password-policy field="password" confirm-field="password_confirmation" />
 
+                        @include('auth.partials.recaptcha')
+
                         <button class="btn btn-primary auth-btn w-100 mt-4" type="submit">
                             <i class="bi bi-person-plus-fill"></i> {{ mawa_e('auth.create_owner_account') }}
                         </button>
@@ -124,5 +126,6 @@
 <script src="{{ asset('js/password-toggle.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/password-toggle.js')) }}"></script>
 <script src="{{ asset('js/password-policy.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/password-policy.js')) }}"></script>
 <script src="{{ asset('js/auto-caps.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/auto-caps.js')) }}"></script>
+@include('auth.partials.recaptcha-script')
 </body>
 </html>

@@ -73,6 +73,8 @@
                             @endif
                         </div>
 
+                        @include('auth.partials.recaptcha')
+
                         <button class="btn btn-primary auth-btn w-100" type="submit">
                             <i class="bi bi-box-arrow-in-right"></i> {{ mawa_e('auth.sign_in') }}
                         </button>
@@ -98,6 +100,7 @@
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+@include('auth.partials.recaptcha-script')
 <script src="{{ asset('js/flash.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/flash.js')) }}"></script>
 <script src="{{ asset('js/password-toggle.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/password-toggle.js')) }}"></script>
 </body>

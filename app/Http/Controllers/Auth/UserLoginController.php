@@ -46,6 +46,8 @@ class UserLoginController extends Controller
 
     public function login(Request $request)
     {
+        app(\App\Services\Auth\RecaptchaService::class)->assertValid($request);
+
         $this->validateLogin($request);
 
         if (Auth::guard($this->guardName)->check()) {

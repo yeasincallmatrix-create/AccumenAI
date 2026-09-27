@@ -21,6 +21,7 @@
                         <label class="form-label">Phone</label>
                         <input type="text" name="phone" value="{{ old('phone') }}" class="form-control" required>
                     </div>
+                    @include('auth.partials.recaptcha')
                     <button class="btn btn-primary w-100" type="submit">Send OTP</button>
                 </form>
                 <p class="mt-3"><a href="{{ route('password.request') }}">Use email instead</a></p>
@@ -28,5 +29,6 @@
         </div>
     </div>
 </div>
+@include('auth.partials.recaptcha-script')
 </body>
 </html>

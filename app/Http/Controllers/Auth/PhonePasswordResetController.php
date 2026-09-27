@@ -19,6 +19,8 @@ class PhonePasswordResetController extends Controller
 
     public function requestOtp(Request $request): RedirectResponse
     {
+        app(\App\Services\Auth\RecaptchaService::class)->assertValid($request);
+
         $request->validate([
             'phone' => ['required', 'string', 'max:30'],
         ]);

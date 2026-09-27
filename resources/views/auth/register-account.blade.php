@@ -46,6 +46,8 @@
                         </div>
                         <x-password-policy field="password" confirm-field="password_confirmation" />
 
+                        @include('auth.partials.recaptcha')
+
                         <button class="btn btn-primary auth-btn w-100 mt-4" type="submit">
                             <i class="bi bi-arrow-right"></i> {{ mawa_lang('workspace.continue_btn') ?? 'Continue' }}
                         </button>
@@ -62,5 +64,6 @@
 <script src="{{ asset('js/password-toggle.js') }}"></script>
 <script src="{{ asset('js/password-policy.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+@include('auth.partials.recaptcha-script')
 </body>
 </html>

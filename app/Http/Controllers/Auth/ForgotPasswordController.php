@@ -19,6 +19,8 @@ class ForgotPasswordController extends Controller
 
     public function sendResetLinkEmail(Request $request): RedirectResponse
     {
+        app(\App\Services\Auth\RecaptchaService::class)->assertValid($request);
+
         $request->validate([
             'email' => ['required', 'string', 'email', 'max:150'],
         ]);

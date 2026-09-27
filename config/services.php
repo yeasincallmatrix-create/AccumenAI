@@ -54,4 +54,14 @@ return [
         'path' => env('TESSERACT_PATH', 'C:/Program Files/Tesseract-OCR/tesseract.exe'),
     ],
 
+    'recaptcha' => [
+        // '3' = invisible reCAPTCHA v3 (score based), '2' = v2 "I'm not a robot" checkbox
+        'version' => env('RECAPTCHA_VERSION', '3'),
+        'site_key' => env('RECAPTCHA_SITE_KEY'),
+        'secret_key' => env('RECAPTCHA_SECRET_KEY'),
+        'min_score' => (float) env('RECAPTCHA_MIN_SCORE', 0.5),
+        'verify_url' => env('RECAPTCHA_VERIFY_URL', 'https://www.google.com/recaptcha/api/siteverify'),
+        'timeout' => (float) env('RECAPTCHA_TIMEOUT', 5),
+    ],
+
 ];

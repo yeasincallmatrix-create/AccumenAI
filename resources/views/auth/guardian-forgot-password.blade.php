@@ -52,6 +52,8 @@
                             <input id="email" type="email" class="form-control" name="email" value="{{ old('email') }}" required autofocus autocomplete="email">
                         </div>
 
+                        @include('auth.partials.recaptcha')
+
                         <button class="btn btn-primary auth-btn w-100" type="submit">
                             <i class="bi bi-envelope-arrow-up"></i> {{ mawa_e('auth.send_reset_link') }}
                         </button>
@@ -66,6 +68,7 @@
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+@include('auth.partials.recaptcha-script')
 <script src="{{ asset('js/flash.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/flash.js')) }}"></script>
 </body>
 </html>

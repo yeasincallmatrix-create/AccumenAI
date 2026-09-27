@@ -16,5 +16,7 @@ return [
     'failed' => 'These credentials do not match our records.',
     'password' => 'The provided password is incorrect.',
     'throttle' => 'Too many login attempts. Please try again in :seconds seconds.',
+    'captcha_failed' => 'Captcha verification failed. Please confirm you are not a robot and try again.',
+    'captcha_missing' => 'Please complete the captcha before signing in.',
 
 ];
