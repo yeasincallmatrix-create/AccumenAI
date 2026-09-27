@@ -1019,6 +1019,18 @@ Route::middleware($tenant)->group(function () {
         Route::get('receivables', [$acctReport, 'receivables'])->name('receivables');
     });
 
+    // Accounting Aging Reports (Phase B)
+    $acctAging = \App\Http\Controllers\Accounting\AgingReportController::class;
+    Route::prefix('accounting/aging')->name('accounting.aging.')->group(function () use ($acctAging) {
+        Route::get('ar', [$acctAging, 'arAging'])->middleware('permission:ar_aging.view')->name('ar');
+        Route::get('ap', [$acctAging, 'apAging'])->middleware('permission:ap_aging.view')->name('ap');
+        Route::get('invoice', [$acctAging, 'invoiceAging'])->middleware('permission:invoice_aging.view')->name('invoice');
+        Route::get('summary', [$acctAging, 'summary'])->middleware('permission:aging_summary.view')->name('summary');
+        Route::get('config', [$acctAging, 'config'])->middleware('permission:aging_config.view')->name('config');
+        // {type} permission is resolved in-controller (middleware cannot vary on the segment).
+        Route::get('export/{type}', [$acctAging, 'export'])->name('export');
+    });
+
     // Tax Reports
     $taxReport = \App\Http\Controllers\Accounting\TaxReportController::class;
     Route::prefix('accounting/reports/tax')->name('accounting.reports.tax.')->middleware('permission:tax.view')->group(function () use ($taxReport) {
