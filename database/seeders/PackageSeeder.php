@@ -171,6 +171,131 @@ class PackageSeeder extends Seeder
         ],
     ];
 
+    /**
+     * Part 2 - 6 industries x 3 tiers (Restaurant pattern).
+     *
+     * @var array<int, array{industry: string, label: string, slug_prefix: string}>
+     */
+    private function industryPackages(): array
+    {
+        return [
+            ['industry' => 'real_estate', 'label' => 'Real Estate', 'slug_prefix' => 'real_estate'],
+            ['industry' => 'manufacturing', 'label' => 'Manufacturing', 'slug_prefix' => 'manufacturing'],
+            ['industry' => 'pos', 'label' => 'POS', 'slug_prefix' => 'pos'],
+            ['industry' => 'medical', 'label' => 'Medical', 'slug_prefix' => 'medical'],
+            ['industry' => 'training_center', 'label' => 'Training Center', 'slug_prefix' => 'training_center'],
+            ['industry' => 'education', 'label' => 'Education', 'slug_prefix' => 'education'],
+        ];
+    }
+
+    /**
+     * @var array<string, array{label: string, sort: int, price_m: int, price_y: int}>
+     */
+    private function tierMeta(): array
+    {
+        return [
+            'starter' => ['label' => 'Starter', 'sort' => 0, 'price_m' => 1500, 'price_y' => 15000],
+            'growth' => ['label' => 'Growth', 'sort' => 1, 'price_m' => 4000, 'price_y' => 40000],
+            'enterprise' => ['label' => 'Enterprise', 'sort' => 2, 'price_m' => 9000, 'price_y' => 90000],
+        ];
+    }
+
+    /**
+     * Part 2 - industry-specific packages (6 industries x 3 tiers).
+     *
+     * Scoped package_industry_modules only (legacy package_modules is not
+     * written for these packages - the scoped layer wins for matching
+     * industries). Idempotent: packages upsert on slug, module rows rebuilt
+     * per package, country prices upsert on (package, country).
+     */
+    private function seedIndustryPackages(): void
+    {
+        $map = IndustryPackageModuleMap::all();
+        $bdCurrency = DB::table('country_currency_map')
+            ->where('country_code', 'BD')
+            ->value('currency_code') ?? 'BDT';
+
+        foreach ($this->industryPackages() as $ind) {
+            $modulesByTier = $map[$ind['industry']] ?? [];
+
+            if (empty($modulesByTier)) {
+                $this->command?->warn("SKIP {$ind['industry']}: no module map.");
+
+                continue;
+            }
+
+            foreach ($this->tierMeta() as $tier => $meta) {
+                $slug = $ind['slug_prefix'] . '_' . $tier;
+
+                DB::table('subscription_packages')->updateOrInsert(
+                    ['slug' => $slug],
+                    [
+                        'name' => $ind['label'] . ' ' . $meta['label'],
+                        'price_monthly' => $meta['price_m'],
+                        'price_yearly' => $meta['price_y'],
+                        'is_default' => 0,
+                        'status' => 'active',
+                        'updated_at' => now(),
+                    ]
+                );
+
+                $pkgId = DB::table('subscription_packages')
+                    ->where('slug', $slug)
+                    ->value('id');
+
+                if (! $pkgId) {
+                    $this->command?->error("Could not resolve package {$slug}.");
+
+                    continue;
+                }
+
+                DB::table('package_industries')->updateOrInsert(
+                    ['package_id' => $pkgId, 'industry_key' => $ind['industry']],
+                    [
+                        'is_active' => true,
+                        'sort_order' => $meta['sort'],
+                        'updated_at' => now(),
+                    ]
+                );
+
+                $modules = IndustryPackageModuleMap::filterExisting($modulesByTier[$tier] ?? []);
+
+                $skipped = count($modulesByTier[$tier] ?? []) - count($modules);
+                if ($skipped > 0) {
+                    $this->command?->warn("{$slug}: skipped {$skipped} unknown module key(s).");
+                }
+
+                DB::table('package_industry_modules')
+                    ->where('package_id', $pkgId)
+                    ->delete();
+
+                foreach ($modules as $moduleKey) {
+                    DB::table('package_industry_modules')->insert([
+                        'package_id' => $pkgId,
+                        'industry_key' => $ind['industry'],
+                        'module_key' => $moduleKey,
+                        'enabled' => true,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                DB::table('package_country_prices')->updateOrInsert(
+                    ['package_id' => $pkgId, 'country_code' => 'BD'],
+                    [
+                        'currency_code' => $bdCurrency,
+                        'price_monthly' => $meta['price_m'],
+                        'price_yearly' => $meta['price_y'],
+                        'is_active' => true,
+                        'updated_at' => now(),
+                    ]
+                );
+
+                $this->command?->info("Seeded {$slug}: " . count($modules) . ' modules, BD/' . $bdCurrency . '.');
+            }
+        }
+    }
+
     public function run(): void
     {
         if (! DB::getSchemaBuilder()->hasTable('subscription_packages')) {
@@ -278,5 +403,8 @@ class PackageSeeder extends Seeder
             ->count();
 
         $this->command?->info("Restaurant package tiers seeded: {$mapped} package_industries row(s).");
+
+        // Part 2 - 6 industries x 3 tiers.
+        $this->seedIndustryPackages();
     }
 }

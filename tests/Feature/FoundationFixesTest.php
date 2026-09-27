@@ -108,22 +108,35 @@ class FoundationFixesTest extends TestCase
 
     public function test_pos_mapped_to_packages(): void
     {
-        $posRows = DB::table('package_industries')
+        $posIds = DB::table('package_industries')
             ->where('industry_key', 'pos')
             ->where('is_active', 1)
             ->pluck('package_id')
-            ->sort()
-            ->values()
             ->all();
 
-        $expected = DB::table('subscription_packages')
+        $universal = DB::table('subscription_packages')
             ->whereIn('slug', ['free', 'basic', 'advanced', 'premium'])
             ->pluck('id')
-            ->sort()
-            ->values()
             ->all();
 
-        $this->assertSame($expected, $posRows, 'pos must map to the 4 universal packages (is_active)');
+        $tiers = DB::table('subscription_packages')
+            ->whereIn('slug', ['pos_starter', 'pos_growth', 'pos_enterprise'])
+            ->pluck('id')
+            ->all();
+
+        // Foundation Fix 5 guarantee: the 4 universal packages map to pos.
+        foreach ($universal as $id) {
+            $this->assertContains($id, $posIds, "universal package {$id} must map to pos");
+        }
+
+        // Part 2 guarantee: the 3 POS tiers map to pos as well.
+        foreach ($tiers as $id) {
+            $this->assertContains($id, $posIds, "POS tier {$id} must map to pos");
+        }
+
+        // 4 universal + 3 tiers = 7 active rows (nothing else).
+        $this->assertCount(7, $posIds, 'pos must map exactly 4 universal + 3 tier packages');
+        $this->assertCount(7, array_unique($posIds), 'pos rows must be unique');
     }
 
     // ── Registry totals ────────────────────────────────────────────
