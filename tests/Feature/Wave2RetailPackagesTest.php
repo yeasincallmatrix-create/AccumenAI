@@ -100,9 +100,11 @@ class Wave2RetailPackagesTest extends TestCase
         $this->assertEquals(3, $count);
     }
 
-    public function test_total_packages_28()
+    public function test_total_packages_25()
     {
-        $this->assertEquals(28, DB::table('subscription_packages')->count());
+        // 28 -> 25: pos_starter/growth/enterprise removed (POS is a module
+        // group, not an industry).
+        $this->assertEquals(25, DB::table('subscription_packages')->count());
     }
 
     public function test_retail_tiers_are_monotonic()

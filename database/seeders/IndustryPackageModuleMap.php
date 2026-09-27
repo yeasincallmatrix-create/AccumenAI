@@ -11,8 +11,12 @@ use Illuminate\Support\Facades\DB;
  * Every key below was verified against module_registry (status=active)
  * in the Part 2 Step 1.2 audit:
  *
- *   real_estate 48 · manufacturing 22 · pos 27 · medical 14 ·
+ *   real_estate 48 · manufacturing 22 · medical 14 ·
  *   training_center 9 · education 7
+ *
+ * POS is a module group (not an industry) — its tier map was removed with
+ * the pos_starter/growth/enterprise packages; pos.* modules remain inside
+ * the retail/restaurant maps below.
  */
 class IndustryPackageModuleMap
 {
@@ -86,30 +90,6 @@ class IndustryPackageModuleMap
                     'manufacturing.finishing', 'manufacturing.printing',
                     'manufacturing.packaging', 'manufacturing.warranty',
                     'manufacturing.reports',
-                ],
-            ],
-
-            'pos' => [
-                'starter' => [
-                    'pos.terminal', 'pos.register', 'pos.cart', 'pos.checkout',
-                    'pos.receipt', 'pos.cash', 'pos.card', 'pos.shift',
-                ],
-                'growth' => [
-                    'pos.terminal', 'pos.register', 'pos.cart', 'pos.checkout',
-                    'pos.receipt', 'pos.cash', 'pos.card', 'pos.mobile_payment',
-                    'pos.shift', 'pos.customer', 'pos.daily_report',
-                    'pos.item_report', 'pos.cashier_report',
-                ],
-                'enterprise' => [
-                    'pos.terminal', 'pos.register', 'pos.cart', 'pos.checkout',
-                    'pos.receipt', 'pos.cash', 'pos.card', 'pos.mobile_payment',
-                    'pos.split_payment', 'pos.shift', 'pos.cash_drawer',
-                    'pos.customer', 'pos.loyalty', 'pos.discount', 'pos.coupon',
-                    'pos.gift_card', 'pos.return', 'pos.refund', 'pos.exchange',
-                    'pos.daily_report', 'pos.item_report', 'pos.cashier_report',
-                    'pos.inventory_integration', 'pos.sales_integration',
-                    'pos.finance_integration', 'pos.accounting_integration',
-                    'pos.crm_integration',
                 ],
             ],
 

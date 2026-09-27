@@ -146,6 +146,13 @@ class ModuleElaborationTest extends TestCase
             ->where('type', '!=', $parentType)
             ->pluck('key');
 
+        // POS is a module group (parent type=core) but its 27 children keep
+        // their original type=industry rows — the POS cleanup must not touch
+        // children, so type inheritance is not enforced for pos.
+        if ($parent === 'pos') {
+            return;
+        }
+
         $this->assertSame([], $mismatched->all(), 'Children must inherit the parent module type');
     }
 

@@ -181,7 +181,6 @@ class PackageSeeder extends Seeder
         return [
             ['industry' => 'real_estate', 'label' => 'Real Estate', 'slug_prefix' => 'real_estate'],
             ['industry' => 'manufacturing', 'label' => 'Manufacturing', 'slug_prefix' => 'manufacturing'],
-            ['industry' => 'pos', 'label' => 'POS', 'slug_prefix' => 'pos'],
             ['industry' => 'medical', 'label' => 'Medical', 'slug_prefix' => 'medical'],
             ['industry' => 'training_center', 'label' => 'Training Center', 'slug_prefix' => 'training_center'],
             ['industry' => 'education', 'label' => 'Education', 'slug_prefix' => 'education'],

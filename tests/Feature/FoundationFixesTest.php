@@ -104,39 +104,43 @@ class FoundationFixesTest extends TestCase
         $this->assertSame('industry', $retail->type);
     }
 
-    // ── Fix 5: pos → universal packages ────────────────────────────
+    // ── POS: module group, not industry (revert of Part 2 Finding B) ──
 
-    public function test_pos_mapped_to_packages(): void
+    public function test_pos_is_module_group(): void
     {
-        $posIds = DB::table('package_industries')
-            ->where('industry_key', 'pos')
-            ->where('is_active', 1)
-            ->pluck('package_id')
-            ->all();
+        $pos = DB::table('module_registry')->where('key', 'pos')->first();
 
-        $universal = DB::table('subscription_packages')
-            ->whereIn('slug', ['free', 'basic', 'advanced', 'premium'])
-            ->pluck('id')
-            ->all();
+        $this->assertNotNull($pos);
+        $this->assertEquals('core', $pos->type);
+        $this->assertNull($pos->parent_key);
+        $this->assertEquals(27, DB::table('module_registry')
+            ->where('parent_key', 'pos')->where('status', 'active')->count());
+    }
 
-        $tiers = DB::table('subscription_packages')
-            ->whereIn('slug', ['pos_starter', 'pos_growth', 'pos_enterprise'])
-            ->pluck('id')
-            ->all();
+    public function test_pos_has_no_industry_packages(): void
+    {
+        $this->assertEquals(0, DB::table('package_industries')
+            ->where('industry_key', 'pos')->count());
 
-        // Foundation Fix 5 guarantee: the 4 universal packages map to pos.
-        foreach ($universal as $id) {
-            $this->assertContains($id, $posIds, "universal package {$id} must map to pos");
-        }
+        $this->assertEquals(0, DB::table('subscription_packages')
+            ->where('slug', 'LIKE', 'pos_%')->count());
+    }
 
-        // Part 2 guarantee: the 3 POS tiers map to pos as well.
-        foreach ($tiers as $id) {
-            $this->assertContains($id, $posIds, "POS tier {$id} must map to pos");
-        }
+    public function test_pos_modules_remain_in_retail_and_restaurant(): void
+    {
+        $retail = DB::table('package_industry_modules')
+            ->join('subscription_packages', 'subscription_packages.id', '=', 'package_industry_modules.package_id')
+            ->where('subscription_packages.slug', 'LIKE', 'retail_%')
+            ->where('package_industry_modules.module_key', 'LIKE', 'pos.%')
+            ->count();
 
-        // 4 universal + 3 tiers = 7 active rows (nothing else).
-        $this->assertCount(7, $posIds, 'pos must map exactly 4 universal + 3 tier packages');
-        $this->assertCount(7, array_unique($posIds), 'pos rows must be unique');
+        $restaurant = DB::table('package_industry_modules')
+            ->where('industry_key', 'restaurant')
+            ->where('module_key', 'LIKE', 'pos.%')
+            ->count();
+
+        $this->assertGreaterThan(0, $retail, 'POS modules must remain in retail packages');
+        $this->assertGreaterThan(0, $restaurant, 'POS modules must remain in restaurant packages');
     }
 
     // ── Registry totals ────────────────────────────────────────────

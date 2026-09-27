@@ -10,15 +10,15 @@ use Tests\TestCase;
 class Part2IndustryPackagesTest extends TestCase
 {
     private array $industries = [
-        'real_estate', 'manufacturing', 'pos', 'medical', 'training_center', 'education',
+        'real_estate', 'manufacturing', 'medical', 'training_center', 'education',
     ];
 
-    public function test_all_18_packages_exist()
+    public function test_all_15_packages_exist()
     {
         $count = DB::table('subscription_packages')
-            ->whereRaw("slug REGEXP '^(real_estate|manufacturing|pos|medical|training_center|education)_'")
+            ->whereRaw("slug REGEXP '^(real_estate|manufacturing|medical|training_center|education)_'")
             ->count();
-        $this->assertEquals(18, $count);
+        $this->assertEquals(15, $count);
     }
 
     public function test_each_industry_has_3_tiers()
@@ -58,10 +58,10 @@ class Part2IndustryPackagesTest extends TestCase
             ->where('currency_code', 'BDT')
             ->whereIn('package_id', function ($q) {
                 $q->select('id')->from('subscription_packages')
-                    ->whereRaw("slug REGEXP '^(real_estate|manufacturing|pos|medical|training_center|education)_'");
+                    ->whereRaw("slug REGEXP '^(real_estate|manufacturing|medical|training_center|education)_'");
             })
             ->count();
-        $this->assertEquals(18, $count);
+        $this->assertEquals(15, $count);
     }
 
     public function test_restaurant_unchanged()
@@ -83,10 +83,11 @@ class Part2IndustryPackagesTest extends TestCase
         $this->assertEquals(4, $count);
     }
 
-    public function test_total_packages_is_28()
+    public function test_total_packages_is_25()
     {
-        // Wave 2: +3 retail tiers (25 -> 28).
-        $this->assertEquals(28, DB::table('subscription_packages')->count());
+        // 28 -> 25: pos_starter/growth/enterprise removed (POS is a module
+        // group, not an industry).
+        $this->assertEquals(25, DB::table('subscription_packages')->count());
     }
 
     public function test_page_renders_all_industries()
@@ -109,12 +110,18 @@ class Part2IndustryPackagesTest extends TestCase
 
     // ── Part 2 additions (confirmed findings B + registry safety) ──
 
-    public function test_pos_industries_row_exists()
+    public function test_pos_is_module_group_not_industry()
     {
-        $row = DB::table('industries')->where('slug', 'pos')->first();
-        $this->assertNotNull($row, 'industries.slug pos row must exist (finding B)');
-        $this->assertSame('POS', $row->name);
-        $this->assertSame('active', $row->status);
+        $pos = DB::table('module_registry')->where('key', 'pos')->first();
+        $this->assertNotNull($pos);
+        $this->assertSame('core', $pos->type, 'POS must be a module group (type=core)');
+        $this->assertNull($pos->parent_key);
+
+        $this->assertEquals(0, DB::table('industries')->where('slug', 'pos')->count(),
+            'industries.slug pos must be removed');
+        $this->assertEquals(0, DB::table('package_industries')->where('industry_key', 'pos')->count());
+        $this->assertEquals(0, DB::table('subscription_packages')
+            ->where('slug', 'LIKE', 'pos_%')->count());
     }
 
     public function test_manufacturing_module_keys_valid()
