@@ -2031,6 +2031,47 @@ Route::middleware($tenant)->group(function () {
         Route::middleware('permission:dashboard.view')->group(function () use ($dashboard) {
             Route::get('dashboard', [$dashboard, 'index'])->name('dashboard.index');
         });
+
+        // ─── Dealership Phase 5 (API Infrastructure — backend only) ───
+        $apiToken = \App\Http\Controllers\Dealership\Api\ApiTokenController::class;
+        $apiEndpoint = \App\Http\Controllers\Dealership\Api\ApiEndpointController::class;
+        $apiDoc = \App\Http\Controllers\Dealership\Api\ApiDocController::class;
+        $push = \App\Http\Controllers\Dealership\Api\PushNotificationController::class;
+
+        // API Tokens
+        Route::middleware('permission:api_tokens.view')->group(function () use ($apiToken) {
+            Route::get('api/tokens', [$apiToken, 'index'])->name('api.tokens.index');
+        });
+        Route::middleware('permission:api_tokens.manage')->group(function () use ($apiToken) {
+            Route::post('api/tokens', [$apiToken, 'store'])->name('api.tokens.store');
+            Route::post('api/tokens/{token}/revoke', [$apiToken, 'revoke'])->name('api.tokens.revoke');
+        });
+
+        // API Endpoints
+        Route::middleware('permission:api_endpoints.view')->group(function () use ($apiEndpoint) {
+            Route::get('api/endpoints', [$apiEndpoint, 'index'])->name('api.endpoints.index');
+        });
+        Route::middleware('permission:api_endpoints.manage')->group(function () use ($apiEndpoint) {
+            Route::post('api/endpoints', [$apiEndpoint, 'store'])->name('api.endpoints.store');
+            Route::post('api/endpoints/{endpoint}/toggle', [$apiEndpoint, 'toggle'])->name('api.endpoints.toggle');
+        });
+
+        // API Docs
+        Route::middleware('permission:api_docs.view')->group(function () use ($apiDoc) {
+            Route::get('api/docs', [$apiDoc, 'index'])->name('api.docs.index');
+        });
+        Route::middleware('permission:api_docs.manage')->group(function () use ($apiDoc) {
+            Route::post('api/docs/regenerate', [$apiDoc, 'regenerate'])->name('api.docs.regenerate');
+        });
+
+        // Push Notifications
+        Route::middleware('permission:push_notifications.view')->group(function () use ($push) {
+            Route::get('push-notifications', [$push, 'index'])->name('push.index');
+        });
+        Route::middleware('permission:push_notifications.manage')->group(function () use ($push) {
+            Route::post('push-notifications', [$push, 'store'])->name('push.store');
+            Route::post('push-notifications/{notification}/cancel', [$push, 'cancel'])->name('push.cancel');
+        });
     });
 
 });

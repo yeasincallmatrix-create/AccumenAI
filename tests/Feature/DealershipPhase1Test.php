@@ -56,7 +56,7 @@ class DealershipPhase1Test extends TestCase
             ->where('parent_key', 'dealership')
             ->where('status', 'active')
             ->count();
-        $this->assertEquals(21, $count);
+        $this->assertEquals(25, $count);
     }
 
     public function test_children_inherit_type_from_parent()
@@ -79,10 +79,10 @@ class DealershipPhase1Test extends TestCase
         $this->assertArrayHasKey('field_force', $config['engines']);
     }
 
-    public function test_registry_total_295()
+    public function test_registry_total_299()
     {
         $count = DB::table('module_registry')->where('status', 'active')->count();
-        $this->assertEquals(295, $count);
+        $this->assertEquals(299, $count);
     }
 
     public function test_page_renders_dealership_group()

@@ -159,6 +159,28 @@ return [
                 'dealership.dashboard' => ['name' => 'Dashboard', 'icon' => 'bi-speedometer2', 'sort_order' => 121],
             ],
         ],
+
+        'api' => [
+            'name' => 'API',
+            'icon' => 'bi-key',
+            'required' => false,
+            'description' => 'Mobile API tokens, endpoints and docs',
+            'modules' => [
+                'dealership.api_tokens'   => ['name' => 'API Tokens',    'icon' => 'bi-key',       'sort_order' => 122],
+                'dealership.api_endpoints' => ['name' => 'API Endpoints', 'icon' => 'bi-diagram-3', 'sort_order' => 123],
+                'dealership.api_docs'     => ['name' => 'API Docs',      'icon' => 'bi-file-code', 'sort_order' => 124],
+            ],
+        ],
+
+        'notify' => [
+            'name' => 'Notify',
+            'icon' => 'bi-bell',
+            'required' => false,
+            'description' => 'Push notification queue',
+            'modules' => [
+                'dealership.push_notifications' => ['name' => 'Push Notifications', 'icon' => 'bi-bell', 'sort_order' => 125],
+            ],
+        ],
     ],
 
     'order_statuses' => ['draft', 'submitted', 'approved', 'rejected', 'delivered'],
@@ -184,6 +206,18 @@ return [
     ],
 
     'snapshot_ttl_minutes' => 15,
+
+    'api' => [
+        'token_ttl_days' => 90,
+        'default_abilities' => ['orders.view', 'orders.create', 'collections.view', 'collections.create'],
+        'api_version' => 'v1',
+    ],
+
+    'push' => [
+        'channels' => ['database'],
+        'batch_size' => 100,
+        'max_retries' => 3,
+    ],
 
     'allow_custom_modules' => true,
     'custom_module_prefix' => 'dealership.custom.',

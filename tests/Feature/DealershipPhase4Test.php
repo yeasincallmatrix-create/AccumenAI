@@ -132,13 +132,13 @@ class DealershipPhase4Test extends TestCase
             ->where('key', 'like', 'dealership%')
             ->where('status', 'active')
             ->count();
-        $this->assertEquals(22, $total, 'dealership registry must be 1 parent + 21 children');
+        $this->assertEquals(26, $total, 'dealership registry must be 1 parent + 25 children');
     }
 
     public function test_children_inherit_type_and_is_core()
     {
         $children = DB::table('module_registry')->where('parent_key', 'dealership')->get();
-        $this->assertCount(21, $children);
+        $this->assertCount(25, $children);
 
         foreach ($children as $child) {
             $this->assertEquals('core', $child->type, $child->key);
@@ -155,7 +155,7 @@ class DealershipPhase4Test extends TestCase
             ->where('parent_key', 'dealership')
             ->where('status', 'active')
             ->count();
-        $this->assertEquals(21, $count);
+        $this->assertEquals(25, $count);
     }
 
     public function test_permissions_count_is_43_and_idempotent()
@@ -164,7 +164,7 @@ class DealershipPhase4Test extends TestCase
         (new DealershipPhase4PermissionsSeeder)->run();
 
         $count = DB::table('permissions')->where('module', 'dealership')->count();
-        $this->assertEquals(43, $count);
+        $this->assertEquals(51, $count);
         $this->assertTrue(DB::table('permissions')->where('slug', 'dashboard.view')->exists());
         $this->assertTrue(DB::table('permissions')->where('slug', 'sr_reports.export')->exists());
     }
