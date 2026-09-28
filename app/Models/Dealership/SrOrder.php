@@ -2,12 +2,15 @@
 
 namespace App\Models\Dealership;
 
+use App\Models\Concerns\TenantScoped;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SrOrder extends Model
 {
+    use TenantScoped;
+
     protected $table = 'dealership_sr_orders';
 
     protected $guarded = [];
@@ -30,13 +33,13 @@ class SrOrder extends Model
         return $this->hasMany(OrderApproval::class, 'sr_order_id');
     }
 
-    /** Pending Phase 1 entity models. */
+    /** Phase 1 entity. */
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'customer_id');
     }
 
-    /** Pending Phase 1 entity models. */
+    /** Phase 1 entity. */
     public function salesForce(): BelongsTo
     {
         return $this->belongsTo(SalesForce::class, 'sales_force_id');

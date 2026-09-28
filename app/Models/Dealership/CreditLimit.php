@@ -2,11 +2,14 @@
 
 namespace App\Models\Dealership;
 
+use App\Models\Concerns\TenantScoped;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CreditLimit extends Model
 {
+    use TenantScoped;
+
     protected $table = 'dealership_credit_limits';
 
     protected $guarded = [];
@@ -17,7 +20,7 @@ class CreditLimit extends Model
         'last_reviewed_at' => 'datetime',
     ];
 
-    /** Pending Phase 1 entity models. */
+    /** Phase 1 entity. */
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'customer_id');

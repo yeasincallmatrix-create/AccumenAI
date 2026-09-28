@@ -2,11 +2,14 @@
 
 namespace App\Models\Dealership;
 
+use App\Models\Concerns\TenantScoped;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SrCollection extends Model
 {
+    use TenantScoped;
+
     protected $table = 'dealership_sr_collections';
 
     protected $guarded = [];
@@ -21,13 +24,13 @@ class SrCollection extends Model
         return $this->belongsTo(SrOrder::class, 'sr_order_id');
     }
 
-    /** Pending Phase 1 entity models. */
+    /** Phase 1 entity. */
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class, 'customer_id');
     }
 
-    /** Pending Phase 1 entity models. */
+    /** Phase 1 entity. */
     public function salesForce(): BelongsTo
     {
         return $this->belongsTo(SalesForce::class, 'sales_force_id');

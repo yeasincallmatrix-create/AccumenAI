@@ -3,9 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\Country;
+use App\Models\Dealership\Brand;
 use App\Models\Dealership\CreditLimit;
+use App\Models\Dealership\Customer;
 use App\Models\Dealership\OrderApproval;
 use App\Models\Dealership\PriceList;
+use App\Models\Dealership\Product;
+use App\Models\Dealership\SalesForce;
 use App\Models\Dealership\SrCollection;
 use App\Models\Dealership\SrOrder;
 use App\Models\Institute;
@@ -87,6 +91,18 @@ class DealershipPhase2Test extends TestCase
         return $this->makeOwner($this->makeInstitute('Dealer Test '.uniqid()));
     }
 
+    /** Real FK parent rows (brand, products, customer, SR) for the given institute. */
+    private function dealerFixtures(Institute $inst, string $suffix): array
+    {
+        $brand = Brand::create(['institute_id' => $inst->id, 'code' => 'B-'.$suffix, 'name' => 'Brand '.$suffix]);
+        $p1 = Product::create(['institute_id' => $inst->id, 'brand_id' => $brand->id, 'sku' => 'P1-'.$suffix, 'name' => 'P1 '.$suffix]);
+        $p2 = Product::create(['institute_id' => $inst->id, 'brand_id' => $brand->id, 'sku' => 'P2-'.$suffix, 'name' => 'P2 '.$suffix]);
+        $customer = Customer::create(['institute_id' => $inst->id, 'code' => 'C-'.$suffix, 'name' => 'Shop '.$suffix]);
+        $sr = SalesForce::create(['institute_id' => $inst->id, 'employee_code' => 'SR-'.$suffix, 'name' => 'Rep '.$suffix]);
+
+        return [$brand, $p1, $p2, $customer, $sr];
+    }
+
     public function test_registry_has_six_new_children()
     {
         $keys = [
@@ -162,12 +178,15 @@ class DealershipPhase2Test extends TestCase
 
     public function test_order_approve_writes_audit_row()
     {
-        $owner = $this->ownerContext();
+        $inst = $this->makeInstitute('Dealer Approve '.uniqid());
+        [, , , $customer, $sr] = $this->dealerFixtures($inst, uniqid());
+        $owner = $this->makeOwner($inst);
 
         $order = SrOrder::create([
+            'institute_id' => $inst->id,
             'order_no' => 'SO-TEST-'.uniqid(),
-            'customer_id' => 9001,
-            'sales_force_id' => 9002,
+            'customer_id' => $customer->id,
+            'sales_force_id' => $sr->id,
             'channel' => 'retail',
             'subtotal' => 1000,
             'discount' => 0,
@@ -189,12 +208,14 @@ class DealershipPhase2Test extends TestCase
 
     public function test_collection_store_creates_row()
     {
-        $owner = $this->ownerContext();
+        $inst = $this->makeInstitute('Dealer Collect '.uniqid());
+        [, , , $customer, $sr] = $this->dealerFixtures($inst, uniqid());
+        $owner = $this->makeOwner($inst);
 
         $this->actingAs($owner, 'institute_user')
             ->post(route('dealership.collections.store'), [
-                'customer_id' => 9101,
-                'sales_force_id' => 9102,
+                'customer_id' => $customer->id,
+                'sales_force_id' => $sr->id,
                 'method' => 'cash',
                 'amount' => 500.50,
                 'collected_on' => now()->toDateString(),
@@ -202,55 +223,62 @@ class DealershipPhase2Test extends TestCase
             ->assertRedirect(route('dealership.collections.index'));
 
         $this->assertTrue(
-            SrCollection::where('customer_id', 9101)->where('amount', 500.50)->exists()
+            SrCollection::where('customer_id', $customer->id)->where('amount', 500.50)->exists()
         );
 
         $this->actingAs($owner, 'institute_user')
             ->post(route('dealership.collections.store'), [
-                'customer_id' => 9101,
-                'sales_force_id' => 9102,
+                'customer_id' => $customer->id,
+                'sales_force_id' => $sr->id,
                 'method' => 'cash',
                 'amount' => 0,
                 'collected_on' => now()->toDateString(),
             ])
             ->assertRedirect();
 
-        $this->assertEquals(1, SrCollection::where('customer_id', 9101)->count(), 'amount <= 0 must be rejected');
+        $this->assertEquals(1, SrCollection::where('customer_id', $customer->id)->count(), 'amount <= 0 must be rejected');
     }
 
     public function test_credit_block_prevents_new_order()
     {
-        $owner = $this->ownerContext();
+        $inst = $this->makeInstitute('Dealer Block '.uniqid());
+        [, , , $customer, $sr] = $this->dealerFixtures($inst, uniqid());
+        $owner = $this->makeOwner($inst);
 
         CreditLimit::create([
-            'customer_id' => 9201,
+            'institute_id' => $inst->id,
+            'customer_id' => $customer->id,
             'credit_limit' => 10000,
             'is_blocked' => true,
         ]);
 
         $this->actingAs($owner, 'institute_user')
             ->post(route('dealership.orders.store'), [
-                'customer_id' => 9201,
-                'sales_force_id' => 9202,
+                'customer_id' => $customer->id,
+                'sales_force_id' => $sr->id,
                 'channel' => 'retail',
                 'items' => [['product_id' => 1, 'qty' => 2, 'unit_price' => 100]],
             ])
             ->assertRedirect();
 
-        $this->assertEquals(0, SrOrder::where('customer_id', 9201)->count(), 'blocked customer must not create orders');
+        $this->assertEquals(0, SrOrder::where('customer_id', $customer->id)->count(), 'blocked customer must not create orders');
     }
 
     public function test_price_list_effective_date_filter()
     {
-        $owner = $this->ownerContext();
+        $inst = $this->makeInstitute('Dealer Price '.uniqid());
+        [$brand, $p1, $p2] = $this->dealerFixtures($inst, uniqid());
+        $owner = $this->makeOwner($inst);
 
         PriceList::create([
-            'brand_id' => 9301, 'product_id' => 9302, 'channel' => 'retail',
+            'institute_id' => $inst->id,
+            'brand_id' => $brand->id, 'product_id' => $p1->id, 'channel' => 'retail',
             'price' => 111.11, 'effective_from' => '2026-01-01', 'effective_to' => '2026-12-31',
             'is_active' => true,
         ]);
         PriceList::create([
-            'brand_id' => 9301, 'product_id' => 9303, 'channel' => 'retail',
+            'institute_id' => $inst->id,
+            'brand_id' => $brand->id, 'product_id' => $p2->id, 'channel' => 'retail',
             'price' => 999.99, 'effective_from' => '2027-01-01', 'effective_to' => '2027-12-31',
             'is_active' => true,
         ]);

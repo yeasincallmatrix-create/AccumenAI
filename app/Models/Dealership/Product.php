@@ -6,30 +6,22 @@ use App\Models\Concerns\TenantScoped;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class PriceList extends Model
+class Product extends Model
 {
     use TenantScoped;
 
-    protected $table = 'dealership_price_lists';
+    protected $table = 'dealership_products';
 
     protected $guarded = [];
 
     protected $casts = [
-        'price' => 'decimal:2',
-        'effective_from' => 'date',
-        'effective_to' => 'date',
+        'retail_price' => 'decimal:2',
+        'wholesale_price' => 'decimal:2',
         'is_active' => 'boolean',
     ];
 
-    /** Phase 1 entity. */
     public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class, 'brand_id');
-    }
-
-    /** Phase 1 entity. */
-    public function product(): BelongsTo
-    {
-        return $this->belongsTo(Product::class, 'product_id');
     }
 }
