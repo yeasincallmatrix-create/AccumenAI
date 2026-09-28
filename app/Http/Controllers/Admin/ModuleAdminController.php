@@ -57,7 +57,95 @@ class ModuleAdminController extends Controller
             $packageModules[$pkg->id] = $pkg->packageModules()->pluck('enabled', 'module_key')->toArray();
         }
 
-        return view('admin.modules.index', compact('modules', 'packages', 'packageModules', 'industries', 'selectedIndustryId'));
+        // ── Group by Industry → Parent Module ────────────────────────────
+        // Industry is derived from the module root key (no industry_id column
+        // on module_registry; scoped-module table is empty so DB cannot drive it).
+        $groupedModules = $this->groupModulesByIndustryAndParent($modules, $industries);
+
+        // When an industry filter is active, narrow the groups to
+        // Shared + the selected industry instead of pre-filtering the flat list.
+        $selectedIndustrySlug = null;
+        if ($selectedIndustryId) {
+            $selectedIndustrySlug = $industries->firstWhere('id', (int) $selectedIndustryId)?->slug;
+            if ($selectedIndustrySlug) {
+                $groupedModules = array_filter(
+                    $groupedModules,
+                    fn ($slug) => $slug === 'shared' || $slug === $selectedIndustrySlug,
+                    ARRAY_FILTER_USE_KEY
+                );
+            }
+        }
+
+        return view('admin.modules.index', compact('modules', 'packages', 'packageModules', 'industries', 'selectedIndustryId', 'groupedModules'));
+    }
+
+    /**
+     * Group modules as Industry slug → Parent key → [modules].
+     *
+     * Industry from root key: education, training_center, medical→healthcare,
+     * restaurant, real_estate, manufacturing, retail; everything else → shared.
+     * Parent group = parent_key ?: key (roots head their own group, first row).
+     *
+     * @return array<string, array{label: string, parents: array<string, array{parent: mixed, children: mixed}>}>
+     */
+    protected function groupModulesByIndustryAndParent($modules, $industries): array
+    {
+        $rootToIndustry = [
+            'education' => 'education',
+            'training_center' => 'training_center',
+            'medical' => 'healthcare',
+            'restaurant' => 'restaurant',
+            'real_estate' => 'real_estate',
+            'manufacturing' => 'manufacturing',
+            'retail' => 'retail',
+        ];
+
+        $industryLabels = ['shared' => 'Shared / Core (All Industries)'];
+        foreach ($industries as $ind) {
+            $industryLabels[$ind->slug] = $ind->name;
+        }
+
+        $byKey = $modules->keyBy('key');
+
+        $grouped = [];
+        foreach ($modules as $module) {
+            $root = explode('.', $module->key, 2)[0];
+            $industry = $rootToIndustry[$root] ?? 'shared';
+            $parentKey = $module->parent_key ?: $module->key;
+
+            // Orphan child whose parent row is missing still groups under its parent_key.
+            $grouped[$industry]['label'] = $industryLabels[$industry] ?? ucfirst($industry);
+            $grouped[$industry]['parents'][$parentKey]['parent'] = $byKey->get($parentKey);
+            $grouped[$industry]['parents'][$parentKey]['children'][] = $module;
+        }
+
+        // Deterministic order: shared first, then industry slugs alphabetically;
+        // parents sorted by parent name, children keep sort_order.
+        $order = fn ($slug) => $slug === 'shared' ? 0 : 1;
+        uksort($grouped, fn ($a, $b) => [$order($a), $a] <=> [$order($b), $b]);
+        foreach ($grouped as $slug => &$group) {
+            uasort($group['parents'], function ($a, $b) {
+                $an = $a['parent']?->name ?? ($a['children'][0]->parent_key ?? '');
+                $bn = $b['parent']?->name ?? ($b['children'][0]->parent_key ?? '');
+                return strcasecmp($an, $bn);
+            });
+            // Parent module row first, then children in sort_order.
+            foreach ($group['parents'] as $pKey => &$pg) {
+                usort($pg['children'], function ($a, $b) use ($pKey) {
+                    if ($a->key === $pKey) {
+                        return -1;
+                    }
+                    if ($b->key === $pKey) {
+                        return 1;
+                    }
+                    return ($a->sort_order ?? 0) <=> ($b->sort_order ?? 0);
+                });
+            }
+            unset($pg);
+        }
+        unset($group);
+
+        return $grouped;
     }
 
     public function update(ModuleRegistry $module, Request $request): RedirectResponse

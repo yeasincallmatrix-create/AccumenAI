@@ -10,7 +10,16 @@ use Tests\TestCase;
 class Part2IndustryPackagesTest extends TestCase
 {
     private array $industries = [
-        'real_estate', 'manufacturing', 'medical', 'training_center', 'education',
+        'real_estate', 'manufacturing', 'healthcare', 'training_center', 'education',
+    ];
+
+    /** Package slug prefix per industry (healthcare packages keep medical_* slugs). */
+    private array $slugPrefixes = [
+        'real_estate' => 'real_estate',
+        'manufacturing' => 'manufacturing',
+        'healthcare' => 'medical',
+        'training_center' => 'training_center',
+        'education' => 'education',
     ];
 
     public function test_all_15_packages_exist()
@@ -24,8 +33,9 @@ class Part2IndustryPackagesTest extends TestCase
     public function test_each_industry_has_3_tiers()
     {
         foreach ($this->industries as $industry) {
+            $prefix = $this->slugPrefixes[$industry];
             $count = DB::table('subscription_packages')
-                ->where('slug', 'LIKE', "{$industry}_%")
+                ->where('slug', 'LIKE', "{$prefix}_%")
                 ->count();
             $this->assertEquals(3, $count, "Industry {$industry} should have 3 tiers");
         }

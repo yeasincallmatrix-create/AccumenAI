@@ -384,8 +384,11 @@
                     <a class="nav-link {{ request()->routeIs('admin.module-config.*') ? 'active' : '' }}" href="{{ route('admin.module-config.index') }}">
                         <i class="bi bi-sliders2"></i><span class="sidebar-label">Module Config</span>
                     </a>
-                    <a class="nav-link {{ request()->routeIs('admin.package-industries.*') ? 'active' : '' }}" href="{{ route('admin.package-industries.index') }}">
+                    <a class="nav-link {{ request()->routeIs('admin.package-industries.*') && ! request()->routeIs('admin.package-industries.pricing-cards') ? 'active' : '' }}" href="{{ route('admin.package-industries.index') }}">
                         <i class="bi bi-box-seam"></i><span class="sidebar-label">Package by Industry</span>
+                    </a>
+                    <a class="nav-link {{ request()->routeIs('admin.package-industries.pricing-cards') ? 'active' : '' }}" href="{{ route('admin.package-industries.pricing-cards') }}">
+                        <i class="bi bi-tag-fill"></i><span class="sidebar-label">Package pricing card</span>
                     </a>
 
                     {{-- ═══ CONFIGURATION ═══ --}}

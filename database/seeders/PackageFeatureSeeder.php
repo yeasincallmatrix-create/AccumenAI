@@ -21,7 +21,14 @@ class PackageFeatureSeeder extends Seeder
             return;
         }
 
-        $packageSlugs = ['free', 'basic', 'advanced', 'premium'];
+        // All active packages (legacy free/basic/advanced/premium AND
+        // industry starter/growth/enterprise tiers). A feature is enabled
+        // for a package when its parent module is enabled for that package
+        // (legacy package_modules, backfilled from package_industry_modules
+        // + core for industry tiers).
+        $packageSlugs = \App\Models\SubscriptionPackage::where('status', 'active')
+            ->pluck('slug')
+            ->all();
 
         $created = 0;
         $updated = 0;

@@ -5,28 +5,29 @@ use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
+    /**
+     * Single healthcare industry tab (supersedes the earlier display rename
+     * that kept a duplicate 'medical' row and deactivated 'healthcare').
+     *
+     * Ensures: healthcare active named Healthcare; medical row removed.
+     */
     public function up(): void
     {
         DB::transaction(function () {
-            // 1. Rename medical row's DISPLAY NAME (slug stays 'medical')
+            // 1. Ensure the canonical healthcare row is active.
             $updated = DB::table('industries')
-                ->where('slug', 'medical')
+                ->where('slug', 'healthcare')
                 ->update([
                     'name' => 'Healthcare',
                     'description' => 'Healthcare industry (hospitals, clinics, diagnostics, pharmacy)',
+                    'status' => 'active',
                     'updated_at' => now(),
                 ]);
-            echo "Medical row display renamed to Healthcare: {$updated}\n";
+            echo "Healthcare row ensured active: {$updated}\n";
 
-            // 2. Deactivate duplicate healthcare slug row
-            $deactivated = DB::table('industries')
-                ->where('slug', 'healthcare')
-                ->update([
-                    'status' => 'inactive',
-                    'description' => 'Legacy duplicate — merged into medical (display: Healthcare). Full key rename deferred.',
-                    'updated_at' => now(),
-                ]);
-            echo "Healthcare duplicate deactivated: {$deactivated}\n";
+            // 2. Remove the duplicate medical slug row.
+            $deleted = DB::table('industries')->where('slug', 'medical')->delete();
+            echo "Duplicate medical row removed: {$deleted}\n";
 
             // 3. Verify active count
             $active = DB::table('industries')->where('status', 'active')->count();
@@ -36,9 +37,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        DB::table('industries')->where('slug', 'medical')
-            ->update(['name' => 'Medical', 'description' => null, 'updated_at' => now()]);
-        DB::table('industries')->where('slug', 'healthcare')
-            ->update(['status' => 'active', 'description' => null, 'updated_at' => now()]);
+        echo "No-op: single-healthcare merge is not auto-reversible.\n";
     }
 };

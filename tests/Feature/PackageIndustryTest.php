@@ -28,8 +28,11 @@ class PackageIndustryTest extends TestCase
 
         // Hermetic: every resolution assertion assumes an unconfigured
         // industry. Rows are cleared inside the per-test transaction.
+        // Country prices cleared too: institutes default to Bangladesh,
+        // so dump BD rows would otherwise win over industry rows.
         DB::table('package_industries')->delete();
         DB::table('package_industry_modules')->delete();
+        DB::table('package_country_prices')->delete();
     }
 
     // ── Schema ──────────────────────────────────────────────────────
@@ -136,7 +139,7 @@ class PackageIndustryTest extends TestCase
 
         $this->get(route('admin.package-industries.show-modules', [
             'package' => $package->id,
-            'industry' => 'medical',
+            'industry' => 'healthcare',
         ]))->assertOk()->assertSee('Modules');
 
         $moduleKey = DB::table('module_registry')
@@ -148,18 +151,18 @@ class PackageIndustryTest extends TestCase
 
         $this->put(route('admin.package-industries.update-modules', [
             'package' => $package->id,
-            'industry' => 'medical',
+            'industry' => 'healthcare',
         ]), [
             'modules' => [$moduleKey],
         ])->assertRedirect(route('admin.package-industries.show-modules', [
             'package' => $package->id,
-            'industry' => 'medical',
+            'industry' => 'healthcare',
         ]));
 
         $this->assertTrue(
             DB::table('package_industry_modules')
                 ->where('package_id', $package->id)
-                ->where('industry_key', 'medical')
+                ->where('industry_key', 'healthcare')
                 ->where('module_key', $moduleKey)
                 ->where('enabled', true)
                 ->exists()
@@ -180,14 +183,14 @@ class PackageIndustryTest extends TestCase
 
     public function test_seeder_maps_expected_industries(): void
     {
-        DB::table('package_industries')->where('industry_key', 'medical')->delete();
+        DB::table('package_industries')->where('industry_key', 'healthcare')->delete();
 
         (new PackageIndustrySeeder)->run();
 
         $expected = [
-            'medical' => ['free', 'basic', 'advanced', 'premium', 'medical_starter', 'medical_growth', 'medical_enterprise'],
-            'education' => ['free', 'basic', 'advanced', 'education_starter', 'education_growth', 'education_enterprise'],
-            'manufacturing' => ['free', 'basic', 'advanced', 'manufacturing_starter', 'manufacturing_growth', 'manufacturing_enterprise'],
+            'healthcare' => ['free', 'medical_starter', 'medical_growth', 'medical_enterprise'],
+            'education' => ['free', 'education_starter', 'education_growth', 'education_enterprise'],
+            'manufacturing' => ['free', 'manufacturing_starter', 'manufacturing_growth', 'manufacturing_enterprise'],
         ];
 
         foreach ($expected as $industry => $slugs) {

@@ -579,6 +579,7 @@ Route::post('admin/module-config/copy', [\App\Http\Controllers\Admin\UniversalMo
 Route::prefix('admin/package-industries')->name('admin.package-industries.')->middleware($adminMiddleware)->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\PackageIndustryController::class, 'index'])->name('index');
     Route::put('/', [\App\Http\Controllers\Admin\PackageIndustryController::class, 'update'])->name('update');
+    Route::get('pricing-cards', [\App\Http\Controllers\Admin\PackageIndustryController::class, 'pricingCards'])->name('pricing-cards');
     Route::get('{package}/{industry}/modules', [\App\Http\Controllers\Admin\PackageIndustryController::class, 'showModules'])->name('show-modules')->whereNumber('package');
     Route::put('{package}/{industry}/modules', [\App\Http\Controllers\Admin\PackageIndustryController::class, 'updateModules'])->name('update-modules')->whereNumber('package');
     Route::post('country-prices', [\App\Http\Controllers\Admin\PackageCountryPriceController::class, 'save'])->name('country-prices.save');

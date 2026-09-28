@@ -8,23 +8,24 @@ use Illuminate\Support\Facades\DB;
 class PackageIndustrySeeder extends Seeder
 {
     /**
-     * Default package ↔ industry offer matrix (full 43-row local truth):
-     * universal tiers + the industry's vertical tier packages.
+     * Default package ↔ industry offer matrix (industry tiers only):
+     * free (fail-closed fallback, never removed) + the industry's
+     * vertical starter/growth/enterprise packages.
      *
-     * Missing packages (e.g. verticals not yet seeded) are skipped with a
-     * warning, so the seeder degrades to the universal rows on databases
-     * that only have free/basic/advanced/premium.
+     * Legacy basic/advanced/premium are intentionally NOT offered
+     * (Phase 2 unmap). Missing packages (e.g. verticals not yet seeded)
+     * are skipped with a warning.
      *
      * @var array<string, array<int, string>>
      */
     protected array $mappings = [
-        'medical' => ['free', 'basic', 'advanced', 'premium', 'medical_starter', 'medical_growth', 'medical_enterprise'],
-        'education' => ['free', 'basic', 'advanced', 'education_starter', 'education_growth', 'education_enterprise'],
-        'training_center' => ['free', 'basic', 'training_center_starter', 'training_center_growth', 'training_center_enterprise'],
-        'retail' => ['free', 'basic', 'advanced', 'premium', 'retail_starter', 'retail_growth', 'retail_enterprise'],
-        'manufacturing' => ['free', 'basic', 'advanced', 'manufacturing_starter', 'manufacturing_growth', 'manufacturing_enterprise'],
-        'real_estate' => ['free', 'basic', 'real_estate_starter', 'real_estate_growth', 'real_estate_enterprise'],
-        'restaurant' => ['free', 'basic', 'advanced', 'premium', 'restaurant_starter', 'restaurant_growth', 'restaurant_enterprise'],
+        'healthcare' => ['free', 'medical_starter', 'medical_growth', 'medical_enterprise'],
+        'education' => ['free', 'education_starter', 'education_growth', 'education_enterprise'],
+        'training_center' => ['free', 'training_center_starter', 'training_center_growth', 'training_center_enterprise'],
+        'retail' => ['free', 'retail_starter', 'retail_growth', 'retail_enterprise'],
+        'manufacturing' => ['free', 'manufacturing_starter', 'manufacturing_growth', 'manufacturing_enterprise'],
+        'real_estate' => ['free', 'real_estate_starter', 'real_estate_growth', 'real_estate_enterprise'],
+        'restaurant' => ['free', 'restaurant_starter', 'restaurant_growth', 'restaurant_enterprise'],
     ];
 
     public function run(): void

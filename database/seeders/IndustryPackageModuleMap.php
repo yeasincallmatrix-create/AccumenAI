@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
  * Every key below was verified against module_registry (status=active)
  * in the Part 2 Step 1.2 audit:
  *
- *   real_estate 48 · manufacturing 22 · medical 14 ·
+ *   real_estate 48 · manufacturing 22 · healthcare (medical.* modules) 14 ·
  *   training_center 9 · education 7
  *
  * POS is a module group (not an industry) — its tier map was removed with
@@ -93,7 +93,7 @@ class IndustryPackageModuleMap
                 ],
             ],
 
-            'medical' => [
+            'healthcare' => [
                 'starter' => [
                     'medical.opd', 'medical.ipd', 'medical.pharmacy',
                     'medical.laboratory', 'medical.billing',

@@ -51,25 +51,26 @@ class FoundationFixesTest extends TestCase
         $this->assertSame([$mapped], $distinct->all());
     }
 
-    // ── Fix 3: healthcare -> medical (Option D scoped rename) ──────
+    // ── Fix 3: single healthcare industry (medical duplicate removed) ──────
 
-    public function test_healthcare_renamed_to_medical(): void
+    public function test_healthcare_is_single_industry(): void
     {
-        $healthcare = DB::table('package_industries')
-            ->where('industry_key', 'healthcare')
+        $medical = DB::table('package_industries')
+            ->where('industry_key', 'medical')
             ->count();
-        $this->assertSame(0, $healthcare, 'legacy healthcare package rows must be renamed to medical');
+        $this->assertSame(0, $medical, 'package rows must use healthcare, not medical');
 
-        // The test DB never carried healthcare package rows (only restaurant);
-        // the local DB must show the 4 renamed rows.
+        // The test DB never carries healthcare package rows (cleared per test);
+        // the local DB must show the 7 re-keyed rows.
         if (! app()->environment('testing')) {
-            $medical = DB::table('package_industries')
-                ->where('industry_key', 'medical')
+            $healthcare = DB::table('package_industries')
+                ->where('industry_key', 'healthcare')
                 ->count();
-            $this->assertSame(4, $medical);
+            $this->assertSame(7, $healthcare);
         }
 
-        $this->assertSame(1, DB::table('industries')->where('slug', 'medical')->count());
+        $this->assertSame(0, DB::table('industries')->where('slug', 'medical')->count());
+        $this->assertSame(1, DB::table('industries')->where('slug', 'healthcare')->count());
     }
 
     public function test_legacy_healthcare_taxonomy_preserved(): void

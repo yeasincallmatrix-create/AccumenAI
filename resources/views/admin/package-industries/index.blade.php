@@ -109,6 +109,8 @@
                         <th style="width:140px">Modules</th>
                         <th style="width:170px">Price / month <span class="text-muted small">({{ $country !== '' ? $countryCurrency : 'BDT' }})</span></th>
                         <th style="width:170px">Price / year <span class="text-muted small">({{ $country !== '' ? $countryCurrency : 'BDT' }})</span></th>
+                        <th style="width:200px">Discount</th>
+                        <th style="width:100px">Trial days</th>
                         <th style="width:110px">Sort</th>
                         <th style="width:190px"></th>
                     </tr>
@@ -189,6 +191,75 @@
                                 </div>
                             </td>
                             <td>
+                                <div class="input-group input-group-sm mb-1">
+                                    <input type="number" step="0.01" min="0" max="100" class="form-control"
+                                           name="discount_percent[{{ $pkg->id }}]"
+                                           value="{{ $row['discount_percent'] }}"
+                                           placeholder="0"
+                                           aria-label="{{ $pkg->name }} discount percent">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <input type="date" class="form-control form-control-sm mb-1"
+                                       name="discount_ends_at[{{ $pkg->id }}]"
+                                       value="{{ $row['discount_ends_at'] }}"
+                                       aria-label="{{ $pkg->name }} discount end date">
+                                @if ($country !== '')
+                                    @php $cp = $countryPrices->get($pkg->id); @endphp
+                                    <div class="input-group input-group-sm mb-1">
+                                        <input type="number" step="0.01" min="0" max="100" class="form-control js-country-price"
+                                               data-package="{{ $pkg->id }}"
+                                               data-field="discount_percent"
+                                               value="{{ $cp?->discount_percent ?? '' }}"
+                                               placeholder="0"
+                                               aria-label="{{ $pkg->name }} {{ $country }} discount percent">
+                                        <span class="input-group-text">% {{ $country }}</span>
+                                    </div>
+                                    <div class="d-flex gap-1 mb-1">
+                                        <input type="date" class="form-control form-control-sm js-country-price"
+                                               data-package="{{ $pkg->id }}"
+                                               data-field="discount_ends_at"
+                                               value="{{ $cp?->discount_ends_at ?? '' }}"
+                                               aria-label="{{ $pkg->name }} {{ $country }} discount end date">
+                                        <input type="number" min="0" max="365" class="form-control form-control-sm js-country-price"
+                                               data-package="{{ $pkg->id }}"
+                                               data-field="trial_days"
+                                               value="{{ $cp?->trial_days ?? '' }}"
+                                               placeholder="Trial"
+                                               title="{{ $country }} trial days (empty = inherit industry, 0 = blocked)"
+                                               aria-label="{{ $pkg->name }} {{ $country }} trial days">
+                                    </div>
+                                @endif
+                                @if (empty($row['discount_percent']) || (float) $row['discount_percent'] <= 0)
+                                    <div class="text-muted small">no discount</div>
+                                @elseif (! $row['discount_active'])
+                                    <div><span class="badge text-bg-danger badge-soft">Expired</span></div>
+                                @elseif ($row['discount_days_left'] === null)
+                                    <div><span class="badge text-bg-info badge-soft">{{ rtrim(rtrim((string) $row['discount_percent'], '0'), '.') }}% off · no end date</span></div>
+                                    <div class="text-success small fw-semibold">{{ number_format($row['price_monthly_effective'], 2) }} / {{ number_format($row['price_yearly_effective'], 2) }}</div>
+                                @elseif ($row['discount_days_left'] === 0)
+                                    <div><span class="badge text-bg-warning badge-soft">Ends today</span></div>
+                                    <div class="text-success small fw-semibold">{{ number_format($row['price_monthly_effective'], 2) }} / {{ number_format($row['price_yearly_effective'], 2) }}</div>
+                                @else
+                                    <div><span class="badge text-bg-success badge-soft">{{ $row['discount_days_left'] }} {{ $row['discount_days_left'] === 1 ? 'day' : 'days' }} left</span></div>
+                                    <div class="text-success small fw-semibold">{{ number_format($row['price_monthly_effective'], 2) }} / {{ number_format($row['price_yearly_effective'], 2) }}</div>
+                                @endif
+                            </td>
+                            <td>
+                                <input type="number" min="0" max="365" class="form-control form-control-sm"
+                                       name="trial_days[{{ $pkg->id }}]"
+                                       value="{{ $row['trial_days'] }}"
+                                       placeholder="0"
+                                       title="Trial days for all countries (empty = none, 0 = blocked)"
+                                       aria-label="{{ $pkg->name }} trial days">
+                                @if ($row['trial_days'] === null)
+                                    <div class="text-muted small">no trial</div>
+                                @elseif ((int) $row['trial_days'] === 0)
+                                    <div><span class="badge text-bg-danger badge-soft">Blocked{{ $country !== '' ? ' in '.$country : '' }}</span></div>
+                                @else
+                                    <div class="text-muted small">{{ $row['trial_days'] }}-day trial</div>
+                                @endif
+                            </td>
+                            <td>
                                 <input type="number" min="0" max="9999" class="form-control form-control-sm"
                                        name="sort_order[{{ $pkg->id }}]"
                                        value="{{ $row['sort_order'] }}">
@@ -202,7 +273,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-4">No active packages found.</td>
+                            <td colspan="9" class="text-center text-muted py-4">No active packages found.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -253,13 +324,12 @@
         document.querySelectorAll('.js-country-price').forEach(function (input) {
             var packageId = input.getAttribute('data-package');
             if (!byPackage[packageId]) {
-                byPackage[packageId] = { package_id: parseInt(packageId, 10), monthly: null, yearly: null };
+                byPackage[packageId] = { package_id: parseInt(packageId, 10), monthly: null, yearly: null, discount_percent: null, discount_ends_at: null, trial_days: null };
             }
             var value = input.value === '' ? null : input.value;
-            if (input.getAttribute('data-field') === 'monthly') {
-                byPackage[packageId].monthly = value;
-            } else {
-                byPackage[packageId].yearly = value;
+            var field = input.getAttribute('data-field');
+            if (field === 'monthly' || field === 'yearly' || field === 'discount_percent' || field === 'discount_ends_at' || field === 'trial_days') {
+                byPackage[packageId][field] = value;
             }
         });
 

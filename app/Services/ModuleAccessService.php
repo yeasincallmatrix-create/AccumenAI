@@ -1100,6 +1100,175 @@ class ModuleAccessService
     }
 
     /**
+     * Trial access (package trial days).
+     *
+     * While an institute holds an active trial subscription
+     * (billing_cycle='trial', status='active', end_date NULL/future) for a
+     * tier package offered in its industry, it resolves modules/features
+     * from the trial package — but institutes.package_id stays FREE, so
+     * billing/entitlement remains free. Expired trials fall back to FREE.
+     */
+    public function activeTrialPackageId(Institute $institute): ?int
+    {
+        try {
+            $trial = DB::table('institute_subscriptions')
+                ->where('institute_id', $institute->id)
+                ->where('billing_cycle', 'trial')
+                ->where('status', 'active')
+                ->orderByDesc('id')
+                ->first();
+
+            if (! $trial || ! $trial->package_id) {
+                return null;
+            }
+
+            $endDate = $trial->end_date ?? null;
+            if ($endDate !== null && $endDate !== '' && Carbon::parse((string) $endDate)->startOfDay()->lt(Carbon::today())) {
+                return null;
+            }
+
+            $package = SubscriptionPackage::find($trial->package_id);
+            if (! $package || ($package->status ?? null) !== 'active' || $this->isFreePackage((int) $package->id)) {
+                return null;
+            }
+
+            $industryKey = $institute->industry ?? '';
+            if ($industryKey === '') {
+                return null;
+            }
+
+            $map = $this->industryPackageMap($industryKey);
+            if ($map === null || ! isset($map[$package->id])) {
+                return null;
+            }
+
+            return (int) $package->id;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Days left on the running trial, null when no trial is active.
+     */
+    public function trialDaysLeft(Institute $institute): ?int
+    {
+        try {
+            $trial = DB::table('institute_subscriptions')
+                ->where('institute_id', $institute->id)
+                ->where('billing_cycle', 'trial')
+                ->where('status', 'active')
+                ->orderByDesc('id')
+                ->first();
+
+            if (! $trial || $this->activeTrialPackageId($institute) === null) {
+                return null;
+            }
+
+            $endDate = $trial->end_date ?? null;
+            if ($endDate === null || $endDate === '') {
+                return null;
+            }
+
+            return (int) floor((strtotime((string) $endDate) - strtotime(date('Y-m-d'))) / 86400);
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Start a trial subscription for a tier package.
+     *
+     * Window comes from package_industries.trial_days (per industry).
+     * The institute's package_id is untouched (stays FREE) — access
+     * resolves from the trial package via activeTrialPackageId().
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function startTrial(Institute $institute, int $packageId, ?int $actorId = null): object
+    {
+        $package = SubscriptionPackage::find($packageId);
+        if (! $package || ($package->status ?? null) !== 'active') {
+            throw \Illuminate\Validation\ValidationException::withMessages(['package_id' => 'Selected package is not available.']);
+        }
+        if ($this->isFreePackage($packageId)) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['package_id' => 'FREE package does not need a trial.']);
+        }
+
+        $industryKey = $institute->industry ?? '';
+        if ($industryKey === '') {
+            throw \Illuminate\Validation\ValidationException::withMessages(['industry' => 'Institute industry is not set.']);
+        }
+
+        $map = $this->industryPackageMap($industryKey);
+        if ($map === null || ! isset($map[$packageId])) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['package_id' => 'Package is not offered in this industry.']);
+        }
+
+        $trialDays = $this->packageTrialDays($packageId, $institute);
+
+        if ($trialDays === null || (int) $trialDays <= 0) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['package_id' => 'Trial is not offered for this package.']);
+        }
+
+        $id = DB::table('institute_subscriptions')->insertGetId([
+            'institute_id' => $institute->id,
+            'package_id' => $packageId,
+            'billing_cycle' => 'trial',
+            'price_paid' => 0,
+            'start_date' => now()->toDateString(),
+            'end_date' => now()->addDays((int) $trialDays)->toDateString(),
+            'payment_reference' => 'trial',
+            'status' => 'active',
+            'created_at' => now(),
+        ]);
+
+        $this->logAccess(
+            $institute->id,
+            $package->slug,
+            'trial_started',
+            $actorId,
+            null,
+            'trialing',
+            $institute->package_id,
+            "Trial started for {$package->slug} ({$trialDays} days)"
+        );
+
+        $this->flushCache($institute->id);
+        $this->flushFeatureCache($institute->id);
+
+        return DB::table('institute_subscriptions')->where('id', $id)->first();
+    }
+
+    /**
+     * Effective package id for feature resolution: trial package wins
+     * while a trial runs and the institute itself is entitled as FREE.
+     */
+    private function effectiveFeaturePackageId(Institute $institute): ?int
+    {
+        $packageId = $institute->package_id;
+        if ($packageId === null) {
+            $packageId = SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['free'])->value('id');
+        }
+
+        if ($packageId !== null && $this->isFreePackage((int) $packageId)) {
+            $trialPackageId = $this->activeTrialPackageId($institute);
+            if ($trialPackageId !== null) {
+                return $trialPackageId;
+            }
+        }
+
+        return $packageId !== null ? (int) $packageId : null;
+    }
+
+    private function isFreePackage(int $packageId): bool
+    {
+        $freeId = SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['free'])->value('id');
+
+        return $freeId !== null && (int) $freeId === $packageId;
+    }
+
+    /**
      * Get all active sub-modules for a given parent key, ordered by sort_order.
      */
     public function getSubModules(string $parentKey): \Illuminate\Support\Collection
@@ -1236,7 +1405,7 @@ class ModuleAccessService
         if ($scope) {
             $scopedKeys = $this->getScopedFeatureKeys($scope);
             if (! empty($scopedKeys)) {
-                $packageId = $institute->package_id ?? SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['free'])->first()?->id;
+                $packageId = $this->effectiveFeaturePackageId($institute);
                 if ($packageId !== null) {
                     $pkgKeys = PackageFeature::where('package_id', $packageId)
                         ->where('enabled', true)
@@ -1252,11 +1421,7 @@ class ModuleAccessService
         }
 
         if (empty($packageFeatureKeys)) {
-            $packageId = $institute->package_id;
-            if ($packageId === null) {
-                $free = SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['free'])->first();
-                $packageId = $free?->id;
-            }
+            $packageId = $this->effectiveFeaturePackageId($institute);
 
             if ($packageId !== null) {
                 $packageFeatureKeys = PackageFeature::where('package_id', $packageId)
@@ -1427,12 +1592,34 @@ class ModuleAccessService
 
     /**
      * Flush the feature-access cache for an institute.
+     *
+     * getFeatureAccessMap() keys include the scope hash
+     * (feature_access:{id}:{scopeHash}), so every scope variant for the
+     * institute's package must be forgotten — otherwise package changes
+     * leave stale entitlement maps behind.
      */
     public function flushFeatureCache(int $instituteId): void
     {
         Cache::forget($this->featureCachePrefix . $instituteId);
         // Also flush scope-aware keys (wildcard not possible, but GLOBAL is common)
         Cache::forget($this->featureCachePrefix . $instituteId . ':global');
+
+        try {
+            $institute = Institute::withoutGlobalScopes()->find($instituteId);
+            $packageId = $institute?->package_id
+                ?? SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['free'])->value('id');
+
+            if ($packageId !== null) {
+                $hashes = PackageScope::where('package_id', $packageId)
+                    ->pluck('scope_hash')
+                    ->unique();
+                foreach ($hashes as $hash) {
+                    Cache::forget($this->featureCachePrefix . $instituteId . ':' . $hash);
+                }
+            }
+        } catch (\Throwable $e) {
+            // Cache hygiene must never break the write path.
+        }
     }
 
     /**
@@ -1670,6 +1857,15 @@ class ModuleAccessService
             return [];
         }
 
+        // Trial: a tenant entitled as FREE resolves tier modules while an
+        // active trial subscription runs (package_id itself stays FREE).
+        if ($this->isFreePackage($packageId)) {
+            $trialPackageId = $this->activeTrialPackageId($institute);
+            if ($trialPackageId !== null) {
+                $packageId = $trialPackageId;
+            }
+        }
+
         // Per-industry package configuration (package_industries +
         // package_industry_modules). Only kicks in once an industry has been
         // configured; unconfigured industries keep the legacy behaviour below.
@@ -1705,6 +1901,31 @@ class ModuleAccessService
     }
 
     /**
+     * Canonical industry key for package-layer lookups.
+     *
+     * Tenant-facing industry is 'healthcare' (institutes.industry,
+     * config/industry-modules.php, industry_subcategories), while the
+     * package layer historically uses 'medical' (package_industries,
+     * package_industry_modules, IndustryPackageModuleMap, module keys
+     * medical.*). Both spellings exist in DB/tests, so every lookup below
+     * dual-reads both keys and unions them — no rename needed.
+     */
+    private function normalizeIndustryKey(string $industryKey): string
+    {
+        return $industryKey === 'healthcare' ? 'medical' : $industryKey;
+    }
+
+    /**
+     * All DB keys to check for an industry (raw + canonical alias, deduped).
+     *
+     * @return array<int, string>
+     */
+    private function industryLookupKeys(string $industryKey): array
+    {
+        return array_values(array_unique([$industryKey, $this->normalizeIndustryKey($industryKey)]));
+    }
+
+    /**
      * Per-industry package allow-list (package_industries).
      *
      * When the industry has at least one mapped package, a tenant holding a
@@ -1731,16 +1952,17 @@ class ModuleAccessService
      */
     private function industryPackageMap(string $industryKey): ?array
     {
-        if (array_key_exists($industryKey, $this->industryPackageMapMemo)) {
-            return $this->industryPackageMapMemo[$industryKey];
+        $memoKey = $this->normalizeIndustryKey($industryKey);
+        if (array_key_exists($memoKey, $this->industryPackageMapMemo)) {
+            return $this->industryPackageMapMemo[$memoKey];
         }
 
         if (! Schema::hasTable('package_industries')) {
-            return $this->industryPackageMapMemo[$industryKey] = null;
+            return $this->industryPackageMapMemo[$memoKey] = null;
         }
 
         $ids = DB::table('package_industries')
-            ->where('industry_key', $industryKey)
+            ->whereIn('industry_key', $this->industryLookupKeys($industryKey))
             ->where('is_active', true)
             ->pluck('package_id')
             ->map(fn ($id) => (int) $id)
@@ -1748,10 +1970,10 @@ class ModuleAccessService
 
         // No configuration for this industry → do not gate anything.
         if ($ids === []) {
-            return $this->industryPackageMapMemo[$industryKey] = null;
+            return $this->industryPackageMapMemo[$memoKey] = null;
         }
 
-        return $this->industryPackageMapMemo[$industryKey] = array_fill_keys($ids, true);
+        return $this->industryPackageMapMemo[$memoKey] = array_fill_keys($ids, true);
     }
 
     /**
@@ -1763,7 +1985,7 @@ class ModuleAccessService
      */
     private function resolveIndustryPackageModules(int $packageId, string $industryKey): ?array
     {
-        $memoKey = $packageId . '|' . $industryKey;
+        $memoKey = $packageId . '|' . $this->normalizeIndustryKey($industryKey);
         if (array_key_exists($memoKey, $this->industryPackageModulesMemo)) {
             return $this->industryPackageModulesMemo[$memoKey];
         }
@@ -1780,7 +2002,7 @@ class ModuleAccessService
 
         $rows = DB::table('package_industry_modules')
             ->where('package_id', $packageId)
-            ->where('industry_key', $industryKey)
+            ->whereIn('industry_key', $this->industryLookupKeys($industryKey))
             ->get();
 
         // No explicit configuration yet → legacy package_modules apply.
@@ -1956,10 +2178,12 @@ class ModuleAccessService
             return null;
         }
 
-        $row = DB::table('package_industries')
+        $rows = DB::table('package_industries')
             ->where('package_id', $packageId)
-            ->where('industry_key', $industryKey)
-            ->first();
+            ->whereIn('industry_key', $this->industryLookupKeys($industryKey))
+            ->get();
+
+        $row = $rows->first(fn ($r) => $r->price_monthly !== null || $r->price_yearly !== null);
 
         if ($row === null
             || ($row->price_monthly === null && $row->price_yearly === null)) {
@@ -1968,11 +2192,139 @@ class ModuleAccessService
 
         $package = SubscriptionPackage::find($packageId);
 
+        $monthly = (float) ($row->price_monthly ?? $package?->price_monthly ?? 0);
+        $yearly = (float) ($row->price_yearly ?? $package?->price_yearly ?? 0);
+        $currency = $row->currency ?? config('locale.currency.default_code', 'BDT');
+
+        // Country scope wins over the industry row: country price, then
+        // country discount, then country trial context (each falls back
+        // to the industry value when the country row is missing/empty).
+        $countryRow = $this->countryPriceRow($packageId, $institute);
+        if ($countryRow) {
+            if ($countryRow->price_monthly !== null) {
+                $monthly = (float) $countryRow->price_monthly;
+            }
+            if ($countryRow->price_yearly !== null) {
+                $yearly = (float) $countryRow->price_yearly;
+            }
+            if (! empty($countryRow->currency_code)) {
+                $currency = $countryRow->currency_code;
+            }
+        }
+
+        // Discount: country first, then industry. Active iff percent > 0
+        // and not expired; expired/missing rows fall back to full price.
+        $discount = 0.0;
+        $endsAt = null;
+        if ($countryRow && isset($countryRow->discount_percent) && (float) $countryRow->discount_percent > 0) {
+            $discount = (float) $countryRow->discount_percent;
+            $endsAt = $countryRow->discount_ends_at ?? null;
+        } elseif (isset($row->discount_percent)) {
+            $discount = (float) $row->discount_percent;
+            $endsAt = $row->discount_ends_at ?? null;
+        }
+
+        if ($discount > 0 && ($endsAt === null || $endsAt === '' || strtotime((string) $endsAt) >= strtotime(date('Y-m-d')))) {
+            $factor = max(0, 1 - $discount / 100);
+            $monthly = round($monthly * $factor, 2);
+            $yearly = round($yearly * $factor, 2);
+        }
+
         return [
-            'monthly' => (float) ($row->price_monthly ?? $package?->price_monthly ?? 0),
-            'yearly' => (float) ($row->price_yearly ?? $package?->price_yearly ?? 0),
-            'currency' => $row->currency ?? config('locale.currency.default_code', 'BDT'),
+            'monthly' => $monthly,
+            'yearly' => $yearly,
+            'currency' => $currency,
         ];
+    }
+
+    /**
+     * Institute's country ISO2 (country_id → countries.iso2, fallback to
+     * country name via country_currency_map). Null when unresolvable.
+     */
+    public function instituteCountryCode(Institute $institute): ?string
+    {
+        try {
+            if ($institute->country_id) {
+                $iso = DB::table('countries')->where('id', $institute->country_id)->value('iso2');
+                if ($iso) {
+                    return (string) $iso;
+                }
+            }
+
+            $name = trim((string) ($institute->country ?? ''));
+            if ($name !== '') {
+                $code = DB::table('country_currency_map')->where('country_name', $name)->value('country_code');
+                if ($code) {
+                    return (string) $code;
+                }
+            }
+        } catch (\Throwable $e) {
+            // fail-closed to null (caller falls back to industry values)
+        }
+
+        return null;
+    }
+
+    /**
+     * Active country price row for a package + institute, or null.
+     */
+    private function countryPriceRow(int $packageId, Institute $institute): ?object
+    {
+        try {
+            if (! Schema::hasTable('package_country_prices')) {
+                return null;
+            }
+
+            $code = $this->instituteCountryCode($institute);
+            if ($code === null) {
+                return null;
+            }
+
+            $row = DB::table('package_country_prices')
+                ->where('package_id', $packageId)
+                ->where('country_code', $code)
+                ->where('is_active', true)
+                ->first();
+
+            return $row ?: null;
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Trial window for a package: country row first, then industry row.
+     *
+     * Null = inherit from the next level (country → industry → none).
+     * 0 = explicitly blocked at that level (does NOT fall through).
+     * Positive = trial offered for that many days.
+     */
+    public function packageTrialDays(int $packageId, Institute $institute): ?int
+    {
+        $industryKey = $institute->industry ?? '';
+
+        if (Schema::hasTable('package_country_prices')
+            && Schema::hasColumn('package_country_prices', 'trial_days')) {
+            $countryRow = $this->countryPriceRow($packageId, $institute);
+            if ($countryRow && isset($countryRow->trial_days) && $countryRow->trial_days !== null) {
+                return (int) $countryRow->trial_days;
+            }
+        }
+
+        if ($industryKey !== '' && Schema::hasTable('package_industries') && Schema::hasColumn('package_industries', 'trial_days')) {
+            $days = DB::table('package_industries')
+                ->where('package_id', $packageId)
+                ->whereIn('industry_key', $this->industryLookupKeys($industryKey))
+                ->whereNotNull('trial_days')
+                ->orderByDesc('trial_days')
+                ->value('trial_days');
+
+            if ($days !== null) {
+                return (int) $days;
+            }
+        }
+
+        return null;
     }
 
     /**

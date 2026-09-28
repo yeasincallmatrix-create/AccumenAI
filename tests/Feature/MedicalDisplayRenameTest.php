@@ -7,17 +7,17 @@ use Illuminate\Support\Facades\DB;
 
 class MedicalDisplayRenameTest extends TestCase
 {
-    public function test_medical_row_shows_healthcare_name()
+    public function test_healthcare_row_shows_healthcare_name()
     {
-        $row = DB::table('industries')->where('slug', 'medical')->first();
+        $row = DB::table('industries')->where('slug', 'healthcare')->first();
         $this->assertEquals('Healthcare', $row->name);
         $this->assertEquals('active', $row->status);
     }
 
-    public function test_healthcare_duplicate_inactive()
+    public function test_medical_duplicate_removed()
     {
-        $row = DB::table('industries')->where('slug', 'healthcare')->first();
-        $this->assertEquals('inactive', $row->status);
+        $count = DB::table('industries')->where('slug', 'medical')->count();
+        $this->assertEquals(0, $count, 'duplicate medical industries row must be removed; healthcare is canonical');
     }
 
     public function test_medical_registry_untouched()
