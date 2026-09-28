@@ -1850,6 +1850,7 @@ Route::middleware($tenant)->group(function () {
     Route::prefix('saas')->name('saas.')->group(function () use ($saas) {
         Route::get('packages', [$saas, 'packages'])->name('packages');
         Route::get('checkout/form', [$saas, 'checkoutForm'])->name('checkout.form');
+        Route::post('country', [$saas, 'setCountry'])->name('country');
         Route::post('checkout', [$saas, 'checkout'])->name('checkout');
         Route::get('checkout/attempt/{attempt}', [$saas, 'attemptShow'])->name('attempt.show');
         Route::get('checkout/callback', [$saas, 'callback'])->name('callback');

@@ -13,7 +13,8 @@
                 <label class="form-label">Package</label>
                 <select name="package_id" class="form-select" required>
                     @foreach($packages as $pkg) @if($pkg->status==='active')
-                        <option value="{{ $pkg->id }}">{{ $pkg->name }} ({{ $pkg->slug }}) — {{ number_format($pkg->price_monthly,2) }}/mo / {{ number_format($pkg->price_yearly,2) }}/yr</option>
+                        @php $p = $prices[$pkg->id] ?? ['monthly' => $pkg->price_monthly, 'yearly' => $pkg->price_yearly, 'currency' => 'BDT', 'is_localized' => false, 'country_code' => 'BD']; @endphp
+                        <option value="{{ $pkg->id }}">{{ $pkg->name }} ({{ $pkg->slug }}) — {{ \App\Support\CurrencyFormatter::format($p['monthly'], $p['currency']) }}/mo / {{ \App\Support\CurrencyFormatter::format($p['yearly'], $p['currency']) }}/yr @if($p['is_localized']) ({{ $p['country_code'] }}) @endif</option>
                     @endif @endforeach
                 </select>
             </div>

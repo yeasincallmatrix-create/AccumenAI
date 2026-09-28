@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\ResolvesInstitute;
+use App\Models\Country;
 use App\Models\OnlinePaymentAttempt;
 use App\Models\SubscriptionPackage;
+use App\Services\Pricing\CountryPriceService;
 use App\Services\SaasSubscriptionService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -14,7 +16,10 @@ class SaasCheckoutController extends Controller
 {
     use ResolvesInstitute;
 
-    public function __construct(private readonly SaasSubscriptionService $saas) {}
+    public function __construct(
+        private readonly SaasSubscriptionService $saas,
+        private readonly CountryPriceService $pricing,
+    ) {}
 
     public function packages(Request $request): View
     {
@@ -22,7 +27,10 @@ class SaasCheckoutController extends Controller
         // Do not block view; UI will hide bKash for non-Bangladesh, server checkout still rejects
         $packages = $this->saas->availablePackages();
         $currentPackageId = $institute->package_id;
-        return view('saas.packages', compact('institute','packages','currentPackageId'));
+        $country = $this->displayCountry($institute);
+        $prices = $this->pricing->priceListFor($packages->pluck('id')->toArray(), $country);
+        $countries = $this->pricing->availableCountries();
+        return view('saas.packages', compact('institute','packages','currentPackageId','prices','country','countries'));
     }
 
     public function checkoutForm(Request $request): View
@@ -30,7 +38,36 @@ class SaasCheckoutController extends Controller
         $institute = $this->requireInstitute($request);
         // Bangladesh-only UI, but endpoint also protected
         $packages = $this->saas->availablePackages();
-        return view('saas.checkout', compact('institute','packages'));
+        $country = $this->displayCountry($institute);
+        $prices = $this->pricing->priceListFor($packages->pluck('id')->toArray(), $country);
+        $countries = $this->pricing->availableCountries();
+        return view('saas.checkout', compact('institute','packages','country','prices','countries'));
+    }
+
+    public function setCountry(Request $request): RedirectResponse
+    {
+        $this->requireInstitute($request);
+        $data = $request->validate(['country' => ['required', 'string', 'size:2']]);
+        $this->pricing->setSignupCountry($data['country']);
+        return back()->with('status', 'Display country updated.');
+    }
+
+    /**
+     * Display country: explicit session choice wins, then the
+     * institute's own country, then header detection, then BD.
+     */
+    private function displayCountry($institute): string
+    {
+        if (session()->has(CountryPriceService::SESSION_KEY)) {
+            return $this->pricing->resolveCountry();
+        }
+        if (! empty($institute->country_id)) {
+            $row = Country::find($institute->country_id);
+            if ($row && preg_match('/^[A-Z]{2}$/', strtoupper($row->iso2 ?? ''))) {
+                return strtoupper($row->iso2);
+            }
+        }
+        return $this->pricing->resolveCountry();
     }
 
     public function checkout(Request $request): RedirectResponse

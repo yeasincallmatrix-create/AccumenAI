@@ -30,7 +30,13 @@
                     </p>
                     @if($requiredPackage)
                         <p class="text-muted mb-0">
-                            {{ number_format($requiredPackage->price_monthly, 2) }} BDT / month
+                            @if(!empty($reqPrice) && $reqPrice['is_localized'])
+                                {{ \App\Support\CurrencyFormatter::format($reqPrice['monthly'], $reqPrice['currency']) }} / month
+                                <span class="badge bg-success">Local price ({{ $reqPrice['country_code'] }})</span>
+                            @else
+                                {{ number_format($requiredPackage->price_monthly, 2) }} BDT / month
+                                <span class="badge bg-warning text-dark">Base price (BD)</span>
+                            @endif
                         </p>
                     @endif
                 </div>

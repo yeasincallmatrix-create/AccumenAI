@@ -38,8 +38,17 @@ class UpgradeController extends Controller
             ? SubscriptionPackage::find($institute->package_id)
             : null;
 
+        $reqPrice = null;
+        if ($requiredPackage) {
+            $countryCode = $institute->country_id
+                ? (\App\Models\Country::find($institute->country_id)?->iso2 ?? 'BD')
+                : 'BD';
+            $reqPrice = app(\App\Services\Pricing\CountryPriceService::class)
+                ->priceFor((int) $requiredPackage->id, $countryCode);
+        }
+
         return view('upgrade.show', compact(
-            'feature', 'currentPackage', 'requiredPackage'
+            'feature', 'currentPackage', 'requiredPackage', 'reqPrice'
         ));
     }
 }
