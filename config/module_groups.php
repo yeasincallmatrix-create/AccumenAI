@@ -178,4 +178,15 @@ return [
             'restaurant',
         ],
     ],
+
+    'dealership' => [
+        'label' => 'Dealership Modules',
+        'name' => 'Dealership Modules',
+        'icon' => 'bi-shop',
+        'parent_key' => 'dealership',
+        'description' => 'Dealership and SR management.',
+        'modules' => [
+            'dealership',
+        ],
+    ],
 ];
