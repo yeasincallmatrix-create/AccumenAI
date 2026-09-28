@@ -95,11 +95,58 @@ return [
                 'dealership.inventory_link' => ['name' => 'Inventory Link', 'icon' => 'bi-link-45deg', 'sort_order' => 109],
             ],
         ],
+
+        'targets' => [
+            'name' => 'Targets',
+            'icon' => 'bi-bullseye',
+            'required' => false,
+            'description' => 'SR and brand targets',
+            'modules' => [
+                'dealership.sr_targets'    => ['name' => 'SR Targets',    'icon' => 'bi-bullseye',       'sort_order' => 112],
+                'dealership.brand_targets' => ['name' => 'Brand Targets', 'icon' => 'bi-graph-up-arrow', 'sort_order' => 114],
+            ],
+        ],
+
+        'commission' => [
+            'name' => 'Commission',
+            'icon' => 'bi-percent',
+            'required' => false,
+            'description' => 'SR commission',
+            'modules' => [
+                'dealership.sr_commission' => ['name' => 'SR Commission', 'icon' => 'bi-percent', 'sort_order' => 113],
+            ],
+        ],
+
+        'incentives' => [
+            'name' => 'Incentives',
+            'icon' => 'bi-gift',
+            'required' => false,
+            'description' => 'SR incentives',
+            'modules' => [
+                'dealership.incentives' => ['name' => 'Incentives', 'icon' => 'bi-gift', 'sort_order' => 115],
+            ],
+        ],
+
+        'attendance' => [
+            'name' => 'Attendance',
+            'icon' => 'bi-calendar-check',
+            'required' => false,
+            'description' => 'SR attendance',
+            'modules' => [
+                'dealership.attendance' => ['name' => 'Attendance', 'icon' => 'bi-calendar-check', 'sort_order' => 116],
+            ],
+        ],
     ],
 
     'order_statuses' => ['draft', 'submitted', 'approved', 'rejected', 'delivered'],
 
     'collection_methods' => ['cash', 'cheque', 'bank_transfer', 'mobile_banking'],
+
+    'period_types' => ['monthly', 'quarterly', 'yearly'],
+
+    'commission_statuses' => ['pending', 'approved', 'paid', 'cancelled'],
+
+    'attendance_statuses' => ['present', 'absent', 'half_day', 'leave'],
 
     'allow_custom_modules' => true,
     'custom_module_prefix' => 'dealership.custom.',

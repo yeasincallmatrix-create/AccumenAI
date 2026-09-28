@@ -92,7 +92,7 @@ class AccountingAgingModulesTest extends TestCase
         }
     }
 
-    public function test_registry_totals_are_285_with_33_accounting_children(): void
+    public function test_registry_totals_are_290_with_33_accounting_children(): void
     {
         $total = DB::table('module_registry')->where('status', 'active')->count();
         $children = DB::table('module_registry')
@@ -100,7 +100,7 @@ class AccountingAgingModulesTest extends TestCase
             ->where('status', 'active')
             ->count();
 
-        $this->assertSame(285, $total, 'Registry must be 279 + 6 (dealership phase 2) active modules');
+        $this->assertSame(290, $total, 'Registry must be 285 + 5 (dealership phase 3) active modules');
         $this->assertSame(33, $children, 'Accounting must own 28 + 5 children');
     }
 

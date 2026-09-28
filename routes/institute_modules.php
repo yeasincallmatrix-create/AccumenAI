@@ -1937,6 +1937,56 @@ Route::middleware($tenant)->group(function () {
             Route::post('credit-control/{customer}/block', [$credit, 'block'])->name('credit_control.block');
             Route::post('credit-control/{customer}/unblock', [$credit, 'unblock'])->name('credit_control.unblock');
         });
+
+        // ─── Dealership Phase 3 (Targets & Commission) ───
+        $srTarget = \App\Http\Controllers\Dealership\SrTargetController::class;
+        $srCommission = \App\Http\Controllers\Dealership\SrCommissionController::class;
+        $brandTarget = \App\Http\Controllers\Dealership\BrandTargetController::class;
+        $incentive = \App\Http\Controllers\Dealership\IncentiveController::class;
+        $attendance = \App\Http\Controllers\Dealership\AttendanceController::class;
+
+        // SR Targets
+        Route::middleware('permission:sr_targets.view')->group(function () use ($srTarget) {
+            Route::get('targets', [$srTarget, 'index'])->name('targets.index');
+        });
+        Route::middleware('permission:sr_targets.manage')->group(function () use ($srTarget) {
+            Route::post('targets', [$srTarget, 'store'])->name('targets.store');
+        });
+
+        // SR Commission
+        Route::middleware('permission:sr_commission.view')->group(function () use ($srCommission) {
+            Route::get('commissions', [$srCommission, 'index'])->name('commissions.index');
+        });
+        Route::middleware('permission:sr_commission.manage')->group(function () use ($srCommission) {
+            Route::post('commissions', [$srCommission, 'store'])->name('commissions.store');
+        });
+        Route::middleware('permission:sr_commission.approve')->group(function () use ($srCommission) {
+            Route::post('commissions/{commission}/approve', [$srCommission, 'approve'])->name('commissions.approve');
+        });
+
+        // Brand Targets
+        Route::middleware('permission:brand_targets.view')->group(function () use ($brandTarget) {
+            Route::get('brand-targets', [$brandTarget, 'index'])->name('brand_targets.index');
+        });
+        Route::middleware('permission:brand_targets.manage')->group(function () use ($brandTarget) {
+            Route::post('brand-targets', [$brandTarget, 'store'])->name('brand_targets.store');
+        });
+
+        // Incentives
+        Route::middleware('permission:incentives.view')->group(function () use ($incentive) {
+            Route::get('incentives', [$incentive, 'index'])->name('incentives.index');
+        });
+        Route::middleware('permission:incentives.manage')->group(function () use ($incentive) {
+            Route::post('incentives', [$incentive, 'store'])->name('incentives.store');
+        });
+
+        // Attendance
+        Route::middleware('permission:attendance.view')->group(function () use ($attendance) {
+            Route::get('attendance', [$attendance, 'index'])->name('attendance.index');
+        });
+        Route::middleware('permission:attendance.manage')->group(function () use ($attendance) {
+            Route::post('attendance', [$attendance, 'store'])->name('attendance.store');
+        });
     });
 
 });

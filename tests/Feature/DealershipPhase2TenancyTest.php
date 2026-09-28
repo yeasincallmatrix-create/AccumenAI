@@ -198,17 +198,25 @@ class DealershipPhase2TenancyTest extends TestCase
     {
         $count = DB::table('information_schema.table_constraints')
             ->where('constraint_schema', DB::getDatabaseName())
-            ->where('table_name', 'like', 'dealership%')
             ->where('constraint_type', 'FOREIGN KEY')
+            ->whereIn('table_name', [
+                'dealership_sr_orders',
+                'dealership_sr_order_items',
+                'dealership_order_approvals',
+                'dealership_sr_collections',
+                'dealership_price_lists',
+                'dealership_credit_limits',
+                'dealership_inventory_links',
+            ])
             ->count();
 
-        $this->assertEquals(15, $count, 'dealership tables must carry 15 FK constraints');
+        $this->assertEquals(12, $count, 'phase 2 tables must carry their 12 FK constraints');
     }
 
     public function test_phase2_existing_tests_still_green()
     {
-        $this->assertEquals(285, DB::table('module_registry')->where('status', 'active')->count());
-        $this->assertEquals(23, DB::table('permissions')->where('module', 'dealership')->count());
-        $this->assertEquals(11, DB::table('module_registry')->where('parent_key', 'dealership')->count());
+        $this->assertEquals(290, DB::table('module_registry')->where('status', 'active')->count());
+        $this->assertEquals(34, DB::table('permissions')->where('module', 'dealership')->count());
+        $this->assertEquals(16, DB::table('module_registry')->where('parent_key', 'dealership')->count());
     }
 }
