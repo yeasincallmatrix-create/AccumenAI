@@ -300,8 +300,8 @@ class UniversalModuleConfigTest extends TestCase
             'pos must render exactly its 27 children (Phases 1-5)');
         $this->assertSame(1, $xpath->query('//*[@data-module-toggle="dealership"]')->length,
             'dealership owns children and must render as a collapsible parent');
-        $this->assertSame(5, $xpath->query('//tr[@data-child-of="dealership"]')->length,
-            'dealership must render exactly its 5 children (Phase 1)');
+        $this->assertSame(11, $xpath->query('//tr[@data-child-of="dealership"]')->length,
+            'dealership must render exactly its 11 children (Phases 1-2)');
 
         $this->assertSame(1, $xpath->query('//tr[@data-child-of="medical"]//code[text()="medical.pharmacy"]')->length,
             'medical.pharmacy must render as an indented child row of medical');

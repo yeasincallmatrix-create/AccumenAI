@@ -1890,6 +1890,55 @@ Route::middleware($tenant)->group(function () {
     Route::delete('academic/structure/settings/nodes/{node}', [$lsSettings, 'destroyNode'])->middleware('permission:education.manage')->name('academic.structure.settings.nodes.destroy');
     Route::post('academic/structure/settings/reorder', [$lsSettings, 'reorder'])->middleware('permission:education.manage')->name('academic.structure.settings.reorder');
 
+    // ─── Dealership (SR Orders & Collection — Phase 2) ───
+    Route::prefix('dealership')->name('dealership.')->group(function () {
+        $srOrder = \App\Http\Controllers\Dealership\SrOrderController::class;
+        $approval = \App\Http\Controllers\Dealership\OrderApprovalController::class;
+        $collection = \App\Http\Controllers\Dealership\SrCollectionController::class;
+        $priceList = \App\Http\Controllers\Dealership\PriceListController::class;
+        $credit = \App\Http\Controllers\Dealership\CreditControlController::class;
+
+        // SR Orders
+        Route::middleware('permission:sr_orders.view')->group(function () use ($srOrder) {
+            Route::get('orders', [$srOrder, 'index'])->name('orders.index');
+            Route::get('orders/{order}', [$srOrder, 'show'])->name('orders.show');
+        });
+        Route::middleware('permission:sr_orders.manage')->group(function () use ($srOrder) {
+            Route::post('orders', [$srOrder, 'store'])->name('orders.store');
+        });
+
+        // Approval
+        Route::middleware('permission:order_approval.approve')->group(function () use ($approval) {
+            Route::post('orders/{order}/approve', [$approval, 'approve'])->name('orders.approve');
+            Route::post('orders/{order}/reject', [$approval, 'reject'])->name('orders.reject');
+        });
+
+        // Collection
+        Route::middleware('permission:sr_collection.view')->group(function () use ($collection) {
+            Route::get('collections', [$collection, 'index'])->name('collections.index');
+        });
+        Route::middleware('permission:sr_collection.manage')->group(function () use ($collection) {
+            Route::post('collections', [$collection, 'store'])->name('collections.store');
+        });
+
+        // Price Lists
+        Route::middleware('permission:price_lists.view')->group(function () use ($priceList) {
+            Route::get('price-lists', [$priceList, 'index'])->name('price_lists.index');
+        });
+        Route::middleware('permission:price_lists.manage')->group(function () use ($priceList) {
+            Route::post('price-lists', [$priceList, 'store'])->name('price_lists.store');
+        });
+
+        // Credit Control
+        Route::middleware('permission:credit_control.view')->group(function () use ($credit) {
+            Route::get('credit-control', [$credit, 'index'])->name('credit_control.index');
+        });
+        Route::middleware('permission:credit_control.manage')->group(function () use ($credit) {
+            Route::post('credit-control/{customer}/block', [$credit, 'block'])->name('credit_control.block');
+            Route::post('credit-control/{customer}/unblock', [$credit, 'unblock'])->name('credit_control.unblock');
+        });
+    });
+
 });
 
 // ─── GEO (public) — must be outside tenant/auth so register/address works as guest ──
