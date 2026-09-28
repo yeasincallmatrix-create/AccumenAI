@@ -215,8 +215,8 @@ class DealershipPhase2TenancyTest extends TestCase
 
     public function test_phase2_existing_tests_still_green()
     {
-        $this->assertEquals(290, DB::table('module_registry')->where('status', 'active')->count());
-        $this->assertEquals(34, DB::table('permissions')->where('module', 'dealership')->count());
-        $this->assertEquals(16, DB::table('module_registry')->where('parent_key', 'dealership')->count());
+        $this->assertEquals(295, DB::table('module_registry')->where('status', 'active')->count());
+        $this->assertEquals(43, DB::table('permissions')->where('module', 'dealership')->count());
+        $this->assertEquals(21, DB::table('module_registry')->where('parent_key', 'dealership')->count());
     }
 }

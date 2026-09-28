@@ -136,6 +136,29 @@ return [
                 'dealership.attendance' => ['name' => 'Attendance', 'icon' => 'bi-calendar-check', 'sort_order' => 116],
             ],
         ],
+
+        'reports' => [
+            'name' => 'Reports',
+            'icon' => 'bi-bar-chart',
+            'required' => false,
+            'description' => 'SR, sales, collection and target reports',
+            'modules' => [
+                'dealership.sr_reports'         => ['name' => 'SR Reports',         'icon' => 'bi-person-badge',   'sort_order' => 117],
+                'dealership.sales_reports'      => ['name' => 'Sales Reports',      'icon' => 'bi-bar-chart',      'sort_order' => 118],
+                'dealership.collection_reports' => ['name' => 'Collection Reports', 'icon' => 'bi-cash-stack',     'sort_order' => 119],
+                'dealership.target_reports'     => ['name' => 'Target Reports',     'icon' => 'bi-clipboard-data', 'sort_order' => 120],
+            ],
+        ],
+
+        'dashboard' => [
+            'name' => 'Dashboard',
+            'icon' => 'bi-speedometer2',
+            'required' => false,
+            'description' => 'Dealership KPI dashboard',
+            'modules' => [
+                'dealership.dashboard' => ['name' => 'Dashboard', 'icon' => 'bi-speedometer2', 'sort_order' => 121],
+            ],
+        ],
     ],
 
     'order_statuses' => ['draft', 'submitted', 'approved', 'rejected', 'delivered'],
@@ -147,6 +170,20 @@ return [
     'commission_statuses' => ['pending', 'approved', 'paid', 'cancelled'],
 
     'attendance_statuses' => ['present', 'absent', 'half_day', 'leave'],
+
+    'report_keys' => [
+        'sr_sales_summary',
+        'sr_collection_summary',
+        'brand_sales_summary',
+        'product_sales_summary',
+        'channel_sales_summary',
+        'customer_outstanding',
+        'collection_aging',
+        'target_vs_achievement',
+        'dashboard_kpis',
+    ],
+
+    'snapshot_ttl_minutes' => 15,
 
     'allow_custom_modules' => true,
     'custom_module_prefix' => 'dealership.custom.',

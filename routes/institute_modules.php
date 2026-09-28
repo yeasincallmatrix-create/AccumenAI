@@ -1987,6 +1987,50 @@ Route::middleware($tenant)->group(function () {
         Route::middleware('permission:attendance.manage')->group(function () use ($attendance) {
             Route::post('attendance', [$attendance, 'store'])->name('attendance.store');
         });
+
+        // ─── Dealership Phase 4 (Reports & Analytics) ───
+        $srReport = \App\Http\Controllers\Dealership\Reports\SrReportController::class;
+        $salesReport = \App\Http\Controllers\Dealership\Reports\SalesReportController::class;
+        $collReport = \App\Http\Controllers\Dealership\Reports\CollectionReportController::class;
+        $tgtReport = \App\Http\Controllers\Dealership\Reports\TargetReportController::class;
+        $dashboard = \App\Http\Controllers\Dealership\Reports\DashboardController::class;
+
+        // SR Reports
+        Route::middleware('permission:sr_reports.view')->group(function () use ($srReport) {
+            Route::get('reports/sr', [$srReport, 'index'])->name('reports.sr.index');
+        });
+        Route::middleware('permission:sr_reports.export')->group(function () use ($srReport) {
+            Route::get('reports/sr/export', [$srReport, 'export'])->name('reports.sr.export');
+        });
+
+        // Sales Reports
+        Route::middleware('permission:sales_reports.view')->group(function () use ($salesReport) {
+            Route::get('reports/sales', [$salesReport, 'index'])->name('reports.sales.index');
+        });
+        Route::middleware('permission:sales_reports.export')->group(function () use ($salesReport) {
+            Route::get('reports/sales/export', [$salesReport, 'export'])->name('reports.sales.export');
+        });
+
+        // Collection Reports
+        Route::middleware('permission:collection_reports.view')->group(function () use ($collReport) {
+            Route::get('reports/collection', [$collReport, 'index'])->name('reports.collection.index');
+        });
+        Route::middleware('permission:collection_reports.export')->group(function () use ($collReport) {
+            Route::get('reports/collection/export', [$collReport, 'export'])->name('reports.collection.export');
+        });
+
+        // Target Reports
+        Route::middleware('permission:target_reports.view')->group(function () use ($tgtReport) {
+            Route::get('reports/targets', [$tgtReport, 'index'])->name('reports.targets.index');
+        });
+        Route::middleware('permission:target_reports.export')->group(function () use ($tgtReport) {
+            Route::get('reports/targets/export', [$tgtReport, 'export'])->name('reports.targets.export');
+        });
+
+        // Dashboard
+        Route::middleware('permission:dashboard.view')->group(function () use ($dashboard) {
+            Route::get('dashboard', [$dashboard, 'index'])->name('dashboard.index');
+        });
     });
 
 });
