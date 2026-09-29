@@ -82,7 +82,11 @@
                 foreach ($sectionParents as $pg) {
                     foreach ($pg['children'] as $m) {
                         $mBlocked = isset($industryDisabled[$m->key]);
-                        if (! $mBlocked && ($service->isCoreModule($m->key) || isset($selection[$m->key]))) {
+                        $mCat = $matrix[$m->key] ?? null;
+                        if ($mCat === null) {
+                            $mCat = $mBlocked ? 'hidden' : ($service->isCoreModule($m->key) || isset($selection[$m->key]) ? 'default' : 'optional');
+                        }
+                        if (in_array($mCat, ['mandatory', 'default'], true)) {
                             $sectionSelected++;
                         }
                     }
@@ -111,7 +115,11 @@
                             $groupSelected = 0;
                             foreach ($children as $m) {
                                 $mBlocked = isset($industryDisabled[$m->key]);
-                                if (! $mBlocked && ($service->isCoreModule($m->key) || isset($selection[$m->key]))) {
+                                $mCat = $matrix[$m->key] ?? null;
+                                if ($mCat === null) {
+                                    $mCat = $mBlocked ? 'hidden' : ($service->isCoreModule($m->key) || isset($selection[$m->key]) ? 'default' : 'optional');
+                                }
+                                if (in_array($mCat, ['mandatory', 'default'], true)) {
                                     $groupSelected++;
                                 }
                             }
@@ -134,14 +142,24 @@
                                     <button type="button" class="btn btn-outline-secondary btn-sm py-0" data-group-clear="{{ $parentKey }}">None</button>
                                 </span>
                             </div>
+@php
+    $categoryMeta = [
+        'mandatory' => ['label' => 'Mandatory', 'class' => 'text-danger', 'hint' => 'Always on'],
+        'default' => ['label' => 'Default', 'class' => 'text-success', 'hint' => 'On, tenant may switch off'],
+        'optional' => ['label' => 'Optional', 'class' => 'text-secondary', 'hint' => 'Off, tenant may switch on'],
+        'hidden' => ['label' => 'Hidden', 'class' => 'text-dark', 'hint' => 'Not listed to tenant'],
+    ];
+    $categories = array_keys($categoryMeta);
+@endphp
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle mb-0">
                                     <thead>
                                         <tr>
-                                            <th style="width:70px">On</th>
                                             <th style="width:200px">Key</th>
                                             <th>Name</th>
-                                            <th>Description</th>
+                                            @foreach ($categories as $category)
+                                                <th class="text-center {{ $categoryMeta[$category]['class'] }}" title="{{ $categoryMeta[$category]['hint'] }}">{{ $categoryMeta[$category]['label'] }}</th>
+                                            @endforeach
                                             <th style="width:210px">Flags</th>
                                         </tr>
                                     </thead>
@@ -150,34 +168,37 @@
                                             @php
                                                 $isCore = $service->isCoreModule($module->key);
                                                 $blocked = isset($industryDisabled[$module->key]);
-                                                $checked = $blocked ? false : ($isCore || isset($selection[$module->key]));
+                                                $locked = $isCore || $blocked;
+                                                $current = $matrix[$module->key]
+                                                    ?? ($isCore ? 'mandatory' : ($blocked ? 'hidden' : (isset($selection[$module->key]) ? 'default' : 'optional')));
+                                                $rowName = $parentKey . '_' . $loop->index;
                                             @endphp
                                             <tr class="{{ $blocked ? 'table-secondary' : '' }} {{ $module->key === $parentKey ? 'table-primary' : '' }}">
                                                 <td>
-                                                    <div class="form-check form-switch">
-                                                        <input class="form-check-input module-toggle" type="checkbox"
-                                                               name="modules[]"
-                                                               value="{{ $module->key }}"
-                                                               id="mod_{{ $module->key }}"
-                                                               data-parent-group="{{ $parentKey }}"
-                                                               {{ $checked ? 'checked' : '' }}
-                                                               {{ ($isCore || $blocked) ? 'disabled' : '' }}>
-                                                    </div>
-                                                </td>
-                                                <td>
-                                                    <label for="mod_{{ $module->key }}" class="form-check-label">
-                                                        <code>{{ $module->key }}</code>
-                                                    </label>
+                                                    <input type="hidden" name="modules[{{ $rowName }}][module_key]" value="{{ $module->key }}">
+                                                    <code>{{ $module->key }}</code>
                                                     @if($module->key === $parentKey)
                                                         <span class="badge bg-primary ms-1" style="font-size:.65rem">parent</span>
                                                     @endif
                                                 </td>
                                                 <td>
-                                                    <label for="mod_{{ $module->key }}" class="form-check-label fw-semibold">
+                                                    <span class="fw-semibold">
                                                         {{ $module->name }}
-                                                    </label>
+                                                    </span>
+                                                    <div class="text-muted small">{{ $module->description ?: '-' }}</div>
                                                 </td>
-                                                <td class="text-muted small">{{ $module->description ?: '-' }}</td>
+                                                @foreach ($categories as $category)
+                                                    <td class="text-center">
+                                                        <label class="d-block m-0 py-1" title="{{ $categoryMeta[$category]['hint'] }}">
+                                                            <input type="radio" class="module-category"
+                                                                name="modules[{{ $rowName }}][category]"
+                                                                value="{{ $category }}"
+                                                                data-parent-group="{{ $parentKey }}"
+                                                                {{ $current === $category ? 'checked' : '' }}
+                                                                {{ $locked ? 'disabled' : '' }}>
+                                                        </label>
+                                                    </td>
+                                                @endforeach
                                                 <td>
                                                     @if ($isCore)
                                                         <span class="badge text-bg-info">core (always on)</span>
@@ -215,31 +236,35 @@
 @push('scripts')
 <script>
     (function () {
-        const toggles = () => Array.from(document.querySelectorAll('input.module-toggle:not(:disabled)'));
+        const radios = (group) => Array.from(document.querySelectorAll('input.module-category[data-parent-group="' + group + '"]:not(:disabled)'));
+        const allRadios = () => Array.from(document.querySelectorAll('input.module-category:not(:disabled)'));
+        const setCategory = (scope, category) => {
+            const list = scope ? radios(scope) : allRadios();
+            const byName = {};
+            list.forEach(function (el) { (byName[el.name] = byName[el.name] || []).push(el); });
+            Object.values(byName).forEach(function (group) {
+                const target = group.find(function (el) { return el.value === category; });
+                if (target) { target.checked = true; }
+            });
+        };
         const selectAll = document.getElementById('selectAll');
         const selectNone = document.getElementById('selectNone');
 
         if (selectAll) {
-            selectAll.addEventListener('click', function () {
-                toggles().forEach(function (el) { el.checked = true; });
-            });
+            selectAll.addEventListener('click', function () { setCategory(null, 'default'); });
         }
         if (selectNone) {
-            selectNone.addEventListener('click', function () {
-                toggles().forEach(function (el) { el.checked = false; });
-            });
+            selectNone.addEventListener('click', function () { setCategory(null, 'hidden'); });
         }
 
         document.querySelectorAll('[data-group-select]').forEach(function (btn) {
             btn.addEventListener('click', function () {
-                const key = btn.getAttribute('data-group-select');
-                document.querySelectorAll('input.module-toggle[data-parent-group="' + key + '"]:not(:disabled)').forEach(function (el) { el.checked = true; });
+                setCategory(btn.getAttribute('data-group-select'), 'default');
             });
         });
         document.querySelectorAll('[data-group-clear]').forEach(function (btn) {
             btn.addEventListener('click', function () {
-                const key = btn.getAttribute('data-group-clear');
-                document.querySelectorAll('input.module-toggle[data-parent-group="' + key + '"]:not(:disabled)').forEach(function (el) { el.checked = false; });
+                setCategory(btn.getAttribute('data-group-clear'), 'hidden');
             });
         });
     })();

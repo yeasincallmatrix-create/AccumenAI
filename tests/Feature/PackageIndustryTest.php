@@ -486,4 +486,169 @@ class PackageIndustryTest extends TestCase
 
         return null;
     }
+
+    // ── Categories (Mandatory/Default/Optional/Hidden) ────────────
+
+    private function categoryFixtureKeys(int $count = 3): array
+    {
+        $service = $this->service();
+        $disabled = array_flip(config('industry-modules.healthcare.disabled', []));
+
+        return DB::table('module_registry')
+            ->where('status', 'active')
+            ->orderBy('id')
+            ->pluck('key')
+            ->reject(fn ($key) => $service->isCoreModule($key) || isset($disabled[$key]))
+            ->take($count)
+            ->values()
+            ->all();
+    }
+
+    private function expectedCategory(string $key, string $wanted): string
+    {
+        $disabled = array_flip(config('industry-modules.healthcare.disabled', []));
+
+        if (isset($disabled[$key])) {
+            return 'hidden';
+        }
+        if ($this->service()->isCoreModule($key)) {
+            return 'mandatory';
+        }
+
+        return $wanted;
+    }
+
+    public function test_matrix_payload_round_trips_categories(): void
+    {
+        $this->loginAsAdmin();
+
+        $package = SubscriptionPackage::where('slug', 'premium')->first()
+            ?: SubscriptionPackage::orderBy('id')->first();
+        $keys = $this->categoryFixtureKeys(3);
+        $this->assertCount(3, $keys);
+
+        $wanted = [$keys[0] => 'mandatory', $keys[1] => 'optional', $keys[2] => 'hidden'];
+        $payload = ['modules' => []];
+        foreach ($wanted as $key => $category) {
+            $payload['modules'][] = ['module_key' => $key, 'category' => $category];
+        }
+
+        $this->put(route('admin.package-industries.update-modules', [
+            'package' => $package->id,
+            'industry' => 'healthcare',
+        ]), $payload)->assertRedirect(route('admin.package-industries.show-modules', [
+            'package' => $package->id,
+            'industry' => 'healthcare',
+        ]));
+
+        foreach ($wanted as $key => $category) {
+            $row = DB::table('package_industry_modules')
+                ->where('package_id', $package->id)
+                ->where('industry_key', 'healthcare')
+                ->where('module_key', $key)
+                ->first();
+            $this->assertNotNull($row, "missing row for {$key}");
+            $expected = $this->expectedCategory($key, $category);
+            $this->assertSame($expected, $row->category, "category mismatch for {$key}");
+            $this->assertEquals(
+                in_array($expected, ['mandatory', 'default'], true) ? 1 : 0,
+                (int) $row->enabled,
+                "enabled flag mismatch for {$key}"
+            );
+        }
+    }
+
+    public function test_legacy_flat_payload_maps_to_default_category(): void
+    {
+        $this->loginAsAdmin();
+
+        $package = SubscriptionPackage::where('slug', 'premium')->first()
+            ?: SubscriptionPackage::orderBy('id')->first();
+        $keys = $this->categoryFixtureKeys(1);
+        $this->assertCount(1, $keys);
+
+        $this->put(route('admin.package-industries.update-modules', [
+            'package' => $package->id,
+            'industry' => 'healthcare',
+        ]), [
+            'modules' => [$keys[0]],
+        ])->assertRedirect();
+
+        $row = DB::table('package_industry_modules')
+            ->where('package_id', $package->id)
+            ->where('industry_key', 'healthcare')
+            ->where('module_key', $keys[0])
+            ->first();
+
+        $this->assertNotNull($row);
+        $this->assertSame($this->expectedCategory($keys[0], 'default'), $row->category);
+    }
+
+    public function test_core_module_is_locked_to_mandatory(): void
+    {
+        $this->loginAsAdmin();
+
+        $package = SubscriptionPackage::orderBy('id')->first();
+        $coreKey = DB::table('module_registry')
+            ->where('status', 'active')
+            ->orderBy('id')
+            ->pluck('key')
+            ->first(fn ($key) => $this->service()->isCoreModule($key));
+        $this->assertNotEmpty($coreKey);
+
+        $this->put(route('admin.package-industries.update-modules', [
+            'package' => $package->id,
+            'industry' => 'healthcare',
+        ]), [
+            'modules' => [['module_key' => $coreKey, 'category' => 'hidden']],
+        ])->assertRedirect();
+
+        $row = DB::table('package_industry_modules')
+            ->where('package_id', $package->id)
+            ->where('industry_key', 'healthcare')
+            ->where('module_key', $coreKey)
+            ->first();
+
+        $this->assertNotNull($row);
+        $this->assertSame('mandatory', $row->category);
+        $this->assertEquals(1, (int) $row->enabled);
+    }
+
+    public function test_resolver_honors_mandatory_default_optional_hidden(): void
+    {
+        $institute = $this->healthcareInstitute('premium');
+        $packageId = (int) $institute->package_id;
+
+        DB::table('package_industries')->insert([
+            'package_id' => $packageId,
+            'industry_key' => 'healthcare',
+            'is_active' => true,
+            'sort_order' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $keys = $this->categoryFixtureKeys(3);
+        $this->assertCount(3, $keys);
+
+        $now = now();
+        foreach ([$keys[0] => 'mandatory', $keys[1] => 'optional', $keys[2] => 'hidden'] as $key => $category) {
+            DB::table('package_industry_modules')->insert([
+                'package_id' => $packageId,
+                'industry_key' => 'healthcare',
+                'module_key' => $key,
+                'enabled' => in_array($category, ['mandatory', 'default'], true),
+                'category' => $category,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
+        $this->service()->flushCache($institute->id);
+        $enabled = $this->service()->getEnabledModules($institute);
+
+        $this->assertContains($keys[0], $enabled, 'mandatory must resolve on');
+        $this->assertNotContains($keys[1], $enabled, 'optional must stay off');
+        $this->assertNotContains($keys[2], $enabled, 'hidden must stay off');
+    }
 }

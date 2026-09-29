@@ -2012,6 +2012,15 @@ class ModuleAccessService
 
         $modules = [];
         foreach ($rows as $row) {
+            // Category wins when present (mandatory/default = on;
+            // optional/hidden = off). Null category = legacy boolean.
+            $category = $row->category ?? null;
+            if ($category !== null) {
+                if (in_array($category, ['mandatory', 'default'], true)) {
+                    $modules[] = $row->module_key;
+                }
+                continue;
+            }
             if ($row->enabled) {
                 $modules[] = $row->module_key;
             }

@@ -512,10 +512,15 @@ class PackageIndustryController extends Controller
 
         $hasIndustryConfig = $rows->isNotEmpty();
         $selection = [];
+        $matrix = [];
         foreach ($rows as $row) {
             if ((bool) $row->enabled) {
                 $selection[$row->module_key] = true;
             }
+            // Category radio state: stored value wins, else legacy
+            // enabled mapping (true → default, false → hidden).
+            $matrix[$row->module_key] = $row->category
+                ?? ((bool) $row->enabled ? 'default' : 'hidden');
         }
 
         $source = 'industry';
@@ -547,6 +552,7 @@ class PackageIndustryController extends Controller
             'modules' => $modules,
             'groupedModules' => $groupedModules,
             'selection' => $selection,
+            'matrix' => $matrix,
             'industryDisabled' => $industryDisabled,
             'service' => $service,
             'source' => $source,
@@ -644,11 +650,34 @@ class PackageIndustryController extends Controller
 
         $validated = $request->validate([
             'modules' => 'nullable|array',
-            'modules.*' => 'string|exists:module_registry,key',
         ]);
 
-        $selected = array_values(array_unique($validated['modules'] ?? []));
-        $selectedLookup = array_flip($selected);
+        $rawModules = array_values($validated['modules'] ?? []);
+        $assignments = [];
+        if ($rawModules !== [] && is_string(reset($rawModules))) {
+            // Legacy flat payload: list of enabled module keys → category 'default'.
+            foreach (array_unique($rawModules) as $key) {
+                $assignments[$key] = 'default';
+            }
+        } else {
+            // Matrix payload: rows of [module_key, category].
+            $validKeys = ModuleRegistry::where('status', 'active')->pluck('key')->flip();
+            $validCategories = ['mandatory' => true, 'default' => true, 'optional' => true, 'hidden' => true];
+            foreach ($rawModules as $row) {
+                if (! is_array($row) || ! isset($row['module_key']) || ! is_string($row['module_key'])) {
+                    continue;
+                }
+                $key = $row['module_key'];
+                if (! isset($validKeys[$key])) {
+                    continue;
+                }
+                $category = $row['category'] ?? 'optional';
+                if (! isset($validCategories[$category])) {
+                    $category = 'optional';
+                }
+                $assignments[$key] = $category;
+            }
+        }
 
         $service = app(ModuleAccessService::class);
 
@@ -660,7 +689,7 @@ class PackageIndustryController extends Controller
 
         $allKeys = ModuleRegistry::where('status', 'active')->pluck('key')->all();
 
-        DB::transaction(function () use ($packageModel, $industry, $allKeys, $selectedLookup, $service) {
+        DB::transaction(function () use ($packageModel, $industry, $allKeys, $assignments, $service) {
             $industryConfig = config("industry-modules.{$industry}", []);
             $disabledLookup = array_flip($industryConfig['disabled'] ?? []);
 
@@ -670,21 +699,22 @@ class PackageIndustryController extends Controller
                 ->delete();
 
             foreach ($allKeys as $key) {
-                $enabled = isset($selectedLookup[$key]);
+                $category = $assignments[$key] ?? 'hidden';
 
                 if (isset($disabledLookup[$key])) {
-                    $enabled = false;
+                    $category = 'hidden';
                 }
 
                 if ($service->isCoreModule($key)) {
-                    $enabled = true;
+                    $category = 'mandatory';
                 }
 
                 DB::table('package_industry_modules')->insert([
                     'package_id' => $packageModel->id,
                     'industry_key' => $industry,
                     'module_key' => $key,
-                    'enabled' => $enabled,
+                    'enabled' => in_array($category, ['mandatory', 'default'], true),
+                    'category' => $category,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -698,8 +728,8 @@ class PackageIndustryController extends Controller
             $request,
             'package_industry_modules_updated',
             (string) $previousCount,
-            (string) count($selected),
-            "{$packageModel->slug} × {$industry}: ".count($selected).' module(s)'
+            (string) count(array_filter($assignments, fn ($c) => in_array($c, ['mandatory', 'default'], true))),
+            "{$packageModel->slug} × {$industry}: ".count($assignments).' module(s)'
         );
 
         return redirect()
