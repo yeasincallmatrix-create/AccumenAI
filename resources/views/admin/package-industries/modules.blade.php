@@ -150,16 +150,18 @@
         'hidden' => ['label' => 'Hidden', 'class' => 'text-dark', 'hint' => 'Not listed to tenant'],
     ];
     $categories = array_keys($categoryMeta);
+    $lockedMap = $locked ?? [];
 @endphp
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle mb-0">
-                                    <thead>
+                                            <thead>
                                         <tr>
                                             <th style="width:200px">Key</th>
                                             <th>Name</th>
                                             @foreach ($categories as $category)
                                                 <th class="text-center {{ $categoryMeta[$category]['class'] }}" title="{{ $categoryMeta[$category]['hint'] }}">{{ $categoryMeta[$category]['label'] }}</th>
                                             @endforeach
+                                            <th class="text-center text-warning" title="Off here, on in a higher-tier package — needs upgrade">Locked 🔒</th>
                                             <th style="width:210px">Flags</th>
                                         </tr>
                                     </thead>
@@ -169,6 +171,7 @@
                                                 $isCore = $service->isCoreModule($module->key);
                                                 $blocked = isset($industryDisabled[$module->key]);
                                                 $locked = $isCore || $blocked;
+                                                $isLocked = isset($lockedMap[$module->key]);
                                                 $current = $matrix[$module->key]
                                                     ?? ($isCore ? 'mandatory' : ($blocked ? 'hidden' : (isset($selection[$module->key]) ? 'default' : 'optional')));
                                                 $rowName = $parentKey . '_' . $loop->index;
@@ -199,6 +202,13 @@
                                                         </label>
                                                     </td>
                                                 @endforeach
+                                                <td class="text-center">
+                                                    @if ($isLocked)
+                                                        <span class="badge text-bg-warning" title="Available in: {{ implode(', ', $lockedMap[$module->key]) }} — needs upgrade">🔒 {{ implode('+', array_map(fn ($s) => preg_replace('/^(medical|retail|education|restaurant|real_estate|manufacturing|training_center)_/', '', $s), $lockedMap[$module->key])) }}</span>
+                                                    @else
+                                                        <span class="text-muted">—</span>
+                                                    @endif
+                                                </td>
                                                 <td>
                                                     @if ($isCore)
                                                         <span class="badge text-bg-info">core (always on)</span>

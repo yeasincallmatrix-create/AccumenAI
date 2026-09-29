@@ -545,6 +545,9 @@ class PackageIndustryController extends Controller
         // other industries → blocked (config disabled). Parent row first.
         $groupedModules = $this->groupModulesForIndustry($modules, $industry, $industryDisabled);
 
+        // Upgrade-locked: off here, on in a higher-tier package same industry.
+        $locked = $service->upgradeUnlockedBy($packageModel->id, $industry);
+
         return view('admin.package-industries.modules', [
             'package' => $packageModel,
             'industry' => $industry,
@@ -553,6 +556,7 @@ class PackageIndustryController extends Controller
             'groupedModules' => $groupedModules,
             'selection' => $selection,
             'matrix' => $matrix,
+            'locked' => $locked,
             'industryDisabled' => $industryDisabled,
             'service' => $service,
             'source' => $source,

@@ -651,4 +651,69 @@ class PackageIndustryTest extends TestCase
         $this->assertNotContains($keys[1], $enabled, 'optional must stay off');
         $this->assertNotContains($keys[2], $enabled, 'hidden must stay off');
     }
+
+    // ── Locked (upgrade) ──────────────────────────────────────────
+
+    public function test_package_tier_rank_orders_slugs(): void
+    {
+        $this->assertSame(0, \App\Services\ModuleAccessService::packageTierRank('free'));
+        $this->assertSame(1, \App\Services\ModuleAccessService::packageTierRank('medical_starter'));
+        $this->assertSame(1, \App\Services\ModuleAccessService::packageTierRank('basic'));
+        $this->assertSame(2, \App\Services\ModuleAccessService::packageTierRank('medical_growth'));
+        $this->assertSame(3, \App\Services\ModuleAccessService::packageTierRank('medical_enterprise'));
+        $this->assertSame(3, \App\Services\ModuleAccessService::packageTierRank('premium'));
+    }
+
+    public function test_upgrade_locked_detects_higher_package_modules(): void
+    {
+        $starter = SubscriptionPackage::where('slug', 'medical_starter')->firstOrFail();
+        $growth = SubscriptionPackage::where('slug', 'medical_growth')->firstOrFail();
+        $keys = $this->categoryFixtureKeys(2);
+        $this->assertCount(2, $keys);
+
+        $now = now();
+        DB::table('package_industry_modules')->insert([
+            'package_id' => $starter->id, 'industry_key' => 'healthcare',
+            'module_key' => $keys[0], 'enabled' => false, 'category' => 'hidden',
+            'created_at' => $now, 'updated_at' => $now,
+        ]);
+        DB::table('package_industry_modules')->insert([
+            'package_id' => $growth->id, 'industry_key' => 'healthcare',
+            'module_key' => $keys[0], 'enabled' => true, 'category' => 'default',
+            'created_at' => $now, 'updated_at' => $now,
+        ]);
+        DB::table('package_industry_modules')->insert([
+            'package_id' => $starter->id, 'industry_key' => 'healthcare',
+            'module_key' => $keys[1], 'enabled' => true, 'category' => 'default',
+            'created_at' => $now, 'updated_at' => $now,
+        ]);
+
+        $locked = $this->service()->upgradeUnlockedBy($starter->id, 'healthcare');
+
+        $this->assertArrayHasKey($keys[0], $locked, 'off-here + on-in-growth must lock');
+        $this->assertContains('medical_growth', $locked[$keys[0]]);
+        $this->assertArrayNotHasKey($keys[1], $locked, 'on-here must not lock');
+    }
+
+    public function test_modules_page_shows_locked_badge(): void
+    {
+        $this->loginAsAdmin();
+
+        $starter = SubscriptionPackage::where('slug', 'medical_starter')->firstOrFail();
+        $growth = SubscriptionPackage::where('slug', 'medical_growth')->firstOrFail();
+        $keys = $this->categoryFixtureKeys(1);
+        $this->assertCount(1, $keys);
+
+        $now = now();
+        DB::table('package_industry_modules')->insert([
+            'package_id' => $growth->id, 'industry_key' => 'healthcare',
+            'module_key' => $keys[0], 'enabled' => true, 'category' => 'default',
+            'created_at' => $now, 'updated_at' => $now,
+        ]);
+
+        $this->get(route('admin.package-industries.show-modules', [
+            'package' => $starter->id,
+            'industry' => 'healthcare',
+        ]))->assertOk()->assertSee('Locked', false);
+    }
 }

@@ -2030,6 +2030,87 @@ class ModuleAccessService
     }
 
     /**
+     * Upgrade-locked modules for a package × industry matrix page.
+     *
+     * A module is locked when it is OFF here (category optional/hidden or
+     * missing) but ON (mandatory/default) in a HIGHER-tier package of the
+     * same industry. Tier rank comes from the package slug suffix:
+     * free 0 < starter|basic 1 < growth|advanced 2 < enterprise|premium 3.
+     * Purely derived — nothing is persisted.
+     *
+     * @return array<string, array<int, string>> module_key => unlocking package slugs
+     */
+    public function upgradeUnlockedBy(int $packageId, string $industryKey): array
+    {
+        $package = \App\Models\SubscriptionPackage::find($packageId);
+        if (! $package) {
+            return [];
+        }
+        $myRank = self::packageTierRank($package->slug);
+
+        $slugs = DB::table('subscription_packages')->pluck('slug', 'id')->all();
+
+        $higherIds = [];
+        foreach ($slugs as $id => $slug) {
+            if ((int) $id !== $packageId && self::packageTierRank($slug) > $myRank) {
+                $higherIds[] = (int) $id;
+            }
+        }
+        if ($higherIds === []) {
+            return [];
+        }
+
+        $industryKeys = $this->industryLookupKeys($industryKey);
+
+        $onHere = DB::table('package_industry_modules')
+            ->where('package_id', $packageId)
+            ->whereIn('industry_key', $industryKeys)
+            ->whereIn('category', ['mandatory', 'default'])
+            ->pluck('module_key')
+            ->flip();
+
+        $rows = DB::table('package_industry_modules')
+            ->whereIn('package_id', $higherIds)
+            ->whereIn('industry_key', $industryKeys)
+            ->whereIn('category', ['mandatory', 'default'])
+            ->select('package_id', 'module_key')
+            ->get();
+
+        $locked = [];
+        foreach ($rows as $row) {
+            if (isset($onHere[$row->module_key])) {
+                continue;
+            }
+            $locked[$row->module_key][] = $slugs[$row->package_id] ?? ('#'.$row->package_id);
+        }
+        foreach ($locked as &$list) {
+            $list = array_values(array_unique($list));
+            sort($list);
+        }
+        unset($list);
+
+        ksort($locked);
+
+        return $locked;
+    }
+
+    public static function packageTierRank(string $slug): int
+    {
+        $s = strtolower($slug);
+        if (str_ends_with($s, 'enterprise') || str_ends_with($s, 'premium')) {
+            return 3;
+        }
+        if (str_ends_with($s, 'growth') || str_ends_with($s, 'advanced')) {
+            return 2;
+        }
+        if (str_ends_with($s, 'starter') || str_ends_with($s, 'basic')) {
+            return 1;
+        }
+
+        return 0;
+    }
+
+    /**
      * Walk one level up the scope hierarchy.
      */
     public function resolveParentScope(PackageScope $scope): ?PackageScope
