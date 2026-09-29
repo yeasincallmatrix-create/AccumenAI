@@ -325,4 +325,106 @@ class ModuleManagementTest extends TestCase
             ->count();
         $this->assertEquals($countBefore, $countAfter, 'Institute B should not have new overrides from Institute A toggle');
     }
+
+    public function test_feature_locked_directive_renders_nothing_in_navbar(): void
+    {
+        $html = \Illuminate\Support\Facades\Blade::render(
+            "@featureLocked('medical.pharmacy')\nLOCKED-UPGRADE-LINK\n@endfeatureLocked"
+        );
+
+        $this->assertStringNotContainsString('LOCKED-UPGRADE-LINK', $html);
+    }
+
+    public function test_settings_shows_upgrade_required_for_matrix_hidden_module(): void
+    {
+        $institute = Institute::create([
+            'name' => 'Matrix Locked Test-' . uniqid(),
+            'slug' => 'matrix-locked-test-' . uniqid(),
+            'status' => 'active',
+            'industry' => 'healthcare',
+        ]);
+
+        $free = SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['free'])->first();
+        if ($free) {
+            $institute->update(['package_id' => $free->id]);
+        }
+        $institute = $institute->fresh();
+
+        $owner = (new UserAccountService)->registerOwner([
+            'name' => 'Matrix Owner',
+            'first_name' => 'Matrix',
+            'last_name' => 'Owner',
+            'email' => 'module-matrix-locked-' . uniqid() . '@example.test',
+            'password_hash' => bcrypt('password'),
+            'status' => 'active',
+            'email_verified_at' => now(),
+        ]);
+        $roleId = Role::where('slug', 'institute-owner')->firstOrFail()->id;
+        (new MembershipService)->assign($owner, $institute->id, $roleId);
+
+        // Base package allows crm, but the industry matrix hides it.
+        $this->ensurePackageModules($institute, ['crm']);
+        \DB::table('package_industry_modules')->insert([
+            'package_id' => $institute->package_id,
+            'industry_key' => 'healthcare',
+            'module_key' => 'crm',
+            'enabled' => false,
+            'category' => 'hidden',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        app(ModuleAccessService::class)->flushCache($institute->id);
+
+        $this->asUser($owner, $institute->id)
+            ->get(route('settings.modules'))
+            ->assertOk()
+            ->assertSee('Upgrade required', false);
+    }
+
+    public function test_toggle_enable_blocked_for_matrix_hidden_module(): void
+    {
+        $institute = Institute::create([
+            'name' => 'Matrix Guard Test-' . uniqid(),
+            'slug' => 'matrix-guard-test-' . uniqid(),
+            'status' => 'active',
+            'industry' => 'healthcare',
+        ]);
+
+        $free = SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['free'])->first();
+        if ($free) {
+            $institute->update(['package_id' => $free->id]);
+        }
+        $institute = $institute->fresh();
+
+        $owner = (new UserAccountService)->registerOwner([
+            'name' => 'Guard Owner',
+            'first_name' => 'Guard',
+            'last_name' => 'Owner',
+            'email' => 'module-matrix-guard-' . uniqid() . '@example.test',
+            'password_hash' => bcrypt('password'),
+            'status' => 'active',
+            'email_verified_at' => now(),
+        ]);
+        $roleId = Role::where('slug', 'institute-owner')->firstOrFail()->id;
+        (new MembershipService)->assign($owner, $institute->id, $roleId);
+
+        $this->ensurePackageModules($institute, ['crm']);
+        \DB::table('package_industry_modules')->insert([
+            'package_id' => $institute->package_id,
+            'industry_key' => 'healthcare',
+            'module_key' => 'crm',
+            'enabled' => false,
+            'category' => 'hidden',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        app(ModuleAccessService::class)->flushCache($institute->id);
+
+        $this->asUser($owner, $institute->id)
+            ->postJson(route('settings.modules.toggle'), [
+                'module_key' => 'crm',
+                'enabled' => true,
+            ])
+            ->assertStatus(403);
+    }
 }

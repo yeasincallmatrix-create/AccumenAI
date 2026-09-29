@@ -179,26 +179,13 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // Blade directive: @featureLocked('medical.pharmacy') ... @endfeatureLocked
+        // Locked modules are intentionally NEVER rendered in the navbar —
+        // they surface only in module settings with an "Upgrade required"
+        // reason. The block below is kept (not deleted from views) so the
+        // condition stays a no-op rather than a template error.
         \Illuminate\Support\Facades\Blade::directive('featureLocked', function (string $featureKey) {
             return "<?php
-                if (! isset(\$__instCache)) {
-                    \$____tId = \App\Support\TenantContext::id();
-                    \$__instCache = \$____tId
-                        ? (\App\Models\Institute::find(\$____tId) ?: false)
-                        : false;
-                }
-                \$____inst = \$__instCache === false ? null : \$__instCache;
-                \$__featureLocked = false;
-                if (\$____inst) {
-                    \$__featureSvc = app(\App\Services\ModuleAccessService::class);
-                    \$__featureModKey = explode('.', {$featureKey}, 2)[0];
-                    if (\$__featureSvc->isIndustryCompatible(\$____inst, \$__featureModKey)
-                        && \$__featureSvc->isEnabled(\$____inst, \$__featureModKey)
-                        && ! \$__featureSvc->isFeatureEnabled(\$____inst, {$featureKey})) {
-                        \$__featureLocked = true;
-                    }
-                }
-                if (\$__featureLocked): ?>
+                if (false): ?>
             ";
         });
         \Illuminate\Support\Facades\Blade::directive('endfeatureLocked', function () {

@@ -2111,6 +2111,44 @@ class ModuleAccessService
     }
 
     /**
+     * Industry-matrix category for one package × industry × module.
+     *
+     * Returns null when the matrix has no explicit configuration for this
+     * package × industry (legacy boolean behavior applies) or the module
+     * has no row. Otherwise one of mandatory|default|optional|hidden.
+     */
+    public function industryMatrixCategory(int $packageId, string $industryKey, string $moduleKey): ?string
+    {
+        if (! Schema::hasTable('package_industry_modules')) {
+            return null;
+        }
+
+        $category = DB::table('package_industry_modules')
+            ->where('package_id', $packageId)
+            ->whereIn('industry_key', $this->industryLookupKeys($industryKey))
+            ->where('module_key', $moduleKey)
+            ->value('category');
+
+        return is_string($category) && $category !== '' ? $category : null;
+    }
+
+    /**
+     * Whether the package × industry matrix is explicitly configured
+     * (any rows at all). Unconfigured industries keep legacy behavior.
+     */
+    public function hasIndustryMatrix(int $packageId, string $industryKey): bool
+    {
+        if (! Schema::hasTable('package_industry_modules')) {
+            return false;
+        }
+
+        return DB::table('package_industry_modules')
+            ->where('package_id', $packageId)
+            ->whereIn('industry_key', $this->industryLookupKeys($industryKey))
+            ->exists();
+    }
+
+    /**
      * Walk one level up the scope hierarchy.
      */
     public function resolveParentScope(PackageScope $scope): ?PackageScope

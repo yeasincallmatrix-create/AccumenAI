@@ -30,11 +30,29 @@ class ModuleManagementController extends Controller
 
         $enabledKeys = $this->moduleAccess->getEnabledModules($institute);
 
-        $enriched = $modules->map(function ($m) use ($user, $enabledKeys, $institute) {
+        $matrixOn = $institute->package_id && $institute->industry
+            ? $this->moduleAccess->hasIndustryMatrix((int) $institute->package_id, (string) $institute->industry)
+            : false;
+
+        $enriched = $modules->map(function ($m) use ($user, $enabledKeys, $institute, $matrixOn) {
             $enabled = in_array($m->key, $enabledKeys, true);
 
             $canToggle = $this->userCanToggleModule($user, $m->key);
             $canAccess = $this->moduleAccess->isPackageAllowed($m->key, $institute->id);
+
+            // Industry-matrix override: off in this package × industry
+            // (optional/hidden) reads as upgrade-gated even when the base
+            // package set would allow it. Unconfigured industries keep
+            // legacy behavior.
+            $matrixOff = false;
+            if ($matrixOn && $institute->package_id && $institute->industry) {
+                $category = $this->moduleAccess->industryMatrixCategory(
+                    (int) $institute->package_id,
+                    (string) $institute->industry,
+                    $m->key
+                );
+                $matrixOff = $category !== null && ! in_array($category, ['mandatory', 'default'], true);
+            }
 
             $parentOk = true;
             if (! empty($m->parent_key)) {
@@ -44,7 +62,7 @@ class ModuleManagementController extends Controller
             $reason = null;
             if (! $canToggle) {
                 $reason = 'permission_denied';
-            } elseif (! $canAccess) {
+            } elseif (! $canAccess || $matrixOff) {
                 $reason = 'upgrade_required';
             } elseif (! $parentOk) {
                 $reason = 'parent_disabled';
@@ -57,7 +75,7 @@ class ModuleManagementController extends Controller
                 'parent_key' => $m->parent_key,
                 'coming_soon' => (bool) $m->coming_soon,
                 'enabled' => $enabled,
-                'can_toggle' => $canToggle && $canAccess && $parentOk,
+                'can_toggle' => $canToggle && $canAccess && ! $matrixOff && $parentOk,
                 'reason_disabled' => $reason,
             ];
         });
@@ -92,6 +110,19 @@ class ModuleManagementController extends Controller
 
         if ($enable && ! $this->moduleAccess->isPackageAllowed($key, $institute->id)) {
             return response()->json(['error' => 'Your package does not include this module.'], 403);
+        }
+
+        // Industry-matrix gate: optional/hidden in this package × industry
+        // cannot be tenant-enabled (upgrade path instead).
+        if ($enable && $institute->package_id && $institute->industry) {
+            $category = $this->moduleAccess->industryMatrixCategory(
+                (int) $institute->package_id,
+                (string) $institute->industry,
+                $key
+            );
+            if ($category !== null && ! in_array($category, ['mandatory', 'default'], true)) {
+                return response()->json(['error' => 'Your package does not include this module for your industry.'], 403);
+            }
         }
 
         if ($enable) {
