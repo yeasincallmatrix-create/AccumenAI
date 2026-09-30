@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AssignRequestId;
+use App\Http\Middleware\Api\IdempotencyMiddleware;
 use App\Http\Middleware\CheckFeatureAccess;
 use App\Http\Middleware\CheckModuleAccess;
 use App\Http\Middleware\CheckPermission;
@@ -25,6 +26,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -39,6 +41,13 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         channels: __DIR__.'/../routes/channels.php',
         health: '/up',
+        then: function () {
+            // Versioned mobile surface (Phase: core mobile API v1).
+            // Kept in a separate file so routes/api.php stays untouched.
+            Route::prefix('api')->middleware('api')->group(
+                base_path('routes/api_v1.php')
+            );
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
@@ -55,6 +64,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'ai.enabled' => EnsureAiEnabled::class,
             'ensure.institute.context' => EnsureInstituteContext::class,
             'force.json' => ForceJsonResponse::class,
+            'idempotency' => IdempotencyMiddleware::class,
             'platform.maintenance' => PlatformMaintenance::class,
             // Phase 0 — HMS Foundation (no app/Http/Kernel.php on Laravel 12;
             // aliases registered here instead).
