@@ -78,6 +78,15 @@ Route::post('admin/login', [PlatformAdminLoginController::class, 'login'])->name
 Route::get('institute/login', function () { return redirect()->route('login', [], 301); })->name('institute.login');
 Route::post('institute/login', function (\Illuminate\Http\Request $r) { return redirect()->route('login', [], 301); })->name('institute.login.submit');
 
+// Google OAuth — web guard only (Phase 1, local)
+Route::prefix('auth/google')->name('auth.google.')->group(function () {
+    Route::get('/redirect', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'redirect'])
+        ->middleware('guest:web')
+        ->name('redirect');
+    Route::get('/callback', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'callback'])
+        ->name('callback');
+});
+
 Route::get('institute/register', [InstituteUserRegisterController::class, 'showRegisterForm'])->name('institute.register');
 Route::post('institute/register', [InstituteUserRegisterController::class, 'register'])->name('institute.register.submit')
     ->middleware('throttle:10,15');
