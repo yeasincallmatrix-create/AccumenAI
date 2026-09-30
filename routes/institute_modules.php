@@ -2111,6 +2111,20 @@ Route::middleware(['auth:platform_admin', 'verified'])->prefix('admin')->name('a
     Route::get('geo/imports/{import}/status', [$adminGeoImp, 'status'])->name('geo.imports.status');
 });
 
+// ─── Tenant Backup / Restore (silent backup + OTP restore) ──────────────
+Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])
+    ->prefix('tenant/backup')
+    ->name('tenant.backup.')
+    ->group(function () {
+        Route::get('/', [\App\Http\Controllers\Tenant\BackupController::class, 'index'])->name('index');
+        Route::post('/', [\App\Http\Controllers\Tenant\BackupController::class, 'store'])->name('store');
+        Route::get('/{id}/download', [\App\Http\Controllers\Tenant\BackupController::class, 'download'])->name('download');
+
+        // Restore with OTP
+        Route::post('/{id}/restore/request', [\App\Http\Controllers\Tenant\RestoreController::class, 'requestOtp'])->name('restore.request');
+        Route::post('/{id}/restore/verify', [\App\Http\Controllers\Tenant\RestoreController::class, 'verify'])->name('restore.verify');
+    });
+
 // Admin Grading aliases — platform_admin outside tenant (overrides tenant aliases for correct guard)
 Route::middleware(['auth:platform_admin', 'verified'])->group(function () {
     $adminGrading = \App\Http\Controllers\Admin\AcademicGradingAdminController::class;

@@ -204,4 +204,22 @@ return [
     */
     'app_name' => env('BACKUP_APP_NAME', 'monetix'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Tenant backup (per-tenant encrypted export) — safety guards
+    |--------------------------------------------------------------------------
+    | Refuse backup if free space < min_free_space_mb.
+    | Refuse backup if expected size > max_backup_size_mb.
+    | Temp workdir auto-deleted after success/failure.
+    | Scheduled command deletes backups older than retention_days.
+    */
+    'max_backup_size_mb' => (int) env('BACKUP_MAX_SIZE_MB', 500),
+    'min_free_space_mb'  => (int) env('BACKUP_MIN_FREE_SPACE_MB', 2048),
+    'retention_days'     => (int) env('BACKUP_RETENTION_DAYS', 7),
+    'temp_dir'           => storage_path('app/backup-work'),
+    'output_dir'         => storage_path('app/backups'),
+
+    // Master KEK — wraps every tenant DEK. Server-side only, never exposed.
+    'master_key' => env('BACKUP_MASTER_KEY'),
+
 ];
