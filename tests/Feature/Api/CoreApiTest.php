@@ -339,7 +339,7 @@ class CoreApiTest extends TestCase
         $second = $this->postJson('/api/v1/sync/push', $body, $this->authHeaders($token))
             ->assertOk()->json('data.results.0');
 
-        $this->assertSame('ok', $first['status']);
+        $this->assertSame('created', $first['status']);
         $this->assertSame($first['server_id'], $second['server_id']);
         $this->assertSame(1, Branch::where('institute_id', $this->institute->id)
             ->where('code', $body['operations'][0]['payload']['code'])->count());
