@@ -138,6 +138,71 @@ class GoogleAuthTest extends TestCase
         $response->assertSee(route('auth.google.redirect'), false);
     }
 
+    public function test_soft_deleted_user_blocked_with_suspended_message()
+    {
+        $email = 'suspended-'.uniqid().'@example.com';
+
+        $user = User::factory()->create([
+            'email' => $email,
+            'google_id' => null,
+        ]);
+        $user->delete(); // soft delete
+
+        $this->mockGoogleUser($email, '111222333');
+
+        $response = $this->get(route('auth.google.callback'));
+
+        $response->assertRedirect(route('login'));
+        $response->assertSessionHasErrors(['email']);
+        $this->assertGuest('web');
+
+        // Email not recreated
+        $this->assertEquals(
+            1,
+            User::withTrashed()->where('email', $email)->count()
+        );
+
+        // google_id not linked (fresh() is null on soft-deleted — use withTrashed)
+        $this->assertNull(User::withTrashed()->find($user->id)->google_id);
+    }
+
+    public function test_inactive_user_blocked()
+    {
+        $email = 'inactive-'.uniqid().'@example.com';
+
+        User::factory()->create([
+            'email' => $email,
+            'status' => 'inactive',
+            'google_id' => null,
+        ]);
+
+        $this->mockGoogleUser($email, '444555666');
+
+        $response = $this->get(route('auth.google.callback'));
+
+        $response->assertRedirect(route('login'));
+        $response->assertSessionHasErrors(['email']);
+        $this->assertGuest('web');
+    }
+
+    public function test_soft_deleted_user_email_not_recreated()
+    {
+        $email = 'gone-'.uniqid().'@example.com';
+
+        $user = User::factory()->create(['email' => $email]);
+        $user->delete();
+
+        $this->mockGoogleUser($email, '777888999');
+
+        $this->get(route('auth.google.callback'));
+
+        // Only 1 user (the deleted one)
+        $this->assertEquals(
+            1,
+            User::withTrashed()->where('email', $email)->count()
+        );
+    }
+
     private function giveActiveMembership(User $user): void
     {
         $institute = \App\Models\Institute::query()->firstOrFail();

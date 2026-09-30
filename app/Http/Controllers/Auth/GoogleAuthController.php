@@ -43,10 +43,34 @@ class GoogleAuthController extends Controller
                 ->with('error', 'Google did not provide an email.');
         }
 
-        $user = User::where('email', $email)->first();
+        $user = User::withTrashed()->where('email', $email)->first();
         $isNewUser = $user === null;
 
         if ($user) {
+            // GUARD 1: Block soft-deleted users
+            if ($user->trashed()) {
+                Log::warning('Soft-deleted user attempted Google login', [
+                    'user_id' => $user->id,
+                    'email' => $email,
+                    'deleted_at' => $user->deleted_at,
+                ]);
+
+                return redirect()->route('login')
+                    ->withErrors(['email' => 'Your account has been suspended. Please contact support.']);
+            }
+
+            // GUARD 2: Block inactive users
+            if ($user->status !== 'active') {
+                Log::warning('Inactive user attempted Google login', [
+                    'user_id' => $user->id,
+                    'email' => $email,
+                    'status' => $user->status,
+                ]);
+
+                return redirect()->route('login')
+                    ->withErrors(['email' => 'Your account is inactive. Please contact your administrator.']);
+            }
+
             // Link existing user
             $updates = [];
             if (empty($user->google_id)) {
