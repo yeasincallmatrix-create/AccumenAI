@@ -22,6 +22,7 @@ class MeController extends Controller
         }
 
         $institute = $user->institute;
+        $package = $institute?->package;
 
         return ApiResponse::success([
             'user' => AuthController::userPayload($user),
@@ -30,6 +31,12 @@ class MeController extends Controller
                 'name' => $institute->name,
                 'slug' => $institute->slug,
                 'industry' => $institute->industry,
+                'logo_url' => $institute->logo_url,
+                'package' => $package ? [
+                    'id' => $package->id,
+                    'name' => $package->name,
+                    'tier' => $package->slug,
+                ] : null,
             ] : null,
             'permissions' => $this->permissions($user),
         ]);

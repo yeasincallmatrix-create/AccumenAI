@@ -91,7 +91,16 @@ class ModuleController extends Controller
             $modules = $modules->where('is_enabled', true)->values();
         }
 
-        return ApiResponse::success(['modules' => $modules->values()]);
+        $modules = $modules->values();
+
+        return ApiResponse::success(
+            ['modules' => $modules],
+            [
+                'total' => $modules->count(),
+                'institute_id' => $user->institute_id,
+                'enabled_only' => ($validated['enabled'] ?? null) === '1',
+            ]
+        );
     }
 
     /**

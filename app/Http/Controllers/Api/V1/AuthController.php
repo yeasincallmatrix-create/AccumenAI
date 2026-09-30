@@ -132,6 +132,8 @@ class AuthController extends Controller
             'id' => $user->id,
             'name' => trim(($user->first_name ?? '').' '.($user->last_name ?? '')),
             'email' => $user->email,
+            'phone' => $user->phone,
+            'avatar_url' => null,
             'institute_id' => $user->institute_id,
             'branch_id' => $user->branch_id,
             'role' => $user->role?->slug,
