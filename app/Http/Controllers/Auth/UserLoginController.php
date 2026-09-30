@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\Auth\EmailBanService;
 use App\Support\EmailNormalizer;
 use App\Support\PasswordHash;
 use App\Support\PhoneNormalizer;
@@ -72,6 +73,15 @@ class UserLoginController extends Controller
 
         /** @var User|null $user */
         $user = null;
+
+        // BAN CHECK (before user lookup — ban survives hard-delete)
+        $banCandidate = $isEmail ? ($normalizedEmail ?? $identifier) : null;
+        if ($banCandidate && app(EmailBanService::class)->isBanned($banCandidate)) {
+            throw ValidationException::withMessages([
+                'email' => ['This email has been banned. Please contact support.'],
+            ]);
+        }
+
         if ($isEmail && $normalizedEmail) {
             $user = User::query()->where('email', $normalizedEmail)->first();
         } elseif (!$isEmail && $normalizedPhone) {

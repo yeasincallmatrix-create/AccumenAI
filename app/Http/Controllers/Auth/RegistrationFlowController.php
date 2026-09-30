@@ -81,6 +81,10 @@ class RegistrationFlowController extends Controller
         if (! \App\Services\Identity\EmailDomainPolicy::isAllowed($normalizedEmail)) {
             return back()->withErrors(['email' => 'Email domain is not allowed.'])->withInput();
         }
+        // BAN CHECK (before duplicate checks — ban survives hard-delete)
+        if (app(\App\Services\Auth\EmailBanService::class)->isBanned($normalizedEmail)) {
+            return back()->withErrors(['email' => 'This email has been banned. Please contact support.'])->withInput();
+        }
         // Cross-table duplicate + pending check — allow resumable onboarding (OTP verified but org not done)
         $hasUser = \App\Models\User::where('email', $normalizedEmail)->exists();
         $hasPendingVerified = PendingRegistration::where('email', $normalizedEmail)->whereNotNull('verified_at')->exists();

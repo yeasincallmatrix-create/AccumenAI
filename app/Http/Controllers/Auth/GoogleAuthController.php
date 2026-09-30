@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\PendingRegistration;
 use App\Models\User;
+use App\Services\Auth\EmailBanService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -26,7 +27,7 @@ class GoogleAuthController extends Controller
             ->redirect();
     }
 
-    public function callback(Request $request)
+    public function callback(Request $request, EmailBanService $banService)
     {
         try {
             $googleUser = Socialite::driver('google')->user();
@@ -40,7 +41,18 @@ class GoogleAuthController extends Controller
         $email = $googleUser->getEmail();
         if (! $email) {
             return redirect()->route('login')
-                ->with('error', 'Google did not provide an email.');
+                ->withErrors(['email' => 'Google did not provide an email.']);
+        }
+
+        // BAN CHECK (before user lookup — ban survives hard-delete)
+        if ($banService->isBanned($email)) {
+            Log::warning('Banned email attempted Google login', [
+                'email' => $email,
+                'reason' => $banService->getBanReason($email),
+            ]);
+
+            return redirect()->route('login')
+                ->withErrors(['email' => 'This email has been banned. Please contact support.']);
         }
 
         $user = User::withTrashed()->where('email', $email)->first();
