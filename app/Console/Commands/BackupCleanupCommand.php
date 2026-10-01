@@ -8,6 +8,7 @@ use App\Models\BackupChunkReference;
 use App\Models\BackupManifest;
 use App\Services\Backup\ChunkReferenceService;
 use App\Services\Backup\OrphanCleanupService;
+use App\Services\Backup\TenantLockService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -54,14 +55,25 @@ class BackupCleanupCommand extends Command
 
         // 6. Phase 2B: chunk GC — drive_file_id rule (0 live refs → trash)
         foreach ($this->targetTenants($tenantId) as $tid) {
-            $gc = $orphanSvc->cleanupOrphanChunks((int) $tid, $dryRun);
-            if (($gc['trashed'] ?? 0) > 0 || ($gc['rows_dropped'] ?? 0) > 0 || $dryRun) {
-                $this->line("  Tenant {$tid}: orphan files trashed={$gc['trashed']} dead rows dropped={$gc['rows_dropped']}");
-            }
+            $this->withTenantLock((int) $tid, 'gc', function () use ($orphanSvc, $dryRun, $tid) {
+                $gc = $orphanSvc->cleanupOrphanChunks((int) $tid, $dryRun);
+                if (($gc['trashed'] ?? 0) > 0 || ($gc['rows_dropped'] ?? 0) > 0 || $dryRun) {
+                    $this->line("  Tenant {$tid}: orphan files trashed={$gc['trashed']} dead rows dropped={$gc['rows_dropped']}");
+                }
+            });
         }
 
         // 7. Phase 2B: purge expired trash (7-day grace; failure = retry next run)
-        $trash = $orphanSvc->purgeExpiredTrash($dryRun, $tenantId);
+        //    Per-tenant under lock (Phase 2D).
+        $trash = ['purged' => 0, 'failed' => 0, 'skipped' => 0];
+        foreach ($this->targetTenants($tenantId) as $tid) {
+            $this->withTenantLock((int) $tid, 'gc', function () use ($orphanSvc, $dryRun, $tid, &$trash) {
+                $t = $orphanSvc->purgeExpiredTrash($dryRun, (int) $tid);
+                $trash['purged']  += $t['purged'];
+                $trash['failed']  += $t['failed'];
+                $trash['skipped'] += $t['skipped'];
+            });
+        }
         $this->info("Trash purged: {$trash['purged']} (failed/retry: {$trash['failed']}, no-conn: {$trash['skipped']})");
 
         // 8. System SQL dumps (age-based; NEVER *.enc)
@@ -71,10 +83,12 @@ class BackupCleanupCommand extends Command
         if (!$dryRun) {
             $refService = app(ChunkReferenceService::class);
             foreach ($this->targetTenants($tenantId) as $tid) {
-                $drift = $refService->verifyAndReconcile((int) $tid);
-                if (!empty($drift)) {
-                    $this->warn("Tenant {$tid}: refcount drift fixed (" . count($drift) . ' entries)');
-                }
+                $this->withTenantLock((int) $tid, 'gc', function () use ($refService, $tid) {
+                    $drift = $refService->verifyAndReconcile((int) $tid);
+                    if (!empty($drift)) {
+                        $this->warn("Tenant {$tid}: refcount drift fixed (" . count($drift) . ' entries)');
+                    }
+                });
             }
         }
 
@@ -112,46 +126,78 @@ class BackupCleanupCommand extends Command
     private function cleanupAgeBased(?int $tenantId, int $retentionDays, bool $dryRun): void
     {
         $cutoff = now()->subDays($retentionDays);
-        $query = Backup::where('created_at', '<', $cutoff);
-        if ($tenantId) {
-            $query->where('tenant_id', $tenantId);
-        }
-        $old = $query->get();
+        $total = 0;
 
-        $this->info("Age-based: {$old->count()} backups older than {$retentionDays} days");
+        // Phase 2D: per-tenant under lock (same rows as the previous
+        // cross-tenant query — targetTenants covers every tenant with data).
+        foreach ($this->targetTenants($tenantId) as $tid) {
+            $this->withTenantLock((int) $tid, 'gc', function () use ($tid, $cutoff, $dryRun, &$total) {
+                $old = Backup::where('tenant_id', $tid)
+                    ->where('created_at', '<', $cutoff)
+                    ->get();
 
-        foreach ($old as $b) {
-            if ($dryRun) {
-                $this->line("  [DRY] Would delete: {$b->filename}");
-            } else {
-                $this->deleteBackup($b);
-            }
+                $total += $old->count();
+
+                foreach ($old as $b) {
+                    if ($dryRun) {
+                        $this->line("  [DRY] Tenant {$tid}: would delete {$b->filename}");
+                    } else {
+                        $this->deleteBackup($b);
+                    }
+                }
+            });
         }
+
+        $this->info("Age-based: {$total} backups older than {$retentionDays} days");
     }
 
     private function cleanupKeepCount(?int $tenantId, int $keepCount, bool $dryRun): void
     {
         foreach ($this->targetTenants($tenantId) as $tid) {
-            // 2A parity: ALL statuses count toward the slot (failed rows pile
-            // up otherwise) — but new backups only created for completed.
-            $backups = Backup::where('tenant_id', $tid)
-                ->orderByDesc('created_at')
-                ->orderByDesc('id')
-                ->get();
+            $this->withTenantLock((int) $tid, 'gc', function () use ($tid, $keepCount, $dryRun) {
+                // 2A parity: ALL statuses count toward the slot (failed rows pile
+                // up otherwise) — but new backups only created for completed.
+                $backups = Backup::where('tenant_id', $tid)
+                    ->orderByDesc('created_at')
+                    ->orderByDesc('id')
+                    ->get();
 
-            if ($backups->count() <= $keepCount) {
-                continue;
-            }
-
-            $toDelete = $backups->slice($keepCount);
-            foreach ($toDelete as $b) {
-                if ($dryRun) {
-                    $this->line("  [DRY] Tenant {$tid}: would delete {$b->filename}");
-                } else {
-                    $this->deleteBackup($b);
+                if ($backups->count() <= $keepCount) {
+                    return;
                 }
-            }
-            $this->line("  Tenant {$tid}: deleted {$toDelete->count()} (keep-count exceeded)");
+
+                $toDelete = $backups->slice($keepCount);
+                foreach ($toDelete as $b) {
+                    if ($dryRun) {
+                        $this->line("  [DRY] Tenant {$tid}: would delete {$b->filename}");
+                    } else {
+                        $this->deleteBackup($b);
+                    }
+                }
+                $this->line("  Tenant {$tid}: deleted {$toDelete->count()} (keep-count exceeded)");
+            });
+        }
+    }
+
+    /**
+     * Phase 2D: run a per-tenant cleanup step under the shared tenant lock.
+     * Fail-fast: locked tenants are skipped with a warning (no blocking).
+     */
+    private function withTenantLock(int $tenantId, string $operation, callable $fn): bool
+    {
+        $lockSvc = app(TenantLockService::class);
+        $lock = $lockSvc->acquire($tenantId, $operation);
+
+        if (!$lock) {
+            $this->warn("  Tenant {$tenantId}: skipped (locked)");
+            return false;
+        }
+
+        try {
+            $fn();
+            return true;
+        } finally {
+            $lockSvc->release($lock, $tenantId, $operation);
         }
     }
 

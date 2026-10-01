@@ -19,7 +19,8 @@ class RestoreService
         private \App\Contracts\DriveStorageInterface $drive,
         private BackupService $backup,
         private BackupChunkService $chunkService,
-        private ManifestService $manifestService
+        private ManifestService $manifestService,
+        private TenantLockService $lockService
     ) {}
 
     /**
@@ -114,12 +115,33 @@ class RestoreService
     /**
      * Phase 2C: job entry point — log row already created by the controller
      * after the OTP gate. Runs the restore body with progress tracking.
+     *
+     * Phase 2D: acquires the per-tenant lock (shared key with backup + GC).
+     * Fail-fast: a concurrent operation is rejected immediately.
+     * (verifyAndRestore() sync path stays lock-free for existing tests.)
      */
     public function executeRestore(RestoreLog $log, int $backupId, int $tenantId, int $userId): RestoreLog
     {
-        $backup = Backup::where('tenant_id', $tenantId)->findOrFail($backupId);
+        $lock = $this->lockService->acquire($tenantId, 'restore');
 
-        return $this->runRestore($log, $backup, $tenantId);
+        if (!$lock) {
+            $log->update([
+                'status'           => 'failed',
+                'error_message'    => 'Another operation is running for this tenant. Please wait and retry.',
+                'progress_stage'   => 'locked',
+                'progress_message' => 'Blocked by concurrent operation',
+            ]);
+
+            throw new \RuntimeException('Tenant is locked');
+        }
+
+        try {
+            $backup = Backup::where('tenant_id', $tenantId)->findOrFail($backupId);
+
+            return $this->runRestore($log, $backup, $tenantId);
+        } finally {
+            $this->lockService->release($lock, $tenantId, 'restore');
+        }
     }
 
     /**

@@ -265,4 +265,14 @@ return [
     // Phase 2C: parallel chunk download concurrency (Guzzle Pool).
     'download_concurrency'      => (int) env('BACKUP_DOWNLOAD_CONCURRENCY', 10),
 
+    // Phase 2D — concurrency (casts are mandatory: env() returns strings,
+    // and fail-fast compares lock_wait_seconds === 0 strictly).
+    'lock_ttl_seconds'          => (int) env('BACKUP_LOCK_TTL_SECONDS', 3660),
+    'lock_wait_seconds'         => (int) env('BACKUP_LOCK_WAIT_SECONDS', 0),   // 0 = fail fast
+    'lock_cache_store'          => env('BACKUP_LOCK_CACHE_STORE', null),       // null = default store
+
+    // Phase 2D — validation before commit (filter_var: 'false' must mean false)
+    'validate_before_commit'    => filter_var(env('BACKUP_VALIDATE_BEFORE_COMMIT', true), FILTER_VALIDATE_BOOLEAN),
+    'sample_chunk_check_pct'    => (int) env('BACKUP_SAMPLE_CHUNK_PCT', 10),
+
 ];

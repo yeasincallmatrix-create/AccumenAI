@@ -59,11 +59,15 @@ class RestoreJob implements ShouldQueue
                 'error'  => $e->getMessage(),
             ]);
 
+            // Phase 2D: keep the lock-specific stage/message when the failure
+            // was a lock rejection (user-facing text set in executeRestore).
+            $locked = $log->progress_stage === 'locked';
+
             $log->update([
                 'status'           => 'failed',
-                'error_message'    => $e->getMessage(),
-                'progress_stage'   => 'failed',
-                'progress_message' => 'Restore failed: ' . $e->getMessage(),
+                'error_message'    => $locked ? $log->error_message : $e->getMessage(),
+                'progress_stage'   => $locked ? 'locked' : 'failed',
+                'progress_message' => $locked ? $log->progress_message : 'Restore failed: ' . $e->getMessage(),
             ]);
 
             try {

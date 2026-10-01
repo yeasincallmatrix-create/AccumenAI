@@ -36,16 +36,30 @@ class BackupController extends Controller
         $user = auth()->user();
         $tenantId = $user->institute_id;
 
-        try {
-            // Pre-flight: Drive must be connected BEFORE queueing (async runs
-            // later — fail fast here with a user-facing message).
-            $conn = TenantDriveConnection::where('tenant_id', $tenantId)
-                ->whereNull('revoked_at')
-                ->first();
-            if (!$conn) {
-                throw new \RuntimeException('Google Drive not connected. Please connect Drive first.');
-            }
+        // Pre-flight 1: Drive must be connected BEFORE queueing (async runs
+        // later — fail fast here with a user-facing message).
+        $conn = TenantDriveConnection::where('tenant_id', $tenantId)
+            ->whereNull('revoked_at')
+            ->first();
+        if (!$conn) {
+            return $this->failResponse(
+                $request,
+                'Google Drive not connected. Please connect Drive first.',
+                422
+            );
+        }
 
+        // Phase 2D — pre-flight 2: already locked? → immediate 409 so the
+        // user gets a clear answer instead of a job that dies later.
+        if (app(\App\Services\Backup\TenantLockService::class)->isLocked($tenantId)) {
+            return $this->failResponse(
+                $request,
+                'Another backup/restore is running. Please wait.',
+                409
+            );
+        }
+
+        try {
             $backup = $this->service->createPendingBackup($tenantId, auth()->id());
 
             // Phase 2C: queue the work; UI polls progress endpoint.
@@ -66,15 +80,26 @@ class BackupController extends Controller
 
             return back()->with('success', 'Backup queued. You will be emailed when it completes.');
         } catch (\Throwable $e) {
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $e->getMessage(),
-                ], 422);
-            }
-
-            return back()->withErrors(['error' => $e->getMessage()]);
+            return $this->failResponse($request, $e->getMessage(), 422);
         }
+    }
+
+    /**
+     * Phase 2D: single failure responder. 'error' + 'message' keys both
+     * present — 'error' per spec contract, 'message' kept for the existing
+     * progress-modal JS.
+     */
+    private function failResponse(Request $request, string $error, int $status)
+    {
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'error'   => $error,
+                'message' => $error,
+            ], $status);
+        }
+
+        return back()->withErrors(['error' => $error]);
     }
 
     public function progress(int $id)

@@ -35,6 +35,17 @@ class RestoreController extends Controller
         $user = auth()->user();
         $tenantId = $user->institute_id;
 
+        // Phase 2D — lock pre-flight BEFORE the OTP token is consumed, so a
+        // concurrent-operation rejection never burns the user's code.
+        if (app(\App\Services\Backup\TenantLockService::class)->isLocked($tenantId)) {
+            $msg = 'Another backup/restore is running. Please wait.';
+            return response()->json([
+                'success' => false,
+                'error'   => $msg,
+                'message' => $msg,
+            ], 409);
+        }
+
         try {
             // OTP gate runs SYNC (token consumed exactly once here).
             $this->service->verifyOtpToken($tenantId, $backupId, auth()->id(), $request->otp);

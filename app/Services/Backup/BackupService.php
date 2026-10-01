@@ -4,7 +4,6 @@ namespace App\Services\Backup;
 
 use App\Contracts\DriveStorageInterface;
 use App\Models\Backup;
-use App\Models\BackupChunk;
 use App\Models\BackupManifest;
 use App\Models\TenantDriveConnection;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +17,8 @@ class BackupService
         private DriveStorageInterface $drive,
         private BackupChunkService $chunkService,
         private ManifestService $manifestService,
-        private ChunkReferenceService $refService
+        private ChunkReferenceService $refService,
+        private TenantLockService $lockService
     ) {}
 
     /**
@@ -68,9 +68,25 @@ class BackupService
     /**
      * Phase 2C: job entry point — runs an EXISTING pending/failed row with
      * progress tracking. Adaptation 9: createBackup() keeps its sync path.
+     *
+     * Phase 2D: acquires the per-tenant lock (shared key with restore + GC).
+     * Fail-fast: a concurrent operation is rejected immediately.
      */
     public function executeBackup(Backup $backup, int $tenantId, int $userId): Backup
     {
+        $lock = $this->lockService->acquire($tenantId, 'backup');
+
+        if (!$lock) {
+            $backup->update([
+                'status'           => 'failed',
+                'error_message'    => 'Another backup/restore is already running for this tenant. Please wait and retry.',
+                'progress_stage'   => 'locked',
+                'progress_message' => 'Blocked by concurrent operation',
+            ]);
+
+            throw new \RuntimeException('Tenant is locked (concurrent operation)');
+        }
+
         $progress = app(ProgressService::class);
 
         try {
@@ -101,6 +117,7 @@ class BackupService
 
             return $result;
         } finally {
+            $this->lockService->release($lock, $tenantId, 'backup');
             $progress->clear($backup);
         }
     }
@@ -186,33 +203,14 @@ class BackupService
             @unlink($jsonFile);
         }
 
-        // Build + save manifest (encrypt → Drive current + checksum + timestamped copy)
+        // Build + save manifest — Phase 2D atomic swap: the transaction
+        // covers manifest row + chunk rows + refs + backup completion;
+        // Drive upload happens after commit.
         $progress->updateBackup($backup, 90, 'finalizing', 'Saving manifest...');
         $manifest = $this->manifestService->buildManifest($tenantId, $backup->id, $tableData);
         $manifestRecord = $this->manifestService->saveManifest(
-            $backup, $conn, $manifest, $this->encryption
+            $backup, $conn, $manifest, $this->encryption, $tableData
         );
-
-        // Persist chunk rows (dedup reuses drive_file_id — rows are per-manifest)
-        $chunkRowIds = [];
-        foreach ($tableData as $table => $data) {
-            foreach ($data['chunks'] as $chunk) {
-                $chunkRowIds[] = BackupChunk::create([
-                    'manifest_id'    => $manifestRecord->id,
-                    'tenant_id'      => $tenantId,
-                    'content_sha256' => $chunk['hash'],
-                    'file_hmac'      => $chunk['file_hmac'],
-                    'drive_file_id'  => $chunk['drive_file_id'],
-                    'source_table'   => $table,
-                    'chunk_index'    => $chunk['index'],
-                    'total_chunks'   => $data['total_chunks'],
-                    'size_bytes'     => $chunk['size'],
-                ])->id;
-            }
-        }
-
-        // Phase 2B: register row-level references (manifest × chunk + file_id)
-        $this->refService->registerReferences($tenantId, $manifestRecord, $chunkRowIds);
 
         $backup->update([
             'status'          => 'completed',

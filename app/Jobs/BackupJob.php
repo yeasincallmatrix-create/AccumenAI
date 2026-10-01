@@ -62,11 +62,15 @@ class BackupJob implements ShouldQueue
                 'error'     => $e->getMessage(),
             ]);
 
+            // Phase 2D: keep the lock-specific stage/message when the failure
+            // was a lock rejection (user-facing text set in executeBackup).
+            $locked = $backup->progress_stage === 'locked';
+
             $backup->update([
                 'status'           => 'failed',
-                'error_message'    => $e->getMessage(),
-                'progress_stage'   => 'failed',
-                'progress_message' => 'Backup failed: ' . $e->getMessage(),
+                'error_message'    => $locked ? $backup->error_message : $e->getMessage(),
+                'progress_stage'   => $locked ? 'locked' : 'failed',
+                'progress_message' => $locked ? $backup->progress_message : 'Backup failed: ' . $e->getMessage(),
             ]);
 
             try {
