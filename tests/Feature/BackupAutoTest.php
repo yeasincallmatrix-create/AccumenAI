@@ -24,6 +24,53 @@ class BackupAutoTest extends TestCase
         $this->assertEquals($before, Backup::count(), 'Dry-run must not create backups');
     }
 
+    public function test_dry_run_resolves_owner_from_membership_table()
+    {
+        $institute = \App\Models\Institute::create([
+            'name'   => 'AutoOwner-' . uniqid(),
+            'slug'   => str()->slug('auto-owner-' . uniqid()),
+            'status' => 'active',
+        ]);
+
+        // No membership yet → dry-run must report NONE for this tenant
+        $this->artisan('backup:auto', ['--dry-run' => true])
+            ->expectsOutputToContain("{$institute->name} — owner: NONE (would skip)")
+            ->assertExitCode(0);
+
+        // Attach owner via institution_user (Membership model's table) —
+        // NOT the legacy institute_users table.
+        $user = \App\Models\User::create([
+            'name'              => 'Auto Owner',
+            'email'             => 'auto-owner-' . uniqid() . '@example.test',
+            'password_hash'     => \Illuminate\Support\Facades\Hash::make('password'),
+            'account_type'      => 'owner',
+            'email_verified_at' => now(),
+        ]);
+
+        $ownerRole = \App\Models\Role::query()
+            ->where('slug', 'institute-owner')
+            ->whereNull('institute_id')
+            ->firstOrFail();
+
+        \DB::table('institution_user')->insert([
+            'user_id'        => $user->id,
+            'institution_id' => $institute->id,
+            'role_id'        => $ownerRole->id,
+            'status'         => 'active',
+            'created_at'     => now(),
+            'updated_at'     => now(),
+        ]);
+
+        $this->artisan('backup:auto', ['--dry-run' => true])
+            ->expectsOutputToContain("{$institute->name} — owner: {$user->id}")
+            ->assertExitCode(0);
+
+        // Cleanup test rows
+        \DB::table('institution_user')->where('user_id', $user->id)->delete();
+        $user->delete();
+        $institute->delete();
+    }
+
     public function test_cleanup_enforces_max_backups()
     {
         $tenantId = 999999;

@@ -47,12 +47,15 @@ class SecurityForensicTest extends TestCase
     private function makeInstitute(): Institute
     {
         $slug = 'forensic-'.uniqid();
+
+        // package_id / currency_id must be resolved dynamically — hardcoded 1
+        // fails FK on environments where seeded ids differ (test DB: 900+).
         return Institute::create([
             'name' => 'Forensic Test Institute '.uniqid(),
             'slug' => $slug,
             'status' => 'active',
-            'package_id' => 1,
-            'currency_id' => 1,
+            'package_id' => DB::table('subscription_packages')->orderBy('id')->value('id'),
+            'currency_id' => DB::table('currencies')->orderBy('id')->value('id'),
             'country_id' => $this->bdCountryId(),
         ]);
     }

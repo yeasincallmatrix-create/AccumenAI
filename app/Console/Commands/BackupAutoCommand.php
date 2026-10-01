@@ -27,7 +27,8 @@ class BackupAutoCommand extends Command
             return self::SUCCESS;
         }
 
-        // Get tenants (institutes has no owner_user_id — owner resolved separately)
+        // Get tenants (institutes has no owner_user_id — owner resolved from
+        // the institution_user membership; see getOwnerId())
         $query = DB::table('institutes')->where('status', 'active');
         if ($this->option('tenant')) {
             $query->where('id', $this->option('tenant'));
@@ -111,19 +112,38 @@ class BackupAutoCommand extends Command
     }
 
     /**
-     * Resolve tenant owner from institute_users.
-     * Schema: institute_users.institute_id + role_id (1 = "Institute Owner").
-     * institutes has no owner_user_id column.
+     * Resolve tenant owner from the MODERN membership table (institution_user,
+     * Membership model) linked to users (account_type = owner).
+     *
+     * institute_users is the LEGACY per-institute account table — owner rows
+     * live in institution_user. The owner role is resolved by slug
+     * ('institute-owner'), never hardcoded: its id differs per environment
+     * (dev=1, test=3306), and per-tenant role copies are accepted too.
      */
     private function getOwnerId(int $tenantId): ?int
     {
-        $id = DB::table('institute_users')
-            ->where('institute_id', $tenantId)
-            ->where('role_id', 1)
-            ->whereNull('deleted_at')
-            ->orderBy('id')
-            ->value('id');
+        $ownerRoleIds = DB::table('roles')
+            ->where('slug', 'institute-owner')
+            ->where(function ($q) use ($tenantId) {
+                $q->whereNull('institute_id')->orWhere('institute_id', $tenantId);
+            })
+            ->pluck('id');
 
-        return $id !== null ? (int) $id : null;
+        if ($ownerRoleIds->isEmpty()) {
+            return null;
+        }
+
+        $userId = DB::table('institution_user')
+            ->join('users', 'users.id', '=', 'institution_user.user_id')
+            ->where('institution_user.institution_id', $tenantId)
+            ->whereIn('institution_user.role_id', $ownerRoleIds)
+            ->where('institution_user.status', 'active')
+            ->where('users.account_type', 'owner')
+            ->whereNull('institution_user.deleted_at')
+            ->whereNull('users.deleted_at')
+            ->orderBy('institution_user.id')
+            ->value('institution_user.user_id');
+
+        return $userId !== null ? (int) $userId : null;
     }
 }
