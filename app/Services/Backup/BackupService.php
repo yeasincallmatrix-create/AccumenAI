@@ -2,13 +2,18 @@
 
 namespace App\Services\Backup;
 
+use App\Contracts\DriveStorageInterface;
 use App\Models\Backup;
+use App\Models\TenantDriveConnection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class BackupService
 {
-    public function __construct(private EncryptionService $encryption) {}
+    public function __construct(
+        private EncryptionService $encryption,
+        private DriveStorageInterface $drive
+    ) {}
 
     /**
      * Silent backup — no passphrase, no user prompt.
@@ -69,7 +74,40 @@ class BackupService
                 throw new \RuntimeException('Backup integrity verification failed');
             }
 
-            // Delete previous backups ONLY after new backup verified.
+            // Phase 2: upload the verified ciphertext to Google Drive.
+            // Drive is the source of truth; the local .enc is removed only
+            // AFTER the upload succeeded (G5: orphan cleanup happens in
+            // deletePreviousBackups below, which now also deletes Drive files).
+            $driveConn = TenantDriveConnection::where('tenant_id', $tenantId)
+                ->whereNull('revoked_at')
+                ->first();
+
+            if (!$driveConn) {
+                throw new \RuntimeException('Google Drive not connected. Please connect Drive first.');
+            }
+
+            try {
+                $driveFileId = $this->drive->uploadBackup($driveConn, $encPath, $backup->filename);
+
+                $backup->update([
+                    'destination'   => 'drive',
+                    'drive_file_id' => $driveFileId,
+                ]);
+
+                $driveConn->update(['last_sync_at' => now()]);
+
+                // Delete local encrypted file (Drive = source of truth)
+                @unlink($encPath);
+            } catch (\Throwable $e) {
+                $backup->update([
+                    'status'        => 'failed',
+                    'error_message' => 'Drive upload failed: ' . $e->getMessage(),
+                ]);
+                // Local .enc deliberately kept: it is the only copy right now.
+                throw $e;
+            }
+
+            // Delete previous backups ONLY after new backup verified + uploaded.
             if (config('backup.delete_previous_on_success', true)) {
                 $this->deletePreviousBackups($tenantId, $backup->id);
             }
@@ -229,6 +267,14 @@ class BackupService
             return;
         }
 
+        // G5: one connection lookup for all Drive-side deletions below.
+        $hasDriveBackups = $previous->contains(
+            fn ($b) => $b->destination === 'drive' && $b->drive_file_id
+        );
+        $driveConn = $hasDriveBackups
+            ? TenantDriveConnection::where('tenant_id', $tenantId)->whereNull('revoked_at')->first()
+            : null;
+
         $deleted = 0;
         $freedBytes = 0;
 
@@ -238,6 +284,28 @@ class BackupService
                 $freedBytes += (int) filesize($path);
                 @unlink($path);
             }
+
+            // Drive = source of truth: the remote copy must go too, otherwise
+            // keep-1 orphans one Drive file per backup run.
+            if ($old->destination === 'drive' && $old->drive_file_id) {
+                if ($driveConn) {
+                    try {
+                        $this->drive->deleteFile($driveConn, $old->drive_file_id);
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning('Drive orphan cleanup failed', [
+                            'backup_id' => $old->id,
+                            'file_id'   => $old->drive_file_id,
+                            'error'     => $e->getMessage(),
+                        ]);
+                    }
+                } else {
+                    \Illuminate\Support\Facades\Log::warning('Drive orphan cleanup skipped: no active connection', [
+                        'backup_id' => $old->id,
+                        'file_id'   => $old->drive_file_id,
+                    ]);
+                }
+            }
+
             $old->delete();
             $deleted++;
         }

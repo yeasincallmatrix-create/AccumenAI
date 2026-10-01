@@ -68,6 +68,13 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI'),
+        // Drive OAuth callback (backup storage) — must be registered in the
+        // Google Console Authorized Redirect URIs alongside 'redirect'.
+        'drive_redirect' => env('GOOGLE_DRIVE_REDIRECT_URI'),
+        // Audience accepted for the mobile app's ID token. google_sign_in()
+        // sends the web client id as serverClientId, so GOOGLE_CLIENT_ID
+        // already covers it; GOOGLE_MOBILE_CLIENT_ID is for a dedicated one.
+        'mobile_client_id' => env('GOOGLE_MOBILE_CLIENT_ID'),
     ],
 
 ];

@@ -6,6 +6,7 @@ use App\Mail\EmailOtpMail;
 use App\Models\Backup;
 use App\Models\RestoreLog;
 use App\Models\RestoreToken;
+use App\Models\TenantDriveConnection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -14,6 +15,7 @@ class RestoreService
 {
     public function __construct(
         private EncryptionService $encryption,
+        private \App\Contracts\DriveStorageInterface $drive,
         private BackupService $backup
     ) {}
 
@@ -93,11 +95,32 @@ class RestoreService
 
         $workDir = storage_path("app/restore-work/{$log->id}");
         $tarPath = "{$workDir}.tar.gz";
+        $downloadedEnc = null;
 
         try {
-            $encPath = storage_path("app/backups/{$backup->filename}");
-            if (!file_exists($encPath)) {
-                throw new \RuntimeException('Backup file not found');
+            // Phase 2: resolve the ciphertext — Drive is the source of truth
+            // once destination === 'drive' (local .enc was deleted after upload).
+            if ($backup->destination === 'drive' && $backup->drive_file_id) {
+                $driveConn = TenantDriveConnection::where('tenant_id', $tenantId)
+                    ->whereNull('revoked_at')
+                    ->first();
+
+                if (!$driveConn) {
+                    throw new \RuntimeException(
+                        'Google Drive connection not found for this backup. Reconnect Drive first.'
+                    );
+                }
+
+                $encPath = storage_path("app/restore-work/{$log->id}.enc");
+                @mkdir(dirname($encPath), 0755, true);
+
+                $this->drive->downloadBackup($driveConn, $backup->drive_file_id, $encPath);
+                $downloadedEnc = $encPath;
+            } else {
+                $encPath = storage_path("app/backups/{$backup->filename}");
+                if (!file_exists($encPath)) {
+                    throw new \RuntimeException('Backup file not found locally or on Drive');
+                }
             }
 
             // Rollback snapshot BEFORE restore
@@ -120,6 +143,9 @@ class RestoreService
             ]);
 
             @unlink($tarPath);
+            if ($downloadedEnc !== null) {
+                @unlink($downloadedEnc);
+            }
             $this->rmrf($workDir);
 
         } catch (\Throwable $e) {
@@ -128,6 +154,9 @@ class RestoreService
                 'records_affected' => ['error' => $e->getMessage()],
             ]);
             @unlink($tarPath);
+            if ($downloadedEnc !== null) {
+                @unlink($downloadedEnc);
+            }
             $this->rmrf($workDir);
             throw $e;
         }

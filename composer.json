@@ -9,6 +9,7 @@
         "php": "^8.2",
         "barryvdh/laravel-dompdf": "^3.1",
         "chillerlan/php-qrcode": "^6.0",
+        "google/apiclient": "^2.20",
         "intervention/image": "*",
         "laravel/fortify": "^1.38",
         "laravel/framework": "^12.0",

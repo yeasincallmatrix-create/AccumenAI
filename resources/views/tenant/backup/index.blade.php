@@ -21,6 +21,34 @@
         <div class="alert alert-danger">{{ $errors->first() }}</div>
     @endif
 
+    {{-- Drive Connection --}}
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6><i class="bi bi-google"></i> Google Drive</h6>
+                    <small id="drive-status" class="text-muted">Checking...</small>
+                </div>
+                <div>
+                    <a href="{{ route('tenant.backup.drive.connect') }}"
+                       id="drive-connect-btn" class="btn btn-outline-primary btn-sm d-none">
+                        Connect Drive
+                    </a>
+                    <form method="POST" action="{{ route('tenant.backup.drive.disconnect') }}"
+                          id="drive-disconnect-form" class="d-none">
+                        @csrf
+                        <button class="btn btn-outline-danger btn-sm">Disconnect</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <p class="text-muted">
+        <i class="bi bi-info-circle"></i>
+        Backups upload to your Google Drive. Connect Drive below to enable.
+    </p>
+
     <form method="POST" action="{{ route('tenant.backup.store') }}" class="mb-3">
         @csrf
         <button class="btn btn-primary">
@@ -142,5 +170,28 @@ async function verifyOtp() {
         document.getElementById('otpError').textContent = data.message;
     }
 }
+
+// Drive connection status
+fetch('{{ route("tenant.backup.drive.status") }}', {
+    headers: { 'Accept': 'application/json' },
+})
+    .then(r => r.json())
+    .then(d => {
+        const status = document.getElementById('drive-status');
+        const connectBtn = document.getElementById('drive-connect-btn');
+        const disconnectForm = document.getElementById('drive-disconnect-form');
+
+        if (d.connected) {
+            status.innerHTML = 'Connected: <strong>' + d.email + '</strong>' +
+                (d.last_sync_at ? ' · Last sync: ' + d.last_sync_at : '');
+            disconnectForm.classList.remove('d-none');
+        } else {
+            status.textContent = 'Not connected — connect to enable backups';
+            connectBtn.classList.remove('d-none');
+        }
+    })
+    .catch(() => {
+        document.getElementById('drive-status').textContent = 'Could not load Drive status';
+    });
 </script>
 @endsection

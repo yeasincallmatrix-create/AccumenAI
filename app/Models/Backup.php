@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class Backup extends Model
 {
     protected $fillable = [
-        'tenant_id', 'owner_user_id', 'filename', 'size_bytes',
+        'tenant_id', 'owner_user_id', 'destination', 'drive_file_id',
+        'filename', 'size_bytes',
         'file_hmac', 'status', 'error_message', 'completed_at',
     ];
 

@@ -54,6 +54,13 @@ class AppServiceProvider extends ServiceProvider
         // reuse Fortify as the engine for password reset / 2FA / verification.
         Fortify::ignoreRoutes();
 
+        // Backup storage destination (Phase 2): Drive-backed in production,
+        // swapped for tests\Support\FakeDriveService inside tests.
+        $this->app->bind(
+            \App\Contracts\DriveStorageInterface::class,
+            \App\Services\Backup\GoogleDriveService::class
+        );
+
         // Phase 1 lab analyzer integration: adapter registry skeleton.
         // Phase 3: Sysmex XN-550 registered; concrete adapters resolve by
         // adapter_key + adapter_version pinned per analyzer row.

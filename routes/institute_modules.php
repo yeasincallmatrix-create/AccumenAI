@@ -2112,6 +2112,13 @@ Route::middleware(['auth:platform_admin', 'verified'])->prefix('admin')->name('a
 });
 
 // ─── Tenant Backup / Restore (silent backup + OTP restore) ──────────────
+// Drive OAuth callback (G4): OUTSIDE the hardened group — Google redirects
+// here without tenant context; auth is enough to identify the connecting
+// owner. Connect/status/disconnect stay permission-gated below.
+Route::middleware(['auth:institute_user,web', 'verified'])
+    ->get('tenant/backup/drive/callback', [\App\Http\Controllers\Tenant\DriveConnectionController::class, 'callback'])
+    ->name('tenant.backup.drive.callback');
+
 Route::middleware(['auth:institute_user,web', 'tenant', 'verified', 'permission:settings.manage'])
     ->prefix('tenant/backup')
     ->name('tenant.backup.')
@@ -2123,6 +2130,14 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified', 'permission:
         // Restore with OTP
         Route::post('/{id}/restore/request', [\App\Http\Controllers\Tenant\RestoreController::class, 'requestOtp'])->name('restore.request');
         Route::post('/{id}/restore/verify', [\App\Http\Controllers\Tenant\RestoreController::class, 'verify'])->name('restore.verify');
+
+        // Google Drive connection (owner-only, inherits permission:settings.manage).
+        // Relative prefix: parent already provides tenant/backup.
+        Route::prefix('drive')->name('drive.')->group(function () {
+            Route::get('/status', [\App\Http\Controllers\Tenant\DriveConnectionController::class, 'status'])->name('status');
+            Route::get('/connect', [\App\Http\Controllers\Tenant\DriveConnectionController::class, 'connect'])->name('connect');
+            Route::post('/disconnect', [\App\Http\Controllers\Tenant\DriveConnectionController::class, 'disconnect'])->name('disconnect');
+        });
     });
 
 // Admin Grading aliases — platform_admin outside tenant (overrides tenant aliases for correct guard)
