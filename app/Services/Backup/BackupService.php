@@ -4,6 +4,7 @@ namespace App\Services\Backup;
 
 use App\Models\Backup;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class BackupService
 {
@@ -14,11 +15,18 @@ class BackupService
      */
     public function createBackup(int $tenantId, int $userId): Backup
     {
-        // Guard: disk space
+        // Guard: disk space — refuse below hard floor, warn below soft floor
         $freeMb = disk_free_space(storage_path()) / 1024 / 1024;
-        $minFree = (int) config('backup.min_free_space_mb', 2048);
-        if ($freeMb < $minFree) {
-            throw new \RuntimeException("Insufficient disk space ({$freeMb}MB free, need {$minFree}MB)");
+        $refuseMb = (int) config('backup.refuse_free_space_mb', 512);
+        $warnMb = (int) config('backup.min_free_space_mb', 1024);
+        if ($freeMb < $refuseMb) {
+            throw new \RuntimeException("Insufficient disk space ({$freeMb}MB free, refuse below {$refuseMb}MB)");
+        }
+        if ($freeMb < $warnMb) {
+            \Illuminate\Support\Facades\Log::warning('backup_low_disk_space', [
+                'free_mb' => round($freeMb, 1),
+                'warn_mb' => $warnMb,
+            ]);
         }
 
         $backup = Backup::create([
@@ -138,8 +146,9 @@ class BackupService
      * Every tenant-scoped table (has institute_id), excluding backup
      * bookkeeping tables so a restore never re-imports backup metadata.
      * ADAPT: single information_schema query — no hard-coded table list.
+     * Public: RestoreService builds rollback snapshots from the same list.
      */
-    private function getTenantTables(): array
+    public function getTenantTables(): array
     {
         $skip = [
             'backups', 'tenant_backup_keys', 'restore_tokens', 'restore_logs',
@@ -163,7 +172,7 @@ class BackupService
         return $tables;
     }
 
-    private function primaryKeyColumns(string $table): array
+    public function primaryKeyColumns(string $table): array
     {
         $rows = DB::select(
             "SELECT COLUMN_NAME AS c FROM information_schema.KEY_COLUMN_USAGE
@@ -172,7 +181,10 @@ class BackupService
             [$table]
         );
 
-        return array_map(fn ($r) => $r->c, $rows);
+        $keys = array_map(fn ($r) => $r->c, $rows);
+
+        // No PK: fall back to total order over all columns (keeps chunk() valid/stable)
+        return $keys ?: Schema::getColumnListing($table);
     }
 
     private function rmrf(string $dir): void

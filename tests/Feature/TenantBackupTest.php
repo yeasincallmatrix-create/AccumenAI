@@ -55,14 +55,15 @@ class TenantBackupTest extends TestCase
         TenantBackupKey::where('tenant_id', 88005)->delete();
 
         $src = tempnam(sys_get_temp_dir(), 'src');
-        // Payload long enough that byte 50 sits inside the ciphertext.
-        file_put_contents($src, 'Original tenant payload for tamper test');
+        // Force multi-chunk (5MB+ chunks)
+        file_put_contents($src, str_repeat('Data chunk ', 500000)); // ~5.5MB
         $enc = $src . '.enc';
         $hmac = $svc->encryptFile($src, $enc, 88005);
 
-        // Tamper
+        // Tamper: flip a byte in ciphertext (skip first chunk header)
         $data = file_get_contents($enc);
-        $data[50] = chr(ord($data[50]) ^ 1);
+        $tamperIndex = 5000; // inside first chunk
+        $data[$tamperIndex] = chr(ord($data[$tamperIndex]) ^ 1);
         file_put_contents($enc, $data);
 
         $this->expectException(\RuntimeException::class);
@@ -70,6 +71,25 @@ class TenantBackupTest extends TestCase
         $svc->decryptFile($enc, $src . '.dec', 88005, $hmac);
 
         @unlink($src); @unlink($enc);
+    }
+
+    public function test_multi_chunk_roundtrip()
+    {
+        $svc = app(EncryptionService::class);
+        TenantBackupKey::where('tenant_id', 88007)->delete();
+
+        $large = str_repeat('x', 12 * 1024 * 1024); // 12 MB → 3 chunks
+        $src = tempnam(sys_get_temp_dir(), 'src');
+        file_put_contents($src, $large);
+        $enc = $src . '.enc';
+        $dec = $src . '.dec';
+
+        $hmac = $svc->encryptFile($src, $enc, 88007);
+        $svc->decryptFile($enc, $dec, 88007, $hmac);
+
+        $this->assertEquals($large, file_get_contents($dec));
+
+        @unlink($src); @unlink($enc); @unlink($dec);
     }
 
     public function test_wrong_hmac_rejected()

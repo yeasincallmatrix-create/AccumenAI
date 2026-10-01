@@ -214,10 +214,22 @@ return [
     | Scheduled command deletes backups older than retention_days.
     */
     'max_backup_size_mb' => (int) env('BACKUP_MAX_SIZE_MB', 500),
-    'min_free_space_mb'  => (int) env('BACKUP_MIN_FREE_SPACE_MB', 2048),
-    'retention_days'     => (int) env('BACKUP_RETENTION_DAYS', 7),
+    'min_free_space_mb'  => (int) env('BACKUP_MIN_FREE_SPACE_MB', 1024),
+    'refuse_free_space_mb' => (int) env('BACKUP_REFUSE_FREE_SPACE_MB', 512),
+
+    // Retention (hybrid strategy): delete tenant backups older than 30 days,
+    // AND keep at most max_backups_per_tenant newest per tenant (rolling).
+    'retention_days'              => (int) env('BACKUP_RETENTION_DAYS', 30),
+    'max_backups_per_tenant'      => (int) env('BACKUP_MAX_PER_TENANT', 5),
+
+    // Auto-backup (backup:auto — iterate all active tenants).
+    'auto_backup_enabled'         => (bool) env('BACKUP_AUTO_ENABLED', true),
+    'auto_backup_schedule'        => env('BACKUP_AUTO_SCHEDULE', 'weekly'), // weekly|daily|monthly
+
+    'system_dump_retention_days' => (int) env('BACKUP_SYSTEM_DUMP_RETENTION_DAYS', 30),
     'temp_dir'           => storage_path('app/backup-work'),
     'output_dir'         => storage_path('app/backups'),
+    'rollback_dir'       => storage_path('app/rollback-snapshots'),
 
     // Master KEK — wraps every tenant DEK. Server-side only, never exposed.
     'master_key' => env('BACKUP_MASTER_KEY'),

@@ -56,3 +56,17 @@ Schedule::command('grants:process-expired')->hourly()->withoutOverlapping();
 
 // Recurring transactions — process due templates hourly
 Schedule::command('accounting:process-recurring')->hourly()->withoutOverlapping();
+
+// Backup auto — every Sunday 2:00 AM (all active tenants, then cleanup)
+Schedule::command('backup:auto')
+    ->weeklyOn(0, '02:00')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->appendOutputTo(storage_path('logs/backup-auto.log'));
+
+// Backup cleanup — daily at 3 AM (age >30d + max 5/tenant + orphans >24h + system dumps >30d)
+Schedule::command('backup:cleanup')
+    ->dailyAt('03:00')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->appendOutputTo(storage_path('logs/backup-cleanup.log'));

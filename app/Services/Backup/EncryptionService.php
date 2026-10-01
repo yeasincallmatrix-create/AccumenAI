@@ -74,66 +74,141 @@ class EncryptionService
     }
 
     /**
-     * Encrypt file. Format: [iv 12][tag 16][ciphertext].
-     * Returns HMAC for tamper detection.
+     * Chunked streaming encryption.
+     * Format: [iv 12][tag 16][len 4][ciphertext] × N chunks
+     * Peak disk: input + output (no triple temp files).
+     * Returns HMAC-SHA256 (hex) over all chunk headers + ciphertexts.
      */
     public function encryptFile(string $src, string $dest, int $tenantId): string
     {
         $dek = $this->getTenantDek($tenantId);
+        $hmacKey = $this->getHmacKey();
+        $hmacCtx = hash_init('sha256', HASH_HMAC, $hmacKey);
 
-        $plaintext = file_get_contents($src);
-        $iv = random_bytes(self::IV_LEN);
-        $tag = '';
-        $ciphertext = openssl_encrypt($plaintext, self::CIPHER, $dek, OPENSSL_RAW_DATA, $iv, $tag, '', self::TAG_LEN);
-
-        if ($ciphertext === false) {
+        $in = fopen($src, 'rb');
+        $out = fopen($dest, 'wb');
+        if (!$in || !$out) {
+            if (is_resource($in)) fclose($in);
+            if (is_resource($out)) fclose($out);
             $this->wipe($dek);
-            throw new \RuntimeException('Encryption failed');
+            $this->wipe($hmacKey);
+            throw new \RuntimeException('Cannot open files for encryption');
         }
 
-        $fileBytes = $iv . $tag . $ciphertext;
-        file_put_contents($dest, $fileBytes);
+        $chunkSize = 5 * 1024 * 1024; // 5 MB per chunk
+        $chunkCount = 0;
 
-        // HMAC using server-side secret (separate from DEK)
-        $hmacKey = $this->getHmacKey();
-        $hmac = hash_hmac('sha256', $fileBytes, $hmacKey);
+        try {
+            while (!feof($in)) {
+                $chunk = fread($in, $chunkSize);
+                if ($chunk === false) break;   // read error — stop (no infinite loop)
+                if ($chunk === '') continue;   // empty read, feof not yet set
 
-        $this->wipe($dek);
-        $this->wipe($hmacKey);
+                $iv = random_bytes(self::IV_LEN);
+                $tag = '';
+                $ct = openssl_encrypt(
+                    $chunk, self::CIPHER, $dek, OPENSSL_RAW_DATA,
+                    $iv, $tag, '', self::TAG_LEN
+                );
 
-        return $hmac;
+                if ($ct === false) {
+                    throw new \RuntimeException("Chunk {$chunkCount} encryption failed");
+                }
+
+                // Write: [iv 12][tag 16][len 4][ciphertext N]
+                $header = $iv . $tag . pack('N', strlen($ct));
+                fwrite($out, $header);
+                fwrite($out, $ct);
+
+                // HMAC over header + ciphertext
+                hash_update($hmacCtx, $header);
+                hash_update($hmacCtx, $ct);
+
+                $chunkCount++;
+            }
+        } finally {
+            fclose($in);
+            fclose($out);
+            $this->wipe($dek);
+            $this->wipe($hmacKey);
+        }
+
+        return hash_final($hmacCtx);
     }
 
     /**
-     * Decrypt file with tamper detection.
+     * Chunked streaming decryption with tamper detection.
      */
     public function decryptFile(string $src, string $dest, int $tenantId, string $expectedHmac): void
     {
-        $fileBytes = file_get_contents($src);
-
-        // Layer 1: HMAC check
         $hmacKey = $this->getHmacKey();
-        $computed = hash_hmac('sha256', $fileBytes, $hmacKey);
+
+        // Layer 1: HMAC verification (streaming)
+        $hmacCtx = hash_init('sha256', HASH_HMAC, $hmacKey);
+        $in = fopen($src, 'rb');
+        if (!$in) {
+            $this->wipe($hmacKey);
+            throw new \RuntimeException('Cannot open backup file for reading');
+        }
+        while (!feof($in)) {
+            $chunk = fread($in, 5 * 1024 * 1024);
+            if ($chunk === false) break;   // read error — stop (no infinite loop)
+            if ($chunk === '') continue;
+            hash_update($hmacCtx, $chunk);
+        }
+        fclose($in);
+
+        $computed = hash_final($hmacCtx);
         $this->wipe($hmacKey);
 
         if (!hash_equals($expectedHmac, $computed)) {
             throw new \RuntimeException('TAMPER DETECTED: HMAC mismatch');
         }
 
-        // Layer 2: GCM decrypt (auth tag validates)
+        // Layer 2: Chunked decryption (GCM tag validates each chunk)
         $dek = $this->getTenantDek($tenantId);
-        $iv = substr($fileBytes, 0, self::IV_LEN);
-        $tag = substr($fileBytes, self::IV_LEN, self::TAG_LEN);
-        $ciphertext = substr($fileBytes, self::IV_LEN + self::TAG_LEN);
 
-        $plaintext = openssl_decrypt($ciphertext, self::CIPHER, $dek, OPENSSL_RAW_DATA, $iv, $tag);
-        $this->wipe($dek);
-
-        if ($plaintext === false) {
-            throw new \RuntimeException('TAMPER DETECTED: Decryption failed (GCM tag invalid)');
+        $in = fopen($src, 'rb');
+        $out = fopen($dest, 'wb');
+        if (!$in || !$out) {
+            if (is_resource($in)) fclose($in);
+            if (is_resource($out)) fclose($out);
+            $this->wipe($dek);
+            throw new \RuntimeException('Cannot open files for decryption');
         }
 
-        file_put_contents($dest, $plaintext);
+        try {
+            while (!feof($in)) {
+                $header = fread($in, self::IV_LEN + self::TAG_LEN + 4);
+                if ($header === false) break;                      // read error
+                if (strlen($header) < self::IV_LEN + self::TAG_LEN + 4) break; // clean EOF
+
+                $iv = substr($header, 0, self::IV_LEN);
+                $tag = substr($header, self::IV_LEN, self::TAG_LEN);
+                $lenArr = unpack('N', substr($header, self::IV_LEN + self::TAG_LEN));
+                $len = $lenArr[1];
+
+                $ct = fread($in, $len);
+                if ($ct === false || strlen($ct) !== $len) {
+                    throw new \RuntimeException('Truncated chunk');
+                }
+
+                $pt = openssl_decrypt(
+                    $ct, self::CIPHER, $dek, OPENSSL_RAW_DATA,
+                    $iv, $tag
+                );
+
+                if ($pt === false) {
+                    throw new \RuntimeException('TAMPER DETECTED: GCM tag invalid');
+                }
+
+                fwrite($out, $pt);
+            }
+        } finally {
+            fclose($in);
+            fclose($out);
+            $this->wipe($dek);
+        }
     }
 
     private function getMasterKek(): string

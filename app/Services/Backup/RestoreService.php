@@ -6,12 +6,16 @@ use App\Mail\EmailOtpMail;
 use App\Models\Backup;
 use App\Models\RestoreLog;
 use App\Models\RestoreToken;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class RestoreService
 {
-    public function __construct(private EncryptionService $encryption) {}
+    public function __construct(
+        private EncryptionService $encryption,
+        private BackupService $backup
+    ) {}
 
     /**
      * Generate OTP and send to owner email.
@@ -108,10 +112,11 @@ class RestoreService
             $affected = $this->restoreFromTar($tarPath, $tenantId);
 
             $log->update([
-                'status'           => 'completed',
-                'records_affected' => $affected,
-                'rollback_path'    => $rollbackPath,
-                'completed_at'     => now(),
+                'status'              => 'completed',
+                'records_affected'    => $affected,
+                'rollback_path'       => $rollbackPath,
+                'rollback_expires_at' => now()->addHours(24),
+                'completed_at'        => now(),
             ]);
 
             @unlink($tarPath);
@@ -130,18 +135,157 @@ class RestoreService
         return $log;
     }
 
+    /**
+     * Snapshot all tenant data BEFORE a restore so it can be rolled back
+     * (rollback application = Phase 2; file expires after 24h).
+     * Streams per-table JSON into a single .json.gz (no full-table loads).
+     */
     private function createRollbackSnapshot(int $tenantId): string
     {
-        // TODO: Implement actual snapshot
-        // For now, log path placeholder
-        return 'rollback-' . now()->format('Ymd-His') . '-tenant-' . $tenantId;
+        $dir = storage_path('app/rollback-snapshots');
+        @mkdir($dir, 0755, true);
+
+        $filename = "rollback-tenant-{$tenantId}-" . now()->format('Ymd-His') . '.json.gz';
+        $path = "{$dir}/{$filename}";
+
+        $tables = $this->backup->getTenantTables(); // [table => tenant column]
+        $tableCount = 0;
+
+        $final = gzopen($path, 'wb');
+        if ($final === false) {
+            throw new \RuntimeException("Cannot create rollback snapshot: {$path}");
+        }
+        gzwrite($final, json_encode([
+            'meta' => [
+                'tenant_id'   => $tenantId,
+                'created_at'  => now()->toIso8601String(),
+                'table_count' => count($tables),
+            ],
+        ]));
+
+        foreach ($tables as $table => $column) {
+            // Stream write per table to avoid memory issues
+            $tempFile = "{$dir}/tmp-{$table}.json";
+            $fp = fopen($tempFile, 'wb');
+            if ($fp === false) {
+                continue;
+            }
+            fwrite($fp, '[');
+
+            $first = true;
+            $query = DB::table($table)->where($column, $tenantId);
+            // PK-aware ordering (shared with backup export) — chunk() requires orderBy
+            foreach ($this->backup->primaryKeyColumns($table) as $key) {
+                $query->orderBy($key);
+            }
+            $query->chunk(500, function ($rows) use ($fp, &$first) {
+                foreach ($rows as $row) {
+                    if (!$first) fwrite($fp, ',');
+                    fwrite($fp, json_encode((array) $row));
+                    $first = false;
+                }
+            });
+
+            fwrite($fp, ']');
+            fclose($fp);
+
+            gzwrite($final, "\n---TABLE:{$table}---\n");
+            gzwrite($final, file_get_contents($tempFile));
+            @unlink($tempFile);
+            $tableCount++;
+        }
+
+        gzclose($final);
+
+        if ($tableCount === 0) {
+            @unlink($path);
+            throw new \RuntimeException('Rollback snapshot failed: no tenant tables exported');
+        }
+
+        return $path;
     }
 
+    /**
+     * Extract backup and apply rows with MERGE semantics:
+     * INSERT new + UPDATE existing — never DELETE.
+     * Per-row error handling (log + skip) so one bad row can't abort.
+     */
     private function restoreFromTar(string $tarPath, int $tenantId): array
     {
-        // TODO: Implement actual restore with MERGE
-        // Placeholder returns record counts
-        return ['placeholder' => true];
+        $workDir = storage_path('app/restore-work/' . uniqid('r', true));
+        @mkdir($workDir, 0755, true);
+
+        $affected = [];
+
+        try {
+            // Extract tar.gz
+            $phar = new \PharData($tarPath);
+            $phar->extractTo($workDir, null, true);
+
+            // Process each table JSON
+            foreach (glob("{$workDir}/*.json") ?: [] as $jsonFile) {
+                $table = basename($jsonFile, '.json');
+                if ($table === '_metadata') continue;
+
+                $rows = json_decode(file_get_contents($jsonFile), true);
+                if (!is_array($rows)) {
+                    $affected[$table] = ['inserted' => 0, 'updated' => 0, 'skipped' => 0];
+                    continue;
+                }
+
+                $inserted = 0;
+                $updated = 0;
+                $skipped = 0;
+
+                DB::transaction(function () use ($table, $rows, $tenantId, &$inserted, &$updated, &$skipped) {
+                    foreach ($rows as $row) {
+                        $rowArr = (array) $row;
+
+                        // Skip if no primary key
+                        if (!isset($rowArr['id'])) {
+                            $skipped++;
+                            continue;
+                        }
+
+                        // Ensure tenant scoping
+                        if (isset($rowArr['institute_id'])) {
+                            $rowArr['institute_id'] = $tenantId;
+                        }
+
+                        $exists = DB::table($table)->where('id', $rowArr['id'])->exists();
+
+                        try {
+                            if ($exists) {
+                                // UPDATE existing
+                                DB::table($table)->where('id', $rowArr['id'])->update($rowArr);
+                                $updated++;
+                            } else {
+                                // INSERT new
+                                DB::table($table)->insert($rowArr);
+                                $inserted++;
+                            }
+                        } catch (\Throwable $e) {
+                            // Log + skip individual row (don't abort entire restore)
+                            Log::warning("Restore row failed: {$table}.id={$rowArr['id']}", [
+                                'error' => $e->getMessage(),
+                            ]);
+                            $skipped++;
+                        }
+                    }
+                });
+
+                $affected[$table] = [
+                    'inserted' => $inserted,
+                    'updated'  => $updated,
+                    'skipped'  => $skipped,
+                ];
+            }
+        } finally {
+            // Cleanup extraction dir (success or failure)
+            $this->rmrf($workDir);
+        }
+
+        return $affected;
     }
 
     private function maskEmail(string $email): string
