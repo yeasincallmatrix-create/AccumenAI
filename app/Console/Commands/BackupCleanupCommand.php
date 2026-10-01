@@ -3,6 +3,11 @@
 namespace App\Console\Commands;
 
 use App\Models\Backup;
+use App\Models\BackupChunk;
+use App\Models\BackupChunkReference;
+use App\Models\BackupManifest;
+use App\Services\Backup\ChunkReferenceService;
+use App\Services\Backup\OrphanCleanupService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -11,81 +16,179 @@ class BackupCleanupCommand extends Command
     protected $signature = 'backup:cleanup
                             {--dry-run : Show what would be deleted}
                             {--tenant= : Clean specific tenant only}';
-    protected $description = 'Delete backups older than retention + enforce keep-count per tenant + orphans';
+    protected $description = 'Retention + keep-count + orphan .enc + chunk GC (drive_file_id rule) + trash purge + refcount reconcile';
 
     public function handle(): int
     {
+        $dryRun = (bool) $this->option('dry-run');
+        $tenantId = $this->option('tenant') ? (int) $this->option('tenant') : null;
+
         $retentionDays = (int) config('backup.retention_days', 365);
         $keepCount = (int) config('backup.keep_backups_per_tenant', 1);
-        $cutoff = now()->subDays($retentionDays);
 
-        $this->info("Cleanup: retention = {$retentionDays} days | keep={$keepCount}/tenant");
+        $this->info('Cleanup start' . ($dryRun ? ' [DRY-RUN]' : '')
+            . " | retention = {$retentionDays} days | keep = {$keepCount}/tenant");
+        $this->newLine();
 
         // 1. Age-based deletion
-        $ageQuery = Backup::where('created_at', '<', $cutoff);
-        if ($this->option('tenant')) {
-            $ageQuery->where('tenant_id', $this->option('tenant'));
-        }
-        $oldByAge = $ageQuery->get();
-        $this->info("Old backups (> {$retentionDays} days): {$oldByAge->count()}");
+        $this->cleanupAgeBased($tenantId, $retentionDays, $dryRun);
 
-        foreach ($oldByAge as $b) {
-            $this->deleteBackup($b);
-        }
+        // 2. Keep-count enforcement
+        $this->cleanupKeepCount($tenantId, $keepCount, $dryRun);
 
-        // 2. Keep-count enforcement (keep newest N per tenant)
-        $tenantIds = DB::table('backups')
-            ->select('tenant_id')
-            ->distinct()
-            ->pluck('tenant_id');
+        // 3. Phase 2B: orphan .enc local files (>24h, no DB record)
+        $orphanSvc = app(OrphanCleanupService::class);
+        $local = $orphanSvc->cleanupLocalOrphans($dryRun);
+        $this->info("Orphan .enc files: deleted={$local['deleted']} freed={$local['freed_mb']}MB");
 
-        if ($this->option('tenant')) {
-            $tenantIds = collect([(int) $this->option('tenant')]);
+        // 4. Phase 2B: chunk-temp (>1h)
+        $temp = $orphanSvc->cleanupChunkTemp($dryRun);
+        if ($temp['deleted'] > 0) {
+            $this->info("Chunk temp: deleted={$temp['deleted']}");
         }
 
-        $deletedByKeep = 0;
-        foreach ($tenantIds as $tenantId) {
-            $backups = Backup::where('tenant_id', $tenantId)
-                ->orderByDesc('created_at')
-                ->orderByDesc('id')
-                ->get();
+        // 5. 2A extras: orphan temp dirs (24h)
+        $orphans = $this->cleanupDir(storage_path('app/backup-work'), now()->subHours(24)->timestamp, $dryRun);
+        $orphans += $this->cleanupDir(storage_path('app/restore-work'), now()->subHours(24)->timestamp, $dryRun);
+        $orphans += $this->cleanupDir(config('backup.rollback_dir', storage_path('app/rollback-snapshots')), now()->subHours(24)->timestamp, $dryRun);
 
-            if ($backups->count() > $keepCount) {
-                $toDelete = $backups->slice($keepCount);
-                foreach ($toDelete as $b) {
-                    $this->deleteBackup($b);
-                    $deletedByKeep++;
-                }
-                $this->line("  Tenant {$tenantId}: deleted {$toDelete->count()} (keep-count exceeded)");
+        // 6. Phase 2B: chunk GC — drive_file_id rule (0 live refs → trash)
+        foreach ($this->targetTenants($tenantId) as $tid) {
+            $gc = $orphanSvc->cleanupOrphanChunks((int) $tid, $dryRun);
+            if (($gc['trashed'] ?? 0) > 0 || ($gc['rows_dropped'] ?? 0) > 0 || $dryRun) {
+                $this->line("  Tenant {$tid}: orphan files trashed={$gc['trashed']} dead rows dropped={$gc['rows_dropped']}");
             }
         }
-        $this->info("Deleted by keep-count rule: {$deletedByKeep}");
 
-        // 3. Orphan temp files (24h)
-        $orphans = $this->cleanupDir(storage_path('app/backup-work'), now()->subHours(24)->timestamp);
-        $orphans += $this->cleanupDir(storage_path('app/restore-work'), now()->subHours(24)->timestamp);
-        $orphans += $this->cleanupDir(config('backup.rollback_dir', storage_path('app/rollback-snapshots')), now()->subHours(24)->timestamp);
-        $orphans += $this->cleanupDir(config('backup.chunk_temp_dir', storage_path('app/chunk-temp')), now()->subHours(24)->timestamp);
+        // 7. Phase 2B: purge expired trash (7-day grace; failure = retry next run)
+        $trash = $orphanSvc->purgeExpiredTrash($dryRun, $tenantId);
+        $this->info("Trash purged: {$trash['purged']} (failed/retry: {$trash['failed']}, no-conn: {$trash['skipped']})");
 
-        // 4. System SQL dumps (> system_dump_retention_days, never *.enc)
-        $sysDeleted = $this->cleanupSystemDumps();
+        // 8. System SQL dumps (age-based; NEVER *.enc)
+        $sysDeleted = $this->cleanupSystemDumps($dryRun);
 
-        // 5. Phase 2A: purge expired chunk/manifest trash (7-day grace)
-        $trashed = $this->purgeExpiredTrash();
+        // 9. Phase 2B: refcount reconciliation (row-level parity; skip in dry-run)
+        if (!$dryRun) {
+            $refService = app(ChunkReferenceService::class);
+            foreach ($this->targetTenants($tenantId) as $tid) {
+                $drift = $refService->verifyAndReconcile((int) $tid);
+                if (!empty($drift)) {
+                    $this->warn("Tenant {$tid}: refcount drift fixed (" . count($drift) . ' entries)');
+                }
+            }
+        }
 
-        $this->info("Orphans: {$orphans} | System dumps: {$sysDeleted} | Trash purged: {$trashed}");
+        // 10. 2A extra: orphan temp dirs report + free-space warning
+        $this->info("Temp orphans: {$orphans} | System dumps: {$sysDeleted}");
 
         $freeMb = round(disk_free_space(storage_path()) / 1048576, 1);
         $warnMb = (int) config('backup.min_free_space_mb', 1024);
-        $refuseMb = (int) config('backup.refuse_free_space_mb', 512);
-        $this->info("Disk free: {$freeMb} MB (warn < {$warnMb} MB, refuse < {$refuseMb} MB)");
+        $this->info("Disk free: {$freeMb} MB (warn < {$warnMb} MB)");
         if ($freeMb < $warnMb) {
             $this->warn('! Disk space is LOW.');
         }
 
+        $this->newLine();
+        $this->info('Cleanup complete' . ($dryRun ? ' [DRY-RUN]' : ''));
+
         return self::SUCCESS;
     }
 
+    /**
+     * Tenants with something to GC: backup rows OR chunk rows.
+     */
+    private function targetTenants(?int $tenantId): array
+    {
+        if ($tenantId) {
+            return [$tenantId];
+        }
+
+        $fromBackups = Backup::select('tenant_id')->distinct()->pluck('tenant_id');
+        $fromChunks = BackupChunk::select('tenant_id')->distinct()->pluck('tenant_id');
+
+        return $fromBackups->union($fromChunks)->values()->all();
+    }
+
+    private function cleanupAgeBased(?int $tenantId, int $retentionDays, bool $dryRun): void
+    {
+        $cutoff = now()->subDays($retentionDays);
+        $query = Backup::where('created_at', '<', $cutoff);
+        if ($tenantId) {
+            $query->where('tenant_id', $tenantId);
+        }
+        $old = $query->get();
+
+        $this->info("Age-based: {$old->count()} backups older than {$retentionDays} days");
+
+        foreach ($old as $b) {
+            if ($dryRun) {
+                $this->line("  [DRY] Would delete: {$b->filename}");
+            } else {
+                $this->deleteBackup($b);
+            }
+        }
+    }
+
+    private function cleanupKeepCount(?int $tenantId, int $keepCount, bool $dryRun): void
+    {
+        foreach ($this->targetTenants($tenantId) as $tid) {
+            // 2A parity: ALL statuses count toward the slot (failed rows pile
+            // up otherwise) — but new backups only created for completed.
+            $backups = Backup::where('tenant_id', $tid)
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
+                ->get();
+
+            if ($backups->count() <= $keepCount) {
+                continue;
+            }
+
+            $toDelete = $backups->slice($keepCount);
+            foreach ($toDelete as $b) {
+                if ($dryRun) {
+                    $this->line("  [DRY] Tenant {$tid}: would delete {$b->filename}");
+                } else {
+                    $this->deleteBackup($b);
+                }
+            }
+            $this->line("  Tenant {$tid}: deleted {$toDelete->count()} (keep-count exceeded)");
+        }
+    }
+
+    private function cleanupSystemDumps(bool $dryRun): int
+    {
+        $dir = storage_path('app/backups');
+        if (!is_dir($dir)) {
+            return 0;
+        }
+
+        $days = (int) config('backup.system_dump_retention_days', 30);
+        $cutoff = now()->subDays($days)->timestamp;
+        $count = 0;
+
+        // Guard: *.sql ONLY — never *.enc (Phase 2A rule)
+        foreach (glob($dir . '/*.sql') ?: [] as $file) {
+            if (filemtime($file) >= $cutoff) {
+                continue;
+            }
+
+            if ($dryRun) {
+                $this->line('  [DRY] System dump: ' . basename($file));
+            } else {
+                @unlink($file);
+            }
+            $count++;
+        }
+
+        return $count;
+    }
+
+    /**
+     * Delete one backup: deregister refs → trash manifest file (2A grace)
+     * → drop manifest row + chunk refs → local file → backup row.
+     * Chunk rows are removed by the GC step (drive_file_id rule) — a file
+     * shared with a live manifest is NEVER deleted here.
+     */
     private function deleteBackup(Backup $backup): void
     {
         if ($this->option('dry-run')) {
@@ -93,17 +196,21 @@ class BackupCleanupCommand extends Command
             return;
         }
 
+        $manifest = BackupManifest::where('backup_id', $backup->id)->first();
+        if ($manifest) {
+            // Phase 2B: refcount-- before the manifest row dies
+            app(ChunkReferenceService::class)->deregisterReferences($manifest);
+
+            // Phase 2A: manifest Drive file → trash (grace, reversible)
+            $this->trashManifestFile($manifest);
+
+            BackupChunkReference::where('manifest_id', $manifest->id)->delete();
+            $manifest->delete();
+        }
+
         $path = storage_path("app/backups/{$backup->filename}");
         if (file_exists($path)) {
             @unlink($path);
-        }
-
-        // Phase 2A: remove manifest row; its Drive file goes to trash (grace).
-        $manifest = \App\Models\BackupManifest::where('backup_id', $backup->id)->first();
-        if ($manifest) {
-            $this->trashManifestFile($manifest);
-            \App\Models\BackupChunk::where('manifest_id', $manifest->id)->delete();
-            $manifest->delete();
         }
 
         $backup->delete();
@@ -112,9 +219,9 @@ class BackupCleanupCommand extends Command
 
     /**
      * Move a manifest's Drive file into backup_chunk_trash (deleted after
-     * trash_grace_days). Falls back to immediate delete when no connection.
+     * trash_grace_days). Falls back to skip when no active connection.
      */
-    private function trashManifestFile(\App\Models\BackupManifest $manifest): void
+    private function trashManifestFile(BackupManifest $manifest): void
     {
         if (!$manifest->drive_file_id) {
             return;
@@ -139,49 +246,18 @@ class BackupCleanupCommand extends Command
                 'created_at'     => now(),
                 'updated_at'     => now(),
             ]);
+        } else {
+            // No trash folder (pre-structure): delete immediately (2A behavior)
+            try {
+                app(\App\Contracts\DriveStorageInterface::class)
+                    ->deleteFile($conn, $manifest->drive_file_id);
+            } catch (\Throwable $e) {
+                $this->warn("  Manifest file delete failed ({$manifest->drive_file_id}): {$e->getMessage()}");
+            }
         }
     }
 
-    /**
-     * Phase 2A GC: delete Drive files whose trash grace period expired,
-     * then drop the trash rows. dry-run only reports.
-     */
-    private function purgeExpiredTrash(): int
-    {
-        $expired = \App\Models\BackupChunkTrash::where('expires_at', '<', now())
-            ->when($this->option('tenant'), fn ($q) => $q->where('tenant_id', $this->option('tenant')))
-            ->get();
-
-        $count = 0;
-        foreach ($expired as $item) {
-            if ($this->option('dry-run')) {
-                $this->line("  [DRY] Would purge trash: {$item->drive_file_id}");
-                $count++;
-                continue;
-            }
-
-            $conn = \App\Models\TenantDriveConnection::where('tenant_id', $item->tenant_id)
-                ->whereNull('revoked_at')
-                ->first();
-
-            if ($conn) {
-                try {
-                    app(\App\Contracts\DriveStorageInterface::class)
-                        ->deleteFile($conn, $item->drive_file_id);
-                } catch (\Throwable $e) {
-                    $this->warn("  Trash delete failed ({$item->drive_file_id}): {$e->getMessage()}");
-                    continue; // keep row — retry next run
-                }
-            }
-
-            $item->delete();
-            $count++;
-        }
-
-        return $count;
-    }
-
-    private function cleanupDir(string $dir, int $cutoff): int
+    private function cleanupDir(string $dir, int $cutoff, bool $dryRun): int
     {
         if (!is_dir($dir)) {
             return 0;
@@ -193,38 +269,11 @@ class BackupCleanupCommand extends Command
                 continue;
             }
 
-            if ($this->option('dry-run')) {
+            if ($dryRun) {
                 $this->line('  [DRY] Orphan: ' . basename($item));
             } else {
                 is_dir($item) ? $this->rmrf($item) : @unlink($item);
                 $this->line('  Orphan removed: ' . basename($item));
-            }
-            $count++;
-        }
-
-        return $count;
-    }
-
-    private function cleanupSystemDumps(): int
-    {
-        $dir = storage_path('app/backups');
-        if (!is_dir($dir)) {
-            return 0;
-        }
-
-        $days = (int) config('backup.system_dump_retention_days', 30);
-        $cutoff = now()->subDays($days)->timestamp;
-        $count = 0;
-
-        foreach (glob($dir . '/*.sql') ?: [] as $file) {
-            if (filemtime($file) >= $cutoff) {
-                continue;
-            }
-
-            if ($this->option('dry-run')) {
-                $this->line('  [DRY] System dump: ' . basename($file));
-            } else {
-                @unlink($file);
             }
             $count++;
         }

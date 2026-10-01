@@ -17,7 +17,8 @@ class BackupService
         private EncryptionService $encryption,
         private DriveStorageInterface $drive,
         private BackupChunkService $chunkService,
-        private ManifestService $manifestService
+        private ManifestService $manifestService,
+        private ChunkReferenceService $refService
     ) {}
 
     /**
@@ -138,9 +139,10 @@ class BackupService
         );
 
         // Persist chunk rows (dedup reuses drive_file_id — rows are per-manifest)
+        $chunkRowIds = [];
         foreach ($tableData as $table => $data) {
             foreach ($data['chunks'] as $chunk) {
-                BackupChunk::create([
+                $chunkRowIds[] = BackupChunk::create([
                     'manifest_id'    => $manifestRecord->id,
                     'tenant_id'      => $tenantId,
                     'content_sha256' => $chunk['hash'],
@@ -150,9 +152,12 @@ class BackupService
                     'chunk_index'    => $chunk['index'],
                     'total_chunks'   => $data['total_chunks'],
                     'size_bytes'     => $chunk['size'],
-                ]);
+                ])->id;
             }
         }
+
+        // Phase 2B: register row-level references (manifest × chunk + file_id)
+        $this->refService->registerReferences($tenantId, $manifestRecord, $chunkRowIds);
 
         $backup->update([
             'status'          => 'completed',
@@ -451,6 +456,10 @@ class BackupService
             $oldManifest = BackupManifest::where('backup_id', $old->id)->first();
 
             if ($oldManifest) {
+                // Phase 2B: row-level refcount-- BEFORE the manifest row dies.
+                // Drive-file fate decided later by GC (0 live refs rule).
+                $this->refService->deregisterReferences($oldManifest);
+
                 // Chunked: manifest file → trash (grace period, GC purges later)
                 if ($oldManifest->drive_file_id && $conn && $conn->trash_folder_id) {
                     DB::table('backup_chunk_trash')->insert([
