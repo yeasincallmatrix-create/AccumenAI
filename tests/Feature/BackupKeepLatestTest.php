@@ -41,6 +41,9 @@ class BackupKeepLatestTest extends TestCase
 
     protected function tearDown(): void
     {
+        \App\Models\BackupChunk::where('tenant_id', self::TENANT_ID)->delete();
+        \App\Models\BackupManifest::where('tenant_id', self::TENANT_ID)->delete();
+        \DB::table('backup_chunk_trash')->where('tenant_id', self::TENANT_ID)->delete();
         TenantDriveConnection::where('tenant_id', self::TENANT_ID)->delete();
         parent::tearDown();
     }
@@ -80,10 +83,17 @@ class BackupKeepLatestTest extends TestCase
             $firstPath = storage_path("app/backups/{$first->filename}");
             $this->assertFileDoesNotExist($firstPath);
 
-            // G5: the previous backup's DRIVE copy must be deleted as well
-            // (keep-1 must not orphan Drive files).
-            $this->assertGreaterThanOrEqual(1, $this->fakeDrive->deletes,
-                'Previous backup Drive file was not deleted');
+            // G5: the previous backup's Drive copy must NOT be orphaned.
+            // Phase 2A: chunked manifests go to backup_chunk_trash (7-day
+            // grace) instead of an immediate deleteFile() — either outcome
+            // proves the file is scheduled for removal.
+            $trashed = \DB::table('backup_chunk_trash')
+                ->where('tenant_id', $tenantId)
+                ->count();
+            $this->assertTrue(
+                $this->fakeDrive->deletes >= 1 || $trashed >= 1,
+                'Previous backup Drive file was neither deleted nor trashed'
+            );
         } catch (\Throwable $e) {
             $this->markTestSkipped('Test env cannot create backup: ' . $e->getMessage());
         } finally {

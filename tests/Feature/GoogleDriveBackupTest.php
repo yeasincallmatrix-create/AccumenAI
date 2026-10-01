@@ -27,6 +27,8 @@ class GoogleDriveBackupTest extends TestCase
 
     protected function tearDown(): void
     {
+        \App\Models\BackupChunk::where('tenant_id', self::TENANT_ID)->delete();
+        \App\Models\BackupManifest::where('tenant_id', self::TENANT_ID)->delete();
         TenantDriveConnection::where('tenant_id', self::TENANT_ID)->delete();
         Backup::where('tenant_id', self::TENANT_ID)->delete();
         parent::tearDown();
@@ -153,22 +155,36 @@ class GoogleDriveBackupTest extends TestCase
             return;
         }
 
-        // Design #4: Drive = source of truth, local .enc deleted after upload
+        // Design #4: Drive = source of truth — chunked backups never write
+        // a local .enc at all (Phase 2A), so nothing can be left behind.
         $this->assertSame('drive', $backup->destination);
         $this->assertNotEmpty($backup->drive_file_id);
         $this->assertSame('completed', $backup->status);
+        $this->assertTrue((bool) $backup->is_chunked);
         $this->assertFileDoesNotExist(storage_path("app/backups/{$backup->filename}"));
 
-        // Uploaded exactly once, and the payload matches the DB row
-        $this->assertSame(1, $this->fakeDrive->uploads);
+        // Phase 2A: at least the manifest triple is uploaded
+        // (current.json.enc + current.json.checksum + timestamped copy),
+        // plus one chunk per non-empty table.
+        $this->assertGreaterThanOrEqual(3, $this->fakeDrive->uploads);
+
+        // Manifest row exists and drive_file_id points at current.json.enc
+        $manifest = \App\Models\BackupManifest::where('backup_id', $backup->id)->first();
+        $this->assertNotNull($manifest);
+        $this->assertSame($backup->drive_file_id, $manifest->drive_file_id);
         $this->assertArrayHasKey($backup->drive_file_id, $this->fakeDrive->files);
 
         // last_sync_at refreshed on the connection
         $conn = TenantDriveConnection::where('tenant_id', self::TENANT_ID)->first();
         $this->assertNotNull($conn->last_sync_at);
 
+        // Local workdir removed after success (F8)
+        $this->assertDirectoryDoesNotExist(storage_path("app/backup-work/{$backup->id}"));
+
         // Cleanup
         @unlink(storage_path("app/backups/{$backup->filename}"));
+        \App\Models\BackupManifest::where('backup_id', $backup->id)->delete();
+        \App\Models\BackupChunk::where('tenant_id', self::TENANT_ID)->delete();
     }
 
     // ── Helpers (same approach as BackupSettingsLinkTest) ───────────

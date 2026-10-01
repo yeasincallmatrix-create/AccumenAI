@@ -23,7 +23,12 @@ class BackupController extends Controller
             ->orderByDesc('created_at')
             ->paginate(20);
 
-        return view('tenant.backup.index', compact('backups'));
+        // F8: Drive state resolved server-side — no JS fetch for button visibility.
+        $driveConn = TenantDriveConnection::where('tenant_id', $tenantId)
+            ->whereNull('revoked_at')
+            ->first();
+
+        return view('tenant.backup.index', compact('backups', 'driveConn'));
     }
 
     public function store(Request $request)

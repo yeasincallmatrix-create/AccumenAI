@@ -21,24 +21,35 @@
         <div class="alert alert-danger">{{ $errors->first() }}</div>
     @endif
 
-    {{-- Drive Connection --}}
+    {{-- Drive Connection — resolved server-side (F8): no JS fetch for visibility --}}
     <div class="card mb-3">
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h6><i class="bi bi-google"></i> Google Drive</h6>
-                    <small id="drive-status" class="text-muted">Checking...</small>
+                    @if($driveConn)
+                        <small class="text-muted">
+                            Connected: <strong>{{ $driveConn->google_user_email }}</strong>
+                            @if($driveConn->last_sync_at)
+                                · Last sync: {{ $driveConn->last_sync_at->format('Y-m-d H:i') }}
+                            @endif
+                        </small>
+                    @else
+                        <small class="text-muted">Not connected — connect to enable backups</small>
+                    @endif
                 </div>
                 <div>
-                    <a href="{{ route('tenant.backup.drive.connect') }}"
-                       id="drive-connect-btn" class="btn btn-outline-primary btn-sm d-none">
-                        Connect Drive
-                    </a>
-                    <form method="POST" action="{{ route('tenant.backup.drive.disconnect') }}"
-                          id="drive-disconnect-form" class="d-none">
-                        @csrf
-                        <button class="btn btn-outline-danger btn-sm">Disconnect</button>
-                    </form>
+                    @if($driveConn)
+                        <form method="POST" action="{{ route('tenant.backup.drive.disconnect') }}">
+                            @csrf
+                            <button class="btn btn-outline-danger btn-sm">Disconnect</button>
+                        </form>
+                    @else
+                        <a href="{{ route('tenant.backup.drive.connect') }}"
+                           class="btn btn-outline-primary btn-sm">
+                            Connect Google Drive
+                        </a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -49,9 +60,16 @@
         Backups upload to your Google Drive. Connect Drive below to enable.
     </p>
 
+    @if(!$driveConn)
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i>
+            Google Drive is not connected. Connect it above to enable backups.
+        </div>
+    @endif
+
     <form method="POST" action="{{ route('tenant.backup.store') }}" class="mb-3">
         @csrf
-        <button class="btn btn-primary">
+        <button class="btn btn-primary" @disabled(!$driveConn)>
             <i class="bi bi-cloud-arrow-up"></i> Backup Now
         </button>
     </form>
@@ -170,28 +188,5 @@ async function verifyOtp() {
         document.getElementById('otpError').textContent = data.message;
     }
 }
-
-// Drive connection status
-fetch('{{ route("tenant.backup.drive.status") }}', {
-    headers: { 'Accept': 'application/json' },
-})
-    .then(r => r.json())
-    .then(d => {
-        const status = document.getElementById('drive-status');
-        const connectBtn = document.getElementById('drive-connect-btn');
-        const disconnectForm = document.getElementById('drive-disconnect-form');
-
-        if (d.connected) {
-            status.innerHTML = 'Connected: <strong>' + d.email + '</strong>' +
-                (d.last_sync_at ? ' · Last sync: ' + d.last_sync_at : '');
-            disconnectForm.classList.remove('d-none');
-        } else {
-            status.textContent = 'Not connected — connect to enable backups';
-            connectBtn.classList.remove('d-none');
-        }
-    })
-    .catch(() => {
-        document.getElementById('drive-status').textContent = 'Could not load Drive status';
-    });
 </script>
 @endsection

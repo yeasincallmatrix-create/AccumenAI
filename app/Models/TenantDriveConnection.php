@@ -9,6 +9,7 @@ class TenantDriveConnection extends Model
     protected $fillable = [
         'tenant_id', 'connected_by_user_id', 'google_user_email',
         'google_user_id', 'refresh_token', 'drive_folder_id',
+        'app_folder_id', 'chunks_folder_id', 'manifests_folder_id', 'trash_folder_id',
         'connected_at', 'last_sync_at', 'revoked_at',
     ];
 

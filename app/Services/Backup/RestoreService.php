@@ -4,6 +4,7 @@ namespace App\Services\Backup;
 
 use App\Mail\EmailOtpMail;
 use App\Models\Backup;
+use App\Models\BackupManifest;
 use App\Models\RestoreLog;
 use App\Models\RestoreToken;
 use App\Models\TenantDriveConnection;
@@ -16,7 +17,9 @@ class RestoreService
     public function __construct(
         private EncryptionService $encryption,
         private \App\Contracts\DriveStorageInterface $drive,
-        private BackupService $backup
+        private BackupService $backup,
+        private BackupChunkService $chunkService,
+        private ManifestService $manifestService
     ) {}
 
     /**
@@ -63,6 +66,10 @@ class RestoreService
 
     /**
      * Verify OTP and perform restore.
+     *
+     * F4: backups with a manifest row restore via the content-addressed
+     * chunk pipeline; legacy backups (no manifest) fall back to the
+     * single-file .enc path.
      */
     public function verifyAndRestore(int $tenantId, int $backupId, int $userId, string $otp): RestoreLog
     {
@@ -93,12 +100,98 @@ class RestoreService
             'status'     => 'pending',
         ]);
 
+        $manifest = BackupManifest::where('backup_id', $backup->id)->first();
+
+        try {
+            $affected = $manifest
+                ? $this->restoreFromManifest($backup, $manifest, $log, $tenantId)
+                : $this->restoreLegacy($backup, $log, $tenantId);
+        } catch (\Throwable $e) {
+            $log->update([
+                'status'           => 'failed',
+                'records_affected' => ['error' => $e->getMessage()],
+            ]);
+            throw $e;
+        }
+
+        $log->update([
+            'status'              => 'completed',
+            'records_affected'    => $affected,
+            'rollback_expires_at' => now()->addHours(24),
+            'completed_at'        => now(),
+        ]);
+
+        return $log;
+    }
+
+    /**
+     * Phase 2A: manifest-driven restore.
+     * 1. Verify manifest self-checksum (tamper gate)
+     * 2. Rollback snapshot BEFORE restore
+     * 3. Per table: download chunks → decrypt → verify SHA256 → merge
+     */
+    private function restoreFromManifest(
+        Backup $backup,
+        BackupManifest $manifest,
+        RestoreLog $log,
+        int $tenantId
+    ): array {
+        $manifestArr = json_decode($manifest->manifest_json, true);
+
+        if (!is_array($manifestArr) || !$this->manifestService->verifyChecksum($manifestArr)) {
+            throw new \RuntimeException('Manifest checksum invalid — refusing restore');
+        }
+
+        $conn = TenantDriveConnection::where('tenant_id', $tenantId)
+            ->whereNull('revoked_at')
+            ->first();
+
+        if (!$conn) {
+            throw new \RuntimeException(
+                'Google Drive connection not found for this backup. Reconnect Drive first.'
+            );
+        }
+
+        // Rollback snapshot BEFORE restore
+        $rollbackPath = $this->createRollbackSnapshot($tenantId);
+        $log->update(['rollback_path' => $rollbackPath]);
+
+        $affected = [];
+
+        foreach (($manifestArr['tables'] ?? []) as $table => $info) {
+            // Download + decrypt + verify + merge one table
+            $json = $this->chunkService->downloadTableChunks($manifest, $table, $conn);
+            $rows = json_decode($json, true);
+
+            if (!is_array($rows)) {
+                $affected[$table] = ['inserted' => 0, 'updated' => 0, 'skipped' => 0];
+                continue;
+            }
+
+            $affected[$table] = $this->mergeTable($table, $rows, $tenantId);
+        }
+
+        Log::info('Manifest restore completed', [
+            'tenant_id' => $tenantId,
+            'backup_id' => $backup->id,
+            'tables'    => count($affected),
+        ]);
+
+        return $affected;
+    }
+
+    /**
+     * F4 legacy fallback: single-file .enc restore (pre-2A backups).
+     * Drive is source of truth when destination === 'drive'.
+     */
+    private function restoreLegacy(Backup $backup, RestoreLog $log, int $tenantId): array
+    {
         $workDir = storage_path("app/restore-work/{$log->id}");
         $tarPath = "{$workDir}.tar.gz";
         $downloadedEnc = null;
 
         try {
-            // Phase 2: resolve the ciphertext — Drive is the source of truth
+            // Resolve the ciphertext — Drive is the source of truth
             // once destination === 'drive' (local .enc was deleted after upload).
             if ($backup->destination === 'drive' && $backup->drive_file_id) {
                 $driveConn = TenantDriveConnection::where('tenant_id', $tenantId)
@@ -125,6 +218,7 @@ class RestoreService
 
             // Rollback snapshot BEFORE restore
             $rollbackPath = $this->createRollbackSnapshot($tenantId);
+            $log->update(['rollback_path' => $rollbackPath]);
 
             // Decrypt with tamper detection
             @mkdir($workDir, 0755, true);
@@ -134,25 +228,14 @@ class RestoreService
             // Extract + restore with MERGE semantics
             $affected = $this->restoreFromTar($tarPath, $tenantId);
 
-            $log->update([
-                'status'              => 'completed',
-                'records_affected'    => $affected,
-                'rollback_path'       => $rollbackPath,
-                'rollback_expires_at' => now()->addHours(24),
-                'completed_at'        => now(),
-            ]);
-
             @unlink($tarPath);
             if ($downloadedEnc !== null) {
                 @unlink($downloadedEnc);
             }
             $this->rmrf($workDir);
 
+            return $affected;
         } catch (\Throwable $e) {
-            $log->update([
-                'status'           => 'failed',
-                'records_affected' => ['error' => $e->getMessage()],
-            ]);
             @unlink($tarPath);
             if ($downloadedEnc !== null) {
                 @unlink($downloadedEnc);
@@ -160,8 +243,6 @@ class RestoreService
             $this->rmrf($workDir);
             throw $e;
         }
-
-        return $log;
     }
 
     /**
@@ -262,52 +343,7 @@ class RestoreService
                     continue;
                 }
 
-                $inserted = 0;
-                $updated = 0;
-                $skipped = 0;
-
-                DB::transaction(function () use ($table, $rows, $tenantId, &$inserted, &$updated, &$skipped) {
-                    foreach ($rows as $row) {
-                        $rowArr = (array) $row;
-
-                        // Skip if no primary key
-                        if (!isset($rowArr['id'])) {
-                            $skipped++;
-                            continue;
-                        }
-
-                        // Ensure tenant scoping
-                        if (isset($rowArr['institute_id'])) {
-                            $rowArr['institute_id'] = $tenantId;
-                        }
-
-                        $exists = DB::table($table)->where('id', $rowArr['id'])->exists();
-
-                        try {
-                            if ($exists) {
-                                // UPDATE existing
-                                DB::table($table)->where('id', $rowArr['id'])->update($rowArr);
-                                $updated++;
-                            } else {
-                                // INSERT new
-                                DB::table($table)->insert($rowArr);
-                                $inserted++;
-                            }
-                        } catch (\Throwable $e) {
-                            // Log + skip individual row (don't abort entire restore)
-                            Log::warning("Restore row failed: {$table}.id={$rowArr['id']}", [
-                                'error' => $e->getMessage(),
-                            ]);
-                            $skipped++;
-                        }
-                    }
-                });
-
-                $affected[$table] = [
-                    'inserted' => $inserted,
-                    'updated'  => $updated,
-                    'skipped'  => $skipped,
-                ];
+                $affected[$table] = $this->mergeTable($table, $rows, $tenantId);
             }
         } finally {
             // Cleanup extraction dir (success or failure)
@@ -315,6 +351,60 @@ class RestoreService
         }
 
         return $affected;
+    }
+
+    /**
+     * MERGE one table's rows: INSERT new + UPDATE existing — never DELETE.
+     * Shared by legacy tar restore and manifest chunk restore.
+     */
+    private function mergeTable(string $table, array $rows, int $tenantId): array
+    {
+        $inserted = 0;
+        $updated = 0;
+        $skipped = 0;
+
+        DB::transaction(function () use ($table, $rows, $tenantId, &$inserted, &$updated, &$skipped) {
+            foreach ($rows as $row) {
+                $rowArr = (array) $row;
+
+                // Skip if no primary key
+                if (!isset($rowArr['id'])) {
+                    $skipped++;
+                    continue;
+                }
+
+                // Ensure tenant scoping
+                if (isset($rowArr['institute_id'])) {
+                    $rowArr['institute_id'] = $tenantId;
+                }
+
+                $exists = DB::table($table)->where('id', $rowArr['id'])->exists();
+
+                try {
+                    if ($exists) {
+                        // UPDATE existing
+                        DB::table($table)->where('id', $rowArr['id'])->update($rowArr);
+                        $updated++;
+                    } else {
+                        // INSERT new
+                        DB::table($table)->insert($rowArr);
+                        $inserted++;
+                    }
+                } catch (\Throwable $e) {
+                    // Log + skip individual row (don't abort entire restore)
+                    Log::warning("Restore row failed: {$table}.id={$rowArr['id']}", [
+                        'error' => $e->getMessage(),
+                    ]);
+                    $skipped++;
+                }
+            }
+        });
+
+        return [
+            'inserted' => $inserted,
+            'updated'  => $updated,
+            'skipped'  => $skipped,
+        ];
     }
 
     private function maskEmail(string $email): string

@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class Backup extends Model
 {
     protected $fillable = [
-        'tenant_id', 'owner_user_id', 'destination', 'drive_file_id',
+        'tenant_id', 'owner_user_id', 'destination', 'is_chunked',
+        'drive_folder_id', 'drive_file_id',
         'filename', 'size_bytes',
         'file_hmac', 'status', 'error_message', 'completed_at',
     ];
@@ -25,6 +26,11 @@ class Backup extends Model
     public function owner()
     {
         return $this->belongsTo(User::class, 'owner_user_id');
+    }
+
+    public function manifest()
+    {
+        return $this->hasOne(BackupManifest::class, 'backup_id');
     }
 
     public function scopeCompleted($q)

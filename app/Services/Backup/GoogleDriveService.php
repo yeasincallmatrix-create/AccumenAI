@@ -202,4 +202,193 @@ class GoogleDriveService implements DriveStorageInterface
 
         return $results->getFiles();
     }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Phase 2A: multi-folder structure + content-addressed primitives
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Ensure tenant's folder tree exists:
+     * AccumenAI_<id>/{chunks, manifests, manifests/backups, trash}
+     *
+     * @return array{app:?string, chunks:?string, manifests:?string, trash:?string, manifest_backups:?string}
+     */
+    public function ensureTenantFolderStructure(TenantDriveConnection $conn): array
+    {
+        if (!$conn->app_folder_id) {
+            $appFolder = $this->createFolder($conn, 'AccumenAI_' . $conn->tenant_id, null);
+            $conn->update(['app_folder_id' => $appFolder]);
+        }
+
+        $structure = [
+            'chunks_folder_id'    => 'chunks',
+            'manifests_folder_id' => 'manifests',
+            'trash_folder_id'     => 'trash',
+        ];
+
+        foreach ($structure as $field => $name) {
+            if (!$conn->{$field}) {
+                $folderId = $this->createFolder($conn, $name, $conn->app_folder_id);
+                $conn->update([$field => $folderId]);
+            }
+        }
+
+        // Sub-folder: manifests/backups/ (timestamped manifest copies)
+        $backupsManifestFolder = $this->findOrCreateSubfolder(
+            $conn, 'backups', $conn->manifests_folder_id
+        );
+
+        $conn->refresh();
+
+        return [
+            'app'              => $conn->app_folder_id,
+            'chunks'           => $conn->chunks_folder_id,
+            'manifests'        => $conn->manifests_folder_id,
+            'trash'            => $conn->trash_folder_id,
+            'manifest_backups' => $backupsManifestFolder,
+        ];
+    }
+
+    /**
+     * Find a subfolder by name under $parentId, create it if missing.
+     */
+    private function findOrCreateSubfolder(
+        TenantDriveConnection $conn,
+        string $name,
+        string $parentId
+    ): string {
+        $client = $this->clientFor($conn);
+        $drive = new GoogleDrive($client);
+
+        $results = $drive->files->listFiles([
+            'q'      => "name = '{$name}' and '{$parentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+            'fields' => 'files(id)',
+        ]);
+
+        $files = $results->getFiles();
+        if (!empty($files)) {
+            return $files[0]->id;
+        }
+
+        return $this->createFolder($conn, $name, $parentId);
+    }
+
+    /**
+     * Create a Drive folder. Returns the new folder id.
+     */
+    public function createFolder(
+        TenantDriveConnection $conn,
+        string $name,
+        ?string $parentId
+    ): string {
+        $client = $this->clientFor($conn);
+        $drive = new GoogleDrive($client);
+
+        $meta = [
+            'name'     => $name,
+            'mimeType' => 'application/vnd.google-apps.folder',
+        ];
+        if ($parentId) {
+            $meta['parents'] = [$parentId];
+        }
+
+        $file = new DriveFile($meta);
+
+        return $drive->files->create($file, ['fields' => 'id'])->id;
+    }
+
+    /**
+     * Upload a local file into a specific folder. Returns Drive file id.
+     */
+    public function uploadFile(
+        TenantDriveConnection $conn,
+        string $localPath,
+        string $remoteName,
+        string $parentFolderId
+    ): string {
+        $client = $this->clientFor($conn);
+        $drive = new GoogleDrive($client);
+
+        $meta = new DriveFile([
+            'name'    => $remoteName,
+            'parents' => [$parentFolderId],
+        ]);
+
+        $uploaded = $drive->files->create($meta, [
+            'data'       => file_get_contents($localPath),
+            'mimeType'   => 'application/octet-stream',
+            'uploadType' => 'multipart',
+            'fields'     => 'id, size, md5Checksum',
+        ]);
+
+        return $uploaded->id;
+    }
+
+    /**
+     * Upload raw string content into a specific folder. Returns Drive file id.
+     */
+    public function uploadContent(
+        TenantDriveConnection $conn,
+        string $content,
+        string $remoteName,
+        string $parentFolderId
+    ): string {
+        $tmp = tempnam(sys_get_temp_dir(), 'up-');
+        file_put_contents($tmp, $content);
+
+        try {
+            return $this->uploadFile($conn, $tmp, $remoteName, $parentFolderId);
+        } finally {
+            @unlink($tmp);
+        }
+    }
+
+    /**
+     * Download a Drive file and return its contents as a string.
+     */
+    public function downloadContent(TenantDriveConnection $conn, string $driveFileId): string
+    {
+        $client = $this->clientFor($conn);
+        $drive = new GoogleDrive($client);
+
+        $response = $drive->files->get($driveFileId, ['alt' => 'media']);
+
+        return $response->getBody()->getContents();
+    }
+
+    /**
+     * Download a Drive file to a local path.
+     */
+    public function downloadFile(
+        TenantDriveConnection $conn,
+        string $driveFileId,
+        string $localPath
+    ): void {
+        $content = $this->downloadContent($conn, $driveFileId);
+
+        @mkdir(dirname($localPath), 0755, true);
+        file_put_contents($localPath, $content);
+    }
+
+    /**
+     * List files directly inside a folder.
+     *
+     * @return array<int, object>
+     */
+    public function listFiles(
+        TenantDriveConnection $conn,
+        string $folderId
+    ): array {
+        $client = $this->clientFor($conn);
+        $drive = new GoogleDrive($client);
+
+        $results = $drive->files->listFiles([
+            'q'      => "'{$folderId}' in parents and trashed = false",
+            'fields' => 'files(id, name, size, createdTime, md5Checksum)',
+        ]);
+
+        return $results->getFiles();
+    }
 }

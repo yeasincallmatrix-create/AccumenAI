@@ -236,4 +236,30 @@ return [
     // Master KEK — wraps every tenant DEK. Server-side only, never exposed.
     'master_key' => env('BACKUP_MASTER_KEY'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Phase 2A: Content-addressed chunks
+    |--------------------------------------------------------------------------
+    | Adaptive chunk size by table JSON size:
+    |   < chunk_single_threshold_mb  -> single chunk (no split)
+    |   < 100 MB                     -> chunk_size_small_mb
+    |   < 500 MB                     -> chunk_size_medium_mb
+    |   >= 500 MB                    -> chunk_size_large_mb
+    */
+    'chunk_enabled'             => (bool) env('BACKUP_CHUNK_ENABLED', true),
+    'chunk_size_small_mb'       => (int) env('BACKUP_CHUNK_SIZE_SMALL_MB', 5),
+    'chunk_size_medium_mb'      => (int) env('BACKUP_CHUNK_SIZE_MEDIUM_MB', 20),
+    'chunk_size_large_mb'       => (int) env('BACKUP_CHUNK_SIZE_LARGE_MB', 50),
+    'chunk_single_threshold_mb' => (int) env('BACKUP_CHUNK_SINGLE_THRESHOLD_MB', 5),
+
+    // Trash / GC — chunks are never hard-deleted inline; they land in
+    // backup_chunk_trash and BackupCleanupCommand purges after grace days.
+    'trash_grace_days'          => (int) env('BACKUP_TRASH_GRACE_DAYS', 7),
+
+    // Timestamped manifest copies kept in manifests/backups/ for this long.
+    'manifest_backup_weeks'     => (int) env('BACKUP_MANIFEST_BACKUP_WEEKS', 4),
+
+    // Temp dir for chunk assembly (encrypted chunk files before upload).
+    'chunk_temp_dir'            => storage_path('app/chunk-temp'),
+
 ];

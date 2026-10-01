@@ -65,11 +65,15 @@ class BackupCleanupCommand extends Command
         $orphans = $this->cleanupDir(storage_path('app/backup-work'), now()->subHours(24)->timestamp);
         $orphans += $this->cleanupDir(storage_path('app/restore-work'), now()->subHours(24)->timestamp);
         $orphans += $this->cleanupDir(config('backup.rollback_dir', storage_path('app/rollback-snapshots')), now()->subHours(24)->timestamp);
+        $orphans += $this->cleanupDir(config('backup.chunk_temp_dir', storage_path('app/chunk-temp')), now()->subHours(24)->timestamp);
 
         // 4. System SQL dumps (> system_dump_retention_days, never *.enc)
         $sysDeleted = $this->cleanupSystemDumps();
 
-        $this->info("Orphans: {$orphans} | System dumps: {$sysDeleted}");
+        // 5. Phase 2A: purge expired chunk/manifest trash (7-day grace)
+        $trashed = $this->purgeExpiredTrash();
+
+        $this->info("Orphans: {$orphans} | System dumps: {$sysDeleted} | Trash purged: {$trashed}");
 
         $freeMb = round(disk_free_space(storage_path()) / 1048576, 1);
         $warnMb = (int) config('backup.min_free_space_mb', 1024);
@@ -93,8 +97,88 @@ class BackupCleanupCommand extends Command
         if (file_exists($path)) {
             @unlink($path);
         }
+
+        // Phase 2A: remove manifest row; its Drive file goes to trash (grace).
+        $manifest = \App\Models\BackupManifest::where('backup_id', $backup->id)->first();
+        if ($manifest) {
+            $this->trashManifestFile($manifest);
+            \App\Models\BackupChunk::where('manifest_id', $manifest->id)->delete();
+            $manifest->delete();
+        }
+
         $backup->delete();
         $this->line("  Deleted: {$backup->filename}");
+    }
+
+    /**
+     * Move a manifest's Drive file into backup_chunk_trash (deleted after
+     * trash_grace_days). Falls back to immediate delete when no connection.
+     */
+    private function trashManifestFile(\App\Models\BackupManifest $manifest): void
+    {
+        if (!$manifest->drive_file_id) {
+            return;
+        }
+
+        $conn = \App\Models\TenantDriveConnection::where('tenant_id', $manifest->tenant_id)
+            ->whereNull('revoked_at')
+            ->first();
+
+        if (!$conn) {
+            return;
+        }
+
+        if ($conn->trash_folder_id) {
+            DB::table('backup_chunk_trash')->insertOrIgnore([
+                'tenant_id'      => $manifest->tenant_id,
+                'drive_file_id'  => $manifest->drive_file_id,
+                'content_sha256' => $manifest->manifest_sha256,
+                'size_bytes'     => strlen($manifest->manifest_json),
+                'trashed_at'     => now(),
+                'expires_at'     => now()->addDays((int) config('backup.trash_grace_days', 7)),
+                'created_at'     => now(),
+                'updated_at'     => now(),
+            ]);
+        }
+    }
+
+    /**
+     * Phase 2A GC: delete Drive files whose trash grace period expired,
+     * then drop the trash rows. dry-run only reports.
+     */
+    private function purgeExpiredTrash(): int
+    {
+        $expired = \App\Models\BackupChunkTrash::where('expires_at', '<', now())
+            ->when($this->option('tenant'), fn ($q) => $q->where('tenant_id', $this->option('tenant')))
+            ->get();
+
+        $count = 0;
+        foreach ($expired as $item) {
+            if ($this->option('dry-run')) {
+                $this->line("  [DRY] Would purge trash: {$item->drive_file_id}");
+                $count++;
+                continue;
+            }
+
+            $conn = \App\Models\TenantDriveConnection::where('tenant_id', $item->tenant_id)
+                ->whereNull('revoked_at')
+                ->first();
+
+            if ($conn) {
+                try {
+                    app(\App\Contracts\DriveStorageInterface::class)
+                        ->deleteFile($conn, $item->drive_file_id);
+                } catch (\Throwable $e) {
+                    $this->warn("  Trash delete failed ({$item->drive_file_id}): {$e->getMessage()}");
+                    continue; // keep row — retry next run
+                }
+            }
+
+            $item->delete();
+            $count++;
+        }
+
+        return $count;
     }
 
     private function cleanupDir(string $dir, int $cutoff): int
