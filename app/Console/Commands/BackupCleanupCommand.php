@@ -11,15 +11,15 @@ class BackupCleanupCommand extends Command
     protected $signature = 'backup:cleanup
                             {--dry-run : Show what would be deleted}
                             {--tenant= : Clean specific tenant only}';
-    protected $description = 'Delete backups older than retention + enforce max backups per tenant + orphans';
+    protected $description = 'Delete backups older than retention + enforce keep-count per tenant + orphans';
 
     public function handle(): int
     {
-        $retentionDays = (int) config('backup.retention_days', 30);
-        $maxBackups = (int) config('backup.max_backups_per_tenant', 5);
+        $retentionDays = (int) config('backup.retention_days', 365);
+        $keepCount = (int) config('backup.keep_backups_per_tenant', 1);
         $cutoff = now()->subDays($retentionDays);
 
-        $this->info("Cleanup: retention = {$retentionDays} days | max = {$maxBackups}/tenant");
+        $this->info("Cleanup: retention = {$retentionDays} days | keep={$keepCount}/tenant");
 
         // 1. Age-based deletion
         $ageQuery = Backup::where('created_at', '<', $cutoff);
@@ -33,7 +33,7 @@ class BackupCleanupCommand extends Command
             $this->deleteBackup($b);
         }
 
-        // 2. Max-backup enforcement (rolling: keep newest N per tenant)
+        // 2. Keep-count enforcement (keep newest N per tenant)
         $tenantIds = DB::table('backups')
             ->select('tenant_id')
             ->distinct()
@@ -43,23 +43,23 @@ class BackupCleanupCommand extends Command
             $tenantIds = collect([(int) $this->option('tenant')]);
         }
 
-        $deletedByMax = 0;
+        $deletedByKeep = 0;
         foreach ($tenantIds as $tenantId) {
             $backups = Backup::where('tenant_id', $tenantId)
                 ->orderByDesc('created_at')
                 ->orderByDesc('id')
                 ->get();
 
-            if ($backups->count() > $maxBackups) {
-                $toDelete = $backups->slice($maxBackups);
+            if ($backups->count() > $keepCount) {
+                $toDelete = $backups->slice($keepCount);
                 foreach ($toDelete as $b) {
                     $this->deleteBackup($b);
-                    $deletedByMax++;
+                    $deletedByKeep++;
                 }
-                $this->line("  Tenant {$tenantId}: deleted {$toDelete->count()} (max exceeded)");
+                $this->line("  Tenant {$tenantId}: deleted {$toDelete->count()} (keep-count exceeded)");
             }
         }
-        $this->info("Deleted by max-backup rule: {$deletedByMax}");
+        $this->info("Deleted by keep-count rule: {$deletedByKeep}");
 
         // 3. Orphan temp files (24h)
         $orphans = $this->cleanupDir(storage_path('app/backup-work'), now()->subHours(24)->timestamp);

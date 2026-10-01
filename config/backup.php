@@ -217,10 +217,12 @@ return [
     'min_free_space_mb'  => (int) env('BACKUP_MIN_FREE_SPACE_MB', 1024),
     'refuse_free_space_mb' => (int) env('BACKUP_REFUSE_FREE_SPACE_MB', 512),
 
-    // Retention (hybrid strategy): delete tenant backups older than 30 days,
-    // AND keep at most max_backups_per_tenant newest per tenant (rolling).
-    'retention_days'              => (int) env('BACKUP_RETENTION_DAYS', 30),
-    'max_backups_per_tenant'      => (int) env('BACKUP_MAX_PER_TENANT', 5),
+    // Keep-1 strategy: keep ONLY keep_backups_per_tenant newest per tenant.
+    // Previous backup deleted ONLY after new backup succeeds + HMAC verified.
+    // retention_days is a safety net for orphans/failures (365d).
+    'retention_days'              => (int) env('BACKUP_RETENTION_DAYS', 365),
+    'keep_backups_per_tenant'     => (int) env('BACKUP_KEEP_PER_TENANT', 1),
+    'delete_previous_on_success'  => (bool) env('BACKUP_DELETE_PREVIOUS', true),
 
     // Auto-backup (backup:auto — iterate all active tenants).
     'auto_backup_enabled'         => (bool) env('BACKUP_AUTO_ENABLED', true),

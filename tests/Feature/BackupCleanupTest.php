@@ -17,8 +17,8 @@ class BackupCleanupTest extends TestCase
             'status'        => 'completed',
         ]);
         // created_at is not mass-assignable — set directly (Bug 2 fix)
-        // 35 days > retention (30 days) → must be deleted
-        $old->created_at = now()->subDays(35);
+        // 400 days > retention (365 days) → must be deleted
+        $old->created_at = now()->subDays(400);
         $old->save();
 
         $this->artisan('backup:cleanup');
@@ -54,8 +54,8 @@ class BackupCleanupTest extends TestCase
             'file_hmac'     => str_repeat('c', 64),
             'status'        => 'completed',
         ]);
-        // 35 days > retention → would be deleted if not for --dry-run
-        $old->created_at = now()->subDays(35);
+        // 400 days > retention → would be deleted if not for --dry-run
+        $old->created_at = now()->subDays(400);
         $old->save();
 
         $this->artisan('backup:cleanup', ['--dry-run' => true]);

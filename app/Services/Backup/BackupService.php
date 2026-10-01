@@ -59,6 +59,21 @@ class BackupService
                 'completed_at' => now(),
             ]);
 
+            // Integrity check BEFORE any previous backup is removed.
+            if (!$this->encryption->verifyFileHmac($encPath, $hmac)) {
+                @unlink($encPath);
+                $backup->update([
+                    'status'        => 'failed',
+                    'error_message' => 'Post-write HMAC verification failed',
+                ]);
+                throw new \RuntimeException('Backup integrity verification failed');
+            }
+
+            // Delete previous backups ONLY after new backup verified.
+            if (config('backup.delete_previous_on_success', true)) {
+                $this->deletePreviousBackups($tenantId, $backup->id);
+            }
+
             // Cleanup
             @unlink($tarPath);
             $this->rmrf($workDir);
@@ -198,5 +213,40 @@ class BackupService
             $f->isDir() ? rmdir($f->getRealPath()) : unlink($f->getRealPath());
         }
         rmdir($dir);
+    }
+
+    /**
+     * Delete all OTHER backups for this tenant (keep only the specified one).
+     * Called ONLY after the new backup succeeded + HMAC verified.
+     */
+    private function deletePreviousBackups(int $tenantId, int $keepBackupId): void
+    {
+        $previous = Backup::where('tenant_id', $tenantId)
+            ->where('id', '!=', $keepBackupId)
+            ->get();
+
+        if ($previous->isEmpty()) {
+            return;
+        }
+
+        $deleted = 0;
+        $freedBytes = 0;
+
+        foreach ($previous as $old) {
+            $path = storage_path("app/backups/{$old->filename}");
+            if (file_exists($path)) {
+                $freedBytes += (int) filesize($path);
+                @unlink($path);
+            }
+            $old->delete();
+            $deleted++;
+        }
+
+        \Illuminate\Support\Facades\Log::info('Previous backups deleted after successful new backup', [
+            'tenant_id'     => $tenantId,
+            'kept_id'       => $keepBackupId,
+            'deleted_count' => $deleted,
+            'freed_bytes'   => $freedBytes,
+        ]);
     }
 }

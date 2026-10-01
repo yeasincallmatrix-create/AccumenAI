@@ -211,6 +211,30 @@ class EncryptionService
         }
     }
 
+    /**
+     * Verify HMAC of an encrypted file without decrypting.
+     * encryptFile() feeds HMAC with the exact byte stream it writes
+     * ([iv|tag|len] + ciphertext per chunk), so a single hash_hmac over
+     * the whole file yields the identical value.
+     */
+    public function verifyFileHmac(string $path, string $expectedHmac): bool
+    {
+        if (!file_exists($path)) {
+            return false;
+        }
+
+        $data = file_get_contents($path);
+        if ($data === false) {
+            return false;
+        }
+
+        $hmacKey = $this->getHmacKey();
+        $computed = hash_hmac('sha256', $data, $hmacKey);
+        $this->wipe($hmacKey);
+
+        return hash_equals($expectedHmac, $computed);
+    }
+
     private function getMasterKek(): string
     {
         $key = config('backup.master_key') ?? env('BACKUP_MASTER_KEY');

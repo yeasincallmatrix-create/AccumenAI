@@ -44,12 +44,12 @@ class BackupAutoTest extends TestCase
         $this->artisan('backup:cleanup', ['--tenant' => $tenantId]);
 
         $remaining = Backup::where('tenant_id', $tenantId)->count();
-        $this->assertEquals(5, $remaining, 'Should keep only 5 latest');
+        $this->assertEquals(1, $remaining, 'Should keep only 1 latest (keep-1 strategy)');
 
         Backup::where('tenant_id', $tenantId)->delete();
     }
 
-    public function test_cleanup_30_day_retention()
+    public function test_cleanup_age_based_retention()
     {
         $tenantId = 999998;
 
@@ -61,7 +61,7 @@ class BackupAutoTest extends TestCase
             'status'        => 'completed',
         ]);
         \DB::table('backups')->where('id', $old->id)
-            ->update(['created_at' => now()->subDays(35)]);
+            ->update(['created_at' => now()->subDays(400)]); // > retention 365d
 
         $this->artisan('backup:cleanup');
 
