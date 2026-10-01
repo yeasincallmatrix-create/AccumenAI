@@ -5,6 +5,7 @@ namespace App\Services\Backup;
 use App\Contracts\DriveStorageInterface;
 use App\Mail\NotificationMail;
 use App\Models\TenantDriveConnection;
+use App\Support\GoogleDriveScopes;
 use Google\Client as GoogleClient;
 use Google\Service\Drive as GoogleDrive;
 use Google\Service\Drive\DriveFile;
@@ -14,7 +15,7 @@ use Illuminate\Support\Facades\Mail;
 class GoogleDriveService implements DriveStorageInterface
 {
     private const APP_FOLDER_NAME = 'AccumenAI';
-    private const SCOPE = GoogleDrive::DRIVE_FILE;
+    private const SCOPE = GoogleDriveScopes::ALL;
 
     /**
      * Build authenticated Google client from tenant connection.

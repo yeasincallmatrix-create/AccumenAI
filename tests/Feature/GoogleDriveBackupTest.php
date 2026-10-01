@@ -72,6 +72,23 @@ class GoogleDriveBackupTest extends TestCase
         $this->assertStringContainsString('access_type=offline', $location);
     }
 
+    public function test_connect_requests_userinfo_scope()
+    {
+        $user = $this->owner();
+        if (!$user) {
+            $this->markTestSkipped('No owner available');
+        }
+
+        $response = $this->actingAs($user, 'institute_user')
+            ->get(route('tenant.backup.drive.connect'));
+
+        $location = urldecode($response->headers->get('Location'));
+
+        $this->assertStringContainsString('drive.file', $location);
+        $this->assertStringContainsString('userinfo.email', $location);
+        $this->assertStringContainsString('userinfo.profile', $location);
+    }
+
     public function test_drive_disconnect_revokes()
     {
         $user = $this->owner();
