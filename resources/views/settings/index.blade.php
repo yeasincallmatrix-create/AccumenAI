@@ -85,6 +85,13 @@
                 </button>
             @endif
             @endif
+            @if ($canManageSettings)
+                <a href="{{ route('tenant.backup.index') }}"
+                   class="settings-nav-item text-decoration-none {{ request()->routeIs('tenant.backup.*') ? 'active' : '' }}">
+                    <i class="bi bi-cloud-arrow-up"></i>
+                    <span>Backup</span>
+                </a>
+            @endif
 
     </div>
 

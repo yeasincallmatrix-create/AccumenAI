@@ -1,6 +1,14 @@
 @extends('layouts.standalone')
 @section('content')
 <div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('settings.index') }}">Settings</a></li>
+            <li class="breadcrumb-item active">Backup</li>
+        </ol>
+    </nav>
+
     <h4>Backups</h4>
     <p class="text-muted">
         🔐 All backups are encrypted with AES-256. Only the platform can decrypt (server-side keys).

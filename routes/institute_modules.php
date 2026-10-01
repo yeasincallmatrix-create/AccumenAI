@@ -2112,7 +2112,7 @@ Route::middleware(['auth:platform_admin', 'verified'])->prefix('admin')->name('a
 });
 
 // ─── Tenant Backup / Restore (silent backup + OTP restore) ──────────────
-Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])
+Route::middleware(['auth:institute_user,web', 'tenant', 'verified', 'permission:settings.manage'])
     ->prefix('tenant/backup')
     ->name('tenant.backup.')
     ->group(function () {
