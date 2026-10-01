@@ -5,7 +5,10 @@ namespace App\Services\Backup;
 use App\Models\BackupChunk;
 use App\Models\BackupManifest;
 use App\Models\TenantDriveConnection;
+use GuzzleHttp\Pool;
+use GuzzleHttp\Psr7\Request;
 use Illuminate\Support\Facades\Log;
+use Psr\Http\Message\ResponseInterface;
 
 class BackupChunkService
 {
@@ -298,6 +301,125 @@ class BackupChunkService
             }
 
             $merged .= $plain;
+        }
+
+        return $merged;
+    }
+
+    /**
+     * Phase 2C — download one table's chunks in PARALLEL (Adaptation 1,
+     * two-phase; order-preserving; checksum-verified):
+     *
+     *   Phase A (network-bound): Guzzle Pool downloads ciphertexts with
+     *     N concurrency into temp files (never whole payloads in memory).
+     *   Phase B (CPU-bound): sequential in chunk_index order — decrypt with
+     *     stored HMAC, SHA256(plaintext) verify vs content_sha256, append.
+     *
+     * Adaptation 2: concrete-only client — any non-GoogleDriveService drive
+     * (FakeDriveService in tests) falls back to the sequential path.
+     */
+    public function downloadTableChunksParallel(
+        BackupManifest $manifest,
+        string $table,
+        TenantDriveConnection $conn,
+        int $concurrency = 0
+    ): string {
+        if (!$this->drive instanceof GoogleDriveService) {
+            return $this->downloadTableChunks($manifest, $table, $conn);
+        }
+
+        $concurrency = $concurrency > 0
+            ? $concurrency
+            : (int) config('backup.download_concurrency', 10);
+
+        $chunks = BackupChunk::where('manifest_id', $manifest->id)
+            ->where('source_table', $table)
+            ->orderBy('chunk_index')
+            ->get();
+
+        if ($chunks->isEmpty()) {
+            throw new \RuntimeException("No chunks for table {$table}");
+        }
+
+        $tmpDir = config('backup.chunk_temp_dir', storage_path('app/chunk-temp'));
+        @mkdir($tmpDir, 0755, true);
+
+        // ── Phase A: parallel ciphertext download → temp files ──────────
+        $client = $this->drive->getAuthenticatedHttpClient($conn);
+        $encPaths = [];
+        $failures = [];
+
+        $requests = function () use ($chunks) {
+            foreach ($chunks as $index => $chunk) {
+                yield $index => new Request(
+                    'GET',
+                    'files/' . $chunk->drive_file_id . '?alt=media'
+                );
+            }
+        };
+
+        $pool = new Pool($client, $requests(), [
+            'concurrency' => $concurrency,
+            'fulfilled'   => function (ResponseInterface $response, $index) use ($chunks, &$encPaths, $tmpDir) {
+                $chunk = $chunks[$index];
+                $path = "{$tmpDir}/pdl-{$chunk->id}.enc";
+                file_put_contents($path, (string) $response->getBody());
+                $encPaths[$chunk->id] = $path;
+            },
+            'rejected'    => function ($reason, $index) use ($chunks, &$failures) {
+                $chunk = $chunks[$index];
+                $failures[] = "chunk {$chunk->chunk_index}: " . (string) $reason;
+                Log::error('Parallel chunk download failed', [
+                    'chunk_id' => $chunk->id,
+                    'reason'   => (string) $reason,
+                ]);
+            },
+        ]);
+
+        $pool->promise()->wait();
+
+        if (!empty($failures)) {
+            foreach ($encPaths as $p) {
+                @unlink($p);
+            }
+            throw new \RuntimeException(
+                'Parallel download failed for ' . count($failures) . ' chunk(s): ' . $failures[0]
+            );
+        }
+
+        // ── Phase B: sequential decrypt + verify + merge (index order) ──
+        $merged = '';
+        try {
+            foreach ($chunks as $chunk) {
+                if (!isset($encPaths[$chunk->id])) {
+                    throw new \RuntimeException("Missing downloaded chunk {$chunk->chunk_index}");
+                }
+                if (!$chunk->file_hmac) {
+                    throw new \RuntimeException("Chunk {$chunk->id} missing file HMAC — refusing restore");
+                }
+
+                $plainTmp = "{$tmpDir}/pdl-{$chunk->id}.json";
+                try {
+                    $this->encryption->decryptFile(
+                        $encPaths[$chunk->id], $plainTmp,
+                        $manifest->tenant_id, $chunk->file_hmac
+                    );
+                    $plain = (string) file_get_contents($plainTmp);
+                } finally {
+                    @unlink($plainTmp);
+                }
+
+                $actual = hash('sha256', $plain);
+                if (!hash_equals($chunk->content_sha256, $actual)) {
+                    throw new \RuntimeException("Chunk {$chunk->id} checksum mismatch — refusing restore");
+                }
+
+                $merged .= $plain;
+            }
+        } finally {
+            foreach ($encPaths as $p) {
+                @unlink($p);
+            }
         }
 
         return $merged;

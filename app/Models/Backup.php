@@ -11,11 +11,17 @@ class Backup extends Model
         'drive_folder_id', 'drive_file_id',
         'filename', 'size_bytes',
         'file_hmac', 'status', 'error_message', 'completed_at',
+        'progress_percent', 'progress_stage', 'progress_message',
+        'job_id', 'started_at', 'total_chunks', 'uploaded_chunks',
     ];
 
     protected $casts = [
-        'completed_at' => 'datetime',
-        'size_bytes'   => 'integer',
+        'completed_at'      => 'datetime',
+        'started_at'        => 'datetime',
+        'size_bytes'        => 'integer',
+        'progress_percent'  => 'integer',
+        'total_chunks'      => 'integer',
+        'uploaded_chunks'   => 'integer',
     ];
 
     public function tenant()

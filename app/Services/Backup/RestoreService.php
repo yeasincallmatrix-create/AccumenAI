@@ -65,13 +65,10 @@ class RestoreService
     }
 
     /**
-     * Verify OTP and perform restore.
-     *
-     * F4: backups with a manifest row restore via the content-addressed
-     * chunk pipeline; legacy backups (no manifest) fall back to the
-     * single-file .enc path.
+     * Phase 2C: OTP gate ONLY (sync — controller verifies before dispatching
+     * RestoreJob). Marks the token used exactly once.
      */
-    public function verifyAndRestore(int $tenantId, int $backupId, int $userId, string $otp): RestoreLog
+    public function verifyOtpToken(int $tenantId, int $backupId, int $userId, string $otp): RestoreToken
     {
         $token = RestoreToken::where('tenant_id', $tenantId)
             ->where('backup_id', $backupId)
@@ -90,6 +87,17 @@ class RestoreService
 
         $token->update(['used_at' => now()]);
 
+        return $token;
+    }
+
+    /**
+     * Verify OTP and perform restore (SYNC path — Adaptation 9: kept intact
+     * for service-level callers/tests).
+     */
+    public function verifyAndRestore(int $tenantId, int $backupId, int $userId, string $otp): RestoreLog
+    {
+        $this->verifyOtpToken($tenantId, $backupId, $userId, $otp);
+
         $backup = Backup::where('tenant_id', $tenantId)->findOrFail($backupId);
 
         $log = RestoreLog::create([
@@ -100,28 +108,58 @@ class RestoreService
             'status'     => 'pending',
         ]);
 
-        $manifest = BackupManifest::where('backup_id', $backup->id)->first();
+        return $this->runRestore($log, $backup, $tenantId);
+    }
+
+    /**
+     * Phase 2C: job entry point — log row already created by the controller
+     * after the OTP gate. Runs the restore body with progress tracking.
+     */
+    public function executeRestore(RestoreLog $log, int $backupId, int $tenantId, int $userId): RestoreLog
+    {
+        $backup = Backup::where('tenant_id', $tenantId)->findOrFail($backupId);
+
+        return $this->runRestore($log, $backup, $tenantId);
+    }
+
+    /**
+     * Shared restore body (manifest vs legacy) + progress + failure marking.
+     */
+    private function runRestore(RestoreLog $log, Backup $backup, int $tenantId): RestoreLog
+    {
+        $progress = app(ProgressService::class);
 
         try {
+            $progress->updateRestore($log, 5, 'starting', 'Preparing restore...');
+
+            $manifest = BackupManifest::where('backup_id', $backup->id)->first();
+
             $affected = $manifest
                 ? $this->restoreFromManifest($backup, $manifest, $log, $tenantId)
                 : $this->restoreLegacy($backup, $log, $tenantId);
+
+            $log->update([
+                'status'              => 'completed',
+                'records_affected'    => $affected,
+                'rollback_expires_at' => now()->addHours(24),
+                'completed_at'        => now(),
+            ]);
+
+            $progress->updateRestore($log, 100, 'completed', 'Restore complete');
+
+            return $log;
         } catch (\Throwable $e) {
             $log->update([
                 'status'           => 'failed',
                 'records_affected' => ['error' => $e->getMessage()],
+                'error_message'    => $e->getMessage(),
+                'progress_stage'   => 'failed',
+                'progress_message' => 'Restore failed: ' . $e->getMessage(),
             ]);
             throw $e;
+        } finally {
+            $progress->clear($log);
         }
-
-        $log->update([
-            'status'              => 'completed',
-            'records_affected'    => $affected,
-            'rollback_expires_at' => now()->addHours(24),
-            'completed_at'        => now(),
-        ]);
-
-        return $log;
     }
 
     /**
@@ -153,23 +191,50 @@ class RestoreService
         }
 
         // Rollback snapshot BEFORE restore
+        $progress = app(ProgressService::class);
+        $progress->updateRestore($log, 15, 'snapshot', 'Creating rollback snapshot...');
+
         $rollbackPath = $this->createRollbackSnapshot($tenantId);
         $log->update(['rollback_path' => $rollbackPath]);
 
         $affected = [];
+        $tables = $manifestArr['tables'] ?? [];
+        $tableCount = max(1, count($tables));
+        $done = 0;
 
-        foreach (($manifestArr['tables'] ?? []) as $table => $info) {
-            // Download + decrypt + verify + merge one table
-            $json = $this->chunkService->downloadTableChunks($manifest, $table, $conn);
+        // Total chunks for this manifest (progress denominator)
+        $totalChunks = \App\Models\BackupChunk::where('manifest_id', $manifest->id)->count();
+        $log->update(['total_chunks' => $totalChunks, 'downloaded_chunks' => 0]);
+
+        foreach ($tables as $table => $info) {
+            $pct = 20 + (int) round(70 * ($done / $tableCount));
+            $progress->updateRestore($log, $pct, 'downloading', "Table: {$table}");
+
+            // Phase 2C: parallel download (10 concurrent) — falls back to
+            // sequential automatically for non-Google drives (tests).
+            $json = $this->chunkService->downloadTableChunksParallel($manifest, $table, $conn);
             $rows = json_decode($json, true);
 
             if (!is_array($rows)) {
                 $affected[$table] = ['inserted' => 0, 'updated' => 0, 'skipped' => 0];
+                $done++;
                 continue;
             }
 
+            $progress->updateRestore($log, $pct, 'merging', "Table: {$table}");
             $affected[$table] = $this->mergeTable($table, $rows, $tenantId);
+
+            // Chunks for this table downloaded + merged
+            $tableChunks = \App\Models\BackupChunk::where('manifest_id', $manifest->id)
+                ->where('source_table', $table)->count();
+            $log->update([
+                'downloaded_chunks' => (int) $log->downloaded_chunks + $tableChunks,
+            ]);
+
+            $done++;
         }
+
+        $progress->updateRestore($log, 95, 'finalizing', 'Restore finalize...');
 
         Log::info('Manifest restore completed', [
             'tenant_id' => $tenantId,
@@ -186,6 +251,8 @@ class RestoreService
      */
     private function restoreLegacy(Backup $backup, RestoreLog $log, int $tenantId): array
     {
+        app(ProgressService::class)->updateRestore($log, 20, 'downloading', 'Downloading backup file...');
+
         $workDir = storage_path("app/restore-work/{$log->id}");
         $tarPath = "{$workDir}.tar.gz";
         $downloadedEnc = null;

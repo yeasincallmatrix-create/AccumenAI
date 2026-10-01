@@ -31,34 +31,10 @@ class BackupService
      */
     public function createBackup(int $tenantId, int $userId): Backup
     {
-        // Guard: disk space — refuse below hard floor, warn below soft floor
-        $freeMb = disk_free_space(storage_path()) / 1024 / 1024;
-        $refuseMb = (int) config('backup.refuse_free_space_mb', 512);
-        $warnMb = (int) config('backup.min_free_space_mb', 1024);
-        if ($freeMb < $refuseMb) {
-            throw new \RuntimeException("Insufficient disk space ({$freeMb}MB free, refuse below {$refuseMb}MB)");
-        }
-        if ($freeMb < $warnMb) {
-            Log::warning('backup_low_disk_space', [
-                'free_mb' => round($freeMb, 1),
-                'warn_mb' => $warnMb,
-            ]);
-        }
-
-        $chunked = (bool) config('backup.chunk_enabled', true);
-
-        $backup = Backup::create([
-            'tenant_id'     => $tenantId,
-            'owner_user_id' => $userId,
-            'filename'      => 'backup-' . now()->format('Ymd-His') . '-' . bin2hex(random_bytes(4)) . '.enc',
-            'status'        => 'pending',
-            'is_chunked'    => $chunked,
-        ]);
+        $backup = $this->createPendingBackup($tenantId, $userId);
 
         try {
-            return $chunked
-                ? $this->createChunkedBackup($backup, $tenantId)
-                : $this->createLegacyBackup($backup, $tenantId);
+            return $this->executeBackup($backup, $tenantId, $userId);
         } catch (\Throwable $e) {
             $backup->update([
                 'status'        => 'failed',
@@ -67,6 +43,65 @@ class BackupService
             @unlink(storage_path("app/backup-work/{$backup->id}.tar.gz"));
             $this->rmrf(storage_path("app/backup-work/{$backup->id}"));
             throw $e;
+        }
+    }
+
+    /**
+     * Phase 2C: pending-row factory (controller pre-flight + dispatch path).
+     * Sync callers (createBackup) and async callers (BackupJob) share it so
+     * filename/pending state is identical.
+     */
+    public function createPendingBackup(int $tenantId, int $userId): Backup
+    {
+        return Backup::create([
+            'tenant_id'       => $tenantId,
+            'owner_user_id'   => $userId,
+            'filename'        => 'backup-' . now()->format('Ymd-His') . '-' . bin2hex(random_bytes(4)) . '.enc',
+            'status'          => 'pending',
+            'is_chunked'      => (bool) config('backup.chunk_enabled', true),
+            'destination'     => 'drive',
+            'progress_stage'  => 'queued',
+            'progress_message' => 'Queued...',
+        ]);
+    }
+
+    /**
+     * Phase 2C: job entry point — runs an EXISTING pending/failed row with
+     * progress tracking. Adaptation 9: createBackup() keeps its sync path.
+     */
+    public function executeBackup(Backup $backup, int $tenantId, int $userId): Backup
+    {
+        $progress = app(ProgressService::class);
+
+        try {
+            // Guard: disk space — refuse below hard floor, warn below soft floor
+            // (lives here so BOTH sync createBackup and async BackupJob get it)
+            $freeMb = disk_free_space(storage_path()) / 1024 / 1024;
+            $refuseMb = (int) config('backup.refuse_free_space_mb', 512);
+            $warnMb = (int) config('backup.min_free_space_mb', 1024);
+            if ($freeMb < $refuseMb) {
+                throw new \RuntimeException("Insufficient disk space ({$freeMb}MB free, refuse below {$refuseMb}MB)");
+            }
+            if ($freeMb < $warnMb) {
+                Log::warning('backup_low_disk_space', [
+                    'free_mb' => round($freeMb, 1),
+                    'warn_mb' => $warnMb,
+                ]);
+            }
+
+            $progress->updateBackup($backup, 2, 'starting', 'Preparing...');
+            $backup->update(['status' => 'uploading', 'started_at' => now()]);
+
+            $chunked = (bool) config('backup.chunk_enabled', true);
+            $result = $chunked
+                ? $this->createChunkedBackup($backup, $tenantId)
+                : $this->createLegacyBackup($backup, $tenantId);
+
+            $progress->updateBackup($result, 100, 'completed', 'Backup complete');
+
+            return $result;
+        } finally {
+            $progress->clear($backup);
         }
     }
 
@@ -104,12 +139,21 @@ class BackupService
         $totalNew = 0;
         $totalReused = 0;
 
-        foreach ($this->getTenantTables() as $table => $column) {
+        $progress = app(ProgressService::class);
+        $tables = $this->getTenantTables();
+        $tableCount = max(1, count($tables));
+        $done = 0;
+        $uploadedChunks = 0;
+
+        $progress->updateBackup($backup, 10, 'preparing', 'Exporting tables...');
+
+        foreach ($tables as $table => $column) {
             $jsonFile = "{$workDir}/{$table}.json";
             $rowCount = $this->dumpTable($table, $column, $tenantId, $jsonFile);
 
             if ($rowCount === 0) {
                 @unlink($jsonFile);
+                $done++;
                 continue;
             }
 
@@ -118,6 +162,10 @@ class BackupService
                 @unlink($jsonFile);
                 throw new \RuntimeException("Backup exceeds limit ({$table}: {$sizeMb}MB > {$maxMb}MB)");
             }
+
+            // 10–45%: exporting/uploading table by table
+            $pct = 10 + (int) round(35 * ($done / $tableCount));
+            $progress->updateBackup($backup, $pct, 'uploading', "Table: {$table}");
 
             $entry = $this->chunkService->processTable(
                 $tenantId, $table, $jsonFile, $conn, $folders['chunks'], $oldManifest
@@ -128,11 +176,18 @@ class BackupService
             foreach ($entry['chunks'] as $chunk) {
                 $chunk['reused'] ? $totalReused++ : $totalNew++;
             }
+            $uploadedChunks += count($entry['chunks']);
+            $backup->update([
+                'uploaded_chunks' => $uploadedChunks,
+                'total_chunks'    => $uploadedChunks,
+            ]);
 
+            $done++;
             @unlink($jsonFile);
         }
 
         // Build + save manifest (encrypt → Drive current + checksum + timestamped copy)
+        $progress->updateBackup($backup, 90, 'finalizing', 'Saving manifest...');
         $manifest = $this->manifestService->buildManifest($tenantId, $backup->id, $tableData);
         $manifestRecord = $this->manifestService->saveManifest(
             $backup, $conn, $manifest, $this->encryption
@@ -196,6 +251,9 @@ class BackupService
      */
     private function createLegacyBackup(Backup $backup, int $tenantId): Backup
     {
+        $progress = app(ProgressService::class);
+        $progress->updateBackup($backup, 30, 'uploading', 'Exporting tables...');
+
         $workDir = storage_path("app/backup-work/{$backup->id}");
         $tarPath = $this->exportTenantData($tenantId, $workDir);
 
@@ -229,6 +287,8 @@ class BackupService
         if (!$driveConn) {
             throw new \RuntimeException('Google Drive not connected. Please connect Drive first.');
         }
+
+        app(ProgressService::class)->updateBackup($backup, 70, 'uploading', 'Uploading to Drive...');
 
         try {
             $driveFileId = $this->drive->uploadBackup($driveConn, $encPath, $backup->filename);

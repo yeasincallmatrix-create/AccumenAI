@@ -67,9 +67,9 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('tenant.backup.store') }}" class="mb-3">
+    <form method="POST" action="{{ route('tenant.backup.store') }}" class="mb-3" id="backupForm">
         @csrf
-        <button class="btn btn-primary" @disabled(!$driveConn)>
+        <button class="btn btn-primary" id="backupBtn" @disabled(!$driveConn)>
             <i class="bi bi-cloud-arrow-up"></i> Backup Now
         </button>
     </form>
@@ -142,9 +142,38 @@
     </div>
 </div>
 
+{{-- Phase 2C: Progress Modal (shared by backup + restore) --}}
+<div class="modal fade" id="progressModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="progressTitle">Backup in progress</h5>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex justify-content-between mb-1">
+                    <span id="progressStage" class="text-muted">Starting...</span>
+                    <span id="progressPercent">0%</span>
+                </div>
+                <div class="progress" style="height: 22px;">
+                    <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated"
+                         role="progressbar" style="width: 0%">0%</div>
+                </div>
+                <div id="progressChunks" class="text-muted small mt-2"></div>
+                <div id="progressError" class="text-danger small mt-2"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary d-none" id="progressCloseBtn"
+                        data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 let currentBackupId = null;
+let progressTimer = null;
 const modal = new bootstrap.Modal(document.getElementById('restoreModal'));
+const progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
 
 function startRestore(backupId) {
     currentBackupId = backupId;
@@ -183,10 +212,102 @@ async function verifyOtp() {
     const data = await res.json();
     if (data.success) {
         modal.hide();
-        location.reload();
+        if (data.log_id) {
+            startProgressTracking(null, data.log_id);
+        } else {
+            location.reload();
+        }
     } else {
         document.getElementById('otpError').textContent = data.message;
     }
+}
+
+// ── Phase 2C: Backup Now → AJAX dispatch + progress polling ─────────────
+document.getElementById('backupForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('backupBtn');
+    btn.disabled = true;
+
+    const res = await fetch(e.target.action, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: new FormData(e.target),
+    });
+    const data = await res.json();
+
+    if (data.success && data.backup_id) {
+        startProgressTracking(data.backup_id, null);
+    } else {
+        alert(data.message || 'Backup failed to queue.');
+        btn.disabled = false;
+    }
+});
+
+function setProgressUi(p) {
+    const pct = Math.max(0, Math.min(100, p.progress_percent || 0));
+    const bar = document.getElementById('progressBar');
+    bar.style.width = pct + '%';
+    bar.textContent = pct + '%';
+    document.getElementById('progressPercent').textContent = pct + '%';
+    document.getElementById('progressStage').textContent =
+        (p.progress_stage || '') + (p.progress_message ? ': ' + p.progress_message : '');
+
+    const chunks = p.total_chunks
+        ? `${p.uploaded_chunks || p.downloaded_chunks || 0} / ${p.total_chunks} chunks`
+        : '';
+    document.getElementById('progressChunks').textContent = chunks;
+}
+
+function finishProgress(failed, errMsg) {
+    clearInterval(progressTimer);
+    progressTimer = null;
+    const bar = document.getElementById('progressBar');
+    bar.classList.remove('progress-bar-animated', 'progress-bar-striped');
+    bar.classList.toggle('bg-danger', !!failed);
+    document.getElementById('progressCloseBtn').classList.remove('d-none');
+    document.getElementById('progressError').textContent = errMsg || '';
+    document.getElementById('backupBtn').disabled = false;
+    setTimeout(() => location.reload(), failed ? 0 : 1200);
+}
+
+function startProgressTracking(backupId, logId) {
+    clearInterval(progressTimer);
+    const bar = document.getElementById('progressBar');
+    bar.classList.add('progress-bar-animated', 'progress-bar-striped');
+    bar.classList.remove('bg-danger');
+    document.getElementById('progressCloseBtn').classList.add('d-none');
+    document.getElementById('progressError').textContent = '';
+    document.getElementById('progressTitle').textContent =
+        backupId ? 'Backup in progress' : 'Restore in progress';
+    progressModal.show();
+
+    const url = backupId
+        ? `/tenant/backup/${backupId}/progress`
+        : `/tenant/backup/restore/${logId}/progress`;
+
+    const tick = async () => {
+        try {
+            const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            if (!res.ok) { finishProgress(true, 'Progress unavailable'); return; }
+            const p = await res.json();
+            setProgressUi(p);
+
+            if (p.status === 'completed') {
+                finishProgress(false, null);
+            } else if (p.status === 'failed') {
+                finishProgress(true, p.error_message || 'Failed');
+            }
+        } catch (err) {
+            finishProgress(true, 'Connection lost');
+        }
+    };
+
+    tick();
+    progressTimer = setInterval(tick, 2000);
 }
 </script>
 @endsection

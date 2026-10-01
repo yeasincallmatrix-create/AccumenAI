@@ -33,18 +33,64 @@ class BackupController extends Controller
 
     public function store(Request $request)
     {
+        $user = auth()->user();
+        $tenantId = $user->institute_id;
+
         try {
-            $backup = $this->service->createBackup(
-                auth()->user()->institute_id,
-                auth()->id()
+            // Pre-flight: Drive must be connected BEFORE queueing (async runs
+            // later — fail fast here with a user-facing message).
+            $conn = TenantDriveConnection::where('tenant_id', $tenantId)
+                ->whereNull('revoked_at')
+                ->first();
+            if (!$conn) {
+                throw new \RuntimeException('Google Drive not connected. Please connect Drive first.');
+            }
+
+            $backup = $this->service->createPendingBackup($tenantId, auth()->id());
+
+            // Phase 2C: queue the work; UI polls progress endpoint.
+            \App\Jobs\BackupJob::dispatch(
+                $backup->id,
+                $tenantId,
+                auth()->id(),
+                $user->email
             );
 
-            return back()->with('success',
-                "Backup completed — " . number_format($backup->size_bytes / 1048576, 2) . " MB");
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success'    => true,
+                    'backup_id'  => $backup->id,
+                    'message'    => 'Backup queued. You will be emailed when it completes.',
+                ]);
+            }
 
+            return back()->with('success', 'Backup queued. You will be emailed when it completes.');
         } catch (\Throwable $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ], 422);
+            }
+
             return back()->withErrors(['error' => $e->getMessage()]);
         }
+    }
+
+    public function progress(int $id)
+    {
+        $backup = Backup::where('tenant_id', auth()->user()->institute_id)->findOrFail($id);
+
+        return response()->json([
+            'id'                => $backup->id,
+            'status'            => $backup->status,
+            'progress_percent'  => (int) $backup->progress_percent,
+            'progress_stage'    => $backup->progress_stage,
+            'progress_message'  => $backup->progress_message,
+            'total_chunks'      => (int) $backup->total_chunks,
+            'uploaded_chunks'   => (int) $backup->uploaded_chunks,
+            'error_message'     => $backup->error_message,
+        ]);
     }
 
     public function download(int $id)

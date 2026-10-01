@@ -346,6 +346,34 @@ class GoogleDriveService implements DriveStorageInterface
     }
 
     /**
+     * Phase 2C: authenticated Guzzle client for parallel chunk downloads
+     * (concrete-only — NOT part of DriveStorageInterface; sequential
+     * downloadContent stays the portable path).
+     */
+    public function getAuthenticatedHttpClient(TenantDriveConnection $conn): \GuzzleHttp\Client
+    {
+        $google = $this->clientFor($conn);
+
+        $token = $google->getAccessToken();
+        $accessToken = is_array($token) ? ($token['access_token'] ?? null) : $token;
+
+        if (!$accessToken) {
+            $token = $google->fetchAccessTokenWithRefreshToken($conn->refresh_token);
+            $accessToken = is_array($token) ? ($token['access_token'] ?? null) : null;
+        }
+
+        if (!$accessToken) {
+            throw new \RuntimeException('Unable to obtain Google Drive access token for parallel download');
+        }
+
+        return new \GuzzleHttp\Client([
+            'base_uri' => 'https://www.googleapis.com/drive/v3/',
+            'timeout'  => 60,
+            'headers'  => ['Authorization' => 'Bearer ' . $accessToken],
+        ]);
+    }
+
+    /**
      * Download a Drive file and return its contents as a string.
      */
     public function downloadContent(TenantDriveConnection $conn, string $driveFileId): string

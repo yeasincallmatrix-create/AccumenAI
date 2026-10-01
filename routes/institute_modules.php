@@ -2131,6 +2131,10 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified', 'permission:
         Route::post('/{id}/restore/request', [\App\Http\Controllers\Tenant\RestoreController::class, 'requestOtp'])->name('restore.request');
         Route::post('/{id}/restore/verify', [\App\Http\Controllers\Tenant\RestoreController::class, 'verify'])->name('restore.verify');
 
+        // Phase 2C: async progress polling
+        Route::get('/{id}/progress', [\App\Http\Controllers\Tenant\BackupController::class, 'progress'])->name('progress');
+        Route::get('/restore/{logId}/progress', [\App\Http\Controllers\Tenant\RestoreController::class, 'progress'])->name('restore.progress');
+
         // Google Drive connection (owner-only, inherits permission:settings.manage).
         // Relative prefix: parent already provides tenant/backup.
         Route::prefix('drive')->name('drive.')->group(function () {

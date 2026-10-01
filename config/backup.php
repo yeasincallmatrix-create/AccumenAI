@@ -262,4 +262,7 @@ return [
     // Temp dir for chunk assembly (encrypted chunk files before upload).
     'chunk_temp_dir'            => storage_path('app/chunk-temp'),
 
+    // Phase 2C: parallel chunk download concurrency (Guzzle Pool).
+    'download_concurrency'      => (int) env('BACKUP_DOWNLOAD_CONCURRENCY', 10),
+
 ];
