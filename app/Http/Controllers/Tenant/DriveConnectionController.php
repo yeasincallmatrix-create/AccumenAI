@@ -86,6 +86,11 @@ class DriveConnectionController extends Controller
                 'google_user_email'    => $userInfo->email,
                 'google_user_id'       => (string) $userInfo->id,
                 'refresh_token'        => $token['refresh_token'],
+                'drive_folder_id'      => null,
+                'app_folder_id'        => null,
+                'chunks_folder_id'     => null,
+                'manifests_folder_id'  => null,
+                'trash_folder_id'      => null,
                 'connected_at'         => now(),
                 'revoked_at'           => null,
             ]

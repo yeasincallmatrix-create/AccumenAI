@@ -89,6 +89,30 @@ class GoogleDriveBackupTest extends TestCase
         $this->assertStringContainsString('userinfo.profile', $location);
     }
 
+    public function test_callback_inserts_connection_without_folder_id()
+    {
+        $tenantId = 999888;
+        TenantDriveConnection::where('tenant_id', $tenantId)->delete();
+
+        $conn = TenantDriveConnection::create([
+            'tenant_id'            => $tenantId,
+            'connected_by_user_id' => 1,
+            'google_user_email'    => 'test@example.com',
+            'google_user_id'       => '123',
+            'refresh_token'        => 'fake-token',
+            'drive_folder_id'      => null,
+            'connected_at'         => now(),
+            'revoked_at'           => null,
+        ]);
+
+        $this->assertDatabaseHas('tenant_drive_connections', [
+            'tenant_id'       => $tenantId,
+            'drive_folder_id' => null,
+        ]);
+
+        $conn->delete();
+    }
+
     public function test_drive_disconnect_revokes()
     {
         $user = $this->owner();
