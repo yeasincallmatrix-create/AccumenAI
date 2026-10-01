@@ -36,7 +36,21 @@ class EnsureInstituteContext
         }
 
         if ($user instanceof User) {
-            $membership = Workspace::membership();
+            // Phase 07 parity: a deactivated global account loses API access
+            // immediately, even while its token is still valid.
+            if ($user->status !== 'active') {
+                return $request->expectsJson()
+                    ? response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401)
+                    : redirect()->route('admin.login');
+            }
+
+            // Stateless API requests carry no session workspace, so fall back to
+            // the membership pinned on the token (or the account's first active
+            // one) instead of the browser's active-workspace session.
+            $token = $user->currentAccessToken();
+            $abilities = is_array($token?->abilities) ? $token->abilities : [];
+
+            $membership = Workspace::activeMembershipFor($user, $abilities);
 
             if ($membership === null) {
                 return $request->expectsJson()
@@ -44,7 +58,7 @@ class EnsureInstituteContext
                     : redirect()->route('workspace.select');
             }
 
-            TenantContext::set($membership->institution_id);
+            TenantContext::set((int) $membership->institution_id);
             BranchContext::set($membership->branch_id);
 
             return $next($request);

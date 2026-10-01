@@ -79,7 +79,10 @@ final class Workspace
             return null;
         }
 
-        $id = self::id();
+        // Session workspace first. Stateless (Sanctum token) requests carry no
+        // session, so fall back to the tenant the middleware pinned for this
+        // request — never a browser-supplied value.
+        $id = self::id() ?? TenantContext::id();
         if ($id === null) {
             return null;
         }
@@ -95,6 +98,57 @@ final class Workspace
         }
 
         return $membership;
+    }
+
+    /**
+     * Membership for a stateless API request: there is no session workspace, so
+     * the institution comes from the token's `institute_id:` ability (pinned at
+     * login) when present, otherwise the first active membership.
+     *
+     * Used by the API tenant middleware; returns null for accounts with no
+     * usable membership so callers can answer 403 instead of guessing.
+     */
+    public static function membershipForToken(User $user, ?int $institutionId = null): ?Membership
+    {
+        $query = Membership::query()
+            ->where('user_id', $user->id)
+            ->where('status', 'active')
+            ->orderBy('institution_id');
+
+        if ($institutionId !== null) {
+            $query->where('institution_id', $institutionId);
+        }
+
+        return $query->get()
+            ->first(fn (Membership $membership) => $membership->roleAllowedForAccountType($user));
+    }
+
+    /**
+     * The `institute_id:<id>` ability a token was minted with, if any.
+     */
+    public static function institutionIdFromAbilities(array $abilities): ?int
+    {
+        foreach ($abilities as $ability) {
+            if (is_string($ability) && str_starts_with($ability, 'institute_id:')) {
+                $value = substr($ability, strlen('institute_id:'));
+
+                return ctype_digit($value) ? (int) $value : null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Membership to use for an API request carrying [abilities] (the token's
+     * abilities, or [] for transient/test tokens): the pinned session/tenant
+     * workspace when one exists, otherwise the token's institution, otherwise
+     * the first active membership. Null = no usable workspace (callers 403).
+     */
+    public static function activeMembershipFor(User $user, array $abilities = []): ?Membership
+    {
+        return self::membershipFor($user)
+            ?? self::membershipForToken($user, self::institutionIdFromAbilities($abilities));
     }
 
     /**

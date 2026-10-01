@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\Institute;
 use App\Models\InstituteUser;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +26,7 @@ class ModuleController extends Controller
     {
         $user = $request->user();
 
-        if (! $user instanceof InstituteUser) {
+        if (! $user instanceof InstituteUser && ! $user instanceof User) {
             return ApiResponse::unauthorized();
         }
 
@@ -55,7 +56,7 @@ class ModuleController extends Controller
     {
         $user = $request->user();
 
-        if (! $user instanceof InstituteUser) {
+        if (! $user instanceof InstituteUser && ! $user instanceof User) {
             return ApiResponse::unauthorized();
         }
 

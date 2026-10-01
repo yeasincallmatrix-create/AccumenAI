@@ -10,6 +10,7 @@ use App\Models\Dealership\SrCollection;
 use App\Models\Dealership\SrOrder;
 use App\Models\InstituteUser;
 use App\Models\MobileSyncIdempotency;
+use App\Models\User;
 use App\Support\TenantContext;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -50,7 +51,7 @@ class SyncController extends Controller
     {
         $user = $request->user();
 
-        if (! $user instanceof InstituteUser) {
+        if (! $user instanceof InstituteUser && ! $user instanceof User) {
             return ApiResponse::unauthorized();
         }
 
@@ -103,7 +104,7 @@ class SyncController extends Controller
         );
     }
 
-    private function deltaFor(string $entity, int $instituteId, InstituteUser $user, \Carbon\Carbon $since): mixed
+    private function deltaFor(string $entity, int $instituteId, InstituteUser|User $user, \Carbon\Carbon $since): mixed
     {
         return match ($entity) {
             'branches' => Branch::where('institute_id', $instituteId)
@@ -156,7 +157,7 @@ class SyncController extends Controller
     {
         $user = $request->user();
 
-        if (! $user instanceof InstituteUser) {
+        if (! $user instanceof InstituteUser && ! $user instanceof User) {
             return ApiResponse::unauthorized();
         }
 
@@ -212,7 +213,7 @@ class SyncController extends Controller
     /**
      * @param array{action: string, client_id?: ?string, payload: array} $op
      */
-    private function pushSrOrder(int $instituteId, InstituteUser $user, array $op): array
+    private function pushSrOrder(int $instituteId, InstituteUser|User $user, array $op): array
     {
         if ($op['action'] !== 'create') {
             return $this->failed($op['client_id'] ?? null, 'UNSUPPORTED_ENTITY', 'Only create is supported for dealership_sr_orders.');
@@ -329,7 +330,7 @@ class SyncController extends Controller
     /**
      * @param array{action: string, client_id?: ?string, payload: array} $op
      */
-    private function pushSrCollection(int $instituteId, InstituteUser $user, array $op): array
+    private function pushSrCollection(int $instituteId, InstituteUser|User $user, array $op): array
     {
         if ($op['action'] !== 'create') {
             return $this->failed($op['client_id'] ?? null, 'UNSUPPORTED_ENTITY', 'Only create is supported for dealership_sr_collections.');

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Responses\ApiResponse;
 use App\Models\InstituteUser;
 use App\Models\MobileDevice;
+use App\Models\User;
 use App\Support\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,7 +20,7 @@ class DeviceController extends Controller
     {
         $user = $request->user();
 
-        if (! $user instanceof InstituteUser) {
+        if (! $user instanceof InstituteUser && ! $user instanceof User) {
             return ApiResponse::unauthorized();
         }
 
@@ -55,7 +56,7 @@ class DeviceController extends Controller
     {
         $user = $request->user();
 
-        if (! $user instanceof InstituteUser) {
+        if (! $user instanceof InstituteUser && ! $user instanceof User) {
             return ApiResponse::unauthorized();
         }
 

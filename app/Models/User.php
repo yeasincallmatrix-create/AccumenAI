@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Laravel\Sanctum\HasApiTokens;
 
 /**
  * The global AccumenAI account. One account may hold many memberships
@@ -29,7 +30,7 @@ class User extends Authenticatable implements MustVerifyEmailContract
     /** @use HasFactory<UserFactory> */
     use Concerns\DeletesFiles;
     use Concerns\NormalizesPersonNames;
-    use HasFactory, HasUserPreferences, MustVerifyEmail, Notifiable, SoftDeletes, TwoFactorAuthenticatable;
+    use HasApiTokens, HasFactory, HasUserPreferences, MustVerifyEmail, Notifiable, SoftDeletes, TwoFactorAuthenticatable;
 
     protected $fileColumns = ['photo'];
 
