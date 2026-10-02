@@ -9,7 +9,12 @@
         <div class="flex justify-between items-center h-16">
             <div class="flex items-center gap-2">
                 <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center text-white font-bold text-lg">A</div>
-                <span class="text-xl font-bold text-gray-900">{{ $platformBrandName ?? 'Accumen' }}<span class="text-slate-700">AI</span></span>
+                @php
+                    $brand = trim((string) ($platformBrandName ?? 'AccumenAI'));
+                    $brandHasAi = (bool) preg_match('/\s*AI$/i', $brand);
+                    $brandBase = $brandHasAi ? preg_replace('/\s*AI$/i', '', $brand) : $brand;
+                @endphp
+                <span class="text-xl font-bold text-gray-900">{{ $brandHasAi ? $brandBase : $brand }}@if($brandHasAi)<span class="text-slate-700">AI</span>@endif</span>
             </div>
             <div class="hidden md:flex items-center gap-8">
                 <a href="#features" class="text-sm font-medium text-gray-600 hover:text-slate-700 transition">Features</a>
