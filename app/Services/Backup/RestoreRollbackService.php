@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Schema;
  */
 class RestoreRollbackService
 {
+    use StripsGeneratedColumns;
+
     public const RETENTION_DAYS = 30;
 
     /**
@@ -106,6 +108,10 @@ class RestoreRollbackService
 
                     // Only columns that still exist (schema may have changed)
                     $payload = array_intersect_key($row, array_flip($columns));
+                    // Generated columns are recomputed — writing them back
+                    // makes MariaDB reject the row (error 1906), so a rollback
+                    // of such a row used to count as failed.
+                    $payload = $this->stripGeneratedColumns($table, $payload);
 
                     try {
                         $affected = DB::table($table)

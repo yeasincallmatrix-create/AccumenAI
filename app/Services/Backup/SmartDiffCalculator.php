@@ -93,6 +93,17 @@ class SmartDiffCalculator
     }
 
     /**
+     * Same predicate analyze() uses to decide "this row needs an UPDATE" —
+     * exposed so RestoreService writes exactly the rows the preview reported
+     * (otherwise the restore reports/does more than the user approved, and
+     * unchanged rows fall outside the rollback snapshot).
+     */
+    public function rowDiffers(array $backupRow, array $dbRow): bool
+    {
+        return $this->rowsDiffer($backupRow, $dbRow);
+    }
+
+    /**
      * Single source of truth: one pass over backup rows + one over DB rows.
      *
      * @return array{insert:int[],update:int[],soft_delete:int[],kept:int,

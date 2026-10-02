@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Schema;
 
 class RestoreService
 {
+    use StripsGeneratedColumns;
+
     public const MODE_MERGE = 'merge';
     public const MODE_SMART = 'smart';
 
@@ -393,6 +395,10 @@ class RestoreService
             foreach ($backupByPk as $pk => $backupRow) {
                 $filtered = array_intersect_key($backupRow, array_flip($columns));
                 $filtered['institute_id'] = $tenantId;
+                // Generated columns are recomputed by the server — assigning
+                // them makes MariaDB reject the row (error 1906), which used
+                // to surface as a silently skipped row.
+                $filtered = $this->stripGeneratedColumns($table, $filtered);
 
                 if ($hasSoftDelete && !array_key_exists('deleted_at', $filtered)) {
                     $filtered['deleted_at'] = null;
@@ -406,6 +412,12 @@ class RestoreService
 
                 try {
                     if (isset($dbRows[$pk])) {
+                        // Parity with the preview: write only rows the diff
+                        // reported as changed, so executed == approved and
+                        // identical rows keep their current updated_at.
+                        if (!$this->diffCalculator->rowDiffers($backupRow, (array) $dbRows[$pk])) {
+                            continue;
+                        }
                         DB::table($table)
                             ->where('id', $pk)
                             ->where('institute_id', $tenantId)
@@ -424,6 +436,15 @@ class RestoreService
             }
 
             if (!$hasSoftDelete || !$hasCreatedAt) {
+                // The preview counts every DB-only row of such a table as kept
+                // (nothing reversible / no time anchor). Report the same
+                // number instead of silently dropping them from the totals.
+                foreach ($dbRows as $pk => $dbRow) {
+                    if (!isset($backupByPk[$pk])) {
+                        $kept++;
+                    }
+                }
+
                 return;
             }
 
@@ -686,7 +707,8 @@ class RestoreService
 
         DB::transaction(function () use ($table, $rows, $tenantId, &$inserted, &$updated, &$skipped) {
             foreach ($rows as $row) {
-                $rowArr = (array) $row;
+                $rawRow = (array) $row;
+                $rowArr = $rawRow;
 
                 // Skip if no primary key
                 if (!isset($rowArr['id'])) {
@@ -699,11 +721,22 @@ class RestoreService
                     $rowArr['institute_id'] = $tenantId;
                 }
 
-                $exists = DB::table($table)->where('id', $rowArr['id'])->exists();
+                // The server recomputes generated columns; assigning them
+                // makes MariaDB reject the row (error 1906) and the row would
+                // be silently skipped instead of restored.
+                $rowArr = $this->stripGeneratedColumns($table, $rowArr);
+
+                $existing = DB::table($table)->where('id', $rowArr['id'])->first();
 
                 try {
-                    if ($exists) {
-                        // UPDATE existing
+                    if ($existing !== null) {
+                        // Parity with the preview: only rewrite rows the diff
+                        // called changed, so executed == approved and identical
+                        // rows keep their current updated_at.
+                        if (!$this->diffCalculator->rowDiffers($rawRow, (array) $existing)) {
+                            $skipped++;
+                            continue;
+                        }
                         DB::table($table)->where('id', $rowArr['id'])->update($rowArr);
                         $updated++;
                     } else {
