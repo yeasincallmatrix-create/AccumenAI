@@ -286,6 +286,9 @@
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
 <script>
 (function () {
+    // Blade-generated URL: works under a sub-path install too
+    // (a hardcoded `/calendar/...` escapes the base path and 404s).
+    var eventUpdateUrl = "{{ route('calendar.events.update', ['event' => '__EVENT__']) }}";
     var calLabels = {
         type: @json(mawa_e('calendar.type')),
         date: @json(mawa_e('calendar.date')),
@@ -349,7 +352,7 @@
                 return;
             }
             var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            fetch('/calendar/' + info.event.id, {
+            fetch(eventUpdateUrl.replace('__EVENT__', info.event.id), {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -374,7 +377,7 @@
                 return;
             }
             var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-            fetch('/calendar/' + info.event.id, {
+            fetch(eventUpdateUrl.replace('__EVENT__', info.event.id), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
