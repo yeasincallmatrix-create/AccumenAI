@@ -224,6 +224,10 @@ let currentPreviewId = null;
 let currentMode = 'merge';
 let lastRollbackToken = null;
 let progressTimer = null;
+// Blade-generated base: the app can be served from a sub-path
+// (APP_URL=http://localhost/AccumenAI/public), so a hardcoded absolute
+// fetch(`/tenant/...`) escapes it and 404s at the web-server root.
+const BACKUP_BASE = "{{ url('tenant/backup') }}";
 // Safety wrapper: never instantiate bootstrap.Modal at parse time.
 // If the layout ever loads Bootstrap after this script, the old top-level
 // `new bootstrap.Modal(...)` threw ReferenceError and aborted the ENTIRE
@@ -280,7 +284,7 @@ function startRestore(backupId) {
 }
 
 async function requestOtp() {
-    const res = await fetch(`/tenant/backup/${currentBackupId}/restore/request`, {
+    const res = await fetch(`${BACKUP_BASE}/${currentBackupId}/restore/request`, {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
     });
@@ -296,7 +300,7 @@ async function requestOtp() {
 
 async function verifyOtp() {
     const otp = document.getElementById('otpInput').value;
-    const res = await fetch(`/tenant/backup/${currentBackupId}/restore/verify`, {
+    const res = await fetch(`${BACKUP_BASE}/${currentBackupId}/restore/verify`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -330,7 +334,7 @@ document.getElementById('btnPreview').addEventListener('click', async () => {
     btn.textContent = 'Computing preview...';
 
     try {
-        const res = await fetch(`/tenant/backup/${currentBackupId}/restore/preview`, {
+        const res = await fetch(`${BACKUP_BASE}/${currentBackupId}/restore/preview`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -416,7 +420,7 @@ document.getElementById('btnConfirm').addEventListener('click', async () => {
     btn.textContent = 'Confirming...';
 
     try {
-        const res = await fetch(`/tenant/backup/restore/${currentPreviewId}/confirm`, {
+        const res = await fetch(`${BACKUP_BASE}/restore/${currentPreviewId}/confirm`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -494,7 +498,7 @@ function finishProgress(failed, errMsg) {
     // Phase 3: offer an undo when the restore produced a rollback snapshot
     if (!failed && lastRollbackToken) {
         document.getElementById('progressRollback').innerHTML =
-            `<a class="btn btn-sm btn-outline-danger" href="/tenant/backup/restore/rollback/${lastRollbackToken}">` +
+            `<a class="btn btn-sm btn-outline-danger" href="${BACKUP_BASE}/restore/rollback/${lastRollbackToken}">` +
             `&#8630; Undo this restore</a>`;
     }
 
@@ -518,8 +522,8 @@ function startProgressTracking(backupId, logId) {
     progressModal.show();
 
     const url = backupId
-        ? `/tenant/backup/${backupId}/progress`
-        : `/tenant/backup/restore/${logId}/progress`;
+        ? `${BACKUP_BASE}/${backupId}/progress`
+        : `${BACKUP_BASE}/restore/${logId}/progress`;
 
     const tick = async () => {
         try {
