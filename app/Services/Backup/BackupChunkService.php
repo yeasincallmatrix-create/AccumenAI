@@ -268,6 +268,9 @@ class BackupChunkService
             ->get();
 
         if ($chunks->isEmpty()) {
+            if ($this->manifestDeclaresNoChunks($manifest, $table)) {
+                return '[]';   // zero rows at backup time — no payload by design
+            }
             throw new \RuntimeException("No chunks for table {$table}");
         }
 
@@ -307,6 +310,21 @@ class BackupChunkService
     }
 
     /**
+     * Zero-row tables are recorded in the manifest with `chunks => []` and
+     * `row_count => 0` (BackupService), so an absent chunk set for such a
+     * table is normal — NOT data loss. Anything else still fails loudly.
+     */
+    private function manifestDeclaresNoChunks(BackupManifest $manifest, string $table): bool
+    {
+        $arr = json_decode((string) $manifest->manifest_json, true);
+        $entry = is_array($arr) ? ($arr['tables'][$table] ?? null) : null;
+
+        return is_array($entry)
+            && (int) ($entry['row_count'] ?? -1) === 0
+            && empty($entry['chunks'] ?? []);
+    }
+
+    /**
      * Phase 2C — download one table's chunks in PARALLEL (Adaptation 1,
      * two-phase; order-preserving; checksum-verified):
      *
@@ -338,6 +356,9 @@ class BackupChunkService
             ->get();
 
         if ($chunks->isEmpty()) {
+            if ($this->manifestDeclaresNoChunks($manifest, $table)) {
+                return '[]';   // zero rows at backup time — no payload by design
+            }
             throw new \RuntimeException("No chunks for table {$table}");
         }
 

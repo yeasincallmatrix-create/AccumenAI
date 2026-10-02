@@ -114,6 +114,7 @@ class SmartDiffCalculator
             ->keyBy('id');
 
         $hasSoftDelete = Schema::hasColumn($table, 'deleted_at');
+        $hasCreatedAt = Schema::hasColumn($table, 'created_at');
 
         $insert = [];
         $update = [];
@@ -145,6 +146,22 @@ class SmartDiffCalculator
 
             if (!empty($dbRowArr['deleted_at'])) {
                 $kept++;   // already tombstoned
+                continue;
+            }
+
+            // No created_at column → no time anchor → the row cannot be shown
+            // to have "existed at snapshot time". Never delete blind: restore
+            // must agree with what the preview reported (KEEP).
+            if (!$hasCreatedAt) {
+                $kept++;
+                if (count($keptSample) < self::SAMPLE_LIMIT) {
+                    $keptSample[] = [
+                        'id'         => $pk,
+                        'label'      => $this->rowLabel($dbRowArr),
+                        'created_at' => null,
+                        'reason'     => 'no_created_at_column',
+                    ];
+                }
                 continue;
             }
 
@@ -205,8 +222,13 @@ class SmartDiffCalculator
             if (!$this->isSafeTable($table) || !Schema::hasTable($table)) {
                 continue;
             }
-            if (!Schema::hasColumn($table, 'created_at') || !Schema::hasColumn($table, 'institute_id')) {
-                Log::warning("SmartDiff: {$table} missing created_at/institute_id — skipped");
+            // institute_id is required (the diff is tenant-scoped).
+            // created_at is deliberately NOT required here: the preview must
+            // cover exactly the tables restore will touch (insert/update still
+            // apply without it) — only the soft-delete phase needs a time
+            // anchor, which analyze() enforces below.
+            if (!Schema::hasColumn($table, 'institute_id')) {
+                Log::warning("SmartDiff: {$table} missing institute_id — skipped");
                 continue;
             }
 

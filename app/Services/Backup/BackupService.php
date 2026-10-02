@@ -169,6 +169,20 @@ class BackupService
             $rowCount = $this->dumpTable($table, $column, $tenantId, $jsonFile);
 
             if ($rowCount === 0) {
+                // A zero-row table still belongs in the manifest: omitting it
+                // made the snapshot read as "this table did not exist", so a
+                // smart restore could never soft-delete rows that had already
+                // been deleted before the backup (the "tenant deleted
+                // everything" case). Metadata only — no chunk is uploaded.
+                $tableData[$table] = [
+                    'table'           => $table,
+                    'hash'            => hash_file('sha256', $jsonFile),
+                    'chunks'          => [],
+                    'row_count'       => 0,
+                    'total_size'      => 0,
+                    'total_chunks'    => 0,
+                    'empty_at_backup' => true,
+                ];
                 @unlink($jsonFile);
                 $done++;
                 continue;
@@ -485,15 +499,38 @@ class BackupService
      */
     private function cleanupPreviousBackups(int $tenantId, int $keepBackupId): void
     {
+        // Keep-N strategy: honour backup.keep_backups_per_tenant on this path
+        // too. It used to hard-code "delete everything except the newest",
+        // silently ignoring the same config that BackupCleanupCommand (daily
+        // 03:00) respects — so a >1 value in .env never took effect.
+        $keepCount = max(1, (int) config('backup.keep_backups_per_tenant', 1));
+
         $previous = Backup::where('tenant_id', $tenantId)
             ->where('id', '!=', $keepBackupId)
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->get();
 
         if ($previous->isEmpty()) {
             return;
         }
 
-        $hasDriveFiles = $previous->contains(
+        // Retain $keepCount TOTAL = the just-completed backup + the newest
+        // ($keepCount - 1) older ones. keep=1 → slice(0) → every older backup
+        // goes (legacy keep-1 behaviour preserved exactly).
+        $toDelete = $previous->slice($keepCount - 1);
+
+        if ($toDelete->isEmpty()) {
+            Log::info('Previous backups retained by keep count', [
+                'tenant_id'  => $tenantId,
+                'kept_id'    => $keepBackupId,
+                'keep_count' => $keepCount,
+                'older'      => $previous->count(),
+            ]);
+            return;
+        }
+
+        $hasDriveFiles = $toDelete->contains(
             fn ($b) => $b->destination === 'drive' && $b->drive_file_id
         );
         $conn = $hasDriveFiles
@@ -503,7 +540,7 @@ class BackupService
         $deleted = 0;
         $freedBytes = 0;
 
-        foreach ($previous as $old) {
+        foreach ($toDelete as $old) {
             // Local single-file copy (legacy path + failed-path leftovers)
             $path = storage_path("app/backups/{$old->filename}");
             if (file_exists($path)) {
@@ -560,6 +597,8 @@ class BackupService
         Log::info('Previous backups deleted after successful new backup', [
             'tenant_id'     => $tenantId,
             'kept_id'       => $keepBackupId,
+            'kept_count'    => min($keepCount, $previous->count() + 1),
+            'keep_count'    => $keepCount,
             'deleted_count' => $deleted,
             'freed_bytes'   => $freedBytes,
         ]);

@@ -367,6 +367,9 @@ class RestoreService
         $hasSoftDelete = in_array('deleted_at', $columns, true);
         $hasDeletedBy = in_array('deleted_by', $columns, true);
         $hasDeletedReason = in_array('deleted_reason', $columns, true);
+        // Parity with SmartDiffCalculator::analyze() — without a time anchor
+        // the preview reports KEEP for this table, so restore must not delete.
+        $hasCreatedAt = in_array('created_at', $columns, true);
 
         $backupByPk = [];
         foreach ($backupRows as $row) {
@@ -379,6 +382,7 @@ class RestoreService
         DB::transaction(function () use (
             $tenantId, $table, $backupByPk, $backupTime, $userId,
             $columns, $hasSoftDelete, $hasDeletedBy, $hasDeletedReason,
+            $hasCreatedAt,
             &$inserted, &$updated, &$softDeleted, &$kept
         ) {
             $dbRows = DB::table($table)
@@ -419,7 +423,7 @@ class RestoreService
                 }
             }
 
-            if (!$hasSoftDelete) {
+            if (!$hasSoftDelete || !$hasCreatedAt) {
                 return;
             }
 
