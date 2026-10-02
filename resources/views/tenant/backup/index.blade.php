@@ -224,8 +224,26 @@ let currentPreviewId = null;
 let currentMode = 'merge';
 let lastRollbackToken = null;
 let progressTimer = null;
-const modal = new bootstrap.Modal(document.getElementById('restoreModal'));
-const progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+// Safety wrapper: never instantiate bootstrap.Modal at parse time.
+// If the layout ever loads Bootstrap after this script, the old top-level
+// `new bootstrap.Modal(...)` threw ReferenceError and aborted the ENTIRE
+// script block (no submit listener → normal POST → flash, no modal).
+let restoreModal = null;
+let progressModal = null;
+
+function ensureModals() {
+    if (typeof bootstrap === 'undefined' || !bootstrap.Modal) {
+        console.error('Bootstrap JS not loaded — modal unavailable');
+        return false;
+    }
+    if (!restoreModal) {
+        restoreModal = new bootstrap.Modal(document.getElementById('restoreModal'));
+    }
+    if (!progressModal) {
+        progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+    }
+    return true;
+}
 const RESTORE_STEPS = ['modeStep', 'previewStep', 'otpRequestStep', 'otpVerifyStep'];
 const STEP_TITLES = {
     modeStep: 'Restore Backup',
@@ -256,7 +274,9 @@ function startRestore(backupId) {
     if (smart) smart.checked = false;
     document.getElementById('modeMerge').checked = true;
     showStep('modeStep');
-    modal.show();
+    if (ensureModals()) {
+        restoreModal.show();
+    }
 }
 
 async function requestOtp() {
@@ -287,7 +307,9 @@ async function verifyOtp() {
     });
     const data = await res.json();
     if (data.success) {
-        modal.hide();
+        if (restoreModal) {
+            restoreModal.hide();
+        }
         if (data.log_id) {
             startProgressTracking(null, data.log_id);
         } else {
@@ -490,6 +512,9 @@ function startProgressTracking(backupId, logId) {
     lastRollbackToken = null;
     document.getElementById('progressTitle').textContent =
         backupId ? 'Backup in progress' : 'Restore in progress';
+    if (!ensureModals()) {
+        return;
+    }
     progressModal.show();
 
     const url = backupId

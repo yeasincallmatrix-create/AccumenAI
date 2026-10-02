@@ -62,12 +62,19 @@
             </div>
         @endif
 
+        {{-- Bootstrap MUST load before @yield('content'): standalone pages
+             instantiate bootstrap.Modal at the TOP of their inline scripts,
+             and a `bootstrap is not defined` ReferenceError there aborts the
+             whole script block (incident 2026-10-02: backup/restore modal
+             never attached its submit listener). Kept in <body> so render
+             is not blocked. --}}
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
         @yield('content')
 
     </div>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ asset('js/flash.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/flash.js')) }}"></script>
 <script src="{{ asset('js/password-toggle.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/password-toggle.js')) }}"></script>
 <script src="{{ asset('js/popup-fix.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/popup-fix.js')) }}"></script>

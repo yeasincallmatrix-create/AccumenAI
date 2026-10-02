@@ -488,9 +488,14 @@ class BackupService
     }
 
     /**
-     * Keep-1: delete ALL other backup records for this tenant (local files,
-     * legacy Drive single files, chunked manifests → trash).
+     * Keep-N: delete OLDER COMPLETED backup records for this tenant (local
+     * files, legacy Drive single files, chunked manifests → trash).
      * Called ONLY after the new backup succeeded + verified.
+     *
+     * Only rows with status='completed' are considered: pending/uploading
+     * rows may still have a queued BackupJob and must never be pruned here
+     * (that job would then abort with "backup not found"). Failed rows are
+     * kept too, so they stay visible for debugging.
      *
      * Chunked backups: the old manifest row is deleted and its Drive file
      * moves to backup_chunk_trash (7-day grace, purged by BackupCleanupCommand).
@@ -507,6 +512,15 @@ class BackupService
 
         $previous = Backup::where('tenant_id', $tenantId)
             ->where('id', '!=', $keepBackupId)
+            // Retention race guard: NEVER prune rows that are still
+            // pending/uploading — their BackupJob may still be sitting in
+            // the queue and would then die with "backup not found"
+            // (incident 2026-10-02: backups 33/34 silently dropped).
+            // Only truly finalized backups are eligible for pruning.
+            ->where('status', 'completed')
+            ->where(function ($q) {
+                $q->whereNull('completed_at')->orWhere('completed_at', '<=', now());
+            })
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->get();
