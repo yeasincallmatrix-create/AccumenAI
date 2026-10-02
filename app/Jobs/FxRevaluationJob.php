@@ -29,6 +29,14 @@ class FxRevaluationJob implements ShouldQueue
     public int $tries = 2;
     public int $timeout = 300;
 
+    public function middleware(): array
+    {
+        return [
+            new \App\Jobs\Middleware\ReconnectDatabase(),
+            new \App\Jobs\Middleware\WorkerHeartbeat(),
+        ];
+    }
+
     public function handle(): void
     {
         $institutes = Institute::query()->where('status', 'active')->get();

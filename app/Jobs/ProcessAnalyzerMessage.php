@@ -22,6 +22,14 @@ class ProcessAnalyzerMessage implements ShouldQueue
 
     public function __construct(public int $messageId, public int $analyzerId) {}
 
+    public function middleware(): array
+    {
+        return [
+            new \App\Jobs\Middleware\ReconnectDatabase(),
+            new \App\Jobs\Middleware\WorkerHeartbeat(),
+        ];
+    }
+
     public function handle(
         AnalyzerAdapterRegistry $registry,
         LabResultIngestService $ingest

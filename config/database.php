@@ -61,7 +61,17 @@ return [
             'engine' => null,
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
+                PDO::MYSQL_ATTR_INIT_COMMAND => 'SET SESSION wait_timeout=60',
+                // NOTE: ATTR_TIMEOUT on pdo_mysql (PHP 8.2 / Windows) applies to the
+                // CONNECT handshake only, NOT read/write. Mid-query reads are
+                // unbounded here -- empirically verified: SELECT SLEEP(45) and
+                // SELECT SLEEP(90) both return normally (mysqlnd.net_read_timeout
+                // defaults to 86400). Real protection against a blocked read is
+                // scripts/run-worker.ps1 (stall detector) plus wait_timeout above.
+                PDO::ATTR_TIMEOUT            => (int) env('DB_PDO_TIMEOUT', 30),
+                PDO::ATTR_PERSISTENT         => false,
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            ], fn ($value) => $value !== null) : [],
         ],
 
         'mariadb' => [

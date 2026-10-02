@@ -30,6 +30,14 @@ class SendNotificationJob implements ShouldQueue
 
     public function __construct(public int $logId) {}
 
+    public function middleware(): array
+    {
+        return [
+            new \App\Jobs\Middleware\ReconnectDatabase(),
+            new \App\Jobs\Middleware\WorkerHeartbeat(),
+        ];
+    }
+
     public function handle(): void
     {
         $tenantWasEnabled = TenantContext::enabled();

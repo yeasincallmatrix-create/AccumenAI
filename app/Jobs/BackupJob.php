@@ -29,6 +29,14 @@ class BackupJob implements ShouldQueue
         public string $recipientEmail
     ) {}
 
+    public function middleware(): array
+    {
+        return [
+            new \App\Jobs\Middleware\ReconnectDatabase(),
+            new \App\Jobs\Middleware\WorkerHeartbeat(),
+        ];
+    }
+
     public function handle(BackupService $service): void
     {
         $backup = Backup::find($this->backupId);

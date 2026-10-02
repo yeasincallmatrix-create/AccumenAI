@@ -30,6 +30,14 @@ class RestoreJob implements ShouldQueue
         public string $mode = 'merge'
     ) {}
 
+    public function middleware(): array
+    {
+        return [
+            new \App\Jobs\Middleware\ReconnectDatabase(),
+            new \App\Jobs\Middleware\WorkerHeartbeat(),
+        ];
+    }
+
     public function handle(RestoreService $service): void
     {
         $log = RestoreLog::find($this->restoreLogId);
