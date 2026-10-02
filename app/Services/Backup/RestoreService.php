@@ -5,22 +5,29 @@ namespace App\Services\Backup;
 use App\Mail\EmailOtpMail;
 use App\Models\Backup;
 use App\Models\BackupManifest;
+use App\Models\RestoreAudit;
 use App\Models\RestoreLog;
 use App\Models\RestoreToken;
 use App\Models\TenantDriveConnection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 
 class RestoreService
 {
+    public const MODE_MERGE = 'merge';
+    public const MODE_SMART = 'smart';
+
     public function __construct(
         private EncryptionService $encryption,
         private \App\Contracts\DriveStorageInterface $drive,
         private BackupService $backup,
         private BackupChunkService $chunkService,
         private ManifestService $manifestService,
-        private TenantLockService $lockService
+        private TenantLockService $lockService,
+        private SmartDiffCalculator $diffCalculator,
+        private RestoreRollbackService $rollbackService
     ) {}
 
     /**
@@ -120,8 +127,15 @@ class RestoreService
      * Fail-fast: a concurrent operation is rejected immediately.
      * (verifyAndRestore() sync path stays lock-free for existing tests.)
      */
-    public function executeRestore(RestoreLog $log, int $backupId, int $tenantId, int $userId): RestoreLog
-    {
+    public function executeRestore(
+        RestoreLog $log,
+        int $backupId,
+        int $tenantId,
+        int $userId,
+        string $mode = self::MODE_MERGE
+    ): RestoreLog {
+        $mode = $mode === self::MODE_SMART ? self::MODE_SMART : self::MODE_MERGE;
+
         $lock = $this->lockService->acquire($tenantId, 'restore');
 
         if (!$lock) {
@@ -138,7 +152,7 @@ class RestoreService
         try {
             $backup = Backup::where('tenant_id', $tenantId)->findOrFail($backupId);
 
-            return $this->runRestore($log, $backup, $tenantId);
+            return $this->runRestore($log, $backup, $tenantId, $userId, $mode);
         } finally {
             $this->lockService->release($lock, $tenantId, 'restore');
         }
@@ -147,17 +161,24 @@ class RestoreService
     /**
      * Shared restore body (manifest vs legacy) + progress + failure marking.
      */
-    private function runRestore(RestoreLog $log, Backup $backup, int $tenantId): RestoreLog
-    {
+    private function runRestore(
+        RestoreLog $log,
+        Backup $backup,
+        int $tenantId,
+        int $userId = 0,
+        string $mode = self::MODE_MERGE
+    ): RestoreLog {
         $progress = app(ProgressService::class);
 
         try {
             $progress->updateRestore($log, 5, 'starting', 'Preparing restore...');
 
+            $log->update(['mode' => $mode]);
+
             $manifest = BackupManifest::where('backup_id', $backup->id)->first();
 
             $affected = $manifest
-                ? $this->restoreFromManifest($backup, $manifest, $log, $tenantId)
+                ? $this->restoreFromManifest($backup, $manifest, $log, $tenantId, $userId, $mode)
                 : $this->restoreLegacy($backup, $log, $tenantId);
 
             $log->update([
@@ -168,6 +189,8 @@ class RestoreService
             ]);
 
             $progress->updateRestore($log, 100, 'completed', 'Restore complete');
+
+            $this->writeAudit($tenantId, $log, $userId, $mode, $affected);
 
             return $log;
         } catch (\Throwable $e) {
@@ -194,7 +217,9 @@ class RestoreService
         Backup $backup,
         BackupManifest $manifest,
         RestoreLog $log,
-        int $tenantId
+        int $tenantId,
+        int $userId = 0,
+        string $mode = self::MODE_MERGE
     ): array {
         $manifestArr = json_decode($manifest->manifest_json, true);
 
@@ -212,12 +237,24 @@ class RestoreService
             );
         }
 
-        // Rollback snapshot BEFORE restore
-        $progress = app(ProgressService::class);
-        $progress->updateRestore($log, 15, 'snapshot', 'Creating rollback snapshot...');
+        $smart = $mode === self::MODE_SMART;
+        $backupTime = null;
+        $rollbackRows = [];
 
-        $rollbackPath = $this->createRollbackSnapshot($tenantId);
-        $log->update(['rollback_path' => $rollbackPath]);
+        if ($smart) {
+            if (empty($manifestArr['created_at'])) {
+                throw new \RuntimeException('Manifest missing created_at — smart restore unavailable');
+            }
+            $backupTime = \Carbon\Carbon::parse($manifestArr['created_at']);
+        } else {
+            // Gate D: merge mode keeps the legacy file snapshot; smart mode
+            // uses restore_rollbacks exclusively (no double snapshot).
+            $progress = app(ProgressService::class);
+            $progress->updateRestore($log, 15, 'snapshot', 'Creating rollback snapshot...');
+
+            $rollbackPath = $this->createRollbackSnapshot($tenantId);
+            $log->update(['rollback_path' => $rollbackPath]);
+        }
 
         $affected = [];
         $tables = $manifestArr['tables'] ?? [];
@@ -230,6 +267,7 @@ class RestoreService
 
         foreach ($tables as $table => $info) {
             $pct = 20 + (int) round(70 * ($done / $tableCount));
+            $progress = app(ProgressService::class);
             $progress->updateRestore($log, $pct, 'downloading', "Table: {$table}");
 
             // Phase 2C: parallel download (10 concurrent) — falls back to
@@ -243,8 +281,29 @@ class RestoreService
                 continue;
             }
 
-            $progress->updateRestore($log, $pct, 'merging', "Table: {$table}");
-            $affected[$table] = $this->mergeTable($table, $rows, $tenantId);
+            if ($smart && $this->diffCalculator->isSafeTable($table)) {
+                // Pre-image BEFORE mutation (rollback safety net)
+                $targets = $this->diffCalculator->targetPks(
+                    $tenantId,
+                    $table,
+                    $rows,
+                    $backupTime
+                );
+
+                $touchPks = array_merge($targets['update'], $targets['soft_delete']);
+                if (!empty($touchPks)) {
+                    $captured = $this->rollbackService->captureRows($tenantId, $table, $touchPks);
+                    if (!empty($captured)) {
+                        $rollbackRows[$table] = ($rollbackRows[$table] ?? []) + $captured;
+                    }
+                }
+
+                $progress->updateRestore($log, $pct, 'restoring', "Table: {$table}");
+                $affected[$table] = $this->applySmartMode($tenantId, $table, $rows, $backupTime, $userId);
+            } else {
+                $progress->updateRestore($log, $pct, 'merging', "Table: {$table}");
+                $affected[$table] = $this->mergeTable($table, $rows, $tenantId);
+            }
 
             // Chunks for this table downloaded + merged
             $tableChunks = \App\Models\BackupChunk::where('manifest_id', $manifest->id)
@@ -256,15 +315,184 @@ class RestoreService
             $done++;
         }
 
+        if ($smart) {
+            $rollback = $this->rollbackService->snapshotForRollback($tenantId, $log->id, $rollbackRows);
+            if ($rollback) {
+                $log->update(['rollback_token' => $rollback->rollback_token]);
+            }
+        }
+
+        $progress = app(ProgressService::class);
         $progress->updateRestore($log, 95, 'finalizing', 'Restore finalize...');
 
         Log::info('Manifest restore completed', [
             'tenant_id' => $tenantId,
             'backup_id' => $backup->id,
+            'mode'      => $mode,
             'tables'    => count($affected),
         ]);
 
         return $affected;
+    }
+
+    /**
+     * SMART restore — time-aware, reversible.
+     *
+     * 1. Backup rows: INSERT if missing, UPDATE if present (backup wins)
+     * 2. DB rows absent from the backup:
+     *      created after backup  -> KEEP (never touch new data)
+     *      already soft-deleted  -> KEEP
+     *      existed at backup time -> SOFT DELETE (30-day reversible)
+     *
+     * Every row touched here must already be captured by
+     * RestoreRollbackService::captureRows() (caller responsibility).
+     */
+    private function applySmartMode(
+        int $tenantId,
+        string $table,
+        array $backupRows,
+        \Carbon\Carbon $backupTime,
+        int $userId = 0
+    ): array {
+        if (!Schema::hasTable($table)) {
+            return ['inserted' => 0, 'updated' => 0, 'soft_deleted' => 0, 'kept' => 0];
+        }
+
+        $inserted = 0;
+        $updated = 0;
+        $softDeleted = 0;
+        $kept = 0;
+
+        $columns = Schema::getColumnListing($table);
+        $hasSoftDelete = in_array('deleted_at', $columns, true);
+        $hasDeletedBy = in_array('deleted_by', $columns, true);
+        $hasDeletedReason = in_array('deleted_reason', $columns, true);
+
+        $backupByPk = [];
+        foreach ($backupRows as $row) {
+            $row = (array) $row;
+            if (isset($row['id'])) {
+                $backupByPk[$row['id']] = $row;
+            }
+        }
+
+        DB::transaction(function () use (
+            $tenantId, $table, $backupByPk, $backupTime, $userId,
+            $columns, $hasSoftDelete, $hasDeletedBy, $hasDeletedReason,
+            &$inserted, &$updated, &$softDeleted, &$kept
+        ) {
+            $dbRows = DB::table($table)
+                ->where('institute_id', $tenantId)
+                ->get()
+                ->keyBy('id');
+
+            foreach ($backupByPk as $pk => $backupRow) {
+                $filtered = array_intersect_key($backupRow, array_flip($columns));
+                $filtered['institute_id'] = $tenantId;
+
+                if ($hasSoftDelete && !array_key_exists('deleted_at', $filtered)) {
+                    $filtered['deleted_at'] = null;
+                    if ($hasDeletedBy) {
+                        $filtered['deleted_by'] = null;
+                    }
+                    if ($hasDeletedReason) {
+                        $filtered['deleted_reason'] = null;
+                    }
+                }
+
+                try {
+                    if (isset($dbRows[$pk])) {
+                        DB::table($table)
+                            ->where('id', $pk)
+                            ->where('institute_id', $tenantId)
+                            ->update($filtered);
+                        $updated++;
+                    } else {
+                        DB::table($table)->insert($filtered);
+                        $inserted++;
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning("Smart restore row failed: {$table}.id={$pk}", [
+                        'error' => $e->getMessage(),
+                    ]);
+                    $kept++;
+                }
+            }
+
+            if (!$hasSoftDelete) {
+                return;
+            }
+
+            foreach ($dbRows as $pk => $dbRow) {
+                if (isset($backupByPk[$pk])) {
+                    continue;
+                }
+
+                $dbRowArr = (array) $dbRow;
+
+                if (!empty($dbRowArr['deleted_at'])) {
+                    $kept++;
+                    continue;
+                }
+
+                $createdAt = $dbRowArr['created_at'] ?? null;
+
+                // ⭐ NEVER delete data created after the backup snapshot
+                if ($createdAt !== null && \Carbon\Carbon::parse($createdAt)->gt($backupTime)) {
+                    $kept++;
+                    continue;
+                }
+
+                $payload = ['deleted_at' => now()];
+                if ($hasDeletedBy) {
+                    $payload['deleted_by'] = $userId;
+                }
+                if ($hasDeletedReason) {
+                    $payload['deleted_reason'] = 'Smart restore — deleted after backup';
+                }
+
+                DB::table($table)->where('id', $pk)->where('institute_id', $tenantId)->update($payload);
+                $softDeleted++;
+            }
+        });
+
+        return [
+            'inserted'     => $inserted,
+            'updated'      => $updated,
+            'soft_deleted' => $softDeleted,
+            'kept'         => $kept,
+        ];
+    }
+
+    /**
+     * Full audit trail for every restore (merge + smart).
+     */
+    private function writeAudit(
+        int $tenantId,
+        RestoreLog $log,
+        int $userId,
+        string $mode,
+        array $affected
+    ): void {
+        try {
+            $request = app()->bound('request') ? request() : null;
+
+            RestoreAudit::create([
+                'tenant_id'       => $tenantId,
+                'restore_log_id'  => $log->id,
+                'user_id'         => $userId ?: (int) $log->user_id,
+                'mode'            => $mode,
+                'affected_tables' => $affected,
+                'total_affected'  => (int) collect($affected)->flatten()->filter()->sum(),
+                'ip_address'      => $request?->ip(),
+                'user_agent'      => $request ? mb_substr((string) $request->userAgent(), 0, 500) : null,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Restore audit write failed', [
+                'restore_log_id' => $log->id,
+                'error'          => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

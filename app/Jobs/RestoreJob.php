@@ -26,7 +26,8 @@ class RestoreJob implements ShouldQueue
         public int $backupId,
         public int $tenantId,
         public int $userId,
-        public string $recipientEmail
+        public string $recipientEmail,
+        public string $mode = 'merge'
     ) {}
 
     public function handle(RestoreService $service): void
@@ -43,7 +44,7 @@ class RestoreJob implements ShouldQueue
         ]);
 
         try {
-            $service->executeRestore($log, $this->backupId, $this->tenantId, $this->userId);
+            $service->executeRestore($log, $this->backupId, $this->tenantId, $this->userId, $this->mode);
 
             try {
                 Mail::to($this->recipientEmail)->queue(new RestoreCompleteMail($log));

@@ -119,18 +119,66 @@
 
 {{-- Restore Modal --}}
 <div class="modal fade" id="restoreModal" tabindex="-1">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Confirm Restore</h5>
+                <h5 class="modal-title" id="restoreTitle">Restore Backup</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div id="otpRequestStep">
+                {{-- Step 0: mode selector --}}
+                <div id="modeStep">
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="radio" name="restore_mode"
+                               value="merge" id="modeMerge" checked>
+                        <label class="form-check-label" for="modeMerge">
+                            <strong>Recovery Mode (merge)</strong>
+                            <div class="small text-muted">
+                                Missing rows are re-inserted. Nothing is ever deleted.
+                            </div>
+                        </label>
+                    </div>
+                    @if(auth()->user() && method_exists(auth()->user(), 'hasRole') && auth()->user()->hasRole('institute-owner'))
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="radio" name="restore_mode"
+                               value="smart" id="modeSmart">
+                        <label class="form-check-label" for="modeSmart">
+                            <strong>Smart Restore</strong> <span class="badge bg-warning text-dark">owner only</span>
+                            <div class="small text-muted">
+                                Deleted rows respect the backup snapshot.
+                                <span class="text-success">Rows created after the backup are never touched.</span>
+                            </div>
+                        </label>
+                    </div>
+                    @endif
+                    <button type="button" class="btn btn-primary" id="btnPreview">
+                        <i class="bi bi-eye"></i> Preview Changes
+                    </button>
+                </div>
+
+                {{-- Step 1: preview + confirm phrase --}}
+                <div id="previewStep" class="d-none">
+                    <div class="alert alert-info" id="previewSummary"></div>
+                    <div id="previewTable" class="table-responsive mb-3" style="max-height: 260px; overflow:auto;"></div>
+                    <p class="text-muted small mb-1">Type <strong>RESTORE</strong> to continue:</p>
+                    <input type="text" class="form-control mb-3" id="confirmPhrase"
+                           placeholder="RESTORE" autocomplete="off">
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-danger" id="btnConfirm" disabled>
+                            Continue
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" id="btnBackToMode">Back</button>
+                    </div>
+                </div>
+
+                {{-- Step 2: OTP request --}}
+                <div id="otpRequestStep" class="d-none">
                     <p>We'll send a 6-digit code to <strong>{{ auth()->user()->email }}</strong></p>
                     <p class="text-muted small">This confirms your identity before restore.</p>
                     <button class="btn btn-primary" onclick="requestOtp()">Send Code</button>
                 </div>
+
+                {{-- Step 3: OTP verify --}}
                 <div id="otpVerifyStep" class="d-none">
                     <label class="form-label">Enter the 6-digit code:</label>
                     <input type="text" id="otpInput" maxlength="6" class="form-control form-control-lg text-center" style="letter-spacing: 8px; font-size: 24px;">
@@ -160,6 +208,7 @@
                 </div>
                 <div id="progressChunks" class="text-muted small mt-2"></div>
                 <div id="progressError" class="text-danger small mt-2"></div>
+                <div id="progressRollback" class="small mt-2"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary d-none" id="progressCloseBtn"
@@ -171,15 +220,42 @@
 
 <script>
 let currentBackupId = null;
+let currentPreviewId = null;
+let currentMode = 'merge';
+let lastRollbackToken = null;
 let progressTimer = null;
 const modal = new bootstrap.Modal(document.getElementById('restoreModal'));
 const progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+const RESTORE_STEPS = ['modeStep', 'previewStep', 'otpRequestStep', 'otpVerifyStep'];
+const STEP_TITLES = {
+    modeStep: 'Restore Backup',
+    previewStep: 'Preview changes',
+    otpRequestStep: 'Verify identity',
+    otpVerifyStep: 'Verify identity',
+};
+
+function showStep(step) {
+    RESTORE_STEPS.forEach((s) => {
+        document.getElementById(s).classList.toggle('d-none', s !== step);
+    });
+    document.getElementById('restoreTitle').textContent = STEP_TITLES[step] || 'Restore Backup';
+}
 
 function startRestore(backupId) {
     currentBackupId = backupId;
-    document.getElementById('otpRequestStep').classList.remove('d-none');
-    document.getElementById('otpVerifyStep').classList.add('d-none');
+    currentPreviewId = null;
+    currentMode = 'merge';
+    lastRollbackToken = null;
     document.getElementById('otpError').textContent = '';
+    document.getElementById('confirmPhrase').value = '';
+    document.getElementById('btnConfirm').disabled = true;
+    const btnPreview = document.getElementById('btnPreview');
+    btnPreview.disabled = false;
+    btnPreview.innerHTML = '<i class="bi bi-eye"></i> Preview Changes';
+    const smart = document.getElementById('modeSmart');
+    if (smart) smart.checked = false;
+    document.getElementById('modeMerge').checked = true;
+    showStep('modeStep');
     modal.show();
 }
 
@@ -207,7 +283,7 @@ async function verifyOtp() {
             'X-CSRF-TOKEN': '{{ csrf_token() }}',
             'Accept': 'application/json',
         },
-        body: JSON.stringify({ otp }),
+        body: JSON.stringify({ otp, preview_id: currentPreviewId }),
     });
     const data = await res.json();
     if (data.success) {
@@ -221,6 +297,126 @@ async function verifyOtp() {
         document.getElementById('otpError').textContent = data.message;
     }
 }
+
+// ── Phase 3: Smart restore — preview → confirm phrase → OTP ─────────────
+document.getElementById('btnPreview').addEventListener('click', async () => {
+    const smartEl = document.getElementById('modeSmart');
+    currentMode = (smartEl && smartEl.checked) ? 'smart' : 'merge';
+
+    const btn = document.getElementById('btnPreview');
+    btn.disabled = true;
+    btn.textContent = 'Computing preview...';
+
+    try {
+        const res = await fetch(`/tenant/backup/${currentBackupId}/restore/preview`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({ mode: currentMode }),
+        });
+        const data = await res.json();
+
+        // Legacy backup without manifest → no diff possible, straight to OTP
+        if (res.status === 409 && data.error === 'no_manifest') {
+            currentPreviewId = null;
+            currentMode = 'merge';
+            showStep('otpRequestStep');
+            return;
+        }
+
+        if (!res.ok) {
+            alert(data.error || data.message || 'Preview failed');
+            return;
+        }
+
+        currentPreviewId = data.preview_id;
+        currentMode = data.mode;
+        renderPreview(data);
+        showStep('previewStep');
+    } catch (e) {
+        alert('Preview error: ' + e.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-eye"></i> Preview Changes';
+    }
+});
+
+function renderPreview(data) {
+    const keptLine = data.total_kept > 0
+        ? `<span class="text-primary">&#128274; ${data.total_kept} rows created AFTER the backup are kept (never touched)</span><br>`
+        : '';
+    const delLine = data.total_soft_delete > 0
+        ? `<span class="text-warning">&#9888; ${data.total_soft_delete} rows will be SOFT DELETED (30-day reversible)</span><br>`
+        : '';
+
+    document.getElementById('previewSummary').innerHTML = `
+        <strong>Impact — ${data.mode === 'smart' ? 'Smart Restore' : 'Recovery (merge)'} mode:</strong><br>
+        <span class="text-success">&#10133; INSERT: ${data.total_insert} rows (recovered)</span><br>
+        <span class="text-info">&#8635; UPDATE: ${data.total_update} rows</span><br>
+        ${delLine}${keptLine}
+        <small class="text-muted">Preview expires in 30 minutes.</small>`;
+
+    let html = '<table class="table table-sm"><thead><tr><th>Table</th><th>+Insert</th><th>~Update</th><th>-Soft del</th><th>&#128274;Kept</th></tr></thead><tbody>';
+    let rows = 0;
+    for (const [table, info] of Object.entries(data.diff || {})) {
+        if (table === '_failed') continue;
+        const ins = info.insert || 0, upd = info.update || 0,
+              del = info.delete || 0, kept = info.kept || 0;
+        if ((ins + upd + del + kept) === 0) continue;
+        rows++;
+        html += `<tr>
+            <td>${table}</td>
+            <td class="text-success">${ins ? '+' + ins : '-'}</td>
+            <td class="text-info">${upd ? '~' + upd : '-'}</td>
+            <td class="text-warning">${del ? '-' + del : '-'}</td>
+            <td class="text-primary">${kept ? kept : '-'}</td>
+        </tr>`;
+    }
+    if (rows === 0) html += '<tr><td colspan="5" class="text-muted text-center">No differences</td></tr>';
+    html += '</tbody></table>';
+    document.getElementById('previewTable').innerHTML = html;
+}
+
+document.getElementById('btnBackToMode').addEventListener('click', () => showStep('modeStep'));
+
+document.getElementById('confirmPhrase').addEventListener('input', (e) => {
+    document.getElementById('btnConfirm').disabled = e.target.value.trim() !== 'RESTORE';
+});
+
+document.getElementById('btnConfirm').addEventListener('click', async () => {
+    if (!currentPreviewId) { showStep('otpRequestStep'); return; }
+
+    const btn = document.getElementById('btnConfirm');
+    btn.disabled = true;
+    btn.textContent = 'Confirming...';
+
+    try {
+        const res = await fetch(`/tenant/backup/restore/${currentPreviewId}/confirm`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({ confirm_phrase: 'RESTORE' }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            alert(data.error || 'Confirmation failed');
+            btn.disabled = false;
+            btn.textContent = 'Continue';
+            return;
+        }
+        showStep('otpRequestStep');
+    } catch (e) {
+        alert('Error: ' + e.message);
+        btn.disabled = false;
+        btn.textContent = 'Continue';
+    }
+});
 
 // ── Phase 2C: Backup Now → AJAX dispatch + progress polling ─────────────
 document.getElementById('backupForm').addEventListener('submit', async (e) => {
@@ -268,9 +464,18 @@ function finishProgress(failed, errMsg) {
     const bar = document.getElementById('progressBar');
     bar.classList.remove('progress-bar-animated', 'progress-bar-striped');
     bar.classList.toggle('bg-danger', !!failed);
+    bar.classList.toggle('bg-success', !failed);
     document.getElementById('progressCloseBtn').classList.remove('d-none');
     document.getElementById('progressError').textContent = errMsg || '';
     document.getElementById('backupBtn').disabled = false;
+
+    // Phase 3: offer an undo when the restore produced a rollback snapshot
+    if (!failed && lastRollbackToken) {
+        document.getElementById('progressRollback').innerHTML =
+            `<a class="btn btn-sm btn-outline-danger" href="/tenant/backup/restore/rollback/${lastRollbackToken}">` +
+            `&#8630; Undo this restore</a>`;
+    }
+
     setTimeout(() => location.reload(), failed ? 0 : 1200);
 }
 
@@ -278,9 +483,11 @@ function startProgressTracking(backupId, logId) {
     clearInterval(progressTimer);
     const bar = document.getElementById('progressBar');
     bar.classList.add('progress-bar-animated', 'progress-bar-striped');
-    bar.classList.remove('bg-danger');
+    bar.classList.remove('bg-danger', 'bg-success');
     document.getElementById('progressCloseBtn').classList.add('d-none');
     document.getElementById('progressError').textContent = '';
+    document.getElementById('progressRollback').innerHTML = '';
+    lastRollbackToken = null;
     document.getElementById('progressTitle').textContent =
         backupId ? 'Backup in progress' : 'Restore in progress';
     progressModal.show();
@@ -295,6 +502,7 @@ function startProgressTracking(backupId, logId) {
             if (!res.ok) { finishProgress(true, 'Progress unavailable'); return; }
             const p = await res.json();
             setProgressUi(p);
+            if (p.rollback_token) lastRollbackToken = p.rollback_token;
 
             if (p.status === 'completed') {
                 finishProgress(false, null);

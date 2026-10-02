@@ -2131,6 +2131,11 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified', 'permission:
         Route::post('/{id}/restore/request', [\App\Http\Controllers\Tenant\RestoreController::class, 'requestOtp'])->name('restore.request');
         Route::post('/{id}/restore/verify', [\App\Http\Controllers\Tenant\RestoreController::class, 'verify'])->name('restore.verify');
 
+        // Phase 3: smart restore — preview (dry-run) → confirm → OTP → dispatch
+        Route::post('/{id}/restore/preview', [\App\Http\Controllers\Tenant\RestoreController::class, 'preview'])->name('restore.preview');
+        Route::post('/restore/{previewId}/confirm', [\App\Http\Controllers\Tenant\RestoreController::class, 'confirm'])->name('restore.confirm');
+        Route::get('/restore/rollback/{token}', [\App\Http\Controllers\Tenant\RestoreController::class, 'rollback'])->name('restore.rollback');
+
         // Phase 2C: async progress polling
         Route::get('/{id}/progress', [\App\Http\Controllers\Tenant\BackupController::class, 'progress'])->name('progress');
         Route::get('/restore/{logId}/progress', [\App\Http\Controllers\Tenant\RestoreController::class, 'progress'])->name('restore.progress');

@@ -70,3 +70,10 @@ Schedule::command('backup:cleanup')
     ->withoutOverlapping()
     ->onOneServer()
     ->appendOutputTo(storage_path('logs/backup-cleanup.log'));
+
+// Phase 3: soft-deleted rows (smart restore) are kept 30 days, then purged
+Schedule::command('backup:purge-soft-deleted --days=30')
+    ->dailyAt('03:30')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->appendOutputTo(storage_path('logs/backup-purge-soft-deleted.log'));
