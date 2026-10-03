@@ -40,6 +40,7 @@ class ChartOfAccountList extends DataTable
     protected function baseQuery(): Builder
     {
         return ChartOfAccount::query()
+            ->ordered()
             ->with('parent')
             ->withSum('journalEntries as total_debit', 'debit')
             ->withSum('journalEntries as total_credit', 'credit')

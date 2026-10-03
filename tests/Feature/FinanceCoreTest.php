@@ -831,7 +831,8 @@ class FinanceCoreTest extends TestCase
         ], (int) $managerA->id);
 
         $this->actingAs($managerA, 'institute_user')
-            ->get(route('finance.chart-of-accounts.index'))
+            ->get(route('finance.chart-of-accounts.index').'?q=6004')
+            ->assertOk()
             ->assertSee('Institute Wide');
     }
 

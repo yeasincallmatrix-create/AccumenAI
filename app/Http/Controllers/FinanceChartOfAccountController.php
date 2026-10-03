@@ -47,13 +47,7 @@ class FinanceChartOfAccountController extends Controller
             $query->where('is_active', $request->query('status') === 'active');
         }
 
-        $accounts = $query
-            ->orderByRaw('CAST(SUBSTRING(code, 1, 1) AS UNSIGNED)')
-            ->orderByRaw('CAST(SUBSTRING_INDEX(code, ".", 1) AS UNSIGNED)')
-            ->orderByRaw('CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(code, ".", 2), ".", -1) AS UNSIGNED)')
-            ->orderByRaw('CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(code, ".", 3), ".", -1) AS UNSIGNED)')
-            ->orderByRaw('CAST(SUBSTRING_INDEX(code, ".", -1) AS UNSIGNED)')
-            ->paginate(25)->withQueryString();
+        $accounts = $query->paginate(25)->withQueryString();
 
         $accounts->getCollection()->each(function ($a) use ($institute) {
             $a->is_editable = $a->isEditableBy((int) $institute->id);
@@ -210,7 +204,7 @@ class FinanceChartOfAccountController extends Controller
                 })->orWhere('institute_id', $instituteId);
             })
             ->where('is_active', true)
-            ->orderBy('code')
+            ->ordered()
             ->get(['id', 'code', 'name', 'type']);
     }
 }

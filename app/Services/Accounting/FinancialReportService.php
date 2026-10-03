@@ -59,7 +59,13 @@ class FinancialReportService
             ];
         }));
 
-        return $rows->sortBy(fn ($row) => [$this->typeOrder($row->type), $row->code])->values();
+        $rank = ChartOfAccount::withoutGlobalScopes()
+            ->where(fn ($q) => $q->whereNull('institute_id')->orWhere('institute_id', $instituteId))
+            ->ordered()
+            ->pluck('id')
+            ->flip();
+
+        return $rows->sortBy(fn ($row) => $rank->get($row->coa_id, PHP_INT_MAX))->values();
     }
 
     /**
@@ -295,7 +301,7 @@ class FinancialReportService
             ->where('branch_id', $branchId)
             ->where(fn ($q) => $q->where('is_cash', true)->orWhere('is_bank', true))
             ->where('is_active', true)
-            ->orderBy('code')
+            ->ordered()
             ->get(['id', 'code', 'name', 'is_cash', 'is_bank']);
 
         $entries = $this->accountTotals($instituteId, $branchId, $asOfDate);
@@ -339,7 +345,7 @@ class FinancialReportService
             ->where('branch_id', $branchId)
             ->where(fn ($q) => $q->where('is_cash', true)->orWhere('is_bank', true))
             ->where('is_active', true)
-            ->orderBy('code')
+            ->ordered()
             ->get(['id', 'code', 'name', 'is_cash', 'is_bank']);
 
         $ids = $accounts->pluck('id')->all();
@@ -608,17 +614,6 @@ class FinancialReportService
     }
 
     // ------------------------------------------------------------- Internals
-
-    private function typeOrder(string $type): int
-    {
-        return [
-            'asset' => 1,
-            'liability' => 2,
-            'equity' => 3,
-            'income' => 4,
-            'expense' => 5,
-        ][$type] ?? 9;
-    }
 
     /**
      * Summed debit/credit per account from posted entries (optionally ranged).

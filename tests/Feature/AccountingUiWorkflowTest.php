@@ -201,9 +201,14 @@ class AccountingUiWorkflowTest extends TestCase
         $this->assign($owner, $tutu, 'institute-owner');
 
         $this->asUser($owner, (int) $mawa->id)
-            ->get('/finance/chart-of-accounts')
+            ->get('/finance/chart-of-accounts?q=1999')
             ->assertOk()
             ->assertSee($unique);
+
+        $this->asUser($owner, (int) $tutu->id)
+            ->get('/finance/chart-of-accounts?q=1999')
+            ->assertOk()
+            ->assertDontSee($unique);
 
         $this->asUser($owner, (int) $tutu->id)
             ->get('/finance/chart-of-accounts')

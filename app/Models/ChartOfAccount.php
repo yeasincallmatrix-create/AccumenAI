@@ -23,6 +23,14 @@ class ChartOfAccount extends Model
     use SoftDeletes;
     use TenantScoped;
 
+    public const TYPE_ORDER = [
+        'asset' => 1,
+        'liability' => 2,
+        'equity' => 3,
+        'income' => 4,
+        'expense' => 5,
+    ];
+
     protected $table = 'chart_of_accounts';
 
     protected $guarded = [];
@@ -375,6 +383,23 @@ class ChartOfAccount extends Model
     public function scopeHeaders($query)
     {
         return $query->where('is_header', true);
+    }
+
+    /**
+     * Canonical display order: type (asset→liability→equity→income→expense),
+     * then natural code order (1000 before 1000.1 before 1000.2 before 1000.10),
+     * with anchors appearing before their children.
+     */
+    public function scopeOrdered($query)
+    {
+        $types = implode("','", array_keys(self::TYPE_ORDER));
+
+        return $query
+            ->orderByRaw("FIELD(type, '{$types}')")
+            ->orderByRaw('CAST(SUBSTRING_INDEX(code, ".", 1) AS UNSIGNED)')
+            ->orderByRaw("CASE WHEN code LIKE '%.%' THEN CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(code, '.', 2), '.', -1) AS UNSIGNED) ELSE 0 END")
+            ->orderByRaw("CASE WHEN code LIKE '%.%.%' THEN CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(code, '.', 3), '.', -1) AS UNSIGNED) ELSE 0 END")
+            ->orderBy('code');
     }
 
     public function hasChildren(): bool

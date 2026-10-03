@@ -119,10 +119,12 @@ abstract class DataTable extends Component
         }
 
         // Sort
-        if ($this->sortField && in_array($this->sortField, $this->sortableColumns(), true)) {
-            $query->orderBy($this->sortField, $this->sortDirection);
-        } else {
-            $query->latest('id');
+        if (empty($query->getQuery()->orders)) {
+            if ($this->sortField && in_array($this->sortField, $this->sortableColumns(), true)) {
+                $query->orderBy($this->sortField, $this->sortDirection);
+            } else {
+                $query->latest('id');
+            }
         }
 
         return $query->paginate($this->perPage)->withQueryString();
