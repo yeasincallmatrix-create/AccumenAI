@@ -15,7 +15,16 @@ class Currency extends Model
 {
     protected $table = 'currencies';
 
-    protected $guarded = [];
+    protected $fillable = [
+        'code',
+        'name',
+        'symbol',
+        'symbol_native',
+        'decimal_places',
+        'rounding',
+        'is_base',
+        'is_active',
+    ];
 
     protected function casts(): array
     {

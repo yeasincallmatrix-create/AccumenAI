@@ -33,10 +33,41 @@ class ChartOfAccount extends Model
 
     protected $table = 'chart_of_accounts';
 
-    protected $guarded = [];
+    /**
+     * Mass-assignable columns. Ownership and audit columns are deliberately
+     * omitted: institute_id/branch_id stay fillable only because the
+     * TenantScoped/BranchScopedOrShared traits force them during onboarding.
+     */
+    protected $fillable = [
+        'institute_id',
+        'branch_id',
+        'parent_id',
+        'account_group_id',
+        'code',
+        'name',
+        'type',
+        'cash_flow_category',
+        'currency_id',
+        'industries',
+        'is_cash',
+        'is_bank',
+        'is_receivable',
+        'is_payable',
+        'is_active',
+        'is_header',
+        'is_postable',
+    ];
 
     protected static function booted(): void
     {
+        static::creating(function (ChartOfAccount $account) {
+            $parentId = $account->getAttribute('parent_id');
+
+            if ($parentId) {
+                static::promoteParentFlags((int) $parentId);
+            }
+        });
+
         static::updating(function (ChartOfAccount $account) {
             if ($account->isDirty('parent_id')) {
                 $oldParentId = $account->getOriginal('parent_id');
@@ -52,17 +83,10 @@ class ChartOfAccount extends Model
                 }
 
                 if ($oldParentId) {
-                    $oldParent = static::where('id', $oldParentId)->withCount('children')->first();
-                    static::where('id', $oldParentId)->update([
-                        'is_header' => $oldParent ? $oldParent->children_count > 0 : false,
-                        'is_postable' => $oldParent ? $oldParent->children_count === 0 : false,
-                    ]);
+                    static::recountParentFlags((int) $oldParentId);
                 }
                 if ($newParentId) {
-                    static::where('id', $newParentId)->update([
-                        'is_header' => true,
-                        'is_postable' => false,
-                    ]);
+                    static::promoteParentFlags((int) $newParentId);
                 }
             }
         });
@@ -84,6 +108,55 @@ class ChartOfAccount extends Model
                 throw new \DomainException("Cannot delete account with journals: {$acc->code}");
             }
         });
+    }
+
+    /**
+     * A row that has just gained a child becomes a header: never postable.
+     * Locked rows (is_system) and missing/soft-deleted rows are left alone so
+     * seeded global anchors keep the flags their seeder gave them.
+     */
+    private static function promoteParentFlags(int $parentId): void
+    {
+        $parent = static::withoutGlobalScopes()
+            ->where('id', $parentId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if ($parent === null || $parent->is_system) {
+            return;
+        }
+
+        $parent->update([
+            'is_header' => true,
+            'is_postable' => false,
+        ]);
+    }
+
+    /**
+     * Recount a former parent's children and keep its header/postable flags
+     * honest. Counts run without global scopes so a tenant view can never
+     * under-count siblings belonging to another visibility slice.
+     */
+    private static function recountParentFlags(int $parentId): void
+    {
+        $parent = static::withoutGlobalScopes()
+            ->where('id', $parentId)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if ($parent === null || $parent->is_system) {
+            return;
+        }
+
+        $children = static::withoutGlobalScopes()
+            ->where('parent_id', $parentId)
+            ->whereNull('deleted_at')
+            ->count();
+
+        $parent->update([
+            'is_header' => $children > 0,
+            'is_postable' => $children === 0,
+        ]);
     }
 
     public function isLocked(): bool

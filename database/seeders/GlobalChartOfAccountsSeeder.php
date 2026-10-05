@@ -139,20 +139,19 @@ class GlobalChartOfAccountsSeeder extends Seeder
                 [$code, $name, $parentCode, $isHeader, $isPostable, $type, $industries] = $row;
                 if (!$isHeader) continue;
 
-                ChartOfAccount::withoutGlobalScope('institute')->updateOrCreate(
-                    ['code' => $code, 'institute_id' => null],
-                    [
-                        'name' => $name,
-                        'parent_id' => null,
-                        'is_header' => true,
-                        'is_postable' => false,
-                        'is_system' => true,
-                        'type' => $type,
-                        'account_group_id' => $groupMap[$type] ?? null,
-                        'industries' => $industries ?: null,
-                        'is_active' => true,
-                    ]
-                );
+                $account = ChartOfAccount::withoutGlobalScope('institute')
+                    ->firstOrNew(['code' => $code, 'institute_id' => null]);
+                $account->forceFill([
+                    'name' => $name,
+                    'parent_id' => null,
+                    'is_header' => true,
+                    'is_postable' => false,
+                    'is_system' => true,
+                    'type' => $type,
+                    'account_group_id' => $groupMap[$type] ?? null,
+                    'industries' => $industries ?: null,
+                    'is_active' => true,
+                ])->save();
             }
 
             // Pass 2: leaves (is_system=1 for defaults)
@@ -165,20 +164,19 @@ class GlobalChartOfAccountsSeeder extends Seeder
                         ->whereNull('institute_id')->where('code', $parentCode)->value('id')
                     : null;
 
-                ChartOfAccount::withoutGlobalScope('institute')->updateOrCreate(
-                    ['code' => $code, 'institute_id' => null],
-                    [
-                        'name' => $name,
-                        'parent_id' => $parentId,
-                        'is_header' => false,
-                        'is_postable' => true,
-                        'is_system' => true,
-                        'type' => $type,
-                        'account_group_id' => $groupMap[$type] ?? null,
-                        'industries' => $industries ?: null,
-                        'is_active' => true,
-                    ]
-                );
+                $account = ChartOfAccount::withoutGlobalScope('institute')
+                    ->firstOrNew(['code' => $code, 'institute_id' => null]);
+                $account->forceFill([
+                    'name' => $name,
+                    'parent_id' => $parentId,
+                    'is_header' => false,
+                    'is_postable' => true,
+                    'is_system' => true,
+                    'type' => $type,
+                    'account_group_id' => $groupMap[$type] ?? null,
+                    'industries' => $industries ?: null,
+                    'is_active' => true,
+                ])->save();
             }
         });
 

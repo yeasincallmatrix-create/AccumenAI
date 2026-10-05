@@ -306,21 +306,19 @@ class ChartOfAccountService
             $flags = $row[3] ?? [];
             $category = $groups[$type];
 
-            ChartOfAccount::query()->firstOrCreate(
-                [
-                    'institute_id' => $instituteId,
-                    'branch_id' => $branchId,
-                    'code' => $code,
-                ],
-                array_merge([
-                    'account_group_id' => $category->id,
-                    'name' => $name,
-                    'type' => $type,
-                    'is_system' => true,
-                    'is_active' => true,
-                    'created_by' => $createdBy,
-                ], $flags ?? []),
-            );
+            $account = ChartOfAccount::query()->firstOrNew([
+                'institute_id' => $instituteId,
+                'branch_id' => $branchId,
+                'code' => $code,
+            ]);
+            $account->forceFill(array_merge([
+                'account_group_id' => $category->id,
+                'name' => $name,
+                'type' => $type,
+                'is_system' => true,
+                'is_active' => true,
+                'created_by' => $createdBy,
+            ], $flags ?? []))->save();
         }
     }
 
@@ -334,20 +332,20 @@ class ChartOfAccountService
         $groups = [];
 
         foreach (self::CATEGORIES as $category => $meta) {
-            $groups[$category] = AccountGroup::query()->firstOrCreate(
-                [
-                    'institute_id' => $instituteId,
-                    'branch_id' => $branchId,
-                    'code' => $meta['code'],
-                ],
-                [
-                    'name' => $meta['name'],
-                    'category' => $category,
-                    'is_system' => true,
-                    'sort_order' => $meta['sort'],
-                    'created_by' => $createdBy,
-                ],
-            );
+            $group = AccountGroup::query()->firstOrNew([
+                'institute_id' => $instituteId,
+                'branch_id' => $branchId,
+                'code' => $meta['code'],
+            ]);
+            $group->forceFill([
+                'name' => $meta['name'],
+                'category' => $category,
+                'is_system' => true,
+                'sort_order' => $meta['sort'],
+                'created_by' => $createdBy,
+            ])->save();
+
+            $groups[$category] = $group;
         }
 
         return $groups;
@@ -378,28 +376,7 @@ class ChartOfAccountService
         }
 
         // Validate parent (must be global OR own tenant's)
-        if (! empty($data['parent_id'])) {
-            $parent = ChartOfAccount::withoutGlobalScope('institute')
-                ->where('id', $data['parent_id'])
-                ->where(function ($q) use ($instituteId) {
-                    $q->where(function ($g) {
-                        $g->whereNull('institute_id')->where('is_system', 1);
-                    })->orWhere('institute_id', $instituteId);
-                })
-                ->first();
-            if ($parent === null) {
-                throw ValidationException::withMessages([
-                    'parent_id' => 'The parent account does not belong to this institute.',
-                ]);
-            }
-
-            // Enforce max 2 levels (parent cannot have a parent)
-            if ($parent->parent_id !== null) {
-                throw new \InvalidArgumentException(
-                    'Maximum sub-account depth is 2 levels.'
-                );
-            }
-        }
+        $this->assertValidParent(null, $data['parent_id'] ?? null, (string) ($data['type'] ?? ''), $instituteId);
 
         // Validate code uniqueness within visible namespace
         $exists = ChartOfAccount::visible($instituteId)
@@ -465,6 +442,29 @@ class ChartOfAccountService
         // Prevent changing ownership
         unset($data['institute_id'], $data['is_system'], $data['branch_id']);
 
+        // Same parent checks as the create path: tenant-or-global ownership,
+        // no self-reference, no cycle, max depth 2, same type.
+        if (array_key_exists('parent_id', $data)) {
+            $this->assertValidParent(
+                $account,
+                $data['parent_id'],
+                (string) ($data['type'] ?? $account->type),
+                $instituteId,
+            );
+        }
+
+        // The type is structural: once the account carries journal entries it
+        // is frozen, and we answer with a validation error rather than a throw.
+        if (
+            array_key_exists('type', $data)
+            && $data['type'] !== $account->type
+            && JournalEntry::query()->where('coa_id', $account->id)->exists()
+        ) {
+            throw ValidationException::withMessages([
+                'type' => 'The account type cannot be changed because journal entries already reference this account.',
+            ]);
+        }
+
         // Validate code uniqueness if changing
         if (isset($data['code']) && $data['code'] !== $account->code) {
             $exists = ChartOfAccount::visible($instituteId)
@@ -481,6 +481,73 @@ class ChartOfAccountService
         $account->update($data);
 
         return $account->fresh();
+    }
+
+    /**
+     * Parent checks shared by create and update so the two paths cannot drift:
+     * tenant-or-global ownership (soft-deleted rows excluded), no self-parent,
+     * no cycle, maximum depth of 2, and a parent of the same account type.
+     *
+     * @throws ValidationException|InvalidArgumentException
+     */
+    private function assertValidParent(?ChartOfAccount $account, mixed $parentId, string $type, ?int $instituteId): void
+    {
+        if ($parentId === null || $parentId === '' || (int) $parentId === 0) {
+            return;
+        }
+
+        $parent = ChartOfAccount::withoutGlobalScopes()
+            ->where('id', (int) $parentId)
+            ->whereNull('deleted_at')
+            ->where(function ($q) use ($instituteId) {
+                $q->where(function ($g) {
+                    $g->whereNull('institute_id')->where('is_system', 1);
+                })->orWhere('institute_id', $instituteId);
+            })
+            ->first();
+
+        if ($parent === null) {
+            throw ValidationException::withMessages([
+                'parent_id' => 'The parent account does not belong to this institute.',
+            ]);
+        }
+
+        if ($account !== null) {
+            if ($parent->id === $account->id) {
+                throw ValidationException::withMessages([
+                    'parent_id' => 'An account cannot be its own parent.',
+                ]);
+            }
+
+            // Walking up from the candidate parent must never reach the account
+            // being moved: that would close a loop in the tree.
+            $cursor = $parent->parent_id;
+            $depth = 0;
+            while ($cursor !== null && $depth < 3) {
+                if ((int) $cursor === $account->id) {
+                    throw ValidationException::withMessages([
+                        'parent_id' => 'The parent account cannot be a descendant of this account.',
+                    ]);
+                }
+                $cursor = ChartOfAccount::withoutGlobalScopes()
+                    ->where('id', (int) $cursor)
+                    ->value('parent_id');
+                $depth++;
+            }
+        }
+
+        // Enforce max 2 levels (parent cannot have a parent)
+        if ($parent->parent_id !== null) {
+            throw new \InvalidArgumentException(
+                'Maximum sub-account depth is 2 levels.'
+            );
+        }
+
+        if ($type !== '' && $parent->type !== $type) {
+            throw ValidationException::withMessages([
+                'parent_id' => 'The parent account must be of the same type.',
+            ]);
+        }
     }
 
     /**

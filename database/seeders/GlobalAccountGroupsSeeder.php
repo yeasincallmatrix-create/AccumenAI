@@ -55,18 +55,18 @@ class GlobalAccountGroupsSeeder extends Seeder
         $existing = 0;
 
         foreach ($groups as $data) {
-            $group = AccountGroup::firstOrCreate(
+            $group = AccountGroup::firstOrNew(
                 [
                     'institute_id' => null,
                     'branch_id' => null,
                     'code' => $data['code'],
-                ],
-                array_merge($data, [
-                    'institute_id' => null,
-                    'branch_id' => null,
-                    'is_system' => 1,
-                ])
+                ]
             );
+            $group->forceFill(array_merge($data, [
+                'institute_id' => null,
+                'branch_id' => null,
+                'is_system' => 1,
+            ]))->save();
 
             $group->wasRecentlyCreated ? $created++ : $existing++;
         }

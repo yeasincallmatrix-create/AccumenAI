@@ -20,6 +20,7 @@ class UpdateTenantAccountRequest extends FormRequest
     {
         $instituteId = tenant_id();
         $accountId = (int) $this->route('chartOfAccount');
+        $type = (string) $this->input('type', '');
 
         return [
             'code' => [
@@ -38,8 +39,70 @@ class UpdateTenantAccountRequest extends FormRequest
             ],
             'name' => 'required|string|max:150',
             'type' => 'required|in:asset,liability,equity,income,expense',
-            'account_group_id' => ['nullable', 'integer', 'exists:account_groups,id'],
-            'parent_id' => ['nullable', 'integer', 'exists:chart_of_accounts,id'],
+            'account_group_id' => [
+                'nullable',
+                'integer',
+                function (string $attribute, mixed $value, \Closure $fail) use ($instituteId): void {
+                    if ($value === null || $value === '') {
+                        return;
+                    }
+
+                    $visible = \App\Models\AccountGroup::withoutGlobalScopes()
+                        ->where('id', (int) $value)
+                        ->whereNull('deleted_at')
+                        ->where(function ($q) use ($instituteId) {
+                            $q->where(function ($g) {
+                                $g->whereNull('institute_id')->where('is_system', 1);
+                            })->orWhere('institute_id', $instituteId);
+                        })
+                        ->exists();
+
+                    if (! $visible) {
+                        $fail('The selected account group does not belong to this institute.');
+                    }
+                },
+            ],
+            'parent_id' => [
+                'nullable',
+                'integer',
+                function (string $attribute, mixed $value, \Closure $fail) use ($instituteId, $accountId, $type): void {
+                    if ($value === null || $value === '') {
+                        return;
+                    }
+
+                    $parent = ChartOfAccount::withoutGlobalScopes()
+                        ->where('id', (int) $value)
+                        ->whereNull('deleted_at')
+                        ->where(function ($q) use ($instituteId) {
+                            $q->where(function ($g) {
+                                $g->whereNull('institute_id')->where('is_system', 1);
+                            })->orWhere('institute_id', $instituteId);
+                        })
+                        ->first();
+
+                    if ($parent === null) {
+                        $fail('The parent account does not belong to this institute.');
+
+                        return;
+                    }
+
+                    if ((int) $parent->id === $accountId) {
+                        $fail('An account cannot be its own parent.');
+
+                        return;
+                    }
+
+                    if ($parent->parent_id !== null) {
+                        $fail('Maximum sub-account depth is 2 levels.');
+
+                        return;
+                    }
+
+                    if ($type !== '' && $parent->type !== $type) {
+                        $fail('The parent account must be of the same type.');
+                    }
+                },
+            ],
             'is_cash' => ['nullable', 'boolean'],
             'is_bank' => ['nullable', 'boolean'],
             'is_receivable' => ['nullable', 'boolean'],

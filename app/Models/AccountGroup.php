@@ -22,7 +22,14 @@ class AccountGroup extends Model
 
     protected $table = 'account_groups';
 
-    protected $guarded = [];
+    protected $fillable = [
+        'institute_id',
+        'branch_id',
+        'code',
+        'name',
+        'category',
+        'sort_order',
+    ];
 
     protected function casts(): array
     {
