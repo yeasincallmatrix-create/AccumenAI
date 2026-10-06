@@ -715,31 +715,31 @@ Route::middleware($tenant)->group(function () {
 
     // Finance Chart of Accounts
     Route::prefix('finance/chart-of-accounts')->name('finance.chart-of-accounts.')->group(function () use ($finCoA) {
-        Route::get('create', [$finCoA, 'create'])->name('create');
-        Route::post('/', [$finCoA, 'store'])->name('store');
-        Route::get('{account}/edit', [$finCoA, 'edit'])->name('edit');
-        Route::put('{chartOfAccount}', [$finCoA, 'update'])->name('update');
-        Route::post('{account}/opening', [$finCoA, 'updateOpening'])->name('update.opening');
-        Route::post('{account}/toggle', [$finCoA, 'toggle'])->name('toggle');
-        Route::delete('{chartOfAccount}', [$finCoA, 'destroy'])->name('destroy');
+        Route::get('create', [$finCoA, 'create'])->middleware(['permission:accounts.view', 'module_access:accounting'])->name('create');
+        Route::post('/', [$finCoA, 'store'])->middleware(['permission:accounts.edit', 'module_access:accounting'])->name('store');
+        Route::get('{account}/edit', [$finCoA, 'edit'])->middleware(['permission:accounts.view', 'module_access:accounting'])->name('edit');
+        Route::put('{chartOfAccount}', [$finCoA, 'update'])->middleware(['permission:accounts.edit', 'module_access:accounting'])->name('update');
+        Route::post('{account}/opening', [$finCoA, 'updateOpening'])->middleware(['permission:accounts.edit', 'module_access:accounting'])->name('update.opening');
+        Route::post('{account}/toggle', [$finCoA, 'toggle'])->middleware(['permission:accounts.edit', 'module_access:accounting'])->name('toggle');
+        Route::delete('{chartOfAccount}', [$finCoA, 'destroy'])->middleware(['permission:accounts.delete', 'module_access:accounting'])->name('destroy');
     });
 
     // Finance Journals
     Route::prefix('finance/journals')->name('finance.journals.')->middleware('advanced.accounting')->group(function () use ($finJour) {
-        Route::get('create', [$finJour, 'create'])->name('create');
-        Route::post('/', [$finJour, 'store'])->name('store');
-        Route::get('{journal}', [$finJour, 'show'])->name('show');
-        Route::post('{journal}/post', [$finJour, 'post'])->name('post');
-        Route::post('{journal}/reverse', [$finJour, 'reverse'])->name('reverse');
-        Route::post('{journal}/void', [$finJour, 'void'])->name('void');
+        Route::get('create', [$finJour, 'create'])->middleware(['permission:finance.view', 'module_access:finance'])->name('create');
+        Route::post('/', [$finJour, 'store'])->middleware(['permission:finance.manage', 'module_access:finance'])->name('store');
+        Route::get('{journal}', [$finJour, 'show'])->middleware(['permission:finance.view', 'module_access:finance'])->name('show');
+        Route::post('{journal}/post', [$finJour, 'post'])->middleware(['permission:finance.manage', 'module_access:finance'])->name('post');
+        Route::post('{journal}/reverse', [$finJour, 'reverse'])->middleware(['permission:finance.manage', 'module_access:finance'])->name('reverse');
+        Route::post('{journal}/void', [$finJour, 'void'])->middleware(['permission:finance.manage', 'module_access:finance'])->name('void');
     });
 
     // Finance Invoices
     Route::prefix('finance/invoices')->name('finance.invoices.')->group(function () use ($finInv) {
-        Route::get('create', [$finInv, 'create'])->name('create');
-        Route::post('/', [$finInv, 'store'])->name('store');
-        Route::get('{invoice}', [$finInv, 'show'])->name('show');
-        Route::post('{invoice}/cancel', [$finInv, 'cancel'])->name('cancel');
+        Route::get('create', [$finInv, 'create'])->middleware(['permission:finance.view', 'module_access:finance'])->name('create');
+        Route::post('/', [$finInv, 'store'])->middleware(['permission:finance.manage', 'module_access:finance'])->name('store');
+        Route::get('{invoice}', [$finInv, 'show'])->middleware(['permission:finance.view', 'module_access:finance'])->name('show');
+        Route::post('{invoice}/cancel', [$finInv, 'cancel'])->middleware(['permission:finance.manage', 'module_access:finance'])->name('cancel');
     });
 
     // Progressive Contracts
@@ -776,13 +776,13 @@ Route::middleware($tenant)->group(function () {
     // Expenses
     $expense = \App\Http\Controllers\ExpenseController::class;
     Route::prefix('finance/expenses')->name('finance.expenses.')->group(function () use ($expense) {
-        Route::get('/', [$expense, 'index'])->name('index');
-        Route::get('create', [$expense, 'create'])->name('create');
-        Route::post('/', [$expense, 'store'])->name('store');
-        Route::get('{expense}', [$expense, 'show'])->name('show');
-        Route::get('{expense}/edit', [$expense, 'edit'])->name('edit');
-        Route::put('{expense}', [$expense, 'update'])->name('update');
-        Route::delete('{expense}', [$expense, 'destroy'])->name('destroy');
+        Route::get('/', [$expense, 'index'])->middleware(['permission:finance.view', 'module_access:finance'])->name('index');
+        Route::get('create', [$expense, 'create'])->middleware(['permission:finance.view', 'module_access:finance'])->name('create');
+        Route::post('/', [$expense, 'store'])->middleware(['permission:finance.manage', 'module_access:finance'])->name('store');
+        Route::get('{expense}', [$expense, 'show'])->middleware(['permission:finance.view', 'module_access:finance'])->name('show');
+        Route::get('{expense}/edit', [$expense, 'edit'])->middleware(['permission:finance.view', 'module_access:finance'])->name('edit');
+        Route::put('{expense}', [$expense, 'update'])->middleware(['permission:finance.manage', 'module_access:finance'])->name('update');
+        Route::delete('{expense}', [$expense, 'destroy'])->middleware(['permission:finance.manage', 'module_access:finance'])->name('destroy');
         Route::get('billable/dashboard', [$expense, 'billableDashboard'])->name('billable-dashboard');
         Route::post('{expense}/mark-billable', [$expense, 'markBillable'])->name('mark-billable');
         Route::post('bulk-mark-billable', [$expense, 'bulkMarkBillable'])->name('bulk-mark-billable');
@@ -792,25 +792,25 @@ Route::middleware($tenant)->group(function () {
 
     // Finance Payments
     Route::prefix('finance/payments')->name('finance.payments.')->group(function () use ($finPay) {
-        Route::post('/', [$finPay, 'store'])->name('store');
-        Route::post('{payment}/reverse', [$finPay, 'reverse'])->name('reverse');
+        Route::post('/', [$finPay, 'store'])->middleware(['permission:finance.manage', 'module_access:finance'])->name('store');
+        Route::post('{payment}/reverse', [$finPay, 'reverse'])->middleware(['permission:finance.manage', 'module_access:finance'])->name('reverse');
     });
 
     // Finance Parties
     Route::prefix('finance/parties')->name('finance.parties.')->group(function () use ($finPart) {
-        Route::get('create', [$finPart, 'create'])->name('create');
-        Route::post('/', [$finPart, 'store'])->name('store');
-        Route::get('{party}/edit', [$finPart, 'edit'])->name('edit');
-        Route::put('{party}', [$finPart, 'update'])->name('update');
-        Route::delete('{party}', [$finPart, 'destroy'])->name('destroy');
+        Route::get('create', [$finPart, 'create'])->middleware(['permission:finance.view', 'module_access:finance'])->name('create');
+        Route::post('/', [$finPart, 'store'])->middleware(['permission:finance.manage', 'module_access:finance'])->name('store');
+        Route::get('{party}/edit', [$finPart, 'edit'])->middleware(['permission:finance.view', 'module_access:finance'])->name('edit');
+        Route::put('{party}', [$finPart, 'update'])->middleware(['permission:finance.manage', 'module_access:finance'])->name('update');
+        Route::delete('{party}', [$finPart, 'destroy'])->middleware(['permission:finance.manage', 'module_access:finance'])->name('destroy');
     });
 
     // Finance Payment Methods
     Route::prefix('finance/payment-methods')->name('finance.payment-methods.')->group(function () use ($finPm) {
-        Route::get('create', [$finPm, 'create'])->name('create');
-        Route::post('/', [$finPm, 'store'])->name('store');
-        Route::get('{method}/edit', [$finPm, 'edit'])->name('edit');
-        Route::put('{method}', [$finPm, 'update'])->name('update');
+        Route::get('create', [$finPm, 'create'])->middleware(['permission:finance.view', 'module_access:finance'])->name('create');
+        Route::post('/', [$finPm, 'store'])->middleware(['permission:finance.manage', 'module_access:finance'])->name('store');
+        Route::get('{method}/edit', [$finPm, 'edit'])->middleware(['permission:finance.view', 'module_access:finance'])->name('edit');
+        Route::put('{method}', [$finPm, 'update'])->middleware(['permission:finance.manage', 'module_access:finance'])->name('update');
     });
 
     // Finance Periods
