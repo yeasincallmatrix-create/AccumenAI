@@ -188,6 +188,36 @@ class CoaRoutePermissionTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_view_only_cannot_update_opening_balance(): void
+    {
+        // receptionist holds accounts.view but not accounts.edit
+        $receptionist = $this->user('receptionist');
+        $account = $this->ownAccount();
+
+        $this->actingAs($receptionist, 'institute_user')
+            ->post(route('finance.chart-of-accounts.update.opening', $account), [
+                'opening_balance' => 1000,
+                'opening_balance_date' => now()->toDateString(),
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_edit_holder_can_reach_update_opening_gate(): void
+    {
+        $this->grant('accountant', 'accounts.edit');
+        $accountant = $this->user('accountant');
+        $account = $this->ownAccount();
+
+        $response = $this->actingAs($accountant, 'institute_user')
+            ->post(route('finance.chart-of-accounts.update.opening', $account), [
+                'opening_balance' => 1000,
+                'opening_balance_date' => now()->toDateString(),
+            ]);
+
+        // Not asserting 200 — permission layer passed (not 403)
+        $this->assertNotSame(403, $response->status());
+    }
+
     // ------------------------------------------------------------ Helpers
 
     private function user(string $roleSlug): InstituteUser
