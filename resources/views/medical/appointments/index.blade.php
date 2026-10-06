@@ -80,6 +80,14 @@
                                 onclick="if (window.refreshQueueWidget) { window.refreshQueueWidget(); } else { window.location.reload(); }">
                             <i class="bi bi-arrow-clockwise"></i>
                         </button>
+                        @if(!empty($queue['doctorId']))
+                            <a class="btn btn-sm btn-outline-danger ms-1"
+                               href="{{ route('medical.appointments.live', ['doctor' => $queue['doctorId']]) }}"
+                               target="_blank" rel="noopener"
+                               title="Open the fullscreen live broadcast for this doctor in a new tab">
+                                <i class="bi bi-broadcast me-1"></i>Live Broadcast
+                            </a>
+                        @endif
                     </div>
                 </form>
             </div>
