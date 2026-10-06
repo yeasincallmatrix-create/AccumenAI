@@ -75,9 +75,14 @@
                 <a href="{{ route('medical.appointments.create') }}" class="btn btn-info btn-lg w-100 mb-2">
                     <i class="bi bi-calendar-plus me-1"></i>Book Appointment
                 </a>
-                <a href="{{ route('medical.appointments.queue') }}" class="btn btn-success btn-lg w-100">
+                <a href="{{ route('medical.appointments.queue') }}" class="btn btn-success btn-lg w-100 mb-2">
                     <i class="bi bi-people me-1"></i>View Queue
                 </a>
+                @if(($user ?? null) && $user->hasPermission('medical_appointments.view'))
+                    <a href="{{ route('medical.queue.display.selector') }}" class="btn btn-outline-primary btn-lg w-100">
+                        <i class="bi bi-tv me-1"></i>Queue Display
+                    </a>
+                @endif
             </div>
         </div>
     </div>

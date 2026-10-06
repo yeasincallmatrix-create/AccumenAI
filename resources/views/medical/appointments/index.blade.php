@@ -8,6 +8,9 @@
         <h4 class="page-header-title">Appointments (OPD)</h4>
     </div>
     <div class="page-header-actions">
+        <a href="{{ route('medical.queue.display.selector') }}" class="btn btn-outline-primary" title="Fullscreen queue board">
+            <i class="bi bi-tv me-1"></i>Queue Display
+        </a>
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#bookAppointmentModal">
             <i class="bi bi-plus-lg me-1"></i>Book Appointment
         </button>

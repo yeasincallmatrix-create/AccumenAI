@@ -182,6 +182,11 @@
                                                     <i class="bi bi-calendar-event"></i><span class="sidebar-label">Appointments</span>
                                                 </a>
                                             @endif
+                                            @if($user && $user->hasPermission('medical_appointments.view'))
+                                                <a class="nav-link sub {{ request()->routeIs('medical.queue.display.*') ? 'active' : '' }}" href="{{ route('medical.queue.display.selector') }}">
+                                                    <i class="bi bi-tv"></i><span class="sidebar-label">Queue Display</span>
+                                                </a>
+                                            @endif
                                             @if($user && $user->hasPermission('medical_prescriptions.view'))
                                                 <a class="nav-link sub {{ request()->routeIs('medical.prescriptions.*') ? 'active' : '' }}" href="{{ route('medical.prescriptions.index') }}">
                                                     <i class="bi bi-file-medical"></i><span class="sidebar-label">Prescriptions</span>
