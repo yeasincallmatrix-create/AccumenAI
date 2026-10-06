@@ -23,7 +23,7 @@ class AppointmentController extends MedicalController implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:medical_appointments.view', only: ['index', 'show', 'queue', 'token', 'reactIndex', 'reactQueueData', 'reactAppointmentsData']),
+            new Middleware('permission:medical_appointments.view', only: ['index', 'show', 'queue', 'token', 'reactIndex', 'reactQueueData', 'reactAppointmentsData', 'queueDisplay', 'queueDisplayData', 'queueDisplaySelector']),
             new Middleware('permission:medical_appointments.create', only: ['create', 'store']),
             new Middleware('permission:medical_appointments.edit', only: ['edit', 'update', 'checkin', 'complete', 'transfer', 'collectFee']),
             new Middleware('permission:medical_appointments.delete', only: ['destroy']),
@@ -1146,6 +1146,289 @@ class AppointmentController extends MedicalController implements HasMiddleware
         }
 
         return ['id' => $id, 'type' => $type, 'name' => $name];
+    }
+
+    // ==================================================================
+    // OPD Queue Display — read-only fullscreen board (no writes at all)
+    // ==================================================================
+
+    /**
+     * Fullscreen queue board for up to 2 doctors.
+     */
+    public function queueDisplay(Request $request)
+    {
+        $context = $this->queueDisplayContext($request);
+
+        if ($context['doctor_ids'] === []) {
+            return redirect()
+                ->route('medical.queue.display.selector')
+                ->with('status', 'Choose at least one doctor to open the queue display.');
+        }
+
+        return view('medical.queue-display', [
+            'queueData' => $context['rows'],
+            'date' => $context['date'],
+            'nameFormat' => $context['format'],
+            'selectedDoctorIds' => $context['doctor_ids'],
+            'refreshSeconds' => (int) config('medicine.queue_display.refresh_seconds', 30),
+        ]);
+    }
+
+    /**
+     * JSON feed polled by the board's inline refresh script.
+     */
+    public function queueDisplayData(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $context = $this->queueDisplayContext($request);
+
+        return response()->json([
+            'date' => $context['date'],
+            'name_format' => $context['format'],
+            'generated_at' => now()->format('H:i:s'),
+            'doctors' => $context['rows'],
+        ]);
+    }
+
+    /**
+     * Pick up to two doctors for the board.
+     */
+    public function queueDisplaySelector(Request $request)
+    {
+        $instituteId = $this->instituteId();
+        $branchId = $this->branchContextId();
+        $fence = $this->doctorFenceId();
+
+        $doctors = $this->doctors($instituteId);
+        if ($fence !== null) {
+            $doctors = $doctors->where('id', $fence)->values();
+        }
+        if ($branchId !== null) {
+            $doctors = $doctors->whereIn('id', $this->branchDoctorUserIds($branchId, $instituteId))->values();
+        }
+
+        $search = trim((string) $request->input('search'));
+        if ($search !== '') {
+            $doctors = $doctors
+                ->filter(fn ($doctor) => stripos((string) $doctor->name, $search) !== false)
+                ->values();
+        }
+
+        $maxDoctors = max(1, (int) config('medicine.queue_display.max_doctors', 2));
+        $allowedIds = $this->queueDisplayAllowedDoctorIds($instituteId, $branchId, $fence);
+        $selectedIds = array_slice(array_values(array_intersect(
+            array_map('intval', (array) $request->input('doctors', [])),
+            $allowedIds
+        )), 0, $maxDoctors);
+
+        return view('medical.queue-display-selector', [
+            'doctors' => $doctors,
+            'selectedIds' => $selectedIds,
+            'maxDoctors' => $maxDoctors,
+            'search' => $search,
+            'date' => (string) $request->input('date', today()->format('Y-m-d')),
+        ]);
+    }
+
+    /**
+     * Resolve + validate everything the board needs in one pass.
+     *
+     * Requested ids are intersected with the institute scope, the branch
+     * scope and the doctor fence BEFORE the max-doctor cap, so a request
+     * can never widen what this actor may display.
+     *
+     * @return array{doctor_ids: array<int>, date: string, format: string, rows: array}
+     */
+    private function queueDisplayContext(Request $request): array
+    {
+        $instituteId = $this->instituteId();
+        $branchId = $this->branchContextId();
+        $fence = $this->doctorFenceId();
+        $maxDoctors = max(1, (int) config('medicine.queue_display.max_doctors', 2));
+
+        $raw = $request->input('doctors', $request->input('doctor_ids', []));
+        if (is_string($raw)) {
+            $raw = explode(',', $raw);
+        }
+
+        $requested = collect(is_array($raw) ? $raw : [])
+            ->map(fn ($value) => (int) $value)
+            ->filter(fn ($value) => $value > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        $allowed = $this->queueDisplayAllowedDoctorIds($instituteId, $branchId, $fence);
+        $doctorIds = array_slice(array_values(array_intersect($requested, $allowed)), 0, $maxDoctors);
+
+        $date = trim((string) $request->input('date'));
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            $date = today()->format('Y-m-d');
+        }
+
+        $rows = $this->formatQueueRows(
+            $this->queueManager->getQueueForDoctors($instituteId, $branchId, $doctorIds, $date),
+            $this->queueDisplayFormat()
+        );
+
+        return [
+            'doctor_ids' => $doctorIds,
+            'date' => $date,
+            'format' => $this->queueDisplayFormat(),
+            'rows' => $rows,
+        ];
+    }
+
+    /**
+     * Doctors this actor may put on the board (institute + branch + fence).
+     */
+    private function queueDisplayAllowedDoctorIds(int $instituteId, ?int $branchId, ?int $fence): array
+    {
+        $allowed = \App\Support\MedicalScope::instituteDoctorUserIds($instituteId);
+
+        if ($fence !== null) {
+            $allowed = array_values(array_intersect($allowed, [$fence]));
+        }
+        if ($branchId !== null) {
+            $allowed = array_values(array_intersect($allowed, $this->branchDoctorUserIds($branchId, $instituteId)));
+        }
+
+        return array_values(array_map('intval', $allowed));
+    }
+
+    /**
+     * Resolved patient name format, always falling back to the configured
+     * default when the stored value is missing or no longer a known option.
+     */
+    private function queueDisplayFormat(): string
+    {
+        $definition = config('medicine.queue_display.patient_name_format', []);
+        $default = (string) ($definition['default'] ?? 'first_name');
+        $key = (string) ($definition['key'] ?? 'medical.queue_display.patient_name_format');
+
+        $format = (string) \App\Models\Setting::get($key, $default);
+
+        return array_key_exists($format, (array) ($definition['options'] ?? [])) ? $format : $default;
+    }
+
+    /**
+     * Apply the name format to every row and reduce each appointment to
+     * exactly what the board may show.
+     *
+     * patient_id / patient_name are dropped after formatting, so a
+     * `serial_only` configuration can never leak a name through the HTML
+     * or the JSON feed.
+     *
+     * @param  array<int, array>  $rows  keyed output of QueueManager::getQueueForDoctors()
+     * @return array<int, array>
+     */
+    private function formatQueueRows(array $rows, string $format): array
+    {
+        if ($rows === []) {
+            return [];
+        }
+
+        $patientIds = [];
+        foreach ($rows as $row) {
+            foreach (array_merge([$row['now_serving'] ?? null], $row['up_next'] ?? []) as $item) {
+                if (is_array($item) && ! empty($item['patient_id'])) {
+                    $patientIds[] = (int) $item['patient_id'];
+                }
+            }
+        }
+
+        $patients = $patientIds === []
+            ? collect()
+            : \App\Models\Medical\Patient::whereIn('id', array_unique($patientIds))
+                ->get(['id', 'institute_id', 'first_name', 'last_name'])
+                ->keyBy('id');
+
+        foreach ($rows as $doctorId => $row) {
+            $nowServing = $row['now_serving'] ?? null;
+            $rows[$doctorId]['now_serving'] = is_array($nowServing)
+                ? $this->presentQueueRow($nowServing, $patients, $format)
+                : null;
+
+            $upNext = [];
+            foreach ($row['up_next'] ?? [] as $item) {
+                if (is_array($item)) {
+                    $upNext[] = $this->presentQueueRow($item, $patients, $format);
+                }
+            }
+            $rows[$doctorId]['up_next'] = $upNext;
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @return array{serial_number: ?int, display_name: string, time: string}
+     */
+    private function presentQueueRow(array $item, $patients, string $format): array
+    {
+        return [
+            'serial_number' => isset($item['serial_number']) ? (int) $item['serial_number'] : null,
+            'display_name' => $this->resolveDisplayName($item, $patients, $format),
+            'time' => (string) ($item['time'] ?? ''),
+        ];
+    }
+
+    private function resolveDisplayName(array $item, $patients, string $format): string
+    {
+        if ($format === 'serial_only') {
+            return '';
+        }
+
+        $patient = $patients->get((int) ($item['patient_id'] ?? 0));
+
+        // Cross-institute guard: never format another tenant's patient row.
+        if ($patient instanceof \App\Models\Medical\Patient
+            && (int) $patient->institute_id === $this->instituteId()) {
+            return $this->formatPatientName($patient, $format);
+        }
+
+        return $this->formatRawName((string) ($item['patient_name'] ?? ''), $format);
+    }
+
+    /**
+     * Apply one of the medical.queue_display.patient_name_format options.
+     *
+     * serial_only deliberately returns an empty string — the board renders
+     * nothing at all for the name slot rather than a placeholder.
+     */
+    public function formatPatientName(\App\Models\Medical\Patient $patient, string $format): string
+    {
+        if ($format === 'serial_only') {
+            return '';
+        }
+
+        return $this->formatRawName(
+            trim(($patient->first_name ?? '').' '.($patient->last_name ?? '')),
+            $format
+        );
+    }
+
+    private function formatRawName(string $fullName, string $format): string
+    {
+        $fullName = trim($fullName);
+
+        if ($format === 'serial_only') {
+            return '';
+        }
+        if ($fullName === '') {
+            return 'N/A';
+        }
+
+        $parts = preg_split('/\s+/', $fullName) ?: [$fullName];
+        $first = (string) $parts[0];
+        $last = count($parts) > 1 ? trim(implode(' ', array_slice($parts, 1))) : '';
+
+        return match ($format) {
+            'first_name' => $first,
+            'last_name' => $last !== '' ? $last : $first,
+            'first_last' => trim($first.' '.$last),
+            'last_first' => $last !== '' ? $last.', '.$first : $first,
+            default => $fullName,
+        };
     }
 
     /**

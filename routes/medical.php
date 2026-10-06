@@ -82,6 +82,11 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     // React-powered pages
     Route::get('queue-react', [AppointmentController::class, 'reactIndex'])->name('queue.react');
     Route::get('queue-react/data', [AppointmentController::class, 'reactQueueData'])->name('queue.react.data');
+
+    // OPD Queue Display (fullscreen board + its read-only JSON feed)
+    Route::get('queue-display/select', [AppointmentController::class, 'queueDisplaySelector'])->name('queue.display.selector');
+    Route::get('queue-display/data', [AppointmentController::class, 'queueDisplayData'])->name('queue.display.data');
+    Route::get('queue-display', [AppointmentController::class, 'queueDisplay'])->name('queue.display');
     Route::get('patients-react', [PatientController::class, 'reactIndex'])->name('patients.react');
     Route::get('patients-react/data', [PatientController::class, 'reactData'])->name('patients.react.data');
     Route::get('prescriptions-react', [PrescriptionController::class, 'reactIndex'])->name('prescriptions.react');
