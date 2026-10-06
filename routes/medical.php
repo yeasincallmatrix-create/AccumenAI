@@ -108,6 +108,16 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     Route::post('followups/{followup}/complete', [FollowUpController::class, 'complete'])->name('followups.complete');
     Route::post('followups/{followup}/cancel', [FollowUpController::class, 'cancel'])->name('followups.cancel');
 
+    // Live per-doctor broadcast (fullscreen TV view + its read-only JSON feed).
+    // Registered before the appointments resource so 'live' is not captured
+    // as {appointment}.
+    Route::get('appointments/live/{doctor}', [AppointmentController::class, 'liveBroadcast'])
+        ->name('appointments.live')
+        ->middleware('permission:medical_appointments.view');
+    Route::get('appointments/live/{doctor}/data', [AppointmentController::class, 'liveBroadcastData'])
+        ->name('appointments.live.data')
+        ->middleware('permission:medical_appointments.view');
+
     // Appointments (OPD)
     Route::get('appointments-react/data', [AppointmentController::class, 'reactAppointmentsData'])->name('appointments.react.data');
     Route::get('appointments/queue/{doctor?}', [AppointmentController::class, 'queue'])->name('appointments.queue');

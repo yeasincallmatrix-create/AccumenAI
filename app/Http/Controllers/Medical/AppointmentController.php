@@ -23,7 +23,7 @@ class AppointmentController extends MedicalController implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:medical_appointments.view', only: ['index', 'show', 'queue', 'token', 'reactIndex', 'reactQueueData', 'reactAppointmentsData', 'queueDisplay', 'queueDisplayData', 'queueDisplaySelector']),
+            new Middleware('permission:medical_appointments.view', only: ['index', 'show', 'queue', 'token', 'reactIndex', 'reactQueueData', 'reactAppointmentsData', 'queueDisplay', 'queueDisplayData', 'queueDisplaySelector', 'liveBroadcast', 'liveBroadcastData']),
             new Middleware('permission:medical_appointments.create', only: ['create', 'store']),
             new Middleware('permission:medical_appointments.edit', only: ['edit', 'update', 'checkin', 'complete', 'transfer', 'collectFee']),
             new Middleware('permission:medical_appointments.delete', only: ['destroy']),
@@ -1146,6 +1146,61 @@ class AppointmentController extends MedicalController implements HasMiddleware
         }
 
         return ['id' => $id, 'type' => $type, 'name' => $name];
+    }
+
+    // ==================================================================
+    // Live Broadcast — per-doctor fullscreen queue view (read-only)
+    // ==================================================================
+
+    /**
+     * Fullscreen live queue view for one doctor (waiting-room TV).
+     * Standalone layout: no sidebar, no topbar.
+     */
+    public function liveBroadcast(Request $request, Doctor $doctor)
+    {
+        $instituteId = $this->instituteId();
+
+        // Security: doctor_id comes from the URL.
+        $this->ensureSameInstitute($doctor, 'doctor');
+
+        $queue = $this->queueManager->getQueueStatus(
+            $instituteId,
+            $doctor->id,
+            now()->toDateString()
+        );
+
+        return view('medical.appointments.live', [
+            'doctor' => $doctor,
+            'instituteName' => Institute::find($instituteId)?->name ?? config('app.name'),
+            'queue' => $queue,
+            'date' => now()->toDateString(),
+        ]);
+    }
+
+    /**
+     * Read-only JSON feed polled by the live broadcast view every 10s.
+     */
+    public function liveBroadcastData(Request $request, Doctor $doctor): \Illuminate\Http\JsonResponse
+    {
+        $instituteId = $this->instituteId();
+
+        // Security: doctor_id comes from the URL.
+        $this->ensureSameInstitute($doctor, 'doctor');
+
+        $queue = $this->queueManager->getQueueStatus(
+            $instituteId,
+            $doctor->id,
+            now()->toDateString()
+        );
+
+        return response()->json([
+            'generated_at' => now()->toIso8601String(),
+            'doctor' => [
+                'id' => $doctor->id,
+                'name' => $doctor->full_name,
+            ],
+            'queue' => $queue,
+        ]);
     }
 
     // ==================================================================
