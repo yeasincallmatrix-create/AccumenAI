@@ -3,6 +3,8 @@
 namespace App\Services\Medical;
 
 use App\Models\Medical\Appointment;
+use App\Models\Medical\Doctor;
+use App\Models\User;
 use Carbon\Carbon;
 
 /**
@@ -24,6 +26,107 @@ class QueueManager
             ->max('serial_number');
 
         return $lastSerial ? ((int) $lastSerial) + 1 : 1;
+    }
+
+    /**
+     * Return queue status for one or more doctors on a given date.
+     *
+     * Built for the OPD Queue Display board (1-2 doctors per screen):
+     * exactly ONE appointment query for every requested doctor (whereIn —
+     * never one query per doctor), plus two fixed metadata lookups
+     * (users + doctor profiles) that do not grow with the doctor count.
+     * No per-row or per-doctor queries anywhere.
+     *
+     * Ordering mirrors Appointment::scopeInQueue() — manual queue_order
+     * first, then serial_number, then appointment_time.
+     *
+     * @param  int        $instituteId
+     * @param  int|null   $branchId    null = institute-wide; else branch + legacy NULL rows
+     * @param  array<int> $doctorIds   1 or 2 users.id values (the caller caps the count)
+     * @param  string     $date        Y-m-d, default today
+     * @return array<int, array>       keyed by doctor_id (input order preserved)
+     */
+    public function getQueueForDoctors(
+        int $instituteId,
+        ?int $branchId,
+        array $doctorIds,
+        string $date
+    ): array {
+        $doctorIds = array_values(array_unique(array_filter(array_map('intval', $doctorIds))));
+        if ($doctorIds === []) {
+            return [];
+        }
+
+        $date = $date !== '' ? $date : today()->format('Y-m-d');
+
+        // ONE row query for all doctors (all statuses so total_today counts
+        // every appointment booked today, finished or not).
+        $appointments = Appointment::where('institute_id', $instituteId)
+            ->whereIn('doctor_id', $doctorIds)
+            ->whereDate('appointment_date', $date)
+            ->when($branchId !== null, fn ($q) => $q->where(function ($qq) use ($branchId) {
+                $qq->where('branch_id', $branchId)->orWhereNull('branch_id');
+            }))
+            ->orderByRaw('queue_order IS NULL, queue_order ASC')
+            ->orderBy('serial_number')
+            ->orderBy('appointment_time')
+            ->with(['patient:id,first_name,last_name'])
+            ->get()
+            ->groupBy('doctor_id');
+
+        // Fixed metadata lookups (2 queries regardless of doctor count).
+        $users = User::whereIn('id', $doctorIds)->get(['id', 'name'])->keyBy('id');
+        $profiles = Doctor::where('institute_id', $instituteId)
+            ->whereIn('user_id', $doctorIds)
+            ->with('department:id,name')
+            ->get()
+            ->keyBy('user_id');
+
+        $result = [];
+        foreach ($doctorIds as $doctorId) {
+            $rows = $appointments->get($doctorId) ?? collect();
+
+            $nowServingRow = $rows->firstWhere('status', 'in_progress');
+            $waitingRows = $rows
+                ->filter(fn ($a) => in_array($a->status, ['scheduled', 'checked_in'], true));
+
+            $result[$doctorId] = [
+                'doctor_id' => $doctorId,
+                'doctor_name' => $users->get($doctorId)?->name ?? 'Doctor #'.$doctorId,
+                'department_name' => $profiles->get($doctorId)?->department?->name,
+                'now_serving' => $nowServingRow ? $this->mapDisplayRow($nowServingRow) : null,
+                'up_next' => $waitingRows->take(5)
+                    ->map(fn ($a) => $this->mapDisplayRow($a))
+                    ->values()
+                    ->all(),
+                'waiting_count' => $waitingRows->count(),
+                'total_today' => $rows->count(),
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Display row for one appointment on the queue board.
+     *
+     * patient_name is the raw full name — the controller applies the
+     * medical.queue_display.patient_name_format setting (and hides it
+     * entirely for serial_only) before anything reaches the browser.
+     * patient_id lets that controller format without a second fetch.
+     *
+     * @return array{patient_id: int, serial_number: ?int, patient_name: string, time: string}
+     */
+    private function mapDisplayRow(Appointment $appointment): array
+    {
+        return [
+            'patient_id' => (int) $appointment->patient_id,
+            'serial_number' => $appointment->serial_number !== null ? (int) $appointment->serial_number : null,
+            'patient_name' => trim(($appointment->patient->first_name ?? '').' '.($appointment->patient->last_name ?? '')) ?: 'N/A',
+            'time' => $appointment->appointment_time
+                ? Carbon::parse($appointment->appointment_time)->format('h:i A')
+                : '',
+        ];
     }
 
     /**
