@@ -1,10 +1,10 @@
 @extends('layouts.standalone')
 
 @php
-    $backUrl = route('medical.appointments.index', ['q_doctor' => $doctor->id]);
-    $docName = $doctor->full_name;
-    $docDept = $doctor->department_name;
-    $liveDataUrl = route('medical.appointments.live.data', $doctor);
+    $backUrl = route('medical.appointments.index', ['q_doctor' => $doctorId]);
+    $docName = $doctorName;
+    $docDept = $doctorDept;
+    $liveDataUrl = route('medical.appointments.live.data', ['doctor' => $doctorId]);
     $liveQueue = collect($queue['queue'] ?? []);
     $liveTotal = (int) ($queue['total'] ?? 0);
     $liveNow = $liveQueue->firstWhere('status', 'in_progress');
@@ -88,9 +88,9 @@ body > .topbar { display: none !important; }
             <button type="button" class="lb-btn" id="lbFullscreen" title="Toggle fullscreen">
                 <i class="bi bi-fullscreen"></i> Fullscreen
             </button>
-            <button type="button" class="lb-btn" id="lbExit" title="Close broadcast">
+            <a class="lb-btn" id="lbExit" href="{{ $backUrl }}" title="Close broadcast">
                 <i class="bi bi-box-arrow-right"></i> Exit
-            </button>
+            </a>
         </div>
     </header>
 
@@ -281,12 +281,11 @@ body > .topbar { display: none !important; }
         }
     });
 
-    document.getElementById('lbExit').addEventListener('click', function () {
+    document.getElementById('lbExit').addEventListener('click', function (e) {
         if (window.history.length > 1) {
+            e.preventDefault();
             window.history.back();
-        } else {
-            window.close();
-        }
+        } // no history: follow href back to the appointments index
     });
 
     tickClock();

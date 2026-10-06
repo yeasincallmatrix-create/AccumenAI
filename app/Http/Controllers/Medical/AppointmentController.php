@@ -1156,23 +1156,22 @@ class AppointmentController extends MedicalController implements HasMiddleware
      * Fullscreen live queue view for one doctor (waiting-room TV).
      * Standalone layout: no sidebar, no topbar.
      */
-    public function liveBroadcast(Request $request, Doctor $doctor)
+    public function liveBroadcast(Request $request)
     {
         $instituteId = $this->instituteId();
-
-        // Security: doctor_id comes from the URL.
-        $this->ensureSameInstitute($doctor, 'doctor');
-
-        $queue = $this->queueManager->getQueueStatus(
-            $instituteId,
-            $doctor->id,
-            now()->toDateString()
-        );
+        $doctorId = $this->liveBroadcastDoctorId($request);
 
         return view('medical.appointments.live', [
-            'doctor' => $doctor,
+            'doctorId' => $doctorId,
+            'doctorName' => $this->liveBroadcastDoctorName($doctorId, $instituteId),
+            'doctorDept' => \App\Models\Medical\Doctor::resolveForUser($doctorId, $instituteId)?->department_name ?? 'N/A',
             'instituteName' => Institute::find($instituteId)?->name ?? config('app.name'),
-            'queue' => $queue,
+            'queue' => $this->queueManager->getQueueStatus(
+                $instituteId,
+                $doctorId,
+                now()->toDateString(),
+                $this->branchContextId()
+            ),
             'date' => now()->toDateString(),
         ]);
     }
@@ -1180,27 +1179,67 @@ class AppointmentController extends MedicalController implements HasMiddleware
     /**
      * Read-only JSON feed polled by the live broadcast view every 10s.
      */
-    public function liveBroadcastData(Request $request, Doctor $doctor): \Illuminate\Http\JsonResponse
+    public function liveBroadcastData(Request $request): \Illuminate\Http\JsonResponse
     {
         $instituteId = $this->instituteId();
-
-        // Security: doctor_id comes from the URL.
-        $this->ensureSameInstitute($doctor, 'doctor');
-
-        $queue = $this->queueManager->getQueueStatus(
-            $instituteId,
-            $doctor->id,
-            now()->toDateString()
-        );
+        $doctorId = $this->liveBroadcastDoctorId($request);
 
         return response()->json([
             'generated_at' => now()->toIso8601String(),
             'doctor' => [
-                'id' => $doctor->id,
-                'name' => $doctor->full_name,
+                'id' => $doctorId,
+                'name' => $this->liveBroadcastDoctorName($doctorId, $instituteId),
             ],
-            'queue' => $queue,
+            'queue' => $this->queueManager->getQueueStatus(
+                $instituteId,
+                $doctorId,
+                now()->toDateString(),
+                $this->branchContextId()
+            ),
         ]);
+    }
+
+    /**
+     * Resolve + authorize the doctor in the live-broadcast URL.
+     *
+     * {doctor} is users.id — the same id the appointments index uses for
+     * q_doctor, the queue tab and the queue display board (appointments
+     * .doctor_id never holds a medical_doctors.id).
+     *
+     * Mirrors reactIndex(): institute scope first, then the doctor fence
+     * and the Phase 18 branch fence. A request can never widen visibility.
+     */
+    private function liveBroadcastDoctorId(Request $request): int
+    {
+        $instituteId = $this->instituteId();
+        $doctorId = (int) $request->route('doctor');
+
+        if (! \App\Support\MedicalScope::isDoctorInInstitute($doctorId, $instituteId)) {
+            abort(403, 'You do not have permission to view this queue.');
+        }
+
+        $fence = $this->doctorFenceId();
+        if ($fence !== null && $doctorId !== $fence) {
+            abort(403, 'You do not have permission to view this queue.');
+        }
+
+        $branchId = $this->branchContextId();
+        if ($branchId !== null && ! $this->doctorBranchOk($doctorId, $branchId, $instituteId)) {
+            abort(403, 'You do not have permission to view this queue.');
+        }
+
+        return $doctorId;
+    }
+
+    /**
+     * Display name for a doctor users.id (Doctor::full_name === user name;
+     * doctors without a medical_doctors profile still have a user).
+     */
+    private function liveBroadcastDoctorName(int $doctorId, int $instituteId): string
+    {
+        return \App\Models\User::whereKey($doctorId)->value('name')
+            ?? \App\Models\Medical\Doctor::resolveForUser($doctorId, $instituteId)?->full_name
+            ?? 'Doctor';
     }
 
     // ==================================================================
