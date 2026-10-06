@@ -378,6 +378,44 @@
                         @endif
                         <button class="btn btn-primary" type="submit" {{ ! $platformDgda ? 'disabled' : '' }}><i class="bi bi-check-lg"></i> Save Medical Settings</button>
                     </form>
+
+                    @php
+                        $queueDisplayField = config('medicine.queue_display.patient_name_format', []);
+                        $queueDisplayKey = $queueDisplayField['key'] ?? 'medical.queue_display.patient_name_format';
+                        $queueDisplayOptions = $queueDisplayField['options'] ?? [];
+                        $queueDisplayValue = old(
+                            'patient_name_format',
+                            \App\Models\Setting::get($queueDisplayKey, $queueDisplayField['default'] ?? 'first_name')
+                        );
+                    @endphp
+
+                    <hr class="my-4">
+
+                    @if (session('status'))
+                        <div class="alert alert-success py-2"><i class="bi bi-check-circle me-1"></i>{{ session('status') }}</div>
+                    @endif
+
+                    <div class="table-toolbar">
+                        <div class="toolbar-info"><i class="bi bi-tv"></i> OPD Queue Display</div>
+                    </div>
+
+                    <form method="POST" action="{{ route('settings.queue-display.update') }}">
+                        @csrf
+                        @method('PUT')
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold" for="queueDisplayNameFormat">Patient name on the queue screen</label>
+                                <select class="form-select" name="patient_name_format" id="queueDisplayNameFormat">
+                                    @foreach ($queueDisplayOptions as $optionValue => $optionLabel)
+                                        <option value="{{ $optionValue }}" @selected($queueDisplayValue === $optionValue)>{{ $optionLabel }}</option>
+                                    @endforeach
+                                </select>
+                                @error('patient_name_format')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                                <div class="form-text">Controls how patient names appear on the OPD Queue Display board. Serial number and appointment time are always shown.</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" type="submit"><i class="bi bi-check-lg"></i> Save Queue Display Settings</button>
+                    </form>
                 </div>
             @endif
 

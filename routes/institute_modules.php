@@ -719,6 +719,7 @@ Route::middleware($tenant)->group(function () {
         Route::post('/', [$finCoA, 'store'])->name('store');
         Route::get('{account}/edit', [$finCoA, 'edit'])->name('edit');
         Route::put('{chartOfAccount}', [$finCoA, 'update'])->name('update');
+        Route::post('{account}/opening', [$finCoA, 'updateOpening'])->name('update.opening');
         Route::post('{account}/toggle', [$finCoA, 'toggle'])->name('toggle');
         Route::delete('{chartOfAccount}', [$finCoA, 'destroy'])->name('destroy');
     });
@@ -1656,6 +1657,7 @@ Route::middleware($tenant)->group(function () {
     Route::put('settings/general', [\App\Http\Controllers\InstituteSettingController::class, 'updateGeneral'])->name('settings.general.update');
     Route::put('settings/dgda', [\App\Http\Controllers\InstituteSettingController::class, 'updateDgda'])->name('settings.dgda.update');
     Route::post('settings/dgda/dismiss-migrate', [\App\Http\Controllers\InstituteSettingController::class, 'dismissMigrate'])->name('settings.dgda.dismiss-migrate');
+    Route::put('settings/queue-display', [\App\Http\Controllers\InstituteSettingController::class, 'updateQueueDisplay'])->name('settings.queue-display.update');
     Route::put('settings/password', [\App\Http\Controllers\InstituteSettingController::class, 'updatePassword'])->name('settings.password');
 
     // ─── WORKFLOWS ─────────────────────────────────────────────────────────

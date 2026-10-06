@@ -8,6 +8,7 @@ use App\Models\Institute;
 use App\Models\InstituteSetting;
 use App\Models\InstituteUser;
 use App\Models\PlatformAdmin;
+use App\Models\Setting;
 use App\Models\Theme;
 use App\Models\User;
 use App\Services\CertificateApprovalModeService;
@@ -208,6 +209,52 @@ class InstituteSettingController extends Controller
         return redirect()
             ->route('settings.index', '#pane-medical')
             ->with('status', 'DGDA integration '.($newValue ? 'enabled.' : 'disabled.'));
+    }
+
+    /**
+     * OPD Queue Display settings (medical.queue_display.*).
+     */
+    public function updateQueueDisplay(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $canManage = $user instanceof InstituteUser
+            ? $user->hasPermission('settings.manage')
+            : (Workspace::membershipFor($user)?->hasPermission('settings.manage') ?? false);
+        abort_unless($canManage, 403);
+
+        $config = config('medicine.queue_display', []);
+        $field = 'patient_name_format';
+        $definition = $config[$field] ?? [];
+
+        $data = $request->validate([
+            $field => ['required', Rule::in(array_keys($definition['options'] ?? []))],
+        ], [], [$field => 'Patient name format']);
+
+        $key = $definition['key'] ?? 'medical.queue_display.patient_name_format';
+        $previous = (string) Setting::get($key, $definition['default'] ?? '');
+        $newValue = $data[$field];
+
+        Setting::set($key, $newValue);
+
+        if ($previous !== $newValue) {
+            AuditLog::create([
+                'institute_id' => TenantContext::id(),
+                'user_type' => $user instanceof InstituteUser ? 'institute_user' : 'system',
+                'user_id' => $user->getKey(),
+                'action' => 'queue_display_setting_changed',
+                'module' => 'settings',
+                'record_id' => TenantContext::id(),
+                'old_values' => json_encode([$key => $previous]),
+                'new_values' => json_encode([$key => $newValue]),
+                'ip_address' => $request->ip(),
+                'user_agent' => substr((string) $request->userAgent(), 0, 255),
+                'created_at' => now(),
+            ]);
+        }
+
+        return redirect()
+            ->route('settings.index', '#pane-medical')
+            ->with('status', 'Queue display settings saved.');
     }
 
     public function dismissMigrate(): RedirectResponse
