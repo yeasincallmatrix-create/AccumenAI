@@ -426,8 +426,8 @@ class ChartOfAccountService
         // Prevent changing ownership
         unset($data['institute_id'], $data['is_system'], $data['branch_id']);
 
-        // Same parent checks as the create path: tenant-or-global ownership,
-        // no self-reference, no cycle, max depth 2, same type.
+        // Same parent checks as the create path: tenant ownership, no
+        // self-reference, no cycle, max depth 3, same type.
         if (array_key_exists('parent_id', $data)) {
             $this->assertValidParent(
                 $account,
@@ -484,8 +484,10 @@ class ChartOfAccountService
 
     /**
      * Parent checks shared by create and update so the two paths cannot drift:
-     * tenant-or-global ownership (soft-deleted rows excluded), no self-parent,
-     * no cycle, maximum depth of 2, and a parent of the same account type.
+     * tenant ownership (soft-deleted rows excluded), no self-parent, no cycle,
+     * maximum depth of 3 (root -> anchor -> leaf), and a parent of the same
+     * account type. F-005: shared global rows are no longer acceptable
+     * parents — every tenant owns its whole tree.
      *
      * @throws ValidationException|InvalidArgumentException
      */
@@ -511,13 +513,22 @@ class ChartOfAccountService
             ]);
         }
 
-        if ($account !== null) {
-            if ($parent->id === $account->id) {
-                throw ValidationException::withMessages([
-                    'parent_id' => 'An account cannot be its own parent.',
-                ]);
-            }
+        if ($account !== null && $parent->id === $account->id) {
+            throw ValidationException::withMessages([
+                'parent_id' => 'An account cannot be its own parent.',
+            ]);
+        }
 
+        // F-005: globals are read-only shared template rows; a tenant's tree
+        // must stay inside the tenant (root and anchor clones are seeded and
+        // re-anchored per institute).
+        if ($parent->institute_id === null) {
+            throw ValidationException::withMessages([
+                'parent_id' => 'A shared global account cannot be the parent of a tenant account. Choose one of your own accounts.',
+            ]);
+        }
+
+        if ($account !== null) {
             // Walking up from the candidate parent must never reach the account
             // being moved: that would close a loop in the tree.
             $cursor = $parent->parent_id;
@@ -535,11 +546,20 @@ class ChartOfAccountService
             }
         }
 
-        // Enforce max 2 levels (parent cannot have a parent)
+        // Enforce max 3 levels: the parent sits at level 1 (a root with no
+        // parent of its own) or is a level-2 header directly under a level-1
+        // root. Anything deeper would grow a fourth level.
         if ($parent->parent_id !== null) {
-            throw new \InvalidArgumentException(
-                'Maximum sub-account depth is 2 levels.'
-            );
+            $grandparent = ChartOfAccount::withoutGlobalScopes()
+                ->where('id', (int) $parent->parent_id)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if (! $parent->is_header || $grandparent === null || $grandparent->parent_id !== null) {
+                throw ValidationException::withMessages([
+                    'parent_id' => 'Maximum sub-account depth is 3 levels.',
+                ]);
+            }
         }
 
         if ($type !== '' && $parent->type !== $type) {

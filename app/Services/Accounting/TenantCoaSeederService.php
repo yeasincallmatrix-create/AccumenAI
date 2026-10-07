@@ -13,6 +13,12 @@ class TenantCoaSeederService
         $tenantIndustry = DB::table('institutes')->where('id', $instituteId)->value('industry');
         $created = 0;
 
+        // F-005: leaves hang off TENANT-owned anchors (cloned on demand under
+        // tenant category roots) — never off the shared global rows, so every
+        // tenant owns its whole tree and new tenants cannot re-create the
+        // cross-tenant links this service used to write.
+        $reanchor = app(CoaReanchorService::class);
+
         foreach (CoaTemplate::childrenByParent() as $parentCode => $children) {
             $parent = ChartOfAccount::withoutGlobalScope('institute')
                 ->whereNull('institute_id')
@@ -34,6 +40,8 @@ class TenantCoaSeederService
                 }
             }
 
+            $anchorId = $reanchor->ensureAnchor($instituteId, (string) $parentCode);
+
             foreach ($children as $child) {
                 [$code, $name] = $child;
                 $extra = $child[2] ?? [];
@@ -51,7 +59,7 @@ class TenantCoaSeederService
                     'institute_id' => $instituteId,
                     'code' => $code,
                     'name' => $name,
-                    'parent_id' => $parent->id,
+                    'parent_id' => $anchorId,
                     'account_group_id' => $parent->account_group_id,
                     'type' => $parent->type,
                     'is_header' => false,

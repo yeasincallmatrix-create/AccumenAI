@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\AccountGroup;
 use App\Models\ChartOfAccount;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -47,7 +48,7 @@ class UpdateTenantAccountRequest extends FormRequest
                         return;
                     }
 
-                    $visible = \App\Models\AccountGroup::withoutGlobalScopes()
+                    $visible = AccountGroup::withoutGlobalScopes()
                         ->where('id', (int) $value)
                         ->whereNull('deleted_at')
                         ->where(function ($q) use ($instituteId) {
@@ -92,10 +93,27 @@ class UpdateTenantAccountRequest extends FormRequest
                         return;
                     }
 
-                    if ($parent->parent_id !== null) {
-                        $fail('Maximum sub-account depth is 2 levels.');
+                    // F-005: globals are shared template rows; the tenant's
+                    // tree must stay inside the tenant.
+                    if ($parent->institute_id === null) {
+                        $fail('A shared global account cannot be the parent of a tenant account. Choose one of your own accounts.');
 
                         return;
+                    }
+
+                    // Max 3 levels (root -> anchor -> leaf): the parent is a
+                    // level-1 root or a level-2 header under a level-1 root.
+                    if ($parent->parent_id !== null) {
+                        $grandparent = ChartOfAccount::withoutGlobalScopes()
+                            ->where('id', (int) $parent->parent_id)
+                            ->whereNull('deleted_at')
+                            ->first();
+
+                        if (! $parent->is_header || $grandparent === null || $grandparent->parent_id !== null) {
+                            $fail('Maximum sub-account depth is 3 levels.');
+
+                            return;
+                        }
                     }
 
                     if ($type !== '' && $parent->type !== $type) {
