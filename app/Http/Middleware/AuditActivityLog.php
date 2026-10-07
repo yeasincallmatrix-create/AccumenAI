@@ -72,7 +72,9 @@ class AuditActivityLog
             ],
             'branch_id' => null,
             'ip' => $request->ip(),
-            'user_agent' => $request->userAgent(),
+            // user_agent is varchar(255): a longer UA must never turn a
+            // successful response into a 500 from the audit insert.
+            'user_agent' => mb_substr((string) $request->userAgent(), 0, 255),
             'created_at' => now(),
         ]);
     }

@@ -4,6 +4,7 @@ use App\Http\Controllers\Training\TrainingBatchController;
 use App\Http\Controllers\Training\TrainingClassController;
 use App\Http\Controllers\Training\TrainingExamController;
 use App\Http\Controllers\Training\TrainingStudentController;
+use App\Http\Middleware\AuditActivityLog;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -17,7 +18,14 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-$tenant = ['auth:institute_user,web', 'tenant', 'deny.teacher.finance', 'finance.write', 'verified'];
+$tenant = [
+    'auth:institute_user,web',
+    'tenant',
+    'deny.teacher.finance',
+    'finance.write',
+    'verified',
+    AuditActivityLog::class,
+];
 
 Route::middleware($tenant)->group(function () {
 

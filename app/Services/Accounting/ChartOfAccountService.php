@@ -390,7 +390,19 @@ class ChartOfAccountService
                     ->value('id');
         }
 
-        return ChartOfAccount::create($data);
+        $account = ChartOfAccount::create($data);
+
+        app(AccountingAuditService::class)->log($instituteId, [
+            'branch_id' => $account->branch_id,
+            'actor_type' => 'user',
+            'actor_id' => auth()->id(),
+            'action' => 'create',
+            'entity_type' => 'chart_of_account',
+            'entity_id' => $account->id,
+            'after_payload' => ['code' => $account->code, 'name' => $account->name],
+        ]);
+
+        return $account;
     }
 
     /**
@@ -450,9 +462,24 @@ class ChartOfAccountService
             }
         }
 
+        $before = ['code' => $account->code, 'name' => $account->name];
+
         $account->update($data);
 
-        return $account->fresh();
+        $account = $account->fresh();
+
+        app(AccountingAuditService::class)->log($instituteId, [
+            'branch_id' => $account->branch_id,
+            'actor_type' => 'user',
+            'actor_id' => auth()->id(),
+            'action' => 'update',
+            'entity_type' => 'chart_of_account',
+            'entity_id' => $account->id,
+            'before_payload' => $before,
+            'after_payload' => ['code' => $account->code, 'name' => $account->name],
+        ]);
+
+        return $account;
     }
 
     /**
@@ -549,6 +576,17 @@ class ChartOfAccountService
         }
 
         $account->delete();
+
+        app(AccountingAuditService::class)->log($instituteId, [
+            'branch_id' => $account->branch_id,
+            'actor_type' => 'user',
+            'actor_id' => auth()->id(),
+            'action' => 'delete',
+            'entity_type' => 'chart_of_account',
+            'entity_id' => $account->id,
+            'before_payload' => ['code' => $account->code, 'name' => $account->name],
+            'after_payload' => null,
+        ]);
     }
 
     protected function isAccountInUse(int $accountId): bool
