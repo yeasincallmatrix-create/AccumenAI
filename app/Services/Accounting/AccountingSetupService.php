@@ -34,8 +34,8 @@ class AccountingSetupService
         'money_precision' => '19,4',
         'invoice_auto_post' => false,
         'fiscal_year_start' => 1,
-        'fx_gain_account_code' => '4900.1',
-        'fx_loss_account_code' => '5900.1',
+        'fx_gain_account_code' => '4901',
+        'fx_loss_account_code' => '5901',
         'fx_unrealized_gain_account_code' => '4901',
         'fx_unrealized_loss_account_code' => '5901',
         'fx_revaluation_policy' => 'period_end',
@@ -153,6 +153,15 @@ class AccountingSetupService
     private function ensureDefaultSettings(int $instituteId, ?int $branchId, ?int $createdBy): void
     {
         $settings = self::DEFAULT_SETTINGS;
+
+        // Every *_account_code must resolve in the canonical CoaTemplate
+        // registry, otherwise onboarding writes settings that point at
+        // accounts the tenant will never get created.
+        foreach ($settings as $key => $value) {
+            if (str_ends_with((string) $key, '_account_code')) {
+                CoaTemplate::validateCode((string) $value);
+            }
+        }
 
         if ($this->getSetting($instituteId, 'base_currency', null, $branchId) === null) {
             $settings['base_currency'] = $this->resolveBaseCurrency($instituteId);

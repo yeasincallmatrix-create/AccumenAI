@@ -3,8 +3,11 @@
 namespace App\Services\Accounting;
 
 use App\Models\AccountGroup;
+use App\Models\Branch;
 use App\Models\ChartOfAccount;
 use App\Models\JournalEntry;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -26,45 +29,14 @@ class ChartOfAccountService
     ];
 
     /**
-     * [code, name, type, flags]
+     * [code, name, type, flags] - derived from the canonical CoaTemplate registry.
      *
-     * @var array<int, array{0:string, 1:string, 2:string, 3?:array<string, bool>}>
+     * @return array<int, array{0:string, 1:string, 2:string, 3?:array<string, bool>}>
      */
-    public const TEMPLATE = [
-        ['1000.1', 'Cash in Hand', 'asset', ['is_cash' => true]],
-        ['1100.1', 'Primary Bank Account', 'asset', ['is_bank' => true]],
-        ['1200.1', 'Trade Receivable', 'asset', ['is_receivable' => true, 'cash_flow_category' => 'operating']],
-        ['1200.2', 'Input VAT Receivable', 'asset', ['cash_flow_category' => 'operating']],
-        ['1300.1', 'Raw Materials', 'asset', ['cash_flow_category' => 'operating']],
-        ['1400.1', 'Land & Building', 'asset', ['cash_flow_category' => 'investing']],
-        ['1400.5', 'Accumulated Depreciation', 'asset', ['cash_flow_category' => 'investing']],
-        ['1500.1', 'Prepaid Expenses', 'asset', ['cash_flow_category' => 'operating']],
-        ['2000.1', 'Trade Payables', 'liability', ['is_payable' => true, 'cash_flow_category' => 'operating']],
-        ['2000.2', 'Accrued Expenses', 'liability', ['cash_flow_category' => 'operating']],
-        ['2100.1', 'VAT Output Payable', 'liability', ['cash_flow_category' => 'operating']],
-        ['2100.2', 'TDS Payable (WHT)', 'liability', ['cash_flow_category' => 'operating']],
-        ['2100.4', 'Tax Clearing', 'liability', ['cash_flow_category' => 'operating']],
-        ['2200.1', 'Bank Loan - Short Term', 'liability', ['cash_flow_category' => 'financing']],
-        ['3100.1', "Owner's Capital", 'equity', ['cash_flow_category' => 'financing']],
-        ['3400.1', 'Retained Earnings', 'equity', ['cash_flow_category' => 'financing']],
-        ['4000.2', 'Other Income', 'income', ['cash_flow_category' => 'operating']],
-        ['4000.3', 'Inventory Adjustment Income', 'income', ['cash_flow_category' => 'operating']],
-        ['4100.1', 'Tuition Fees', 'income', ['cash_flow_category' => 'operating']],
-        ['4100.2', 'Admission Fees', 'income', ['cash_flow_category' => 'operating']],
-        ['4400.1', 'Merchandise Sales', 'income', ['cash_flow_category' => 'operating']],
-        ['4900.1', 'Interest Income', 'income', ['cash_flow_category' => 'operating']],
-        ['4900.3', 'Gain on Disposal', 'income', ['cash_flow_category' => 'operating']],
-        ['4901', 'Unrealized FX Gain', 'income', ['cash_flow_category' => 'operating']],
-        ['5000.5', 'Cost of Goods Sold', 'expense', ['cash_flow_category' => 'operating']],
-        ['5100.1', 'Basic Salary', 'expense', ['cash_flow_category' => 'operating']],
-        ['5200.1', 'Rent', 'expense', ['cash_flow_category' => 'operating']],
-        ['5200.2', 'Utilities', 'expense', ['cash_flow_category' => 'operating']],
-        ['5200.4', 'Office Supplies', 'expense', ['cash_flow_category' => 'operating']],
-        ['5200.6', 'Travel & Conveyance', 'expense', ['cash_flow_category' => 'operating']],
-        ['5400.1', 'Depreciation Expense', 'expense', ['cash_flow_category' => 'operating']],
-        ['5900.1', 'Miscellaneous Expenses', 'expense', ['cash_flow_category' => 'operating']],
-        ['5901', 'Unrealized FX Loss', 'expense', ['cash_flow_category' => 'operating']],
-    ];
+    public static function template(): array
+    {
+        return CoaTemplate::flatTyped();
+    }
 
     public function __construct() {}
 
@@ -225,7 +197,7 @@ class ChartOfAccountService
             'is_bank' => ['nullable', 'boolean'],
             'is_receivable' => ['nullable', 'boolean'],
             'is_payable' => ['nullable', 'boolean'],
-            'cash_flow_category' => ['nullable', \Illuminate\Validation\Rule::in(['operating', 'investing', 'financing'])],
+            'cash_flow_category' => ['nullable', Rule::in(['operating', 'investing', 'financing'])],
         ]);
 
         if ($validator->fails()) {
@@ -301,7 +273,7 @@ class ChartOfAccountService
     {
         $groups = $this->ensureGroups($instituteId, $branchId, $createdBy);
 
-        foreach (self::TEMPLATE as $row) {
+        foreach (self::template() as $row) {
             [$code, $name, $type] = $row;
             $flags = $row[3] ?? [];
             $category = $groups[$type];
@@ -365,7 +337,7 @@ class ChartOfAccountService
 
         // Validate branch (must belong to tenant)
         if (! empty($data['branch_id'])) {
-            $branch = \App\Models\Branch::where('id', $data['branch_id'])
+            $branch = Branch::where('id', $data['branch_id'])
                 ->where('institute_id', $instituteId)
                 ->first();
             if ($branch === null) {
@@ -434,7 +406,7 @@ class ChartOfAccountService
 
         // SECURITY: only own tenant's custom rows
         if (! $account->isEditableBy($instituteId)) {
-            throw new \Illuminate\Auth\Access\AuthorizationException(
+            throw new AuthorizationException(
                 'You can only modify your own custom accounts.'
             );
         }
@@ -559,7 +531,7 @@ class ChartOfAccountService
         $account = ChartOfAccount::withoutGlobalScope('institute')->findOrFail($accountId);
 
         if (! $account->isEditableBy($instituteId)) {
-            throw new \Illuminate\Auth\Access\AuthorizationException(
+            throw new AuthorizationException(
                 'You can only delete your own custom accounts.'
             );
         }
