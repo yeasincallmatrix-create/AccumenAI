@@ -197,12 +197,11 @@ class FinanceChartOfAccountController extends Controller
 
     private function parents(int $instituteId): Collection
     {
+        // Post-C1 (reanchor): only tenant-owned rows may be offered. The
+        // shared globals are read-only templates and assertValidParent()
+        // rejects them, so showing them would only produce dead options.
         return ChartOfAccount::query()
-            ->where(function ($q) use ($instituteId) {
-                $q->where(function ($g) {
-                    $g->whereNull('institute_id')->where('is_system', 1);
-                })->orWhere('institute_id', $instituteId);
-            })
+            ->where('institute_id', $instituteId)
             ->where('is_active', true)
             ->ordered()
             ->get(['id', 'code', 'name', 'type']);

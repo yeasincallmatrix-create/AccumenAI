@@ -3,8 +3,11 @@
 namespace Tests\Feature\Accounting\ChartOfAccounts;
 
 use App\Livewire\ChartOfAccountList;
+use App\Models\AccountGroup;
 use App\Models\ChartOfAccount;
 use App\Models\Institute;
+use App\Models\InstituteUser;
+use App\Models\Role;
 use App\Models\User;
 use App\Services\Accounting\ChartOfAccountService;
 use App\Services\MembershipService;
@@ -48,7 +51,7 @@ class CrossTenantParentGuardTest extends TestCase
 
     protected function assign(User $user, Institute $institute, string $role = 'institute-owner'): void
     {
-        $roleId = \App\Models\Role::where('slug', $role)->firstOrFail()->id;
+        $roleId = Role::where('slug', $role)->firstOrFail()->id;
         (new MembershipService)->assign($user, $institute->id, $roleId);
     }
 
@@ -68,11 +71,11 @@ class CrossTenantParentGuardTest extends TestCase
     protected function createTenantAccount(int $instituteId, array $overrides = []): ChartOfAccount
     {
         $type = $overrides['type'] ?? 'asset';
-        $groupId = \App\Models\AccountGroup::withoutGlobalScope('institute')
+        $groupId = AccountGroup::withoutGlobalScope('institute')
             ->where('institute_id', $instituteId)
             ->where('category', $type)
             ->value('id')
-            ?? \App\Models\AccountGroup::withoutGlobalScope('institute')
+            ?? AccountGroup::withoutGlobalScope('institute')
                 ->whereNull('institute_id')
                 ->where('is_system', 1)
                 ->where('category', $type)
@@ -187,7 +190,7 @@ class CrossTenantParentGuardTest extends TestCase
         $this->assertDatabaseMissing('chart_of_accounts', ['code' => '9505.1']);
     }
 
-    public function test_create_allows_sub_account_under_global_anchor(): void
+    public function test_create_rejects_sub_account_under_global_anchor(): void
     {
         [$a] = $this->institutes();
 
@@ -196,6 +199,7 @@ class CrossTenantParentGuardTest extends TestCase
         $owner = $this->owner('guard-cre-global@example.test');
         $this->assign($owner, $a);
 
+        // Post-C1 (reanchor): tenant accounts must have tenant-owned parents.
         $this->asUser($owner, $a->id)
             ->post(route('finance.chart-of-accounts.store'), [
                 'code' => '9506',
@@ -203,14 +207,9 @@ class CrossTenantParentGuardTest extends TestCase
                 'type' => $anchor->type,
                 'parent_id' => $anchor->id,
             ])
-            ->assertSessionHasNoErrors()
-            ->assertRedirect(route('finance.chart-of-accounts.index'));
+            ->assertSessionHasErrors(['parent_id']);
 
-        $this->assertDatabaseHas('chart_of_accounts', [
-            'code' => '9506',
-            'institute_id' => $a->id,
-            'parent_id' => $anchor->id,
-        ]);
+        $this->assertDatabaseMissing('chart_of_accounts', ['code' => '9506']);
     }
 
     public function test_update_rejects_self_as_parent(): void
@@ -279,7 +278,7 @@ class CrossTenantParentGuardTest extends TestCase
         $this->assertNull($own->fresh()->parent_id);
     }
 
-    public function test_update_accepts_global_anchor_as_parent(): void
+    public function test_update_rejects_global_anchor_as_parent(): void
     {
         [$a] = $this->institutes();
 
@@ -289,6 +288,7 @@ class CrossTenantParentGuardTest extends TestCase
         $owner = $this->owner('guard-ok@example.test');
         $this->assign($owner, $a);
 
+        // Post-C1 (reanchor): tenant accounts must have tenant-owned parents.
         $this->asUser($owner, $a->id)
             ->put(route('finance.chart-of-accounts.update', $own->id), [
                 'code' => $own->code,
@@ -296,10 +296,26 @@ class CrossTenantParentGuardTest extends TestCase
                 'type' => 'asset',
                 'parent_id' => $anchor->id,
             ])
-            ->assertSessionHasNoErrors()
-            ->assertRedirect(route('finance.chart-of-accounts.index'));
+            ->assertSessionHasErrors(['parent_id']);
 
-        $this->assertSame($anchor->id, (int) $own->fresh()->parent_id);
+        $this->assertNull($own->fresh()->parent_id, 'Global anchor must not become the parent.');
+    }
+
+    public function test_parent_dropdown_excludes_global_anchors(): void
+    {
+        [$a] = $this->institutes();
+
+        $anchor = $this->globalAnchor('asset');
+
+        $owner = $this->owner('guard-dropdown@example.test');
+        $this->assign($owner, $a);
+
+        // Post-C1 (reanchor): the parent dropdown offers tenant-owned rows
+        // only — a global anchor must never be rendered as an option.
+        $this->asUser($owner, $a->id)
+            ->get(route('finance.chart-of-accounts.create'))
+            ->assertOk()
+            ->assertDontSee('value="'.$anchor->id.'" data-type=', false);
     }
 
     // ------------------------------------------------------------ N-1
@@ -401,13 +417,13 @@ class CrossTenantParentGuardTest extends TestCase
 
         // The component's manage gate resolves through the institute_user
         // guard (role permissions), the same way the modal's own tests do.
-        $instituteUser = \App\Models\InstituteUser::create([
+        $instituteUser = InstituteUser::create([
             'institute_id' => $a->id,
-            'role_id' => \App\Models\Role::withoutGlobalScopes()->where('slug', 'institute-owner')->firstOrFail()->id,
+            'role_id' => Role::withoutGlobalScopes()->where('slug', 'institute-owner')->firstOrFail()->id,
             'first_name' => 'Guard',
             'last_name' => 'Modal',
-            'email' => 'guard-livewire-' . uniqid() . '@example.test',
-            'phone' => '01700' . mt_rand(100000, 999999),
+            'email' => 'guard-livewire-'.uniqid().'@example.test',
+            'phone' => '01700'.mt_rand(100000, 999999),
             'password_hash' => bcrypt('secret12345'),
             'status' => 'active',
         ]);

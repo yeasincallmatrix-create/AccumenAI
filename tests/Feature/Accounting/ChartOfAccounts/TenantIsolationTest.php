@@ -2,8 +2,10 @@
 
 namespace Tests\Feature\Accounting\ChartOfAccounts;
 
+use App\Models\AccountGroup;
 use App\Models\ChartOfAccount;
 use App\Models\Institute;
+use App\Models\Role;
 use App\Models\User;
 use App\Services\MembershipService;
 use App\Services\UserAccountService;
@@ -30,7 +32,7 @@ class TenantIsolationTest extends TestCase
 
     protected function assign(User $user, Institute $institute, string $role = 'institute-owner'): void
     {
-        $roleId = \App\Models\Role::where('slug', $role)->firstOrFail()->id;
+        $roleId = Role::where('slug', $role)->firstOrFail()->id;
         (new MembershipService)->assign($user, $institute->id, $roleId);
     }
 
@@ -42,11 +44,11 @@ class TenantIsolationTest extends TestCase
     protected function createTenantAccount(int $instituteId, array $overrides = []): ChartOfAccount
     {
         $type = $overrides['type'] ?? 'asset';
-        $groupId = \App\Models\AccountGroup::withoutGlobalScope('institute')
+        $groupId = AccountGroup::withoutGlobalScope('institute')
             ->where('institute_id', $instituteId)
             ->where('category', $type)
             ->value('id')
-            ?? \App\Models\AccountGroup::withoutGlobalScope('institute')
+            ?? AccountGroup::withoutGlobalScope('institute')
                 ->whereNull('institute_id')
                 ->where('is_system', 1)
                 ->where('category', $type)
@@ -184,7 +186,7 @@ class TenantIsolationTest extends TestCase
         ]);
     }
 
-    public function test_sub_account_under_global_is_tenant_owned(): void
+    public function test_sub_account_under_global_is_rejected(): void
     {
         [$a] = $this->institutes();
 
@@ -202,6 +204,7 @@ class TenantIsolationTest extends TestCase
         $owner = $this->owner('iso-a-sub@example.test');
         $this->assign($owner, $a);
 
+        // Post-C1 (reanchor): tenant accounts must have tenant-owned parents.
         $response = $this->asUser($owner, $a->id)->post(
             route('finance.chart-of-accounts.store'),
             [
@@ -212,11 +215,10 @@ class TenantIsolationTest extends TestCase
             ]
         );
 
-        $response->assertRedirect();
-        $this->assertDatabaseHas('chart_of_accounts', [
+        $response->assertSessionHasErrors(['parent_id']);
+        $this->assertDatabaseMissing('chart_of_accounts', [
             'code' => '6600.01',
             'institute_id' => $a->id,
-            'parent_id' => $parent->id,
         ]);
     }
 
