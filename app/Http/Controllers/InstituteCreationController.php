@@ -149,7 +149,7 @@ class InstituteCreationController extends Controller
         // Seed tenant COA children (industry-scoped)
         try {
             app(\App\Services\Accounting\TenantCoaSeederService::class)
-                ->seedForTenant($institute->id);
+                ->seedFullProvisioning($institute->id);
         } catch (\Throwable $e) {
             \Log::warning('TenantCoaSeeder failed', ['institute_id' => $institute->id, 'error' => $e->getMessage()]);
         }

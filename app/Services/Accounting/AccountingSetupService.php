@@ -63,7 +63,7 @@ class AccountingSetupService
      * Seed the standard payment methods, linking Cash and Bank Transfer to
      * their template accounts.
      */
-    private function seedPaymentMethods(int $instituteId, ?int $branchId, ?int $createdBy): void
+    public function seedPaymentMethods(int $instituteId, ?int $branchId, ?int $createdBy): void
     {
         $cash = $this->coaService->accountByCode($instituteId, '1000.1', $branchId);
         $bank = $this->coaService->accountByCode($instituteId, '1100.1', $branchId);
@@ -96,7 +96,7 @@ class AccountingSetupService
      * Ensure the institute has a current (calendar) fiscal year and that it is
      * flagged is_current.
      */
-    private function ensureCurrentFiscalYear(int $instituteId, ?int $branchId, ?int $createdBy): void
+    public function ensureCurrentFiscalYear(int $instituteId, ?int $branchId, ?int $createdBy): void
     {
         $today = now()->toDateString();
 
@@ -150,7 +150,7 @@ class AccountingSetupService
      * Ensure default accounting settings exist, resolving the base currency
      * from the institute's country.
      */
-    private function ensureDefaultSettings(int $instituteId, ?int $branchId, ?int $createdBy): void
+    public function ensureDefaultSettings(int $instituteId, ?int $branchId, ?int $createdBy): void
     {
         $settings = self::DEFAULT_SETTINGS;
 
@@ -180,6 +180,20 @@ class AccountingSetupService
                 'created_by' => $createdBy,
             ]);
         }
+    }
+
+    /**
+     * Create the 12 monthly accounting periods for the institute's current
+     * fiscal year (delegates to AccountingPeriodService — idempotent).
+     */
+    public function createMonthlyPeriods(int $instituteId): int
+    {
+        $fy = FiscalYear::query()
+            ->where('institute_id', $instituteId)
+            ->where('is_current', true)
+            ->firstOrFail();
+
+        return app(AccountingPeriodService::class)->createMonthlyPeriods($fy);
     }
 
     /**

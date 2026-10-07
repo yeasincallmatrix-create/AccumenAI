@@ -2,6 +2,7 @@
 
 namespace App\Services\Accounting;
 
+use App\Models\AccountingSetting;
 use App\Models\ChartOfAccount;
 use Illuminate\Support\Facades\DB;
 
@@ -65,5 +66,33 @@ class TenantCoaSeederService
         }
 
         return $created;
+    }
+
+    /**
+     * Provision the full accounting stack for a new institute in one
+     * transaction: CoA children + fiscal year + 12 monthly periods +
+     * payment methods + default settings. Any failure rolls back all.
+     */
+    public function seedFullProvisioning(int $instituteId): array
+    {
+        return DB::transaction(function () use ($instituteId) {
+            $setup = app(AccountingSetupService::class);
+
+            $coa = $this->seedForTenant($instituteId);
+            $setup->ensureCurrentFiscalYear($instituteId, null, null);
+            $periods = $setup->createMonthlyPeriods($instituteId);
+            $setup->seedPaymentMethods($instituteId, null, null);
+            $setup->ensureDefaultSettings($instituteId, null, null);
+
+            $settings = AccountingSetting::query()
+                ->where('institute_id', $instituteId)
+                ->count();
+
+            return [
+                'coa_created' => $coa,
+                'periods_created' => $periods,
+                'settings_count' => $settings,
+            ];
+        });
     }
 }
