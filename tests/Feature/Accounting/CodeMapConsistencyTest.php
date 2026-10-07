@@ -212,4 +212,32 @@ class CodeMapConsistencyTest extends TestCase
         $this->expectExceptionMessageMatches('/missing from the canonical CoaTemplate registry/');
         CoaTemplate::validateCode('9999');
     }
+
+    public function test_dead_config_keys_removed(): void
+    {
+        $dead = [
+            'account_codes', 'payment_methods', 'default_currency',
+            'fiscal_year_start_month', 'period_lock_enabled', 'snapshot_on_period_close',
+        ];
+
+        foreach ($dead as $key) {
+            $this->assertNull(config("accounting.{$key}"), "config/accounting.php must drop the dead '{$key}' key.");
+        }
+
+        $aging = config('accounting.aging');
+        $this->assertNotNull(config('accounting.aging'), 'The aging block is live (4 readers) and must survive.');
+        $this->assertCount(5, $aging['buckets']);
+        $this->assertSame('current', $aging['buckets'][0]['key']);
+        $this->assertArrayHasKey('ar', $aging['source']);
+        $this->assertArrayHasKey('ap', $aging['source']);
+    }
+
+    public function test_accounting_config_class_removed(): void
+    {
+        $this->assertFileDoesNotExist(
+            app_path('Support/AccountingConfig.php'),
+            'App\\Support\\AccountingConfig was a dead config reader and is deleted by N-3.',
+        );
+        $this->assertFalse(class_exists('App\Support\AccountingConfig'));
+    }
 }
