@@ -2,6 +2,8 @@
 
 namespace App\Services\Accounting;
 
+use App\Models\AccountGroup;
+use App\Models\Institute;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -13,17 +15,24 @@ use RuntimeException;
  * -> leaves) and severs the last links from tenant rows to the shared
  * global template.
  *
+ * F-014 / TASK C2 — additionally clones the 5 shared global account_groups
+ * per tenant and re-points every tenant chart_of_accounts.account_group_id
+ * at its tenant-owned clone, so mutating a group can never cross tenants.
+ *
  * Design notes:
  *  - Existing rows are never deleted and never change id: only parent_id
- *    moves, plus additive tenant-owned roots/anchors are created.
+ *    moves, plus additive tenant-owned roots/anchors are created (C1);
+ *    only account_group_id moves, plus additive tenant-owned group clones
+ *    are created (C2).
  *  - Soft-deleted institutes are included: institutes are enumerated from
  *    chart_of_accounts itself, never from the institutes table.
  *  - DDL (backup tables) must happen BEFORE any transaction: MySQL commits
  *    implicitly on DDL, which would break rollback atomicity — hence
- *    ensureBackupTables() refuses to create tables while a transaction is
- *    open.
- *  - restore() only performs DML so it stays safe inside test transactions;
- *    the migration's down() drops the tables itself afterwards.
+ *    ensureBackupTables()/ensureGroupBackupTables() refuse to create tables
+ *    while a transaction is open.
+ *  - restore()/restoreGroups() only perform DML so they stay safe inside
+ *    test transactions; the migration's down() drops the tables itself
+ *    afterwards.
  *  - The service is stateless per call site (new instance from the container),
  *    memoising only within one instance's lifetime.
  */
@@ -41,6 +50,11 @@ class CoaReanchorService
     public const BACKUP_TABLE = 'coa_reanchor_backup';
 
     public const CREATED_TABLE = 'coa_reanchor_created';
+
+    /** F-014 / TASK C2 — group re-anchor backup tables. */
+    public const GROUP_BACKUP_TABLE = 'coa_group_reanchor_backup';
+
+    public const GROUP_CREATED_TABLE = 'coa_group_reanchor_created';
 
     /** @var array<int, array<string, int>> instituteId => type => root row id */
     private array $rootIds = [];
@@ -301,6 +315,218 @@ class CoaReanchorService
         }
 
         $this->createdTableAvailable = false;
+    }
+
+    // ------------------------------------------------------------------
+    // F-014 / TASK C2 — account_groups re-anchor
+    // ------------------------------------------------------------------
+
+    /**
+     * Create the group backup tables. Same rules as ensureBackupTables():
+     * DDL must run OUTSIDE any transaction (MySQL commits implicitly on it).
+     */
+    public function ensureGroupBackupTables(): void
+    {
+        if (Schema::hasTable(self::GROUP_BACKUP_TABLE) && Schema::hasTable(self::GROUP_CREATED_TABLE)) {
+            return;
+        }
+
+        if (DB::transactionLevel() > 0) {
+            throw new RuntimeException(
+                'CoaReanchorService group backup tables are missing and cannot be created inside a transaction '
+                .'(MySQL commits implicitly on DDL). Call ensureGroupBackupTables() before opening the transaction.'
+            );
+        }
+
+        if (! Schema::hasTable(self::GROUP_BACKUP_TABLE)) {
+            Schema::create(self::GROUP_BACKUP_TABLE, function (Blueprint $table): void {
+                $table->unsignedBigInteger('coa_row_id')->primary();
+                $table->unsignedBigInteger('original_group_id');
+                $table->timestamp('created_at')->useCurrent();
+            });
+        }
+
+        if (! Schema::hasTable(self::GROUP_CREATED_TABLE)) {
+            Schema::create(self::GROUP_CREATED_TABLE, function (Blueprint $table): void {
+                $table->unsignedBigInteger('group_id')->primary();
+                $table->timestamp('created_at')->useCurrent();
+            });
+        }
+    }
+
+    /**
+     * Record the pre-change account_group_id of every tenant row of one
+     * institute that still points at a shared global group. INSERT OR IGNORE
+     * keeps the FIRST snapshot: a second run never overwrites the original
+     * values a rollback needs to restore.
+     */
+    public function snapshotGroups(int $instituteId): void
+    {
+        $this->ensureGroupBackupTables();
+
+        $globalIds = DB::table('account_groups')
+            ->whereNull('institute_id')
+            ->where('is_system', 1)
+            ->pluck('id')
+            ->all();
+
+        if ($globalIds === []) {
+            return;
+        }
+
+        $rows = DB::table('chart_of_accounts')
+            ->where('institute_id', $instituteId)
+            ->whereIn('account_group_id', $globalIds)
+            ->get(['id', 'account_group_id']);
+
+        foreach ($rows as $row) {
+            DB::table(self::GROUP_BACKUP_TABLE)->insertOrIgnore([
+                'coa_row_id' => $row->id,
+                'original_group_id' => $row->account_group_id,
+            ]);
+        }
+    }
+
+    /**
+     * Re-anchor one institute's account_group links (F-014):
+     *  1. snapshot every tenant row still pointing at a global group;
+     *  2. clone the 5 global groups for the tenant (reusing any that already
+     *     exist — the unique key is (institute, branch, code), so a tenant
+     *     clone of code '1' never collides with the global row);
+     *  3. re-point the tenant rows to the tenant-owned clones.
+     *
+     * Assumes the caller's transaction is already open — the migration wraps
+     * reanchorGroupsAll() in one; tests run inside DatabaseTransactions.
+     *
+     * @return array{groups_created: int, coa_rows_repointed: int}
+     */
+    public function reanchorGroupsForInstitute(int $instituteId): array
+    {
+        $this->snapshotGroups($instituteId);
+
+        $globalGroups = DB::table('account_groups')
+            ->whereNull('institute_id')
+            ->where('is_system', 1)
+            ->get();
+
+        $groupMap = [];
+        $groupsCreated = 0;
+
+        foreach ($globalGroups as $global) {
+            $existing = DB::table('account_groups')
+                ->where('institute_id', $instituteId)
+                ->whereNull('branch_id')
+                ->where('code', $global->code)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if ($existing !== null) {
+                $groupMap[$global->id] = (int) $existing->id;
+
+                continue;
+            }
+
+            $clone = AccountGroup::create([
+                'institute_id' => $instituteId,
+                'code' => $global->code,
+                'name' => $global->name,
+                'category' => $global->category,
+                'sort_order' => $global->sort_order,
+            ]);
+
+            DB::table(self::GROUP_CREATED_TABLE)->insert(['group_id' => $clone->id]);
+            $groupMap[$global->id] = (int) $clone->id;
+            $groupsCreated++;
+        }
+
+        $tenantRows = DB::table('chart_of_accounts')
+            ->where('institute_id', $instituteId)
+            ->whereIn('account_group_id', array_keys($groupMap))
+            ->get(['id', 'account_group_id']);
+
+        foreach ($tenantRows as $row) {
+            $newGroupId = $groupMap[$row->account_group_id] ?? null;
+
+            if ($newGroupId === null) {
+                throw new RuntimeException(
+                    "CoA group re-anchor: institute {$instituteId} row {$row->id} "
+                    ."references unknown group {$row->account_group_id}; refusing to guess."
+                );
+            }
+
+            DB::table('chart_of_accounts')
+                ->where('id', $row->id)
+                ->update(['account_group_id' => $newGroupId]);
+        }
+
+        return [
+            'groups_created' => $groupsCreated,
+            'coa_rows_repointed' => $tenantRows->count(),
+        ];
+    }
+
+    /**
+     * Re-anchor every institute that still holds CoA rows (institutes are
+     * enumerated from chart_of_accounts itself, like reanchorAll()).
+     *
+     * @return array{institutes_processed: int}
+     */
+    public function reanchorGroupsAll(): array
+    {
+        $institutes = Institute::withTrashed()
+            ->whereExists(fn ($q) => $q->select(DB::raw(1))
+                ->from('chart_of_accounts')
+                ->whereColumn('chart_of_accounts.institute_id', 'institutes.id'))
+            ->pluck('id');
+
+        foreach ($institutes as $instituteId) {
+            $this->reanchorGroupsForInstitute((int) $instituteId);
+        }
+
+        return ['institutes_processed' => $institutes->count()];
+    }
+
+    /**
+     * Undo the group re-anchor: put every snapshotted account_group_id back
+     * and delete the group clones this service created (originals first —
+     * the FK on chart_of_accounts.account_group_id is RESTRICT). DML only
+     * (transactional); the migration's down() drops the tables afterwards.
+     */
+    public function restoreGroups(): void
+    {
+        if (! Schema::hasTable(self::GROUP_BACKUP_TABLE) || ! Schema::hasTable(self::GROUP_CREATED_TABLE)) {
+            return;
+        }
+
+        DB::transaction(function (): void {
+            if (DB::table(self::GROUP_BACKUP_TABLE)->exists()) {
+                DB::statement(
+                    'UPDATE chart_of_accounts a
+                     JOIN '.self::GROUP_BACKUP_TABLE.' b ON b.coa_row_id = a.id
+                     SET a.account_group_id = b.original_group_id
+                     WHERE NOT (a.account_group_id <=> b.original_group_id)'
+                );
+            }
+
+            DB::statement(
+                'DELETE g FROM account_groups g
+                 JOIN '.self::GROUP_CREATED_TABLE.' c ON c.group_id = g.id'
+            );
+
+            DB::table(self::GROUP_BACKUP_TABLE)->delete();
+            DB::table(self::GROUP_CREATED_TABLE)->delete();
+        });
+    }
+
+    public function dropGroupBackupTables(): void
+    {
+        if (Schema::hasTable(self::GROUP_CREATED_TABLE)) {
+            Schema::drop(self::GROUP_CREATED_TABLE);
+        }
+
+        if (Schema::hasTable(self::GROUP_BACKUP_TABLE)) {
+            Schema::drop(self::GROUP_BACKUP_TABLE);
+        }
     }
 
     /**
