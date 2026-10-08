@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\InstituteController;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\ModuleController;
 use App\Http\Controllers\Api\V1\SyncController;
+use App\Http\Responses\ApiResponse;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -17,13 +18,15 @@ use Illuminate\Support\Facades\Route;
  */
 Route::prefix('v1')->middleware(['force.json'])->group(function () {
     Route::get('health', function () {
-        return \App\Http\Responses\ApiResponse::success([
+        return ApiResponse::success([
             'status' => 'ok',
             'ts' => now()->toISOString(),
         ]);
     });
 
     Route::post('auth/login', [AuthController::class, 'login'])
+        ->middleware('throttle:10,1');
+    Route::post('auth/google', [AuthController::class, 'googleLogin'])
         ->middleware('throttle:10,1');
     Route::post('auth/refresh', [AuthController::class, 'refresh'])
         ->middleware('auth:sanctum');

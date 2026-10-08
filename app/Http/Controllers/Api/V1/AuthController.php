@@ -7,11 +7,14 @@ use App\Http\Responses\ApiResponse;
 use App\Models\InstituteUser;
 use App\Models\Membership;
 use App\Models\User;
+use App\Services\Auth\EmailBanService;
+use App\Services\Auth\PasswordService;
 use App\Support\EmailNormalizer;
 use App\Support\PasswordHash;
 use App\Support\Workspace;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 /**
  * Mobile v1 auth. Mirrors the security posture of the web-adjacent
@@ -69,7 +72,7 @@ class AuthController extends Controller
         }
 
         try {
-            app(\App\Services\Auth\PasswordService::class)->rehashIfNeeded($user, $validated['password']);
+            app(PasswordService::class)->rehashIfNeeded($user, $validated['password']);
         } catch (\Throwable $e) {
             report($e);
         }
@@ -87,6 +90,147 @@ class AuthController extends Controller
             'expires_at' => $issued['expires_at'],
             'user' => $this->userPayload($user->fresh()),
         ]);
+    }
+
+    /**
+     * Google sign-in for the mobile app: the client hands over the ID token
+     * google_sign_in() obtained, Google's tokeninfo endpoint vouches for the
+     * signature/issuer/expiry and we check the audience + verified email.
+     *
+     * Account rules mirror the web callback but stop at sign-in — mobile has
+     * no registration/onboarding flow, so an unknown email is refused.
+     */
+    public function googleLogin(Request $request, EmailBanService $banService): JsonResponse
+    {
+        $validated = $request->validate([
+            'id_token' => 'required|string|max:4096',
+            'device_name' => 'required|string|max:120',
+            'institute_id' => 'sometimes|integer|exists:institutes,id',
+        ]);
+
+        $audiences = array_values(array_filter([
+            config('services.google.client_id'),
+            config('services.google.mobile_client_id'),
+        ]));
+
+        if ($audiences === []) {
+            return ApiResponse::error('GOOGLE_NOT_CONFIGURED', 'Google sign-in is not configured.', 501);
+        }
+
+        $claims = $this->googleClaims($validated['id_token']);
+
+        if ($claims === null) {
+            return ApiResponse::error('GOOGLE_AUTH_FAILED', 'Google sign-in failed.', 401);
+        }
+
+        $email = EmailNormalizer::normalize((string) ($claims['email'] ?? ''));
+        $verified = filter_var($claims['email_verified'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+        if ($email === null
+            || $email === ''
+            || ! in_array((string) ($claims['aud'] ?? ''), $audiences, true)
+            || ! $verified
+            || (int) ($claims['exp'] ?? 0) < time()) {
+            return ApiResponse::error('GOOGLE_AUTH_FAILED', 'Google sign-in failed.', 401);
+        }
+
+        if ($banService->isBanned($email)) {
+            report(sprintf('Banned email attempted mobile Google login: %s', $email));
+
+            return ApiResponse::error('FORBIDDEN', 'This email has been banned. Please contact support.', 403);
+        }
+
+        $account = User::withTrashed()->where('email', $email)->first();
+
+        if ($account === null) {
+            return ApiResponse::error(
+                'GOOGLE_NO_ACCOUNT',
+                'No account exists for this Google email. Please create one first.',
+                403
+            );
+        }
+
+        if ($account->trashed()) {
+            return ApiResponse::error('ACCOUNT_SUSPENDED', 'Your account has been suspended. Please contact support.', 403);
+        }
+
+        if ($account->status !== 'active') {
+            return ApiResponse::error('UNAUTHENTICATED', 'Your account is inactive. Please contact your administrator.', 401);
+        }
+
+        if ($account->isLocked()) {
+            return ApiResponse::error('UNAUTHENTICATED', 'Account is locked. Try again later.', 423);
+        }
+
+        // Same linking as the web callback: remember Google identity, avatar
+        // and treat Google's verified email as verified here too.
+        $updates = [];
+        if (empty($account->google_id) && ! empty($claims['sub'])) {
+            $updates['google_id'] = $claims['sub'];
+        }
+        if (empty($account->avatar) && ! empty($claims['picture'])) {
+            $updates['avatar'] = $claims['picture'];
+        }
+        if (empty($account->email_verified_at)) {
+            $updates['email_verified_at'] = now();
+        }
+        if ($updates !== []) {
+            $account->update($updates);
+        }
+
+        $membership = Workspace::membershipForToken($account, $validated['institute_id'] ?? null);
+
+        if ($membership === null) {
+            return ApiResponse::error('NO_WORKSPACE', 'No active institute workspace.', 403);
+        }
+
+        $account->forceFill([
+            'last_login_at' => now(),
+            'failed_login_count' => 0,
+            'locked_until' => null,
+        ])->save();
+
+        $issued = $this->issueToken($account, $validated['device_name'], $membership);
+
+        return ApiResponse::success([
+            'token' => $issued['token'],
+            'expires_at' => $issued['expires_at'],
+            'user' => self::globalUserPayload($account, $membership),
+        ]);
+    }
+
+    /**
+     * Verify an ID token with Google and return its claims, or null when
+     * Google rejects it (bad signature, wrong issuer, expired).
+     */
+    private function googleClaims(string $idToken): ?array
+    {
+        try {
+            $response = Http::timeout(5)
+                ->acceptJson()
+                ->get('https://oauth2.googleapis.com/tokeninfo', ['id_token' => $idToken]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return null;
+        }
+
+        if (! $response->ok()) {
+            return null;
+        }
+
+        $claims = $response->json();
+
+        if (! is_array($claims)) {
+            return null;
+        }
+
+        $issuer = (string) ($claims['iss'] ?? '');
+        if ($issuer !== 'accounts.google.com' && $issuer !== 'https://accounts.google.com') {
+            return null;
+        }
+
+        return $claims;
     }
 
     public function refresh(Request $request): JsonResponse
@@ -231,7 +375,7 @@ class AuthController extends Controller
         }
 
         try {
-            app(\App\Services\Auth\PasswordService::class)->rehashIfNeeded($account, $validated['password']);
+            app(PasswordService::class)->rehashIfNeeded($account, $validated['password']);
         } catch (\Throwable $e) {
             report($e);
         }
