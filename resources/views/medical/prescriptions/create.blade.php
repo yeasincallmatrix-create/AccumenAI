@@ -31,7 +31,7 @@
 @if(!empty($feeAppointment))
     <div class="alert alert-info d-flex align-items-center gap-2">
         <i class="bi bi-arrow-left-right"></i>
-        <span>Writing for queue visit <strong>#{{ $feeAppointment->serial_number }}</strong> — saving will open fee collection to complete the visit.</span>
+        <span>Writing for queue visit <strong>#{{ $feeAppointment->serial_number }}</strong>@if(!empty($encounter)) — linked encounter <a href="{{ route('medical.encounters.show', $encounter) }}" class="alert-link">{{ clinical_no($encounter->encounter_number) }}</a>@endif — saving will open fee collection to complete the visit.</span>
     </div>
 @endif
 

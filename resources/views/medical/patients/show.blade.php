@@ -172,7 +172,7 @@
                                 @foreach($patient->admissions->take(5) as $admission)
                                 <tr>
                                     <td><x-tdate :value="$admission->admission_date" fallback="d M Y" /></td>
-                                    <td>{{ $admission->admittingDoctor->name ?? 'N/A' }}</td>
+                                    <td>{{ $admission->admittingDoctor->name ?? 'General Supervision' }}</td>
                                     <td>
                                         <span class="badge bg-{{ $admission->status === 'active' ? 'danger' : 'success' }}">
                                             {{ ucfirst($admission->status) }}

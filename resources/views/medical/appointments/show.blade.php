@@ -45,6 +45,13 @@
                     @if($appointment->fee_collected_at)
                         ৳{{ number_format((float) $appointment->fee_collected_amount, 2) }}
                         <small class="text-muted">by {{ $appointment->fee_collected_by_name ?? '—' }} on {{ $appointment->fee_collected_at->format('d M Y, h:i A') }}</small>
+                        @if((float) ($appointment->fee_discount_amount ?? 0) > 0)
+                            <span class="d-block small text-muted">Discount: ৳{{ number_format((float) $appointment->fee_discount_amount, 2) }}
+                                @if(($appointment->fee_discount_type ?? '') === 'percent')
+                                    ({{ rtrim(rtrim(number_format((float) ($appointment->fee_discount_value ?? 0), 2), '0'), '.') }}%)
+                                @endif
+                            </span>
+                        @endif
                     @else
                         <span class="text-muted">Not collected yet</span>
                     @endif
@@ -90,12 +97,26 @@
                     </form>
                 @endif
                 @if(in_array($appointment->status, ['scheduled', 'checked_in', 'in_progress'], true))
-                    <form action="{{ route('medical.appointments.complete', $appointment) }}" method="POST">
-                        @csrf
-                        <button type="submit" class="btn btn-success btn-sm">
-                            <i class="bi bi-check-all me-1"></i>Complete
+                    @if(!empty($feePopup))
+                        {{-- Post-visit doctor, fee not yet on record: accept the
+                             fee through the popup — confirming completes the visit. --}}
+                        <button type="button" class="btn btn-success btn-sm"
+                                data-fee-url="{{ $feePopup['url'] }}"
+                                data-fee-action="complete"
+                                data-fee-patient="{{ $feePopup['patient'] }}"
+                                data-fee-amount="{{ $feePopup['amount'] }}"
+                                data-fee-type="{{ $feePopup['type'] }}"
+                                onclick="openFeeModal(this)">
+                            <i class="bi bi-cash-coin me-1"></i>Complete
                         </button>
-                    </form>
+                    @else
+                        <form action="{{ route('medical.appointments.complete', $appointment) }}" method="POST">
+                            @csrf
+                            <button type="submit" class="btn btn-success btn-sm">
+                                <i class="bi bi-check-all me-1"></i>Complete
+                            </button>
+                        </form>
+                    @endif
                 @endif
                 @if(!in_array($appointment->status, ['completed', 'cancelled'], true) && ($appointment->fee_collected_at === null || ($canDeleteFinalized ?? false) || ($isOwnDoctor ?? false)))
                     <form action="{{ route('medical.appointments.destroy', $appointment) }}" method="POST"
@@ -117,4 +138,6 @@
         @livewire('medical.vitals-recorder', ['appointmentId' => $appointment->id])
     </div>
 </div>
+
+@include('medical.appointments._fee_modal')
 @endsection

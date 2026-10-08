@@ -39,6 +39,9 @@
                         <label class="form-label" for="admitting_doctor_id">Admitting Doctor <span class="text-danger">*</span></label>
                         <select id="admitting_doctor_id" name="admitting_doctor_id" class="form-select @error('admitting_doctor_id') is-invalid @enderror" required>
                             <option value="">Select Doctor</option>
+                            @if($showGeneralSupervision)
+                                <option value="0" @selected((string) old('admitting_doctor_id') === '0')>General Supervision</option>
+                            @endif
                             @foreach($doctors as $doctor)
                                 <option value="{{ $doctor->id }}" @selected((string) old('admitting_doctor_id') === (string) $doctor->id)>
                                     {{ $doctor->name }}

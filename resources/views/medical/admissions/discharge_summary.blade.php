@@ -40,7 +40,7 @@
         </tr>
         <tr>
             <td><strong>Ward / Bed:</strong> {{ $admission->bed->ward->name ?? 'N/A' }} / {{ $admission->bed->bed_number ?? 'N/A' }}</td>
-            <td><strong>Doctor:</strong> {{ $doctor->name ?? 'N/A' }}</td>
+            <td><strong>Doctor:</strong> {{ $doctor->name ?? 'General Supervision' }}</td>
         </tr>
     </table>
 

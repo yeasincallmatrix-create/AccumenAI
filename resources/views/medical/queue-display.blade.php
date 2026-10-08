@@ -2,9 +2,13 @@
 
 @php
     $backUrl = $backUrl ?? route('medical.appointments.index');
+    $pageTitle = $pageTitle ?? 'OPD Queue Display';
+    $hideTopbar = true;
     $qdDate = $date ?? today()->format('Y-m-d');
     $qdRefresh = max(5, (int) ($refreshSeconds ?? config('medicine.queue_display.refresh_seconds', 30)));
     $qdRows = collect($queueData ?? [])->values();
+    // One doctor on screen = the giant broadcast layout (Live Broadcast merged here).
+    $qdTv = $qdRows->count() === 1;
     $qdIds = $qdRows->pluck('doctor_id')->all();
     $qdDataUrl = route('medical.queue.display.data', array_filter([
         'doctors' => implode(',', $qdIds),
@@ -13,13 +17,13 @@
     $qdSelectorUrl = route('medical.queue.display.selector');
 @endphp
 
-@section('title', 'OPD Queue Display - AccumenAI')
-@section('page_title', 'OPD Queue Display')
+@section('title', $pageTitle . ' - AccumenAI')
+@section('page_title', $pageTitle)
 
 @push('styles')
 <style>
 .qd-topbar, .standalone-page > .standalone-container > .alert { display: none !important; }
-.standalone-page { background: #0b1220; min-height: 100vh; }
+.standalone-page { background: #0b1220; min-height: 100vh; padding: 0; }
 .standalone-container { max-width: 100% !important; padding: 0 !important; }
 .qd-wrap { min-height: 100vh; display: flex; flex-direction: column; color: #e8eefc; background: radial-gradient(1200px 600px at 20% -10%, #16325c 0%, transparent 60%), #0b1220; }
 
@@ -56,6 +60,29 @@
 .qd-time { font-size: clamp(14px, 1.3vw, 20px); color: #9fb3d9; font-variant-numeric: tabular-nums; }
 .qd-none { color: #7f8ea8; font-size: clamp(15px, 1.4vw, 20px); padding: 14px 2px; }
 
+/* One doctor = giant broadcast layout (Live Broadcast). Declared after the
+   base card rules so the plain two-up cards stay the default. */
+.qd-grid--tv { gap: 0; padding: 0; align-content: stretch; }
+.qd-card--tv { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; background: transparent; border: none; border-radius: 0; min-height: 0; }
+.qd-card--tv .qd-card-head { grid-column: 1 / -1; padding: 24px 44px; }
+.qd-card--tv .qd-doc { font-size: clamp(34px, 4vw, 72px); font-weight: 900; }
+.qd-card--tv .qd-dept { font-size: clamp(16px, 1.7vw, 28px); margin-top: 6px; }
+.qd-card--tv .qd-now { grid-column: 1; grid-row: 2; display: flex; flex-direction: column; justify-content: center; padding: 34px 44px; border-bottom: none; border-radius: 20px; }
+.qd-card--tv .qd-now-serial { font-size: clamp(96px, 14vw, 260px); }
+.qd-card--tv .qd-now-name { font-size: clamp(34px, 4vw, 76px); }
+.qd-card--tv .qd-now-time { font-size: clamp(18px, 1.8vw, 30px); }
+.qd-card--tv .qd-now-empty { font-size: clamp(30px, 4vw, 64px); padding: 40px 0; }
+.qd-card--tv .qd-next { grid-column: 2; grid-row: 2; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.10); border-radius: 20px; overflow-y: auto; }
+.qd-card--tv .qd-next-head { font-size: clamp(15px, 1.5vw, 24px); }
+.qd-card--tv .qd-row { padding: 16px 20px; }
+.qd-card--tv .qd-serial { font-size: clamp(30px, 3vw, 54px); min-width: 96px; }
+.qd-card--tv .qd-name { font-size: clamp(22px, 2.4vw, 44px); }
+.qd-card--tv .qd-time { font-size: clamp(16px, 1.6vw, 26px); }
+.qd-card--tv .qd-none { font-size: clamp(17px, 1.7vw, 26px); }
+.qd-card--tv .qd-foot { grid-column: 1 / -1; grid-row: 3; font-size: clamp(15px, 1.4vw, 22px); padding: 16px 44px 26px; }
+.qd-card--tv .qd-stats b { font-size: clamp(18px, 1.8vw, 28px); }
+@media (max-width: 1100px) { .qd-card--tv { grid-template-columns: minmax(0, 1fr); } .qd-card--tv .qd-now, .qd-card--tv .qd-next, .qd-card--tv .qd-foot { grid-column: 1; grid-row: auto; } }
+
 .qd-foot { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; padding: 14px 34px 22px; color: #8ba0c4; font-size: 13px; border-top: 1px solid rgba(255,255,255,.08); }
 .qd-stats { display: flex; gap: 22px; flex-wrap: wrap; }
 .qd-stats b { color: #e8eefc; font-size: 16px; }
@@ -86,11 +113,11 @@
         </div>
     </div>
 
-    <div class="qd-grid" id="qdGrid" style="--qd-cols: {{ max(1, min(2, $qdRows->count())) }};">
+    <div class="qd-grid{{ $qdTv ? ' qd-grid--tv' : '' }}" data-layout="{{ $qdTv ? 'tv' : 'cards' }}" style="--qd-cols: {{ max(1, min(2, $qdRows->count())) }};">
 
         @forelse ($qdRows as $row)
             @php $now = $row['now_serving'] ?? null; @endphp
-            <section class="qd-card" data-doctor-id="{{ $row['doctor_id'] }}">
+            <section class="qd-card{{ $qdTv ? ' qd-card--tv' : '' }}" data-doctor-id="{{ $row['doctor_id'] }}">
                 <div class="qd-card-head">
                     <div class="qd-doc" data-field="doctor_name">{{ $row['doctor_name'] }}</div>
                     @if (! empty($row['department_name']))

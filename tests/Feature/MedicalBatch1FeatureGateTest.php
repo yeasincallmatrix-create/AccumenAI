@@ -9,7 +9,10 @@ use App\Models\PackageFeature;
 use App\Models\Role;
 use App\Models\SubscriptionPackage;
 use App\Models\User;
+use App\Services\ModuleAccessService;
 use App\Support\Workspace;
+use Database\Seeders\FeatureRegistrySeeder;
+use Database\Seeders\PackageFeatureSeeder;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
@@ -30,10 +33,10 @@ class MedicalBatch1FeatureGateTest extends TestCase
         }
 
         if (FeatureRegistry::count() === 0) {
-            (new \Database\Seeders\FeatureRegistrySeeder)->run();
+            (new FeatureRegistrySeeder)->run();
         }
         if (PackageFeature::count() === 0) {
-            (new \Database\Seeders\PackageFeatureSeeder)->run();
+            (new PackageFeatureSeeder)->run();
         }
     }
 
@@ -77,6 +80,7 @@ class MedicalBatch1FeatureGateTest extends TestCase
             'role_id' => $roleId,
             'status' => 'active',
         ]);
+
         return $user;
     }
 
@@ -86,6 +90,18 @@ class MedicalBatch1FeatureGateTest extends TestCase
         Workspace::set($inst->id);
     }
 
+    /**
+     * The navbar renders a medical sub-module only when the tenant module
+     * toggle (Settings → Modules) is ON, so menu assertions must turn it on.
+     */
+    private function enableModules(Institute $inst, string ...$moduleKeys): void
+    {
+        $service = app(ModuleAccessService::class);
+        foreach ($moduleKeys as $moduleKey) {
+            $service->enableModule($inst, $moduleKey, null, 'test fixture');
+        }
+    }
+
     // ── Laboratory ──────────────────────────────────────────
 
     public function test_laboratory_menu_normal_when_enabled(): void
@@ -93,6 +109,7 @@ class MedicalBatch1FeatureGateTest extends TestCase
         $inst = $this->makeInstitute('advanced');
         $user = $this->makeUser($inst);
         $this->loginAs($user, $inst);
+        $this->enableModules($inst, 'medical.laboratory');
 
         $response = $this->get(route('medical.dashboard'));
         $response->assertOk();
@@ -100,7 +117,7 @@ class MedicalBatch1FeatureGateTest extends TestCase
         $response->assertDontSee('menu-item-locked');
     }
 
-    public function test_laboratory_menu_locked_when_disabled(): void
+    public function test_laboratory_menu_hidden_when_disabled(): void
     {
         $inst = $this->makeInstitute('advanced');
         PackageFeature::where('feature_key', 'medical.laboratory')
@@ -109,11 +126,12 @@ class MedicalBatch1FeatureGateTest extends TestCase
 
         $user = $this->makeUser($inst);
         $this->loginAs($user, $inst);
+        $this->enableModules($inst, 'medical.laboratory');
 
         $response = $this->get(route('medical.dashboard'));
         $response->assertOk();
-        $response->assertSee('menu-item-locked');
-        $response->assertSee('medical.laboratory');
+        $response->assertDontSee('/medical/lab/orders');
+        $response->assertDontSee('menu-item-locked');
     }
 
     public function test_laboratory_route_blocked_when_feature_disabled(): void
@@ -137,6 +155,7 @@ class MedicalBatch1FeatureGateTest extends TestCase
         $inst = $this->makeInstitute('advanced');
         $user = $this->makeUser($inst);
         $this->loginAs($user, $inst);
+        $this->enableModules($inst, 'medical.bloodbank');
 
         $response = $this->get(route('medical.dashboard'));
         $response->assertOk();
@@ -144,7 +163,7 @@ class MedicalBatch1FeatureGateTest extends TestCase
         $response->assertDontSee('menu-item-locked');
     }
 
-    public function test_bloodbank_menu_locked_when_disabled(): void
+    public function test_bloodbank_menu_hidden_when_disabled(): void
     {
         $inst = $this->makeInstitute('advanced');
         PackageFeature::where('feature_key', 'medical.bloodbank')
@@ -153,11 +172,12 @@ class MedicalBatch1FeatureGateTest extends TestCase
 
         $user = $this->makeUser($inst);
         $this->loginAs($user, $inst);
+        $this->enableModules($inst, 'medical.bloodbank');
 
         $response = $this->get(route('medical.dashboard'));
         $response->assertOk();
-        $response->assertSee('menu-item-locked');
-        $response->assertSee('medical.bloodbank');
+        $response->assertDontSee('/medical/blood-bank/donors');
+        $response->assertDontSee('menu-item-locked');
     }
 
     public function test_bloodbank_route_blocked_when_feature_disabled(): void
@@ -181,6 +201,7 @@ class MedicalBatch1FeatureGateTest extends TestCase
         $inst = $this->makeInstitute('advanced');
         $user = $this->makeUser($inst);
         $this->loginAs($user, $inst);
+        $this->enableModules($inst, 'medical.radiology');
 
         $response = $this->get(route('medical.dashboard'));
         $response->assertOk();
@@ -188,7 +209,7 @@ class MedicalBatch1FeatureGateTest extends TestCase
         $response->assertDontSee('menu-item-locked');
     }
 
-    public function test_radiology_menu_locked_when_disabled(): void
+    public function test_radiology_menu_hidden_when_disabled(): void
     {
         $inst = $this->makeInstitute('advanced');
         PackageFeature::where('feature_key', 'medical.radiology')
@@ -197,11 +218,12 @@ class MedicalBatch1FeatureGateTest extends TestCase
 
         $user = $this->makeUser($inst);
         $this->loginAs($user, $inst);
+        $this->enableModules($inst, 'medical.radiology');
 
         $response = $this->get(route('medical.dashboard'));
         $response->assertOk();
-        $response->assertSee('menu-item-locked');
-        $response->assertSee('medical.radiology');
+        $response->assertDontSee('/medical/radiology/orders');
+        $response->assertDontSee('menu-item-locked');
     }
 
     public function test_radiology_route_blocked_when_feature_disabled(): void
@@ -225,6 +247,7 @@ class MedicalBatch1FeatureGateTest extends TestCase
         $inst = $this->makeInstitute('advanced');
         $user = $this->makeUser($inst);
         $this->loginAs($user, $inst);
+        $this->enableModules($inst, 'medical.pharmacy');
 
         $response = $this->get(route('medical.pharmacy.medicines.index'));
         $response->assertOk();

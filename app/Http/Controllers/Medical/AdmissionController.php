@@ -144,7 +144,12 @@ class AdmissionController extends MedicalController implements HasMiddleware
             }
         }
 
-        return view('medical.admissions.create', compact('patients', 'doctors', 'beds', 'selectedPatient'));
+        // Fenced doctors always admit under themselves, so the
+        // "General Supervision" (no doctor) choice would be silently
+        // overwritten on save — hide it from them.
+        $showGeneralSupervision = $fence === null;
+
+        return view('medical.admissions.create', compact('patients', 'doctors', 'beds', 'selectedPatient', 'showGeneralSupervision'));
     }
 
     /**
@@ -159,6 +164,10 @@ class AdmissionController extends MedicalController implements HasMiddleware
     {
         $instituteId = $this->instituteId();
         $data = $request->validated();
+        // "General Supervision" sentinel (0) — no admitting doctor assigned.
+        if ((string) $request->input('admitting_doctor_id') === '0') {
+            $data['admitting_doctor_id'] = null;
+        }
         $data['institute_id'] = $instituteId;
         // Phase 18: branch ownership + clinician assignment.
         $data['branch_id'] = $this->resolveBranchId($request->input('branch_id'));
@@ -236,8 +245,9 @@ class AdmissionController extends MedicalController implements HasMiddleware
         $instituteId = $this->instituteId();
 
         $patients = $this->ownPatientOptions($instituteId);
+        $fence = $this->doctorFenceId();
         $doctors = $this->doctors();
-        if (($fence = $this->doctorFenceId()) !== null) {
+        if ($fence !== null) {
             $doctors = $doctors->where('id', $fence)->values();
         }
         // Phase 18: hide clinicians assigned exclusively to other branches.
@@ -252,7 +262,9 @@ class AdmissionController extends MedicalController implements HasMiddleware
         $this->scopeBranch($beds);
         $beds = $beds->get();
 
-        return view('medical.admissions.edit', compact('admission', 'patients', 'doctors', 'beds'));
+        $showGeneralSupervision = $fence === null;
+
+        return view('medical.admissions.edit', compact('admission', 'patients', 'doctors', 'beds', 'showGeneralSupervision'));
     }
 
     /**
@@ -266,6 +278,10 @@ class AdmissionController extends MedicalController implements HasMiddleware
         $instituteId = $this->instituteId();
 
         $data = $request->validated();
+        // "General Supervision" sentinel (0) — no admitting doctor assigned.
+        if ((string) $request->input('admitting_doctor_id') === '0') {
+            $data['admitting_doctor_id'] = null;
+        }
         $newBedId = $data['bed_id'] ?? null ? (int) $data['bed_id'] : null;
         unset($data['bed_id']);
         // Phase 18: branch identity never moves between records.

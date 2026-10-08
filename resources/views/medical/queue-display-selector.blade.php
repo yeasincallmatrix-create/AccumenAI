@@ -2,6 +2,7 @@
 
 @php
     $backUrl = $backUrl ?? route('medical.appointments.index');
+    $hideTopbar = true;
     $qdMax = max(1, (int) ($maxDoctors ?? 2));
     $qdSelected = array_values(array_map('intval', $selectedIds ?? []));
 @endphp

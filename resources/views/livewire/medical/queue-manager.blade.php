@@ -117,16 +117,18 @@ Start Consultation
                                             </form>
                                         @endif
                                     @endif
-                                    @if(($item['fee_timing'] ?? 'none') === 'pre' && !empty($item['fee_collected']))
-                                        <a href="{{ route('medical.prescriptions.create', array_filter(['patient_id' => $item['patient_id'], 'fee_appointment_id' => $item['status'] === 'in_progress' ? $item['id'] : null])) }}"
-                                           class="btn btn-sm btn-outline-primary" title="Write prescription">
-                                            <i class="bi bi-file-earmark-medical"></i>
-                                        </a>
-                                    @elseif(($item['fee_timing'] ?? 'none') === 'post' && $item['status'] === 'in_progress')
-                                        <a href="{{ route('medical.prescriptions.create', ['patient_id' => $item['patient_id'], 'fee_appointment_id' => $item['id']]) }}"
-                                           class="btn btn-sm btn-outline-primary" title="Write prescription">
-                                            <i class="bi bi-file-earmark-medical"></i>
-                                        </a>
+                                    @if($date === today()->format('Y-m-d'))
+                                        @if(($item['fee_timing'] ?? 'none') === 'pre' && !empty($item['fee_collected']))
+                                            <a href="{{ route('medical.prescriptions.create', array_filter(['patient_id' => $item['patient_id'], 'fee_appointment_id' => $item['status'] === 'in_progress' ? $item['id'] : null])) }}"
+                                               class="btn btn-sm btn-outline-primary" title="Write prescription">
+                                                <i class="bi bi-file-earmark-medical"></i>
+                                            </a>
+                                        @elseif(($item['fee_timing'] ?? 'none') === 'post' && $item['status'] === 'in_progress')
+                                            <a href="{{ route('medical.prescriptions.create', ['patient_id' => $item['patient_id'], 'fee_appointment_id' => $item['id']]) }}"
+                                               class="btn btn-sm btn-outline-primary" title="Write prescription">
+                                                <i class="bi bi-file-earmark-medical"></i>
+                                            </a>
+                                        @endif
                                     @endif
                                     <form action="{{ route('medical.appointments.cancel', $item['id']) }}" method="POST" class="d-inline">
                                         @csrf

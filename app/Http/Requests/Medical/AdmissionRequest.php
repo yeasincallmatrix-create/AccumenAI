@@ -17,6 +17,20 @@ class AdmissionRequest extends FormRequest
     {
         $instituteId = MedicalScope::instituteId();
 
+        // "General Supervision" (sentinel 0): the admission runs without an
+        // assigned doctor — skipped validation is saved as NULL by the
+        // controller.
+        $admittingDoctorRules = ['required'];
+        if ((string) $this->input('admitting_doctor_id') !== '0') {
+            $admittingDoctorRules[] = Rule::exists('users', 'id')->where(fn ($q) => $q->where('status', 'active'));
+            // Phase 02: the admitting doctor must belong to this institute.
+            $admittingDoctorRules[] = function ($attribute, $value, $fail) use ($instituteId) {
+                if (! MedicalScope::isDoctorInInstitute((int) $value, (int) $instituteId)) {
+                    $fail('Selected doctor does not belong to this institute.');
+                }
+            };
+        }
+
         return [
             'patient_id' => [
                 'required',
@@ -30,16 +44,7 @@ class AdmissionRequest extends FormRequest
                     fn ($q) => $q->where('institute_id', $instituteId)
                 ),
             ],
-            'admitting_doctor_id' => [
-                'required',
-                Rule::exists('users', 'id')->where(fn ($q) => $q->where('status', 'active')),
-                // Phase 02: the admitting doctor must belong to this institute.
-                function ($attribute, $value, $fail) use ($instituteId) {
-                    if (! MedicalScope::isDoctorInInstitute((int) $value, (int) $instituteId)) {
-                        $fail('Selected doctor does not belong to this institute.');
-                    }
-                },
-            ],
+            'admitting_doctor_id' => $admittingDoctorRules,
             'admission_date' => 'required|date',
             'admission_time' => 'required|date_format:H:i',
             'primary_diagnosis' => 'nullable|string',

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Medical;
 
+use App\Models\HrDesignation;
+use App\Models\HrEmployee;
 use App\Models\Medical\Admission;
 use App\Models\Medical\Appointment;
 use App\Models\Medical\Department;
@@ -11,11 +13,18 @@ use App\Models\Medical\Prescription;
 use App\Models\Medical\Specialty;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Auth\PasswordService;
+use App\Services\MembershipService;
+use App\Services\UserAccountService;
+use App\Support\MedicalScope;
+use App\Support\PasswordPolicy;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class DoctorController extends MedicalController implements HasMiddleware
 {
@@ -78,7 +87,7 @@ class DoctorController extends MedicalController implements HasMiddleware
         $departments = Department::where('institute_id', $instituteId)->active()->orderBy('name')->get();
         $specialties = Specialty::where('institute_id', $instituteId)->active()->orderBy('name')->get();
         // Phase 02: account picker is tenant-scoped (members/profile holders).
-        $users = \App\Support\MedicalScope::instituteDoctors($instituteId);
+        $users = MedicalScope::instituteDoctors($instituteId);
 
         // Roles for the quick "Add Doctor Account" popup (same scope as staff invite).
         $inviteRoles = Role::query()
@@ -91,7 +100,21 @@ class DoctorController extends MedicalController implements HasMiddleware
             ->orderBy('name')
             ->get(['id', 'name', 'slug']);
 
-        return view('medical.doctors.create', compact('departments', 'specialties', 'users', 'inviteRoles'));
+        $designations = $this->designations($instituteId);
+
+        return view('medical.doctors.create', compact('departments', 'specialties', 'users', 'inviteRoles', 'designations'));
+    }
+
+    /**
+     * Active HR designations of this institute for the Contract block.
+     */
+    private function designations(int $instituteId)
+    {
+        return HrDesignation::query()
+            ->where('institute_id', $instituteId)
+            ->where('is_active', true)
+            ->ordered()
+            ->get(['id', 'name']);
     }
 
     /**
@@ -108,7 +131,7 @@ class DoctorController extends MedicalController implements HasMiddleware
             'email' => ['required', 'string', 'email', 'max:150', 'unique:users,email'],
             'phone' => ['required', 'string', 'regex:/^\+?\d{4,20}$/', 'unique:users,phone'],
             'role_id' => ['required', 'integer', 'exists:roles,id'],
-            'password' => \App\Support\PasswordPolicy::rules(),
+            'password' => PasswordPolicy::rules(),
         ]);
 
         $role = Role::query()->findOrFail($data['role_id']);
@@ -116,14 +139,14 @@ class DoctorController extends MedicalController implements HasMiddleware
 
         $instituteId = $this->instituteId();
 
-        $user = app(\App\Services\UserAccountService::class)->createStaffFromInvitation([
+        $user = app(UserAccountService::class)->createStaffFromInvitation([
             'name' => trim($data['first_name'].' '.$data['last_name']),
             'first_name' => $data['first_name'],
             'last_name' => $data['last_name'],
             'email' => $data['email'],
             'phone' => $data['phone'],
             'preferred_language' => mawa_current_lang(),
-            'password_hash' => app(\App\Services\Auth\PasswordService::class)->hash($data['password']),
+            'password_hash' => app(PasswordService::class)->hash($data['password']),
             'status' => 'active',
         ]);
 
@@ -133,7 +156,7 @@ class DoctorController extends MedicalController implements HasMiddleware
             report($e);
         }
 
-        app(\App\Services\MembershipService::class)->assign($user, $instituteId, $role->id);
+        app(MembershipService::class)->assign($user, $instituteId, $role->id);
 
         return response()->json([
             'success' => true,
@@ -158,6 +181,13 @@ class DoctorController extends MedicalController implements HasMiddleware
             'follow_up_fee' => 'nullable|numeric|min:0',
             'follow_up_days' => 'nullable|integer|min:1|max:365',
             'collect_fee_before_visit' => 'nullable|boolean',
+            'employment_type' => ['nullable', Rule::in(HrEmployee::EMPLOYMENT_TYPES)],
+            'designation_id' => ['nullable', 'integer', Rule::exists('hr_designations', 'id')
+                ->where('institute_id', $this->instituteId())
+                ->whereNull('deleted_at')],
+            'doctor_fee_percentage' => 'nullable|numeric|min:0|max:100',
+            'allow_discount' => 'nullable|boolean',
+            'max_discount_percent' => 'nullable|numeric|min:0|max:100',
             'chamber_address' => 'nullable|string',
             'room_no' => 'nullable|string|max:50',
             'phone' => 'nullable|string|max:20',
@@ -174,7 +204,7 @@ class DoctorController extends MedicalController implements HasMiddleware
 
         foreach ((array) ($validated['availabilities'] ?? []) as $avail) {
             if (isset($avail['start_time'], $avail['end_time']) && $avail['end_time'] <= $avail['start_time']) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'availabilities' => 'End time must be after start time for each availability row.',
                 ]);
             }
@@ -186,6 +216,10 @@ class DoctorController extends MedicalController implements HasMiddleware
         $this->assertUserInInstitute((int) $validated['user_id'], (int) $validated['institute_id']);
         $validated['is_active'] = $request->boolean('is_active', true);
         $validated['collect_fee_before_visit'] = $request->boolean('collect_fee_before_visit', false);
+        $validated['allow_discount'] = $request->boolean('allow_discount', false);
+        if (! $validated['allow_discount']) {
+            $validated['max_discount_percent'] = null;
+        }
         $availabilities = $validated['availabilities'] ?? null;
         unset($validated['availabilities']);
 
@@ -203,7 +237,7 @@ class DoctorController extends MedicalController implements HasMiddleware
                 ->firstOrFail();
 
             if (! empty($validated['department_id']) && (int) $specialty->department_id !== (int) $validated['department_id']) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'specialty_id' => 'The selected specialty does not belong to the selected department.',
                 ]);
             }
@@ -233,7 +267,7 @@ class DoctorController extends MedicalController implements HasMiddleware
             });
         } catch (QueryException $e) {
             if ($e->getCode() === '23000') {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'availabilities' => 'Duplicate availability: the same day and start time was submitted more than once. Please remove the duplicate row.',
                 ]);
             }
@@ -261,10 +295,11 @@ class DoctorController extends MedicalController implements HasMiddleware
         $departments = Department::where('institute_id', $instituteId)->active()->orderBy('name')->get();
         $specialties = Specialty::where('institute_id', $instituteId)->active()->orderBy('name')->get();
         // Phase 02: account picker is tenant-scoped (members/profile holders).
-        $users = \App\Support\MedicalScope::instituteDoctors($instituteId);
+        $users = MedicalScope::instituteDoctors($instituteId);
         $doctor->load('availabilities');
+        $designations = $this->designations($instituteId);
 
-        return view('medical.doctors.edit', compact('doctor', 'departments', 'specialties', 'users'));
+        return view('medical.doctors.edit', compact('doctor', 'departments', 'specialties', 'users', 'designations'));
     }
 
     public function update(Request $request, Doctor $doctor)
@@ -285,6 +320,13 @@ class DoctorController extends MedicalController implements HasMiddleware
             'follow_up_fee' => 'nullable|numeric|min:0',
             'follow_up_days' => 'nullable|integer|min:1|max:365',
             'collect_fee_before_visit' => 'nullable|boolean',
+            'employment_type' => ['nullable', Rule::in(HrEmployee::EMPLOYMENT_TYPES)],
+            'designation_id' => ['nullable', 'integer', Rule::exists('hr_designations', 'id')
+                ->where('institute_id', $doctor->institute_id)
+                ->whereNull('deleted_at')],
+            'doctor_fee_percentage' => 'nullable|numeric|min:0|max:100',
+            'allow_discount' => 'nullable|boolean',
+            'max_discount_percent' => 'nullable|numeric|min:0|max:100',
             'chamber_address' => 'nullable|string',
             'room_no' => 'nullable|string|max:50',
             'phone' => 'nullable|string|max:20',
@@ -301,7 +343,7 @@ class DoctorController extends MedicalController implements HasMiddleware
 
         foreach ((array) ($validated['availabilities'] ?? []) as $avail) {
             if (isset($avail['start_time'], $avail['end_time']) && $avail['end_time'] <= $avail['start_time']) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'availabilities' => 'End time must be after start time for each availability row.',
                 ]);
             }
@@ -316,6 +358,10 @@ class DoctorController extends MedicalController implements HasMiddleware
         }
         $validated['is_active'] = $request->boolean('is_active', true);
         $validated['collect_fee_before_visit'] = $request->boolean('collect_fee_before_visit', false);
+        $validated['allow_discount'] = $request->boolean('allow_discount', false);
+        if (! $validated['allow_discount']) {
+            $validated['max_discount_percent'] = null;
+        }
         $availabilities = $validated['availabilities'] ?? null;
         unset($validated['availabilities']);
 
@@ -331,7 +377,7 @@ class DoctorController extends MedicalController implements HasMiddleware
                 ->firstOrFail();
 
             if (! empty($validated['department_id']) && (int) $specialty->department_id !== (int) $validated['department_id']) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'specialty_id' => 'The selected specialty does not belong to the selected department.',
                 ]);
             }
@@ -359,7 +405,7 @@ class DoctorController extends MedicalController implements HasMiddleware
             });
         } catch (QueryException $e) {
             if ($e->getCode() === '23000') {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     'availabilities' => 'Duplicate availability: the same day and start time was submitted more than once. Please remove the duplicate row.',
                 ]);
             }
@@ -381,7 +427,7 @@ class DoctorController extends MedicalController implements HasMiddleware
         // users.id survive a profile delete). Profiles with history stay —
         // deactivate instead; history-free profiles may be removed.
         $hasHistory = Appointment::where('institute_id', $doctor->institute_id)
-                ->where('doctor_id', $doctor->user_id)->exists()
+            ->where('doctor_id', $doctor->user_id)->exists()
             || Prescription::where('institute_id', $doctor->institute_id)
                 ->where('doctor_id', $doctor->user_id)->exists()
             || Admission::where('institute_id', $doctor->institute_id)
@@ -432,8 +478,8 @@ class DoctorController extends MedicalController implements HasMiddleware
      */
     private function assertUserInInstitute(int $userId, int $instituteId): void
     {
-        if (! \App\Support\MedicalScope::isDoctorInInstitute($userId, $instituteId)) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
+        if (! MedicalScope::isDoctorInInstitute($userId, $instituteId)) {
+            throw ValidationException::withMessages([
                 'user_id' => 'The selected account does not belong to this institute.',
             ]);
         }
@@ -470,7 +516,7 @@ class DoctorController extends MedicalController implements HasMiddleware
             $key = $day.'|'.$start;
 
             if (isset($seen[$key])) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
+                throw ValidationException::withMessages([
                     "availabilities.{$index}.day" => "Duplicate availability: {$day} at {$start} appears more than once. Remove or change the duplicate row.",
                 ]);
             }
@@ -483,7 +529,7 @@ class DoctorController extends MedicalController implements HasMiddleware
             usort($ranges, fn ($a, $b) => strcmp($a['start'], $b['start']));
             for ($i = 1; $i < count($ranges); $i++) {
                 if ($ranges[$i]['start'] < $ranges[$i - 1]['end']) {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
+                    throw ValidationException::withMessages([
                         "availabilities.{$ranges[$i]['index']}.start_time" => "Overlapping availability on {$day}: {$ranges[$i]['start']}–{$ranges[$i]['end']} overlaps {$ranges[$i - 1]['start']}–{$ranges[$i - 1]['end']}.",
                     ]);
                 }

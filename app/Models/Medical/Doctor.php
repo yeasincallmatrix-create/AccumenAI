@@ -2,6 +2,8 @@
 
 namespace App\Models\Medical;
 
+use App\Models\Branch;
+use App\Models\HrDesignation;
 use App\Models\Institute;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -15,6 +17,8 @@ class Doctor extends Model
         'qualification', 'experience_years', 'consultation_fee',
         'first_visit_fee', 'follow_up_fee', 'follow_up_days',
         'collect_fee_before_visit',
+        'employment_type', 'designation_id', 'doctor_fee_percentage',
+        'allow_discount', 'max_discount_percent',
         'chamber_address', 'room_no', 'phone', 'email', 'bio', 'is_active',
     ];
 
@@ -25,6 +29,10 @@ class Doctor extends Model
         'follow_up_days' => 'integer',
         'collect_fee_before_visit' => 'boolean',
         'experience_years' => 'integer',
+        'designation_id' => 'integer',
+        'doctor_fee_percentage' => 'decimal:2',
+        'allow_discount' => 'boolean',
+        'max_discount_percent' => 'decimal:2',
         'is_active' => 'boolean',
     ];
 
@@ -48,6 +56,11 @@ class Doctor extends Model
         return $this->belongsTo(Department::class);
     }
 
+    public function designation()
+    {
+        return $this->belongsTo(HrDesignation::class, 'designation_id');
+    }
+
     public function availabilities()
     {
         return $this->hasMany(DoctorAvailability::class);
@@ -61,7 +74,7 @@ class Doctor extends Model
      */
     public function branches()
     {
-        return $this->belongsToMany(\App\Models\Branch::class, 'doctor_branch', 'doctor_id', 'branch_id')
+        return $this->belongsToMany(Branch::class, 'doctor_branch', 'doctor_id', 'branch_id')
             ->withPivot('is_active')
             ->withTimestamps();
     }

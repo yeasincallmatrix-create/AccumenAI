@@ -195,6 +195,8 @@
                 </div>
             </div>
 
+            @include('medical.doctors.partials.contract-fields')
+
             @include('medical.doctors.partials.availability-fields')
 
             <div class="mt-3 d-flex gap-2">

@@ -72,7 +72,7 @@
                             </td>
                             <td><x-tdate :value="$admission->admission_date" fallback="d M Y" /></td>
                             <td>{{ $admission->length_of_stay }} day(s)</td>
-                            <td>{{ $admission->admittingDoctor->name ?? 'N/A' }}</td>
+                            <td>{{ $admission->admittingDoctor->name ?? 'General Supervision' }}</td>
                             <td class="text-end">
                                 <div class="btn-group btn-group-sm">
                                     <a href="{{ route('medical.admissions.show', $admission) }}" class="btn btn-info" title="View">

@@ -96,7 +96,7 @@ class MedicalPhase2Test extends TestCase
         ], $overrides));
     }
 
-    private function createBed(Ward $ward, string $number = null): Bed
+    private function createBed(Ward $ward, ?string $number = null): Bed
     {
         return Bed::create([
             'institute_id' => $this->institute->id,
@@ -243,6 +243,49 @@ class MedicalPhase2Test extends TestCase
     {
         $this->post(route('medical.admissions.store'), [])
             ->assertSessionHasErrors(['patient_id', 'admitting_doctor_id', 'admission_date', 'admission_time']);
+    }
+
+    public function test_admission_general_supervision_without_doctor(): void
+    {
+        $this->get(route('medical.admissions.create'))
+            ->assertOk()
+            ->assertSee('General Supervision');
+
+        $patient = $this->createPatient();
+
+        // Sentinel 0 = "General Supervision" — saved with no admitting doctor.
+        $this->post(route('medical.admissions.store'), [
+            'patient_id' => $patient->id,
+            'admitting_doctor_id' => 0,
+            'admission_date' => now()->format('Y-m-d'),
+            'admission_time' => '10:00',
+            'primary_diagnosis' => 'Under general supervision',
+        ])->assertSessionHasNoErrors();
+
+        $admission = Admission::where('institute_id', $this->institute->id)->latest('id')->firstOrFail();
+        $this->assertNull($admission->admitting_doctor_id);
+
+        // Empty stays required; unknown doctor ids stay rejected.
+        $this->post(route('medical.admissions.store'), [
+            'patient_id' => $patient->id,
+            'admitting_doctor_id' => '',
+            'admission_date' => now()->format('Y-m-d'),
+            'admission_time' => '10:00',
+        ])->assertSessionHasErrors('admitting_doctor_id');
+
+        $this->post(route('medical.admissions.store'), [
+            'patient_id' => $patient->id,
+            'admitting_doctor_id' => 999999999,
+            'admission_date' => now()->format('Y-m-d'),
+            'admission_time' => '10:00',
+        ])->assertSessionHasErrors('admitting_doctor_id');
+
+        $this->get(route('medical.admissions.show', $admission))
+            ->assertOk()
+            ->assertSee('General Supervision');
+        $this->get(route('medical.admissions.edit', $admission))
+            ->assertOk()
+            ->assertSee('General Supervision');
     }
 
     public function test_transfer_moves_patient_between_beds(): void

@@ -17,7 +17,7 @@ use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /**
- * OPD Queue Display — read-only fullscreen board + its JSON feed.
+ * OPD Queue Display â€” read-only fullscreen board + its JSON feed.
  *
  * Covers the contract the display depends on: feed shape, cross-institute
  * isolation (403 + doctor id filtering), the serial_only name format never
@@ -132,7 +132,9 @@ class QueueDisplayTest extends TestCase
         ]));
         $board->assertOk()
             ->assertSee('Now Serving')
-            ->assertSee($this->doctor->name);
+            ->assertSee($this->doctor->name)
+            // One doctor on screen: the merged view picks the giant layout.
+            ->assertSee('data-layout="tv"', false);
 
         $this->feed()->assertOk()->assertHeader('Content-Type', 'application/json');
     }
@@ -224,7 +226,9 @@ class QueueDisplayTest extends TestCase
         ]))
             ->assertOk()
             ->assertSee($third->name)
-            ->assertDontSee($fourth->name);
+            ->assertDontSee($fourth->name)
+            // Two doctors: the regular two-up cards, not the giant layout.
+            ->assertSee('data-layout="cards"', false);
     }
 
     public function test_doctor_from_another_institute_is_never_displayed(): void

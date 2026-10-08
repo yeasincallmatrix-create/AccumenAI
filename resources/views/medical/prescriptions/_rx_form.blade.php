@@ -1,6 +1,8 @@
 @php
 $isCreate = ($mode === 'create');
 $isAmend = ($mode === 'amend');
+$prefillChiefComplaints = $prefillChiefComplaints ?? '';
+$encounter = $encounter ?? null;
 $formId = $isCreate ? 'prescription-form' : 'prescription-edit-form';
 $defaultDoctor = $isCreate ? ($selectedDoctor ?? '') : $prescription->doctor_id;
 $defaultPatient = $isCreate ? ($selectedPatient->id ?? '') : $prescription->patient_id;
@@ -177,6 +179,9 @@ $defaultFollowUp = $isCreate ? date('Y-m-d') : $prescription->follow_up_date?->f
             @if($isCreate && !empty($feeAppointment))
                 <input type="hidden" name="fee_appointment_id" value="{{ $feeAppointment->id }}">
             @endif
+            @if($isCreate && !empty($encounter))
+                <input type="hidden" name="encounter_id" value="{{ $encounter->id }}">
+            @endif
             <div class="row g-3" id="rx-main-row">
                 <div class="col-md-2" id="rx-soap-col">
                     <div class="d-flex flex-column gap-3 w-100 h-100">
@@ -187,7 +192,7 @@ $defaultFollowUp = $isCreate ? date('Y-m-d') : $prescription->follow_up_date?->f
                             <div class="card-body py-2 d-flex flex-column">
                                 <textarea id="chief_complaints" name="chief_complaints" aria-label="Chief Complaints" data-autogrow rows="3"
                                           style="overflow-y:auto;max-height:600px;"
-                                          class="form-control flex-fill @error('chief_complaints') is-invalid @enderror">{{ old('chief_complaints', $isCreate ? '' : ($prescription->chief_complaints ?? '')) }}</textarea>
+                                          class="form-control flex-fill @error('chief_complaints') is-invalid @enderror">{{ old('chief_complaints', $isCreate ? ($prefillChiefComplaints ?? '') : ($prescription->chief_complaints ?? '')) }}</textarea>
                                 @error('chief_complaints')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         </div>
@@ -1402,7 +1407,12 @@ $defaultFollowUp = $isCreate ? date('Y-m-d') : $prescription->follow_up_date?->f
         ['chief_complaints','examination_findings','diagnosis','investigations','advice','follow_up_date','doctor_id','notes'].forEach(function (id) {
             if (draft[id] !== undefined) {
                 var el = document.getElementById(id);
-                if (el) { el.value = draft[id]; el.dispatchEvent(new Event('input')); }
+                // Don't let a stale empty draft wipe a server prefill
+                // (e.g. booking complaints carried via fee_appointment_id).
+                if (el) {
+                    if (String(draft[id] ?? '').trim() === '' && String(el.value ?? '').trim() !== '') return;
+                    el.value = draft[id]; el.dispatchEvent(new Event('input'));
+                }
             }
         });
         if (draft.doctor_id) {

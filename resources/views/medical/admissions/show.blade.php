@@ -60,7 +60,7 @@
                     <x-tdate :value="$admission->admission_date" fallback="d M Y" />
                     {{ $admission->admission_time ? \Carbon\Carbon::parse($admission->admission_time)->format('h:i A') : '' }}
                 </p>
-                <p><strong>Admitting Doctor:</strong> {{ $admission->admittingDoctor->name ?? 'N/A' }}</p>
+                <p><strong>Admitting Doctor:</strong> {{ $admission->admittingDoctor->name ?? 'General Supervision' }}</p>
                 <p class="mb-0"><strong>Length of Stay:</strong> {{ $admission->length_of_stay }} day(s)</p>
                 @if($admission->status !== 'active')
                     <hr>

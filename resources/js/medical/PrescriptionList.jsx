@@ -14,6 +14,9 @@ const PrescriptionList = ({ initialPrescriptions, refreshUrl }) => {
     const [filter, setFilter] = useState('all');
     const [error, setError] = useState(null);
     const [updatedAt, setUpdatedAt] = useState(null);
+    // Empty initial payload (e.g. embedded tab) fetches on mount — show a
+    // loading state instead of flashing the "No prescriptions" empty state.
+    const [loading, setLoading] = useState((initialPrescriptions || []).length === 0 && !!refreshUrl);
 
     const refresh = useCallback(() => {
         if (!refreshUrl) return;
@@ -30,11 +33,13 @@ const PrescriptionList = ({ initialPrescriptions, refreshUrl }) => {
                 setError(null);
                 setUpdatedAt(new Date());
             })
-            .catch((err) => setError(err.message));
+            .catch((err) => setError(err.message))
+            .finally(() => setLoading(false));
     }, [refreshUrl]);
 
     useEffect(() => {
         if (!refreshUrl) return undefined;
+        refresh();
         const interval = setInterval(refresh, 10000);
         return () => clearInterval(interval);
     }, [refresh, refreshUrl]);
@@ -76,7 +81,11 @@ const PrescriptionList = ({ initialPrescriptions, refreshUrl }) => {
                 </div>
             )}
 
-            {filtered.length === 0 ? (
+            {loading ? (
+                <div className="text-muted text-center py-4 mb-0">
+                    <i className="bi bi-hourglass-split me-1"></i>Loading prescriptions…
+                </div>
+            ) : filtered.length === 0 ? (
                 <div className="alert alert-info mb-0">
                     <i className="bi bi-file-medical me-1"></i>No prescriptions found.
                 </div>

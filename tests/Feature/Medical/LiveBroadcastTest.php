@@ -9,6 +9,7 @@ use App\Models\Medical\Patient;
 use App\Models\Membership;
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\Setting;
 use App\Models\User;
 use App\Support\Workspace;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -16,11 +17,12 @@ use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /**
- * Live Broadcast — per-doctor fullscreen queue view + its read-only JSON feed.
+ * Live Broadcast — one doctor on the shared queue display + its JSON feed.
  *
- * Pins the contract the board depends on: the feed shape, {doctor} being a
+ * Merged with the OPD Queue Display: same view, same payload. Pins the
+ * contract the board depends on: the feed shape, {doctor} being a
  * users.id (not a medical_doctors.id), cross-institute isolation, the
- * permission gate and the doctor fence.
+ * permission gate, the doctor fence and the single-doctor giant layout.
  */
 class LiveBroadcastTest extends TestCase
 {
@@ -129,11 +131,13 @@ class LiveBroadcastTest extends TestCase
 
     public function test_broadcast_view_and_feed_open_for_the_owner(): void
     {
+        // One doctor on screen: the merged view picks the giant layout.
         $this->broadcast()
             ->assertOk()
             ->assertSee('Now Serving')
             ->assertSee('Broadcast Doc')
-            ->assertSee('Live Broadcast Hospital');
+            ->assertSee('Live Broadcast Hospital')
+            ->assertSee('data-layout="tv"', false);
 
         $this->feed()
             ->assertOk()
@@ -142,6 +146,8 @@ class LiveBroadcastTest extends TestCase
 
     public function test_feed_returns_users_id_and_the_queue_counts(): void
     {
+        Setting::set('medical.queue_display.patient_name_format', 'first_name');
+
         $this->makeAppointment($this->doctor, 'in_progress', 1, 'Serving');
         $this->makeAppointment($this->doctor, 'checked_in', 2, 'Waiting');
         $this->makeAppointment($this->doctor, 'scheduled', 3, 'Queued');
@@ -152,33 +158,36 @@ class LiveBroadcastTest extends TestCase
 
         $json = $this->feed()->assertOk()->json();
 
-        $this->assertSame(['generated_at', 'doctor', 'queue'], array_keys($json));
+        // Merged with the queue display: one payload shape for both views.
+        $this->assertSame(['date', 'name_format', 'generated_at', 'doctors'], array_keys($json));
+        $this->assertSame($this->date, $json['date']);
+        $this->assertSame('first_name', $json['name_format']);
         $this->assertNotEmpty($json['generated_at']);
 
-        // {doctor} in the URL is users.id, and so is the id the feed echoes.
-        $this->assertSame(['id', 'name'], array_keys($json['doctor']));
-        $this->assertSame($this->doctor->id, (int) $json['doctor']['id']);
-        $this->assertSame($this->doctor->name, $json['doctor']['name']);
+        // {doctor} in the URL is users.id, and so is the key the feed echoes.
+        $this->assertArrayHasKey($this->doctor->id, $json['doctors']);
+        $this->assertArrayNotHasKey($other->id, $json['doctors']);
+        $this->assertCount(1, $json['doctors']);
 
-        $queue = $json['queue'];
-        $this->assertSame(
-            ['total', 'waiting', 'checked_in', 'in_progress', 'estimated_wait_minutes', 'queue'],
-            array_keys($queue)
+        $row = $json['doctors'][$this->doctor->id];
+        $this->assertEqualsCanonicalizing(
+            ['doctor_id', 'doctor_name', 'department_name', 'now_serving', 'up_next', 'waiting_count', 'total_today'],
+            array_keys($row)
         );
-        $this->assertSame(3, $queue['total']);
-        $this->assertSame(1, $queue['waiting']);
-        $this->assertSame(1, $queue['checked_in']);
-        $this->assertSame(1, $queue['in_progress']);
+        $this->assertSame($this->doctor->id, (int) $row['doctor_id']);
+        $this->assertSame($this->doctor->name, $row['doctor_name']);
+        $this->assertSame(3, $row['total_today']);
+        $this->assertSame(2, $row['waiting_count']);
 
-        $this->assertCount(3, $queue['queue']);
-        $this->assertSame(
-            ['id', 'serial', 'patient_name', 'status', 'estimated_time'],
-            array_keys($queue['queue'][0])
-        );
-        $this->assertSame(
-            ['Serving Nametest', 'Waiting Nametest', 'Queued Nametest'],
-            collect($queue['queue'])->pluck('patient_name')->all()
-        );
+        // The patient payload is reduced to exactly these three fields.
+        $this->assertSame(['serial_number', 'display_name', 'time'], array_keys($row['now_serving']));
+        $this->assertSame(1, $row['now_serving']['serial_number']);
+        $this->assertSame('Serving', $row['now_serving']['display_name']);
+        $this->assertNotSame('', $row['now_serving']['time']);
+
+        $this->assertCount(2, $row['up_next']);
+        $this->assertSame(['serial_number', 'display_name', 'time'], array_keys($row['up_next'][0]));
+        $this->assertSame(['Waiting', 'Queued'], collect($row['up_next'])->pluck('display_name')->all());
     }
 
     public function test_doctor_from_another_institute_is_forbidden(): void

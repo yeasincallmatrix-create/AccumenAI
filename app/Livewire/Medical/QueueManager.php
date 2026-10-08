@@ -8,6 +8,8 @@ use App\Models\Medical\Appointment;
 use App\Models\Medical\Doctor;
 use App\Models\Medical\QueueAuditLog;
 use App\Models\Medical\VitalSign;
+use App\Models\Membership;
+use App\Services\Medical\EncounterAutoService;
 use App\Support\BranchContext;
 use App\Support\MedicalScope;
 use App\Support\Workspace;
@@ -351,6 +353,15 @@ class QueueManager extends Component
             $appointment->update(['status' => 'in_progress']);
             $this->errorMessage = '';
             $this->statusMessage = 'Consultation started!';
+            // Reconciliation: 1 visit = 1 Encounter — starting moves (or
+            // auto-creates) the linked OPD encounter to in_progress.
+            try {
+                $appointment->refresh();
+                $actor = auth('institute_user')->user() ?? auth('web')->user() ?? auth()->user();
+                app(EncounterAutoService::class)
+                    ->ensureForAppointment($appointment, $actor ? (int) $actor->getKey() : null);
+            } catch (\Throwable) {
+            }
         }
 
         $this->loadQueue();
@@ -385,7 +396,8 @@ class QueueManager extends Component
     /**
      * Whether the appointment's doctor collects post-visit (fee due at
      * completion, not at start). No billing profile = no fee flow.
-     */    private function isPostVisitDoctor(Appointment $appointment): bool
+     */
+    private function isPostVisitDoctor(Appointment $appointment): bool
     {
         $profile = Doctor::resolveForUser((int) $appointment->doctor_id, (int) $appointment->institute_id);
 
@@ -663,7 +675,7 @@ class QueueManager extends Component
             if ($staff instanceof InstituteUser) {
                 $slug = $staff->role?->slug;
             } else {
-                $slug = \App\Models\Membership::where('user_id', $staff->getKey())
+                $slug = Membership::where('user_id', $staff->getKey())
                     ->where('institution_id', $this->instituteId)
                     ->where('status', 'active')
                     ->with('role')

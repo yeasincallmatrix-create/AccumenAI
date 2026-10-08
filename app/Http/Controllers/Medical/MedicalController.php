@@ -3,9 +3,17 @@
 namespace App\Http\Controllers\Medical;
 
 use App\Http\Controllers\Controller;
+use App\Models\Branch;
+use App\Models\InstituteUser;
 use App\Models\Medical\Admission;
+use App\Models\Medical\Doctor;
+use App\Models\Medical\Invoice;
 use App\Models\Medical\Patient;
+use App\Models\Medical\TpaClaim;
+use App\Models\Membership;
+use App\Support\BranchContext;
 use App\Support\MedicalScope;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Phase 1 plumbing base — NOT business logic.
@@ -59,11 +67,11 @@ abstract class MedicalController extends Controller
      */
     protected function branchContextId(): ?int
     {
-        $branchId = \App\Support\BranchContext::id();
+        $branchId = BranchContext::id();
         if ($branchId === null) {
             return null;
         }
-        $belongs = \App\Models\Branch::where('id', $branchId)
+        $belongs = Branch::where('id', $branchId)
             ->where('institute_id', $this->instituteId())
             ->exists();
         if (! $belongs) {
@@ -134,7 +142,7 @@ abstract class MedicalController extends Controller
     {
         $instituteId = $this->instituteId();
         if ($requested !== null && $requested !== '') {
-            $branch = \App\Models\Branch::where('id', (int) $requested)->first();
+            $branch = Branch::where('id', (int) $requested)->first();
             if (! $branch || (int) $branch->institute_id !== (int) $instituteId) {
                 abort(403, 'The selected branch is not available.');
             }
@@ -164,13 +172,13 @@ abstract class MedicalController extends Controller
         }
         $instituteId ??= $this->instituteId();
 
-        $doctorIds = \App\Models\Medical\Doctor::where('institute_id', $instituteId)
+        $doctorIds = Doctor::where('institute_id', $instituteId)
             ->where('user_id', $doctorUserId)
             ->pluck('id');
         if ($doctorIds->isEmpty()) {
             return false;
         }
-        $hasAssignments = \Illuminate\Support\Facades\DB::table('doctor_branch')
+        $hasAssignments = DB::table('doctor_branch')
             ->where('institute_id', $instituteId)
             ->whereIn('doctor_id', $doctorIds)
             ->where('is_active', true)
@@ -179,7 +187,7 @@ abstract class MedicalController extends Controller
             return true;
         }
 
-        return \Illuminate\Support\Facades\DB::table('doctor_branch')
+        return DB::table('doctor_branch')
             ->where('institute_id', $instituteId)
             ->where('branch_id', $branchId)
             ->whereIn('doctor_id', $doctorIds)
@@ -195,7 +203,7 @@ abstract class MedicalController extends Controller
     protected function branchDoctorUserIds(?int $branchId, ?int $instituteId = null): array
     {
         $instituteId ??= $this->instituteId();
-        $map = \App\Models\Medical\Doctor::where('institute_id', $instituteId)
+        $map = Doctor::where('institute_id', $instituteId)
             ->pluck('user_id', 'id');
         if ($map->isEmpty()) {
             return [];
@@ -204,7 +212,7 @@ abstract class MedicalController extends Controller
             return $map->values()->map(fn ($v) => (int) $v)->unique()->values()->all();
         }
 
-        $assigned = \Illuminate\Support\Facades\DB::table('doctor_branch')
+        $assigned = DB::table('doctor_branch')
             ->where('institute_id', $instituteId)
             ->where('is_active', true)
             ->get(['branch_id', 'doctor_id'])
@@ -289,8 +297,8 @@ abstract class MedicalController extends Controller
         if ($fence !== null) {
             $query->where(function ($q) use ($instituteId, $fence) {
                 $q->whereHas('appointments', fn ($qq) => $qq
-                        ->where('institute_id', $instituteId)
-                        ->where('doctor_id', $fence))
+                    ->where('institute_id', $instituteId)
+                    ->where('doctor_id', $fence))
                     ->orWhereHas('admissions', fn ($qq) => $qq
                         ->where('institute_id', $instituteId)
                         ->where('status', 'active')
@@ -319,7 +327,7 @@ abstract class MedicalController extends Controller
      * Abort 403 unless the invoice is visible to the fenced doctor.
      * No-op unfenced.
      */
-    protected function ensureInvoiceVisible(\App\Models\Medical\Invoice $invoice): void
+    protected function ensureInvoiceVisible(Invoice $invoice): void
     {
         $fence = $this->doctorFenceId();
         if ($fence === null) {
@@ -349,7 +357,7 @@ abstract class MedicalController extends Controller
      * Abort 403 unless the TPA claim's invoice is visible to the fenced
      * doctor. No-op unfenced.
      */
-    protected function ensureClaimVisible(\App\Models\Medical\TpaClaim $claim): void
+    protected function ensureClaimVisible(TpaClaim $claim): void
     {
         if ($this->doctorFenceId() === null) {
             return;
@@ -375,12 +383,12 @@ abstract class MedicalController extends Controller
             return false;
         }
 
-        if ($staff instanceof \App\Models\InstituteUser) {
+        if ($staff instanceof InstituteUser) {
             return $staff->isOwner() || ($staff->role?->slug === 'hospital-admin');
         }
 
         try {
-            $slug = \App\Models\Membership::where('user_id', $staff->getKey())
+            $slug = Membership::where('user_id', $staff->getKey())
                 ->where('institution_id', $instituteId)
                 ->where('status', 'active')
                 ->with('role')
@@ -448,5 +456,19 @@ abstract class MedicalController extends Controller
         }
 
         return ! $patient->appointments()->where('institute_id', $instituteId)->exists();
+    }
+
+    /**
+     * Actor id across portal guards (institute_user, web, others) for the
+     * created_by/completed_by snapshot columns. Attribution truth lives in
+     * the audit log; these columns are informational only.
+     * Named to avoid colliding with controllers that already define a
+     * private actorId() helper.
+     */
+    protected function resolvedActorId(): ?int
+    {
+        $staff = auth('institute_user')->user() ?? auth('web')->user() ?? auth()->user();
+
+        return $staff ? (int) $staff->getKey() : null;
     }
 }

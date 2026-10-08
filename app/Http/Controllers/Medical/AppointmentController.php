@@ -5,18 +5,27 @@ namespace App\Http\Controllers\Medical;
 use App\Http\Requests\Medical\AppointmentRequest;
 use App\Models\Country;
 use App\Models\Institute;
-use App\Models\Medical\Admission;
+use App\Models\InstituteUser;
 use App\Models\Medical\Appointment;
 use App\Models\Medical\Doctor;
 use App\Models\Medical\Patient;
 use App\Models\Medical\QueueAuditLog;
+use App\Models\Membership;
+use App\Models\Setting;
 use App\Services\Medical\AppointmentFeeService;
+use App\Services\Medical\EncounterAutoService;
 use App\Services\Medical\MrNumberGenerator;
 use App\Services\Medical\QueueManager;
+use App\Support\MedicalScope;
+use App\Support\PhoneNormalizer;
 use App\Support\Workspace;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class AppointmentController extends MedicalController implements HasMiddleware
 {
@@ -31,6 +40,7 @@ class AppointmentController extends MedicalController implements HasMiddleware
     }
 
     protected QueueManager $queueManager;
+
     protected MrNumberGenerator $mrGenerator;
 
     public function __construct(QueueManager $queueManager, MrNumberGenerator $mrGenerator)
@@ -99,12 +109,21 @@ class AppointmentController extends MedicalController implements HasMiddleware
         $previewMr = $this->mrGenerator->peek($instituteId);
 
         $user = $request->user();
-        $canCreatePatient = $user instanceof \App\Models\InstituteUser
+        $canCreatePatient = $user instanceof InstituteUser
             ? $user->hasPermission('medical_patients.create')
             : (Workspace::membershipFor($user)?->hasPermission('medical_patients.create') ?? false);
 
-        $activeTab = in_array($request->input('tab'), ['queue', 'audit'], true) ? $request->input('tab') : 'appointments';
+        $canViewPrescriptions = $user instanceof InstituteUser
+            ? $user->hasPermission('medical_prescriptions.view')
+            : (Workspace::membershipFor($user)?->hasPermission('medical_prescriptions.view') ?? false);
+
+        $allowedTabs = ['queue', 'report', 'audit'];
+        if ($canViewPrescriptions) {
+            $allowedTabs[] = 'prescriptions';
+        }
+        $activeTab = in_array($request->input('tab'), $allowedTabs, true) ? $request->input('tab') : 'appointments';
         $queue = $this->queueViewData($instituteId, $request, $doctors);
+        $report = $this->reportViewData($instituteId, $request, $doctors);
 
         // Post-visit doctor flow landing: auto-open the fee popup for a
         // validated in-progress visit (anything invalid is silently ignored).
@@ -167,8 +186,8 @@ class AppointmentController extends MedicalController implements HasMiddleware
         return view('medical.appointments.index', compact(
             'appointments', 'doctors', 'patients', 'countries',
             'defaultCountryId', 'previewMr', 'canCreatePatient',
-            'activeTab', 'queue', 'instituteId', 'reactProps', 'autoFee',
-            'ipdPatientIds'
+            'activeTab', 'queue', 'report', 'instituteId', 'reactProps', 'autoFee',
+            'ipdPatientIds', 'canViewPrescriptions'
         ));
     }
 
@@ -205,7 +224,19 @@ class AppointmentController extends MedicalController implements HasMiddleware
     public function store(AppointmentRequest $request, AppointmentFeeService $feeService)
     {
         $instituteId = $this->instituteId();
-        $data = $request->validated();
+        $validated = $request->validated();
+
+        // The popup doubles as a one-step registration: with no patient
+        // chosen, the inline patient fields become a brand-new patient and
+        // the appointment books against it — one submit, one transaction.
+        $patientFields = [
+            'first_name', 'last_name', 'gender', 'age', 'age_unit', 'date_of_birth',
+            'blood_group', 'relation_to_primary', 'primary_contact_id', 'phone',
+            'present_country_id',
+        ];
+        $newPatient = array_intersect_key($validated, array_flip($patientFields));
+        $data = array_diff_key($validated, array_flip($patientFields));
+
         $data['institute_id'] = $instituteId;
         // Phase 18: branch ownership (validated; serials stay doctor+day
         // scoped per the documented numbering policy) + clinician assignment.
@@ -221,25 +252,32 @@ class AppointmentController extends MedicalController implements HasMiddleware
                 ->withInput();
         }
 
-        // Generate serial number (institute + doctor + date scoped).
-        $data['serial_number'] = $this->queueManager->getNextSerial(
-            $instituteId,
-            $data['doctor_id'],
-            $data['appointment_date']
-        );
+        [$appointment, $quote] = DB::transaction(function () use ($data, $newPatient, $instituteId, $feeService) {
+            if (empty($data['patient_id'])) {
+                $data['patient_id'] = $this->createInlinePatient($newPatient)->id;
+            }
 
-        // First-visit vs follow-up fee (null when the doctor user has no
-        // Doctor profile â€” booking then continues exactly as before).
-        $patient = Patient::where('institute_id', $instituteId)->findOrFail($data['patient_id']);
-        if (! $this->mayActOnPatient($patient)) {
-            abort(403, 'You do not have permission to book for this patient.');
-        }
-        $quote = $feeService->calculateFor((int) $data['doctor_id'], $patient, $instituteId);
-        if ($quote['fee'] !== null) {
-            $data['fee_applied'] = $quote['fee'];
-        }
+            // Generate serial number (institute + doctor + date scoped).
+            $data['serial_number'] = $this->queueManager->getNextSerial(
+                $instituteId,
+                $data['doctor_id'],
+                $data['appointment_date']
+            );
 
-        $appointment = Appointment::create($data);
+            $patient = Patient::where('institute_id', $instituteId)->findOrFail($data['patient_id']);
+            if (! $this->mayActOnPatient($patient)) {
+                abort(403, 'You do not have permission to book for this patient.');
+            }
+
+            // First-visit vs follow-up fee (null when the doctor user has no
+            // Doctor profile — booking then continues exactly as before).
+            $quote = $feeService->calculateFor((int) $data['doctor_id'], $patient, $instituteId);
+            if ($quote['fee'] !== null) {
+                $data['fee_applied'] = $quote['fee'];
+            }
+
+            return [Appointment::create($data), $quote];
+        });
 
         $message = 'Appointment booked successfully! Serial: '.$appointment->serial_number;
         if ($appointment->fee_applied !== null) {
@@ -250,9 +288,59 @@ class AppointmentController extends MedicalController implements HasMiddleware
         // Land on the appointments list (default tab), filtered to the
         // booked doctor + date so the new serial is visible right away.
         return redirect()->route('medical.appointments.index', [
-            'date' => \Carbon\Carbon::parse($appointment->appointment_date)->format('Y-m-d'),
+            'date' => Carbon::parse($appointment->appointment_date)->format('Y-m-d'),
             'doctor_id' => $appointment->doctor_id,
         ])->with('status', $message);
+    }
+
+    /**
+     * Register the patient typed straight into the Book Appointment popup.
+     * Mirrors PatientController::quickStore (same normalization, MR number
+     * generation and family linkage) so a booking never leaves the page.
+     */
+    private function createInlinePatient(array $data): Patient
+    {
+        $instituteId = $this->instituteId();
+        $countryId = Institute::whereKey($instituteId)->value('country_id');
+        $country = $countryId
+            ? Country::whereKey($countryId)->value('name')
+            : config('locale.country.default_name', 'Bangladesh');
+
+        $data['last_name'] = $data['last_name'] ?? '';
+        $data['gender'] = $data['gender'] ?? 'other';
+        unset($data['age'], $data['age_unit'], $data['present_country_id']);
+
+        if (empty($data['phone'])) {
+            $data['phone'] = 'NA-'.uniqid();
+        } else {
+            $normalized = PhoneNormalizer::toE164($data['phone'], $country);
+            if ($normalized !== null) {
+                $data['phone'] = $normalized;
+            }
+        }
+
+        $data['institute_id'] = $instituteId;
+        $data['mr_number'] = $this->mrGenerator->generate($instituteId);
+
+        // Family linkage: same rules as the quick registration popup.
+        $relation = $data['relation_to_primary'] ?? null;
+        if (empty($data['primary_contact_id'])) {
+            unset($data['primary_contact_id']);
+            $data['relation_to_primary'] = $relation ?: 'Self';
+            $data['is_dependent'] = false;
+        } else {
+            $contact = Patient::where('institute_id', $instituteId)->findOrFail($data['primary_contact_id']);
+            if (! $this->mayActOnPatient($contact)) {
+                abort(403, 'You do not have permission to link to this patient.');
+            }
+            $data['relation_to_primary'] = $relation && $relation !== 'Self' ? $relation : 'Other';
+            $data['is_dependent'] = true;
+        }
+
+        $patient = Patient::create($data);
+        $patient->syncStructuredAllergies();
+
+        return $patient;
     }
 
     /**
@@ -267,7 +355,24 @@ class AppointmentController extends MedicalController implements HasMiddleware
         $canDeleteFinalized = $this->isMedicalAdmin($appointment->institute_id);
         $isOwnDoctor = $this->isOwnDoctor($appointment->doctor_id, $appointment->institute_id);
 
-        return view('medical.appointments.show', compact('appointment', 'canDeleteFinalized', 'isOwnDoctor'));
+        // Post-visit doctors collect the fee AT completion: the Complete
+        // button opens the fee-accept popup (same modal as the Live Queue)
+        // instead of completing silently with no payment on record.
+        $feePopup = null;
+        $profile = Doctor::resolveForUser((int) $appointment->doctor_id, (int) $appointment->institute_id);
+        if ($profile && ! (bool) $profile->collect_fee_before_visit
+            && in_array($appointment->status, ['checked_in', 'in_progress'], true)
+            && $appointment->fee_collected_at === null
+            && $appointment->patient) {
+            $feePopup = [
+                'url' => route('medical.appointments.collect-fee', $appointment),
+                'patient' => $appointment->patient->full_name ?? 'N/A',
+                'amount' => number_format($profile->getApplicableFee($appointment->patient), 2, '.', ''),
+                'type' => $profile->hasFollowUpRateFor($appointment->patient) ? 'follow-up' : 'first visit',
+            ];
+        }
+
+        return view('medical.appointments.show', compact('appointment', 'canDeleteFinalized', 'isOwnDoctor', 'feePopup'));
     }
 
     /**
@@ -330,6 +435,14 @@ class AppointmentController extends MedicalController implements HasMiddleware
         $this->ensureBranchAccess($appointment, 'branch_id', 'appointment');
 
         $data = $request->validated();
+        // Inline registration fields belong to the booking popup only — an
+        // appointment row never carries them.
+        unset(
+            $data['first_name'], $data['last_name'], $data['gender'], $data['age'],
+            $data['age_unit'], $data['date_of_birth'], $data['blood_group'],
+            $data['relation_to_primary'], $data['primary_contact_id'], $data['phone'],
+            $data['present_country_id']
+        );
 
         // Fenced doctors keep their own doctor (no reassignment away).
         if (($fence = $this->doctorFenceId()) !== null) {
@@ -467,7 +580,7 @@ class AppointmentController extends MedicalController implements HasMiddleware
         if ($doctorId === null) {
             $doctorId = (int) $request->input('doctor_id', 0) ?: $doctors->first()?->id;
         }
-        if ($doctorId && ! \App\Support\MedicalScope::isDoctorInInstitute((int) $doctorId, $instituteId)) {
+        if ($doctorId && ! MedicalScope::isDoctorInInstitute((int) $doctorId, $instituteId)) {
             abort(403, 'You do not have permission to view this queue.');
         }
         // Phase 18.1: queue visibility follows the branch fence.
@@ -483,7 +596,7 @@ class AppointmentController extends MedicalController implements HasMiddleware
         $doctorName = null;
         if ($doctorId) {
             $status = $this->queueManager->getQueueStatus($instituteId, (int) $doctorId, $date, $queueBranchId);
-            $queue = $status['queue'] instanceof \Illuminate\Support\Collection
+            $queue = $status['queue'] instanceof Collection
                 ? $status['queue']->values()->all()
                 : array_values((array) ($status['queue'] ?? []));
             $doctorName = $doctors->firstWhere('id', (int) $doctorId)?->name;
@@ -511,7 +624,7 @@ class AppointmentController extends MedicalController implements HasMiddleware
         // Fenced doctors are pinned to their own queue (request cannot widen).
         $fence = $this->doctorFenceId();
         $doctorId = $fence ?? (int) $request->input('doctor_id', 0);
-        if (! $doctorId || ! \App\Support\MedicalScope::isDoctorInInstitute($doctorId, $instituteId)) {
+        if (! $doctorId || ! MedicalScope::isDoctorInInstitute($doctorId, $instituteId)) {
             abort(403, 'You do not have permission to view this queue.');
         }
         // Phase 18.1: queue visibility follows the branch fence.
@@ -524,7 +637,7 @@ class AppointmentController extends MedicalController implements HasMiddleware
         $date = $request->input('date', today()->format('Y-m-d'));
 
         $status = $this->queueManager->getQueueStatus($instituteId, $doctorId, $date, $queueBranchId);
-        $queue = $status['queue'] instanceof \Illuminate\Support\Collection
+        $queue = $status['queue'] instanceof Collection
             ? $status['queue']->values()->all()
             : array_values((array) ($status['queue'] ?? []));
 
@@ -623,7 +736,7 @@ class AppointmentController extends MedicalController implements HasMiddleware
                 'doctor_name' => $appointment->doctor->name ?? 'N/A',
                 'date_display' => mawa_format_date($appointment->appointment_date, null, 'd M Y'),
                 'time_display' => $appointment->appointment_time
-                    ? \Carbon\Carbon::parse($appointment->appointment_time)->format('h:i A')
+                    ? Carbon::parse($appointment->appointment_time)->format('h:i A')
                     : 'N/A',
                 'serial_number' => $appointment->serial_number,
                 'status' => $appointment->status,
@@ -667,7 +780,7 @@ class AppointmentController extends MedicalController implements HasMiddleware
         $rawDate = trim((string) $request->input('q_date', ''));
         try {
             $date = $rawDate !== ''
-                ? \Carbon\Carbon::parse($rawDate)->format('Y-m-d')
+                ? Carbon::parse($rawDate)->format('Y-m-d')
                 : today()->format('Y-m-d');
         } catch (\Throwable) {
             $date = today()->format('Y-m-d');
@@ -784,6 +897,148 @@ class AppointmentController extends MedicalController implements HasMiddleware
     }
 
     /**
+     * Doctor-wise visit Report tab data for the appointments index.
+     *
+     * Columns: # | patient name | doctor | date | visit type
+     * (First visit / Follow-up) | fee (fee_applied) | fee collected.
+     * Filters: r_doctor (doctor picker, fenced doctors pinned to self),
+     * r_from / r_to (date range, defaults to today), r_search
+     * (patient name / phone). Cancelled appointments are excluded —
+     * they are not visits.
+     */
+    private function reportViewData(int $instituteId, Request $request, $doctors): array
+    {
+        $fence = $this->doctorFenceId();
+
+        // Doctor filter (fenced doctors are pinned to themselves).
+        $doctorId = '';
+        if ($fence !== null) {
+            $doctorId = (string) $fence;
+        } elseif ($request->filled('r_doctor')) {
+            $wanted = (string) $request->input('r_doctor');
+            $validIds = collect($doctors)->map(fn ($d) => (string) ($d->id ?? ''))->all();
+            if (in_array($wanted, $validIds, true)) {
+                $doctorId = $wanted;
+            }
+        }
+
+        // Date range (defaults to today … today, matching the list tab).
+        $today = today()->format('Y-m-d');
+        $from = $today;
+        $to = $today;
+        try {
+            if (trim((string) $request->input('r_from', '')) !== '') {
+                $from = Carbon::parse($request->input('r_from'))->format('Y-m-d');
+            }
+        } catch (\Throwable) {
+            $from = $today;
+        }
+        try {
+            if (trim((string) $request->input('r_to', '')) !== '') {
+                $to = Carbon::parse($request->input('r_to'))->format('Y-m-d');
+            }
+        } catch (\Throwable) {
+            $to = $today;
+        }
+        if ($from > $to) {
+            [$from, $to] = [$to, $from];
+        }
+        $search = trim((string) $request->input('r_search', ''));
+
+        $query = Appointment::where('institute_id', $instituteId)
+            ->with(['patient', 'doctor', 'doctorProfile'])
+            ->whereDate('appointment_date', '>=', $from)
+            ->whereDate('appointment_date', '<=', $to)
+            ->where('status', '!=', 'cancelled');
+        $this->scopeBranch($query);
+        if ($fence !== null) {
+            $query->where('doctor_id', $fence);
+        } elseif ($doctorId !== '') {
+            $query->where('doctor_id', (int) $doctorId);
+        }
+        if ($search !== '') {
+            $query->whereHas('patient', function ($q) use ($search) {
+                $q->where('first_name', 'LIKE', "%{$search}%")
+                    ->orWhere('last_name', 'LIKE', "%{$search}%")
+                    ->orWhere('phone', 'LIKE', "%{$search}%")
+                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) LIKE ?", ["%{$search}%"]);
+            });
+        }
+
+        $appointments = $query
+            ->orderBy('appointment_date')
+            ->orderBy('appointment_time')
+            ->limit(500)
+            ->get();
+
+        $rows = $appointments->map(function (Appointment $a) {
+            $visitType = '—';
+            if ($a->fee_applied !== null) {
+                $visitType = $a->isFollowUp() ? 'Follow-up' : 'First visit';
+            }
+            $collected = $a->fee_collected_at !== null ? (float) ($a->fee_collected_amount ?? 0) : null;
+
+            return [
+                'patient' => $a->patient->full_name ?? 'N/A',
+                'phone' => $a->patient->phone ?? '',
+                'doctor_id' => (int) $a->doctor_id,
+                'doctor' => $a->doctor->name ?? 'N/A',
+                'date' => $a->appointment_date?->format('Y-m-d'),
+                'date_display' => mawa_format_date($a->appointment_date, null, 'd M Y'),
+                'visit_type' => $visitType,
+                'fee' => $a->fee_applied !== null ? (float) $a->fee_applied : null,
+                'discount' => $a->fee_discount_amount !== null ? (float) $a->fee_discount_amount : null,
+                'fee_collected' => $collected,
+                'status' => $a->status,
+            ];
+        })->all();
+
+        // Per-doctor totals + grand totals.
+        $perDoctor = [];
+        $totalVisits = 0;
+        $totalFee = 0.0;
+        $totalDiscount = 0.0;
+        $totalCollected = 0.0;
+        foreach ($rows as $row) {
+            $key = (int) $row['doctor_id'];
+            if (! isset($perDoctor[$key])) {
+                $perDoctor[$key] = [
+                    'doctor_id' => $key,
+                    'doctor' => $row['doctor'],
+                    'visits' => 0,
+                    'fee' => 0.0,
+                    'discount' => 0.0,
+                    'fee_collected' => 0.0,
+                ];
+            }
+            $perDoctor[$key]['visits']++;
+            $perDoctor[$key]['fee'] += (float) ($row['fee'] ?? 0);
+            $perDoctor[$key]['discount'] += (float) ($row['discount'] ?? 0);
+            $perDoctor[$key]['fee_collected'] += (float) ($row['fee_collected'] ?? 0);
+            $totalVisits++;
+            $totalFee += (float) ($row['fee'] ?? 0);
+            $totalDiscount += (float) ($row['discount'] ?? 0);
+            $totalCollected += (float) ($row['fee_collected'] ?? 0);
+        }
+        // Keep doctor name order stable.
+        usort($perDoctor, fn ($a, $b) => strcmp((string) $a['doctor'], (string) $b['doctor']));
+
+        return [
+            'doctorId' => $doctorId,
+            'from' => $from,
+            'to' => $to,
+            'search' => $search,
+            'doctors' => $doctors,
+            'rows' => $rows,
+            'perDoctor' => array_values($perDoctor),
+            'totalVisits' => $totalVisits,
+            'totalFee' => $totalFee,
+            'totalDiscount' => $totalDiscount,
+            'totalCollected' => $totalCollected,
+        ];
+    }
+
+    /**
      * Check in a patient.
      */
     public function checkin(Appointment $appointment)
@@ -792,6 +1047,15 @@ class AppointmentController extends MedicalController implements HasMiddleware
         $this->ensureDoctorOwns($appointment, 'doctor_id', 'appointment');
         $this->ensureBranchAccess($appointment, 'branch_id', 'appointment');
         $this->queueManager->checkIn($appointment);
+
+        // Reconciliation: 1 visit = 1 Encounter. Check-in opens the
+        // clinical record shell (best-effort — queue flow never breaks).
+        try {
+            $appointment->refresh();
+            app(EncounterAutoService::class)
+                ->ensureForAppointment($appointment, $this->resolvedActorId());
+        } catch (\Throwable) {
+        }
 
         return redirect()->back()->with('status', 'Patient checked in successfully!');
     }
@@ -820,6 +1084,15 @@ class AppointmentController extends MedicalController implements HasMiddleware
             );
         }
         $this->queueManager->startConsultation($appointment);
+
+        // Reconciliation: starting moves the linked encounter to
+        // in_progress as well (auto-created when missing).
+        try {
+            $appointment->refresh();
+            app(EncounterAutoService::class)
+                ->ensureForAppointment($appointment, $this->resolvedActorId());
+        } catch (\Throwable) {
+        }
 
         // The treating doctor continues straight into writing the
         // prescription (both fee timings — the fee step already happened
@@ -856,7 +1129,7 @@ class AppointmentController extends MedicalController implements HasMiddleware
             )->withInput();
         }
 
-        $newDate = \Carbon\Carbon::parse($validated['appointment_date'])->format('Y-m-d');
+        $newDate = Carbon::parse($validated['appointment_date'])->format('Y-m-d');
 
         if ($newDate === $appointment->appointment_date->format('Y-m-d')) {
             return redirect()->back()->withErrors(
@@ -890,7 +1163,9 @@ class AppointmentController extends MedicalController implements HasMiddleware
      * stamped on the appointment and written to the Audit Log so it is
      * clear who received the payment. Each appointment charges at most
      * once — re-submits never recharge; another fee always needs a full
-     * new cycle (new appointment → check-in → visit).
+     * new cycle (new appointment → check-in → visit). An optional discount
+     * (percent or flat) from the popup reduces the collected figure — the
+     * gross stays in fee_applied, the NET lands in fee_collected_amount.
      */
     public function collectFee(Request $request, Appointment $appointment)
     {
@@ -900,12 +1175,27 @@ class AppointmentController extends MedicalController implements HasMiddleware
 
         $validated = $request->validate([
             'action' => 'required|in:start,complete',
+            'discount_type' => 'nullable|in:none,percent,flat',
+            'discount_value' => 'nullable|numeric|min:0',
         ]);
 
         $profile = Doctor::resolveForUser($appointment->doctor_id, $appointment->institute_id);
         $amount = ($profile && $appointment->patient)
             ? $profile->getApplicableFee($appointment->patient)
             : 0.0;
+
+        // Discount is always recomputed server-side from the gross fee —
+        // the popup figures are informational only, and it can never
+        // exceed the fee itself.
+        $discount = $this->resolveFeeDiscount(
+            (float) $amount,
+            $validated['discount_type'] ?? null,
+            $validated['discount_value'] ?? null
+        );
+        $net = round((float) $amount - $discount['amount'], 2);
+        $discountNote = $discount['amount'] > 0
+            ? ' (discount ৳'.number_format($discount['amount'], 2).')'
+            : '';
 
         $receiver = $this->feeReceiverSnapshot($appointment->institute_id);
 
@@ -928,7 +1218,10 @@ class AppointmentController extends MedicalController implements HasMiddleware
                 );
             }
             $appointment->update([
-                'fee_collected_amount' => $amount,
+                'fee_collected_amount' => $net,
+                'fee_discount_type' => $discount['type'],
+                'fee_discount_value' => $discount['value'],
+                'fee_discount_amount' => $discount['amount'] > 0 ? $discount['amount'] : null,
                 'fee_collected_by_id' => $receiver['id'],
                 'fee_collected_by_name' => $receiver['name'],
                 'fee_collected_at' => now(),
@@ -941,10 +1234,10 @@ class AppointmentController extends MedicalController implements HasMiddleware
                 'actor_name' => $receiver['name'],
                 'action' => 'fee_collected',
                 'new_order' => $appointment->queue_order ?? $appointment->serial_number ?? 0,
-                'amount' => $amount,
+                'amount' => $net,
             ]);
-            $message = $amount > 0
-                ? 'Fee collected (৳'.number_format($amount, 2).'). You may now start the consultation.'
+            $message = $net > 0
+                ? 'Fee collected (৳'.number_format($net, 2).')'.$discountNote.'. You may now start the consultation.'
                 : 'Recorded. You may now start the consultation.';
         } else {
             if (! in_array($appointment->status, ['checked_in', 'in_progress'], true)) {
@@ -965,7 +1258,10 @@ class AppointmentController extends MedicalController implements HasMiddleware
             }
             $appointment->update([
                 'status' => 'completed',
-                'fee_collected_amount' => $amount,
+                'fee_collected_amount' => $net,
+                'fee_discount_type' => $discount['type'],
+                'fee_discount_value' => $discount['value'],
+                'fee_discount_amount' => $discount['amount'] > 0 ? $discount['amount'] : null,
                 'fee_collected_by_id' => $receiver['id'],
                 'fee_collected_by_name' => $receiver['name'],
                 'fee_collected_at' => now(),
@@ -978,13 +1274,13 @@ class AppointmentController extends MedicalController implements HasMiddleware
                 'actor_name' => $receiver['name'],
                 'action' => 'fee_collected',
                 'new_order' => $appointment->queue_order ?? $appointment->serial_number ?? 0,
-                'amount' => $amount,
+                'amount' => $net,
                 // Post-visit fee confirmed by anyone other than the treating
                 // doctor still needs a doctor's verification.
                 'needs_verification' => ! $this->isTreatingDoctor($appointment),
             ]);
-            $message = $amount > 0
-                ? 'Fee collected (à§³'.number_format($amount, 2).'). Appointment completed!'
+            $message = $net > 0
+                ? 'Fee collected (৳'.number_format($net, 2).')'.$discountNote.'. Appointment completed!'
                 : 'Appointment completed!';
         }
 
@@ -993,14 +1289,45 @@ class AppointmentController extends MedicalController implements HasMiddleware
         $redirectTo = $request->input('redirect_to');
         if ($redirectTo && str_starts_with($redirectTo, url('/'))) {
             $separator = str_contains($redirectTo, '?') ? '&' : '?';
-            $redirectTo .= $separator . 'patient_id=' . $appointment->patient_id . '&doctor_id=' . $appointment->doctor_id;
+            $redirectTo .= $separator.'patient_id='.$appointment->patient_id.'&doctor_id='.$appointment->doctor_id;
+
             return redirect($redirectTo)->with('status', $message);
         }
+
         return redirect()->route('medical.appointments.index', [
             'tab' => 'queue',
             'q_doctor' => $appointment->doctor_id,
             'q_date' => '',
         ])->with('status', $message);
+    }
+
+    /**
+     * Discount off the gross visit fee (percent or flat currency).
+     *
+     * Never exceeds the fee itself: percent is capped at 100, flat at the
+     * gross amount, and anything invalid/empty resolves to no discount.
+     *
+     * @return array{type: ?string, value: ?float, amount: float}
+     */
+    private function resolveFeeDiscount(float $gross, mixed $type, mixed $value): array
+    {
+        $type = is_string($type) ? strtolower(trim($type)) : '';
+        if (! in_array($type, ['percent', 'flat'], true)) {
+            return ['type' => null, 'value' => null, 'amount' => 0.0];
+        }
+        $value = is_numeric($value) ? (float) $value : 0.0;
+        if ($value <= 0 || $gross <= 0) {
+            return ['type' => null, 'value' => null, 'amount' => 0.0];
+        }
+        $amount = $type === 'percent'
+            ? round($gross * min($value, 100.0) / 100, 2)
+            : round(min($value, $gross), 2);
+        $amount = min($amount, $gross);
+        if ($amount <= 0) {
+            return ['type' => null, 'value' => null, 'amount' => 0.0];
+        }
+
+        return ['type' => $type, 'value' => round($value, 2), 'amount' => $amount];
     }
 
     /**
@@ -1022,7 +1349,7 @@ class AppointmentController extends MedicalController implements HasMiddleware
         }
 
         try {
-            return \App\Support\MedicalScope::ownDoctorUserId((int) $appointment->institute_id) === $doctorId;
+            return MedicalScope::ownDoctorUserId((int) $appointment->institute_id) === $doctorId;
         } catch (\Throwable) {
             return false;
         }
@@ -1118,16 +1445,16 @@ class AppointmentController extends MedicalController implements HasMiddleware
             $id = $staff->getKey();
             $name = $staff->name ?? trim(($staff->first_name ?? '').' '.($staff->last_name ?? '')) ?: null;
 
-            if ($staff instanceof \App\Models\InstituteUser && $staff->isOwner()) {
+            if ($staff instanceof InstituteUser && $staff->isOwner()) {
                 $type = 'owner';
-            } elseif (\App\Support\MedicalScope::ownDoctorUserId($instituteId) !== null) {
+            } elseif (MedicalScope::ownDoctorUserId($instituteId) !== null) {
                 $type = 'doctor';
             } else {
                 try {
-                    if ($staff instanceof \App\Models\InstituteUser) {
+                    if ($staff instanceof InstituteUser) {
                         $slug = $staff->role?->slug;
                     } else {
-                        $slug = \App\Models\Membership::where('user_id', $staff->getKey())
+                        $slug = Membership::where('user_id', $staff->getKey())
                             ->where('institution_id', $instituteId)
                             ->where('status', 'active')
                             ->with('role')
@@ -1149,54 +1476,57 @@ class AppointmentController extends MedicalController implements HasMiddleware
     }
 
     // ==================================================================
-    // Live Broadcast — per-doctor fullscreen queue view (read-only)
+    // Live Broadcast — one doctor on the shared queue display (read-only)
     // ==================================================================
 
     /**
      * Fullscreen live queue view for one doctor (waiting-room TV).
-     * Standalone layout: no sidebar, no topbar.
+     *
+     * Fully merged with the OPD Queue Display board: same standalone view,
+     * same context, same feed. Picking a single doctor auto-selects the
+     * giant broadcast layout; the URL keeps working for old bookmarks and
+     * the Queue tab button.
      */
     public function liveBroadcast(Request $request)
     {
-        $instituteId = $this->instituteId();
         $doctorId = $this->liveBroadcastDoctorId($request);
+        $context = $this->queueDisplayContext($request->merge(['doctors' => [$doctorId]]));
 
-        return view('medical.appointments.live', [
-            'doctorId' => $doctorId,
-            'doctorName' => $this->liveBroadcastDoctorName($doctorId, $instituteId),
-            'doctorDept' => \App\Models\Medical\Doctor::resolveForUser($doctorId, $instituteId)?->department_name ?? 'N/A',
-            'instituteName' => Institute::find($instituteId)?->name ?? config('app.name'),
-            'queue' => $this->queueManager->getQueueStatus(
-                $instituteId,
-                $doctorId,
-                now()->toDateString(),
-                $this->branchContextId()
-            ),
-            'date' => now()->toDateString(),
+        if ($context['doctor_ids'] === []) {
+            abort(403, 'You do not have permission to view this queue.');
+        }
+
+        return view('medical.queue-display', [
+            'queueData' => $context['rows'],
+            'date' => $context['date'],
+            'nameFormat' => $context['format'],
+            'selectedDoctorIds' => $context['doctor_ids'],
+            'refreshSeconds' => (int) config('medicine.queue_display.refresh_seconds', 30),
+            'backUrl' => route('medical.appointments.index', [
+                'tab' => 'queue',
+                'q_doctor' => $doctorId,
+                'q_date' => $context['date'],
+            ]),
+            'pageTitle' => 'Live Broadcast',
         ]);
     }
 
     /**
-     * Read-only JSON feed polled by the live broadcast view every 10s.
+     * Read-only JSON feed polled by the live broadcast view.
+     *
+     * Same payload shape as queueDisplayData() — one feed contract for
+     * both the board and the broadcast.
      */
-    public function liveBroadcastData(Request $request): \Illuminate\Http\JsonResponse
+    public function liveBroadcastData(Request $request): JsonResponse
     {
-        $instituteId = $this->instituteId();
         $doctorId = $this->liveBroadcastDoctorId($request);
+        $context = $this->queueDisplayContext($request->merge(['doctors' => [$doctorId]]));
 
-        return response()->json([
-            'generated_at' => now()->toIso8601String(),
-            'doctor' => [
-                'id' => $doctorId,
-                'name' => $this->liveBroadcastDoctorName($doctorId, $instituteId),
-            ],
-            'queue' => $this->queueManager->getQueueStatus(
-                $instituteId,
-                $doctorId,
-                now()->toDateString(),
-                $this->branchContextId()
-            ),
-        ]);
+        if ($context['doctor_ids'] === []) {
+            abort(403, 'You do not have permission to view this queue.');
+        }
+
+        return $this->queueDisplayPayload($context);
     }
 
     /**
@@ -1214,7 +1544,7 @@ class AppointmentController extends MedicalController implements HasMiddleware
         $instituteId = $this->instituteId();
         $doctorId = (int) $request->route('doctor');
 
-        if (! \App\Support\MedicalScope::isDoctorInInstitute($doctorId, $instituteId)) {
+        if (! MedicalScope::isDoctorInInstitute($doctorId, $instituteId)) {
             abort(403, 'You do not have permission to view this queue.');
         }
 
@@ -1229,17 +1559,6 @@ class AppointmentController extends MedicalController implements HasMiddleware
         }
 
         return $doctorId;
-    }
-
-    /**
-     * Display name for a doctor users.id (Doctor::full_name === user name;
-     * doctors without a medical_doctors profile still have a user).
-     */
-    private function liveBroadcastDoctorName(int $doctorId, int $instituteId): string
-    {
-        return \App\Models\User::whereKey($doctorId)->value('name')
-            ?? \App\Models\Medical\Doctor::resolveForUser($doctorId, $instituteId)?->full_name
-            ?? 'Doctor';
     }
 
     // ==================================================================
@@ -1271,10 +1590,18 @@ class AppointmentController extends MedicalController implements HasMiddleware
     /**
      * JSON feed polled by the board's inline refresh script.
      */
-    public function queueDisplayData(Request $request): \Illuminate\Http\JsonResponse
+    public function queueDisplayData(Request $request): JsonResponse
     {
-        $context = $this->queueDisplayContext($request);
+        return $this->queueDisplayPayload($this->queueDisplayContext($request));
+    }
 
+    /**
+     * The single feed payload both fullscreen views poll.
+     *
+     * @param  array{doctor_ids: array<int>, date: string, format: string, rows: array}  $context
+     */
+    private function queueDisplayPayload(array $context): JsonResponse
+    {
         return response()->json([
             'date' => $context['date'],
             'name_format' => $context['format'],
@@ -1377,7 +1704,7 @@ class AppointmentController extends MedicalController implements HasMiddleware
      */
     private function queueDisplayAllowedDoctorIds(int $instituteId, ?int $branchId, ?int $fence): array
     {
-        $allowed = \App\Support\MedicalScope::instituteDoctorUserIds($instituteId);
+        $allowed = MedicalScope::instituteDoctorUserIds($instituteId);
 
         if ($fence !== null) {
             $allowed = array_values(array_intersect($allowed, [$fence]));
@@ -1399,7 +1726,7 @@ class AppointmentController extends MedicalController implements HasMiddleware
         $default = (string) ($definition['default'] ?? 'first_name');
         $key = (string) ($definition['key'] ?? 'medical.queue_display.patient_name_format');
 
-        $format = (string) \App\Models\Setting::get($key, $default);
+        $format = (string) Setting::get($key, $default);
 
         return array_key_exists($format, (array) ($definition['options'] ?? [])) ? $format : $default;
     }
@@ -1432,7 +1759,7 @@ class AppointmentController extends MedicalController implements HasMiddleware
 
         $patients = $patientIds === []
             ? collect()
-            : \App\Models\Medical\Patient::whereIn('id', array_unique($patientIds))
+            : Patient::whereIn('id', array_unique($patientIds))
                 ->get(['id', 'institute_id', 'first_name', 'last_name'])
                 ->keyBy('id');
 
@@ -1475,7 +1802,7 @@ class AppointmentController extends MedicalController implements HasMiddleware
         $patient = $patients->get((int) ($item['patient_id'] ?? 0));
 
         // Cross-institute guard: never format another tenant's patient row.
-        if ($patient instanceof \App\Models\Medical\Patient
+        if ($patient instanceof Patient
             && (int) $patient->institute_id === $this->instituteId()) {
             return $this->formatPatientName($patient, $format);
         }
@@ -1489,7 +1816,7 @@ class AppointmentController extends MedicalController implements HasMiddleware
      * serial_only deliberately returns an empty string — the board renders
      * nothing at all for the name slot rather than a placeholder.
      */
-    public function formatPatientName(\App\Models\Medical\Patient $patient, string $format): string
+    public function formatPatientName(Patient $patient, string $format): string
     {
         if ($format === 'serial_only') {
             return '';
@@ -1535,6 +1862,6 @@ class AppointmentController extends MedicalController implements HasMiddleware
      */
     private function doctors(int $instituteId)
     {
-        return \App\Support\MedicalScope::instituteDoctors($instituteId);
+        return MedicalScope::instituteDoctors($instituteId);
     }
 }

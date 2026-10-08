@@ -20,7 +20,7 @@
     @stack('styles')
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js" defer></script>
 </head>
-<body>
+<body class="@yield('body_class')">
 
 @include('partials.page_marker')
 
@@ -138,7 +138,10 @@
                         $medicalOpen = request()->routeIs('medical.*') ? true : false;
                         $subIndustry = $institute->sub_industry ?? 'hospital';
                         $isDiagnostic = $subIndustry === 'diagnostic_center';
-                        $medicalSubModules = app(\App\Services\ModuleAccessService::class)->getMedicalSubModules();
+                        $moduleAccess = app(\App\Services\ModuleAccessService::class);
+                        $medicalSubModules = $moduleAccess->getMedicalSubModules()
+                            ->filter(fn ($subModule) => $moduleAccess->isEnabled($institute, $subModule->key))
+                            ->values();
                     @endphp
                     @if($user && $user->hasPermission('medical_patients.view'))
                         <a class="nav-link {{ request()->routeIs('medical.patients.*') ? 'active' : '' }}" href="{{ route('medical.patients.index') }}">
@@ -169,6 +172,11 @@
                                 <span class="badge bg-secondary ms-2" style="font-size:9px;">Soon</span>
                             </span>
                         @else
+                            @if($sub->key === 'medical.opd')
+                                <a class="nav-link {{ $subActive ? 'active' : '' }}" href="{{ route('medical.appointments.index') }}">
+                                    <i class="bi {{ $sub->icon }}"></i><span class="sidebar-label">{{ $sub->name }}</span>
+                                </a>
+                                @else
                             <div class="nav-group">
                                 <button class="nav-link w-100 d-flex align-items-center justify-content-between {{ $subActive ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#{{ $subId }}" aria-expanded="{{ $subActive ? 'true' : 'false' }}">
                                     <span class="d-flex align-items-center gap-2"><i class="bi {{ $sub->icon }}"></i><span class="sidebar-label">{{ $sub->name }}</span></span>
@@ -176,34 +184,6 @@
                                 </button>
                                 <div class="collapse {{ $subActive ? 'show' : '' }}" id="{{ $subId }}">
                                     @switch($sub->key)
-                                        @case('medical.opd')
-                                            @if($user && $user->hasPermission('medical_appointments.view'))
-                                                <a class="nav-link sub {{ request()->routeIs('medical.appointments.*') ? 'active' : '' }}" href="{{ route('medical.appointments.index') }}">
-                                                    <i class="bi bi-calendar-event"></i><span class="sidebar-label">Appointments</span>
-                                                </a>
-                                            @endif
-                                            @if($user && $user->hasPermission('medical_appointments.view'))
-                                                <a class="nav-link sub {{ request()->routeIs('medical.queue.display.*') ? 'active' : '' }}" href="{{ route('medical.queue.display.selector') }}">
-                                                    <i class="bi bi-tv"></i><span class="sidebar-label">Queue Display</span>
-                                                </a>
-                                            @endif
-                                            @if($user && $user->hasPermission('medical_prescriptions.view'))
-                                                <a class="nav-link sub {{ request()->routeIs('medical.prescriptions.*') ? 'active' : '' }}" href="{{ route('medical.prescriptions.index') }}">
-                                                    <i class="bi bi-file-medical"></i><span class="sidebar-label">Prescriptions</span>
-                                                </a>
-                                            @endif
-                                            @if($user && $user->hasPermission('medical_encounters.view'))
-                                                <a class="nav-link sub {{ request()->routeIs('medical.encounters.*') ? 'active' : '' }}" href="{{ route('medical.encounters.index') }}">
-                                                    <i class="bi bi-clipboard2-pulse"></i><span class="sidebar-label">Encounters</span>
-                                                </a>
-                                            @endif
-                                            @if($user && $user->hasPermission('medical_vitals.view'))
-                                                <a class="nav-link sub {{ request()->routeIs('medical.vitals.*') ? 'active' : '' }}" href="{{ route('medical.vitals.index') }}">
-                                                    <i class="bi bi-activity"></i><span class="sidebar-label">Vitals</span>
-                                                </a>
-                                            @endif
-                                            @break
-
                                         @case('medical.ipd')
                                             @if($user && $user->hasPermission('medical_admissions.view'))
                                                 <a class="nav-link sub {{ request()->routeIs('medical.admissions.*') ? 'active' : '' }}" href="{{ route('medical.admissions.index') }}">
@@ -552,9 +532,10 @@
                                     @endswitch
                                 </div>
                             </div>
+                            @endif
                         @endif
                     @endforeach
-                    @if($user && $user->hasPermission('medical_reports.view'))
+                    @if(moduleEnabled('reports') && $user && $user->hasPermission('medical_reports.view'))
                         <a class="nav-link {{ request()->routeIs('medical.reports.*') ? 'active' : '' }}" href="{{ route('medical.reports.daily') }}">
                             <i class="bi bi-graph-up"></i><span class="sidebar-label">Reports</span>
                         </a>

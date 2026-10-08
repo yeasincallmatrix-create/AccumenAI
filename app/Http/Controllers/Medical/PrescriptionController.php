@@ -4,28 +4,41 @@ namespace App\Http\Controllers\Medical;
 
 use App\Http\Requests\Medical\PrescriptionItemRequest;
 use App\Http\Requests\Medical\PrescriptionRequest;
-use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Country;
 use App\Models\Institute;
-use App\Models\Medical\ClinicalAuditLog;
 use App\Models\Medical\Appointment;
 use App\Models\Medical\CdsFinding;
+use App\Models\Medical\ClinicalAuditLog;
 use App\Models\Medical\Doctor;
+use App\Models\Medical\Encounter;
+use App\Models\Medical\Medicine;
 use App\Models\Medical\Patient;
 use App\Models\Medical\Prescription;
-use App\Models\Medical\VitalSign;
+use App\Models\Medical\PrescriptionAuditLog;
 use App\Models\Medical\PrescriptionItem;
-use App\Services\Medical\DrugSafetyService;
+use App\Models\Medical\VitalSign;
+use App\Services\Medical\AppointmentFeeService;
 use App\Services\Medical\CdsEngine;
 use App\Services\Medical\CdsEvaluation;
 use App\Services\Medical\CdsFindingService;
+use App\Services\Medical\DrugSafetyService;
+use App\Services\Medical\EncounterAutoService;
+use App\Services\Medical\MrNumberGenerator;
+use App\Services\Medical\PrescriptionItemSnapshotService;
 use App\Services\Medical\PrescriptionService;
 use App\Services\Medical\QueueManager;
-use App\Services\Medical\AppointmentFeeService;
+use App\Support\MedicalScope;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\QueryException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class PrescriptionController extends MedicalController implements HasMiddleware
 {
@@ -234,7 +247,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
                 'room' => $prof?->room_no ?? null,
             ];
         }
-        $practice = \App\Models\Institute::whereKey($instituteId)
+        $practice = Institute::whereKey($instituteId)
             ->first(['name', 'address', 'phone', 'email']);
         $practiceInfo = [
             'clinic' => $practice->name ?? null,
@@ -243,10 +256,45 @@ class PrescriptionController extends MedicalController implements HasMiddleware
             'email' => $practice->email ?? null,
         ];
 
+        // Reconciliation: 1 visit = 1 Encounter. Resolve (auto-creating
+        // when missing) the OPD encounter for the chained queue visit so
+        // the Rx saves with encounter_id. Explicit ?encounter_id= wins when
+        // it belongs to the same patient and visit.
+        $encounter = null;
+        if ($request->filled('encounter_id')) {
+            $candidate = Encounter::where('institute_id', $instituteId)
+                ->find($request->input('encounter_id'));
+            if ($candidate && $selectedPatient && (int) $candidate->patient_id === (int) $selectedPatient->id) {
+                if ($feeAppointment && $candidate->appointment_id !== null
+                    && (int) $candidate->appointment_id !== (int) $feeAppointment->id) {
+                    $candidate = null;
+                } else {
+                    $encounter = $candidate;
+                }
+            }
+        }
+        if (! $encounter && $feeAppointment) {
+            try {
+                $encounter = app(EncounterAutoService::class)
+                    ->ensureForAppointment($feeAppointment, $this->resolvedActorId());
+            } catch (\Throwable) {
+                $encounter = null;
+            }
+        }
+
+        // Carry the booking-time complaints into the Rx draft so the
+        // doctor doesn't re-type what the front desk already captured.
+        // Chain: encounter.chief_complaint → appointment.complaints.
+        // Only the chained queue visit's own complaints are used — never
+        // another visit's — and old() input still wins on validation redo.
+        $encounterComplaint = $encounter?->chief_complaint ? trim((string) $encounter->chief_complaint) : '';
+        $appointmentComplaint = $feeAppointment?->complaints ? trim((string) $feeAppointment->complaints) : '';
+        $prefillChiefComplaints = $encounterComplaint !== '' ? $encounterComplaint : $appointmentComplaint;
+
         // Quick-add patient popup data (same inputs as the appointments page).
         $countries = Country::where('status', true)->orderBy('name')->get(['id', 'name', 'phone_code']);
         $defaultCountryId = Institute::whereKey($instituteId)->value('country_id');
-        $previewMr = app(\App\Services\Medical\MrNumberGenerator::class)->peek($instituteId);
+        $previewMr = app(MrNumberGenerator::class)->peek($instituteId);
 
         // IPD tag map for the patient dropdown.
         $ipdPatientIds = $this->activeAdmissionPatientIds($instituteId, $patients->pluck('id'));
@@ -258,7 +306,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
             ->flip()
             ->all();
 
-        return view('medical.prescriptions.create', compact('patients', 'doctors', 'medicines', 'selectedPatient', 'selectedDoctor', 'feeAppointment', 'infoPatient', 'infoVitals', 'doctorCards', 'practiceInfo', 'countries', 'defaultCountryId', 'previewMr', 'cardDoctor', 'ipdPatientIds', 'bookedPatientIds'));
+        return view('medical.prescriptions.create', compact('patients', 'doctors', 'medicines', 'selectedPatient', 'selectedDoctor', 'feeAppointment', 'encounter', 'prefillChiefComplaints', 'infoPatient', 'infoVitals', 'doctorCards', 'practiceInfo', 'countries', 'defaultCountryId', 'previewMr', 'cardDoctor', 'ipdPatientIds', 'bookedPatientIds'));
     }
 
     /**
@@ -270,7 +318,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
      * ever returned. Unknown/invalid doctors yield an empty map, never an
      * error.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function queueNumbers(Request $request)
     {
@@ -289,7 +337,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
 
         if ($request->filled('date')) {
             try {
-                $query->whereDate('appointment_date', \Carbon\Carbon::parse($request->input('date'))->format('Y-m-d'));
+                $query->whereDate('appointment_date', Carbon::parse($request->input('date'))->format('Y-m-d'));
             } catch (\Throwable) {
                 return response()->json([]);
             }
@@ -314,7 +362,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
         $fence = $this->doctorFenceId();
 
         $doctorId = $fence ?? (int) $request->input('doctor_id', 0);
-        if ($doctorId && ! \App\Support\MedicalScope::isDoctorInInstitute($doctorId, $instituteId)) {
+        if ($doctorId && ! MedicalScope::isDoctorInInstitute($doctorId, $instituteId)) {
             abort(403, 'You do not have permission to view this doctor.');
         }
 
@@ -331,8 +379,8 @@ class PrescriptionController extends MedicalController implements HasMiddleware
             if ($fence !== null) {
                 $query->where(function ($q) use ($instituteId, $fence) {
                     $q->whereHas('appointments', fn ($qq) => $qq
-                            ->where('institute_id', $instituteId)
-                            ->where('doctor_id', $fence))
+                        ->where('institute_id', $instituteId)
+                        ->where('doctor_id', $fence))
                         ->orWhereHas('admissions', fn ($qq) => $qq
                             ->where('institute_id', $instituteId)
                             ->where('status', 'active')
@@ -546,6 +594,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
         if ($request->expectsJson()) {
             $amount = ($profile && $patient) ? $profile->getApplicableFee($patient) : 0.0;
             $action = $preVisit ? 'start' : 'complete';
+
             return response()->json([
                 'collect_url' => route('medical.appointments.collect-fee', $appointment),
                 'patient' => $patient->full_name ?? '—',
@@ -810,21 +859,38 @@ class PrescriptionController extends MedicalController implements HasMiddleware
             if ($existingRx->is_finalized && auth()->user()->hasPermission('medical_prescriptions.amend')) {
                 return redirect()->route('medical.prescriptions.amend', $existingRx)
                     ->with('warning', 'A prescription already exists for this patient on '
-                        .\Carbon\Carbon::parse($data['prescription_date'] ?? today())->format('d M Y')
+                        .Carbon::parse($data['prescription_date'] ?? today())->format('d M Y')
                         .' ('.clinical_no($existingRx->prescription_number).'). You are being redirected to amend it.');
             }
 
             return redirect()->route('medical.prescriptions.edit', $existingRx)
                 ->with('warning', 'A prescription already exists for this patient on '
-                    .\Carbon\Carbon::parse($data['prescription_date'] ?? today())->format('d M Y')
+                    .Carbon::parse($data['prescription_date'] ?? today())->format('d M Y')
                     .' ('.clinical_no($existingRx->prescription_number).'). You are being redirected to edit it.');
         }
 
+        // Encounter link: explicit encounter_id wins; otherwise resolve
+        // from the chained queue visit (auto-created when actionable).
+        // Legacy walk-in saves without a visit keep NULL (old behavior).
+        if (empty($data['encounter_id']) && $request->filled('fee_appointment_id')) {
+            try {
+                $feeAppt = Appointment::where('institute_id', $instituteId)->find($request->input('fee_appointment_id'));
+                if ($feeAppt && (int) $feeAppt->patient_id === (int) $patient->id) {
+                    $auto = app(EncounterAutoService::class)
+                        ->ensureForAppointment($feeAppt, $this->resolvedActorId());
+                    if ($auto) {
+                        $data['encounter_id'] = $auto->id;
+                    }
+                }
+            } catch (\Throwable) {
+                // Best-effort — Rx still saves unlinked rather than failing.
+            }
+        }
         // Optional encounter link: same institute + same patient, visible to
         // the prescriber. History rows keep NULL (legacy behavior).
         $encounter = null;
         if (! empty($data['encounter_id'])) {
-            $encounter = \App\Models\Medical\Encounter::where('institute_id', $instituteId)
+            $encounter = Encounter::where('institute_id', $instituteId)
                 ->findOrFail($data['encounter_id']);
             if ((int) $encounter->patient_id !== (int) $patient->id) {
                 return redirect()->back()
@@ -877,15 +943,16 @@ class PrescriptionController extends MedicalController implements HasMiddleware
 
         try {
             $prescription = $this->prescriptionService->createPrescription($data, $items);
-        } catch (\Illuminate\Database\QueryException $e) {
+        } catch (QueryException $e) {
             if ($e->getCode() === '23000' && (
                 str_contains($e->getMessage(), 'uniq_rx_doctor_patient_date_version') ||
                 str_contains($e->getMessage(), 'uq_prescription_doctor_patient_date_version')
             )) {
                 $existing = Prescription::todayForDoctorPatient($data['doctor_id'], $data['patient_id'], $instituteId);
+
                 return redirect()->route('medical.prescriptions.edit', $existing)
                     ->with('warning', 'A prescription already exists for this patient on '
-                        .\Carbon\Carbon::parse($data['prescription_date'] ?? today())->format('d M Y')
+                        .Carbon::parse($data['prescription_date'] ?? today())->format('d M Y')
                         .' ('.clinical_no($existing->prescription_number).'). You are being redirected to edit it.');
             }
             throw $e;
@@ -1096,7 +1163,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
                 'room' => $prof?->room_no ?? null,
             ];
         }
-        $practice = \App\Models\Institute::whereKey($instituteId)
+        $practice = Institute::whereKey($instituteId)
             ->first(['name', 'address', 'phone', 'email']);
         $practiceInfo = [
             'clinic' => $practice->name ?? null,
@@ -1107,7 +1174,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
 
         $countries = Country::where('status', true)->orderBy('name')->get(['id', 'name', 'phone_code']);
         $defaultCountryId = Institute::whereKey($instituteId)->value('country_id');
-        $previewMr = app(\App\Services\Medical\MrNumberGenerator::class)->peek($instituteId);
+        $previewMr = app(MrNumberGenerator::class)->peek($instituteId);
 
         $ipdPatientIds = $this->activeAdmissionPatientIds($instituteId, $patients->pluck('id'));
         $bookedPatientIds = Appointment::where('institute_id', $instituteId)
@@ -1230,9 +1297,9 @@ class PrescriptionController extends MedicalController implements HasMiddleware
 
         // Snapshot medicine data at creation time.
         $medicine = ! empty($raw['medicine_id'])
-            ? \App\Models\Medical\Medicine::withTrashed()->find($raw['medicine_id'])
+            ? Medicine::withTrashed()->find($raw['medicine_id'])
             : null;
-        $item = \App\Services\Medical\PrescriptionItemSnapshotService::build($medicine, $raw);
+        $item = PrescriptionItemSnapshotService::build($medicine, $raw);
 
         $safety = $this->drugSafetyService->fullSafetyCheck(
             $prescription->patient,
@@ -1261,7 +1328,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
         }
 
         PrescriptionItem::create($item);
-        \App\Models\Medical\PrescriptionAuditLog::record(
+        PrescriptionAuditLog::record(
             $prescription, 'item_added', $item['medicine_name'] ?? ('#'.$item['medicine_id'])
         );
         $this->cdsFindings->recordEvaluation($prescription->refresh(), $cds);
@@ -1298,7 +1365,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
         }
 
         $item->delete();
-        \App\Models\Medical\PrescriptionAuditLog::record(
+        PrescriptionAuditLog::record(
             $prescription, 'item_removed', $item->medicine_name ?? ('#'.$item->medicine_id)
         );
 
@@ -1351,7 +1418,8 @@ class PrescriptionController extends MedicalController implements HasMiddleware
     /**
      * Finalize a prescription.
      */
-    public function finalize(Prescription $prescription)    {
+    public function finalize(Prescription $prescription)
+    {
         $this->ensureSameInstitute($prescription, 'prescription');
         $this->ensureDoctorOwns($prescription, 'doctor_id', 'prescription');
         $this->ensureBranchAccess($prescription, 'branch_id', 'prescription');
@@ -1430,7 +1498,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
                 'room' => $prof?->room_no ?? null,
             ];
         }
-        $practice = \App\Models\Institute::whereKey($instituteId)
+        $practice = Institute::whereKey($instituteId)
             ->first(['name', 'address', 'phone', 'email']);
         $practiceInfo = [
             'clinic' => $practice->name ?? null,
@@ -1439,9 +1507,9 @@ class PrescriptionController extends MedicalController implements HasMiddleware
             'email' => $practice->email ?? null,
         ];
 
-        $countries = \App\Models\Country::where('status', true)->orderBy('name')->get(['id', 'name', 'phone_code']);
-        $defaultCountryId = \App\Models\Institute::whereKey($instituteId)->value('country_id');
-        $previewMr = app(\App\Services\Medical\MrNumberGenerator::class)->peek($instituteId);
+        $countries = Country::where('status', true)->orderBy('name')->get(['id', 'name', 'phone_code']);
+        $defaultCountryId = Institute::whereKey($instituteId)->value('country_id');
+        $previewMr = app(MrNumberGenerator::class)->peek($instituteId);
 
         return view('medical.prescriptions.amend', compact(
             'prescription', 'patients', 'doctors', 'medicines',
@@ -1494,145 +1562,145 @@ class PrescriptionController extends MedicalController implements HasMiddleware
         unset($data['amendment_reason'], $data['parent_items'], $data['items']);
 
         try {
-            $new = \Illuminate\Support\Facades\DB::transaction(function () use ($data, $parentItemsData, $newItemsData, $prescription, $reason, $instituteId, $request) {
-            // Create v(N+1) as a draft
-            $new = $prescription->replicate([
-                'signature_hash', 'signed_at', 'signed_by',
-            ]);
-            $new->version = $prescription->version + 1;
-            $new->parent_prescription_id = $prescription->id;
-            $new->amendment_reason = $reason;
-            $new->amended_by = auth()->id();
-            $new->amended_at = now();
-            $new->prescription_number = $prescription->prescription_number;
-            $new->is_finalized = false;
-            $new->signature_hash = null;
-            $new->signed_at = null;
-            $new->signed_by = null;
-            $new->fill($data);
-            $new->save();
-
-            // 1. Process parent items (keep / discontinue)
-            foreach ($parentItemsData as $parentId => $pData) {
-                $parentItem = \App\Models\Medical\PrescriptionItem::where('id', $parentId)
-                    ->where('prescription_id', $prescription->id)
-                    ->first();
-
-                if (! $parentItem) {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
-                        'parent_items' => "Invalid parent item: {$parentId}",
-                    ]);
-                }
-
-                $action = $pData['action'] ?? 'keep';
-
-                if ($action === 'keep') {
-                    $newItem = $parentItem->replicate(['created_at', 'updated_at']);
-                    $newItem->prescription_id = $new->id;
-                    $newItem->item_status = 'active';
-                    $newItem->continued_from_item_id = $parentItem->id;
-                    $newItem->status = 'pending';
-                    $newItem->save();
-                } else {
-                    $discontinued = $parentItem->replicate(['created_at', 'updated_at']);
-                    $discontinued->prescription_id = $new->id;
-                    $discontinued->item_status = 'discontinued';
-                    $discontinued->discontinued_reason = $pData['discontinued_reason'] ?? 'Discontinued';
-                    $discontinued->discontinued_at = now();
-                    $discontinued->continued_from_item_id = $parentItem->id;
-                    $discontinued->status = 'cancelled';
-                    $discontinued->save();
-
-                    // Audit log for item discontinuation
-                    \App\Models\Medical\ClinicalAuditLog::create([
-                        'institute_id' => $prescription->institute_id,
-                        'patient_id' => $prescription->patient_id,
-                        'user_id' => auth()->id(),
-                        'user_type' => 'institute_user',
-                        'actor_name' => auth()->user()->name ?? null,
-                        'auditable_type' => \App\Models\Medical\PrescriptionItem::class,
-                        'auditable_id' => $discontinued->id,
-                        'action' => 'item_discontinued',
-                        'reason' => $pData['discontinued_reason'] ?? 'Discontinued',
-                        'old_values' => json_encode([
-                            'item_status' => 'active',
-                            'medicine_name' => $parentItem->medicine_name,
-                        ]),
-                        'new_values' => json_encode([
-                            'item_status' => 'discontinued',
-                            'reason' => $pData['discontinued_reason'] ?? 'Discontinued',
-                        ]),
-                        'ip_address' => $request->ip(),
-                        'user_agent' => $request->userAgent(),
-                    ]);
-                }
-            }
-
-            // 2. Add new items
-            if (! empty($newItemsData)) {
-                $catalog = \App\Models\Medical\Medicine::whereIn(
-                    'id',
-                    collect($newItemsData)->pluck('medicine_id')->filter()->unique()->values()->all()
-                )->with(['product.concept', 'product.form', 'product.route', 'product.identifiers'])
-                    ->get()->keyBy('id');
-
-                foreach ($newItemsData as $itemData) {
-                    $itemData['prescription_id'] = $new->id;
-                    $itemData['item_status'] = 'active';
-                    $medicine = ! empty($itemData['medicine_id'])
-                        ? ($catalog->get($itemData['medicine_id']) ?? \App\Models\Medical\Medicine::withTrashed()->find($itemData['medicine_id']))
-                        : null;
-                    $payload = \App\Services\Medical\PrescriptionItemSnapshotService::build($medicine, $itemData);
-                    \App\Models\Medical\PrescriptionItem::create($payload);
-                }
-            }
-
-            // 3. Validate at least one active item
-            $activeCount = $new->items()->where('item_status', 'active')->count();
-            if ($activeCount === 0) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
-                    'items' => 'At least one medicine must remain active in the amended prescription.',
+            $new = DB::transaction(function () use ($data, $parentItemsData, $newItemsData, $prescription, $reason, $request) {
+                // Create v(N+1) as a draft
+                $new = $prescription->replicate([
+                    'signature_hash', 'signed_at', 'signed_by',
                 ]);
-            }
+                $new->version = $prescription->version + 1;
+                $new->parent_prescription_id = $prescription->id;
+                $new->amendment_reason = $reason;
+                $new->amended_by = auth()->id();
+                $new->amended_at = now();
+                $new->prescription_number = $prescription->prescription_number;
+                $new->is_finalized = false;
+                $new->signature_hash = null;
+                $new->signed_at = null;
+                $new->signed_by = null;
+                $new->fill($data);
+                $new->save();
 
-            // Lifecycle audit
-            \App\Models\Medical\PrescriptionAuditLog::record(
-                $new,
-                'amended',
-                "Amended from Rx {$prescription->prescription_number} (v{$prescription->version})"
-            );
+                // 1. Process parent items (keep / discontinue)
+                foreach ($parentItemsData as $parentId => $pData) {
+                    $parentItem = PrescriptionItem::where('id', $parentId)
+                        ->where('prescription_id', $prescription->id)
+                        ->first();
 
-            // Clinical diff audit (polymorphic)
-            \App\Models\Medical\ClinicalAuditLog::create([
-                'institute_id' => $prescription->institute_id,
-                'branch_id' => $prescription->branch_id,
-                'patient_id' => $prescription->patient_id,
-                'user_id' => auth()->id(),
-                'user_type' => 'institute_user',
-                'actor_name' => auth()->user()->name ?? null,
-                'auditable_type' => Prescription::class,
-                'auditable_id' => $new->id,
-                'action' => 'amended',
-                'reason' => $reason,
-                'old_values' => json_encode([
-                    'prescription_id' => $prescription->id,
-                    'prescription_number' => $prescription->prescription_number,
-                    'version' => $prescription->version,
-                    'items' => $prescription->items->toArray(),
-                ]),
-                'new_values' => json_encode([
-                    'prescription_id' => $new->id,
-                    'prescription_number' => $new->prescription_number,
-                    'version' => $new->version,
-                    'items' => $new->items()->get()->toArray(),
-                ]),
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-            ]);
+                    if (! $parentItem) {
+                        throw ValidationException::withMessages([
+                            'parent_items' => "Invalid parent item: {$parentId}",
+                        ]);
+                    }
 
-            return $new;
-        });
-        } catch (\Illuminate\Database\QueryException $e) {
+                    $action = $pData['action'] ?? 'keep';
+
+                    if ($action === 'keep') {
+                        $newItem = $parentItem->replicate(['created_at', 'updated_at']);
+                        $newItem->prescription_id = $new->id;
+                        $newItem->item_status = 'active';
+                        $newItem->continued_from_item_id = $parentItem->id;
+                        $newItem->status = 'pending';
+                        $newItem->save();
+                    } else {
+                        $discontinued = $parentItem->replicate(['created_at', 'updated_at']);
+                        $discontinued->prescription_id = $new->id;
+                        $discontinued->item_status = 'discontinued';
+                        $discontinued->discontinued_reason = $pData['discontinued_reason'] ?? 'Discontinued';
+                        $discontinued->discontinued_at = now();
+                        $discontinued->continued_from_item_id = $parentItem->id;
+                        $discontinued->status = 'cancelled';
+                        $discontinued->save();
+
+                        // Audit log for item discontinuation
+                        ClinicalAuditLog::create([
+                            'institute_id' => $prescription->institute_id,
+                            'patient_id' => $prescription->patient_id,
+                            'user_id' => auth()->id(),
+                            'user_type' => 'institute_user',
+                            'actor_name' => auth()->user()->name ?? null,
+                            'auditable_type' => PrescriptionItem::class,
+                            'auditable_id' => $discontinued->id,
+                            'action' => 'item_discontinued',
+                            'reason' => $pData['discontinued_reason'] ?? 'Discontinued',
+                            'old_values' => json_encode([
+                                'item_status' => 'active',
+                                'medicine_name' => $parentItem->medicine_name,
+                            ]),
+                            'new_values' => json_encode([
+                                'item_status' => 'discontinued',
+                                'reason' => $pData['discontinued_reason'] ?? 'Discontinued',
+                            ]),
+                            'ip_address' => $request->ip(),
+                            'user_agent' => $request->userAgent(),
+                        ]);
+                    }
+                }
+
+                // 2. Add new items
+                if (! empty($newItemsData)) {
+                    $catalog = Medicine::whereIn(
+                        'id',
+                        collect($newItemsData)->pluck('medicine_id')->filter()->unique()->values()->all()
+                    )->with(['product.concept', 'product.form', 'product.route', 'product.identifiers'])
+                        ->get()->keyBy('id');
+
+                    foreach ($newItemsData as $itemData) {
+                        $itemData['prescription_id'] = $new->id;
+                        $itemData['item_status'] = 'active';
+                        $medicine = ! empty($itemData['medicine_id'])
+                            ? ($catalog->get($itemData['medicine_id']) ?? Medicine::withTrashed()->find($itemData['medicine_id']))
+                            : null;
+                        $payload = PrescriptionItemSnapshotService::build($medicine, $itemData);
+                        PrescriptionItem::create($payload);
+                    }
+                }
+
+                // 3. Validate at least one active item
+                $activeCount = $new->items()->where('item_status', 'active')->count();
+                if ($activeCount === 0) {
+                    throw ValidationException::withMessages([
+                        'items' => 'At least one medicine must remain active in the amended prescription.',
+                    ]);
+                }
+
+                // Lifecycle audit
+                PrescriptionAuditLog::record(
+                    $new,
+                    'amended',
+                    "Amended from Rx {$prescription->prescription_number} (v{$prescription->version})"
+                );
+
+                // Clinical diff audit (polymorphic)
+                ClinicalAuditLog::create([
+                    'institute_id' => $prescription->institute_id,
+                    'branch_id' => $prescription->branch_id,
+                    'patient_id' => $prescription->patient_id,
+                    'user_id' => auth()->id(),
+                    'user_type' => 'institute_user',
+                    'actor_name' => auth()->user()->name ?? null,
+                    'auditable_type' => Prescription::class,
+                    'auditable_id' => $new->id,
+                    'action' => 'amended',
+                    'reason' => $reason,
+                    'old_values' => json_encode([
+                        'prescription_id' => $prescription->id,
+                        'prescription_number' => $prescription->prescription_number,
+                        'version' => $prescription->version,
+                        'items' => $prescription->items->toArray(),
+                    ]),
+                    'new_values' => json_encode([
+                        'prescription_id' => $new->id,
+                        'prescription_number' => $new->prescription_number,
+                        'version' => $new->version,
+                        'items' => $new->items()->get()->toArray(),
+                    ]),
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                ]);
+
+                return $new;
+            });
+        } catch (QueryException $e) {
             if ($e->getCode() === '23000' && (
                 str_contains($e->getMessage(), 'uniq_rx_doctor_patient_date_version') ||
                 str_contains($e->getMessage(), 'uq_prescription_doctor_patient_date_version')
@@ -1716,7 +1784,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
      */
     private function doctors()
     {
-        return \App\Support\MedicalScope::instituteDoctors($this->instituteId());
+        return MedicalScope::instituteDoctors($this->instituteId());
     }
 
     /**
@@ -1775,7 +1843,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
 
     private function medicineCatalog(int $instituteId)
     {
-        return \App\Models\Medical\Medicine::where('institute_id', $instituteId)
+        return Medicine::where('institute_id', $instituteId)
             ->where('is_active', true)
             ->orderBy('generic_name')
             ->get();
@@ -1789,7 +1857,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
     {
         $out = [];
         foreach ($items as $item) {
-            $get = fn ($key) => $item instanceof \Illuminate\Database\Eloquent\Model
+            $get = fn ($key) => $item instanceof Model
                 ? $item->getAttribute($key)
                 : ($item[$key] ?? null);
             $out[] = [

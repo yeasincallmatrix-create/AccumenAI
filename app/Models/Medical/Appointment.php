@@ -2,6 +2,7 @@
 
 namespace App\Models\Medical;
 
+use App\Models\Branch;
 use App\Models\Institute;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -22,6 +23,9 @@ class Appointment extends Model
         'queue_order',
         'fee_applied',
         'fee_collected_amount',
+        'fee_discount_type',
+        'fee_discount_value',
+        'fee_discount_amount',
         'fee_collected_by_id',
         'fee_collected_by_name',
         'fee_collected_at',
@@ -35,6 +39,8 @@ class Appointment extends Model
         'queue_order' => 'integer',
         'fee_applied' => 'decimal:2',
         'fee_collected_amount' => 'decimal:2',
+        'fee_discount_value' => 'decimal:2',
+        'fee_discount_amount' => 'decimal:2',
         'fee_collected_at' => 'datetime',
     ];
 
@@ -45,7 +51,7 @@ class Appointment extends Model
 
     public function branch()
     {
-        return $this->belongsTo(\App\Models\Branch::class);
+        return $this->belongsTo(Branch::class);
     }
 
     public function patient()
