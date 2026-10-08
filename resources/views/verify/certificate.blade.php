@@ -1,5 +1,7 @@
 @extends('layouts.standalone')
 
+@php $hideBack = true; @endphp
+
 @section('title', 'Certificate Verification — AccumenAI')
 @section('page_title', 'Certificate Verification')
 
