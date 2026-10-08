@@ -59,7 +59,7 @@ class AccountingReportController extends Controller
             'accounts' => ChartOfAccount::query()
                 ->where('institute_id', $institute->id)
                 ->where('is_active', true)
-                ->orderBy('code')
+                ->ordered()
                 ->get(['id', 'code', 'name', 'type']),
             'accountId' => $coaId,
             'from' => $from,
@@ -88,7 +88,7 @@ class AccountingReportController extends Controller
             'accounts' => ChartOfAccount::query()
                 ->where('institute_id', $institute->id)
                 ->where('is_active', true)
-                ->orderBy('code')
+                ->ordered()
                 ->get(['id', 'code', 'name', 'type']),
             'accountId' => $coaId,
             'from' => $from,

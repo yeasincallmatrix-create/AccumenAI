@@ -11,7 +11,9 @@ class UpdateTenantAccountRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('create', ChartOfAccount::class);
+        $account = ChartOfAccount::find((int) $this->route('chartOfAccount'));
+
+        return $account !== null && $this->user()->can('update', $account);
     }
 
     /**

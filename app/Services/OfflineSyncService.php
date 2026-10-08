@@ -231,7 +231,7 @@ class OfflineSyncService
                 ->whereNull('branch_id')
                 ->where($isBank ? 'is_bank' : 'is_cash', true)
                 ->where('is_active', true)
-                ->orderBy('code')
+                ->ordered()
                 ->first();
         }
 
@@ -255,7 +255,7 @@ class OfflineSyncService
             ->whereNull('branch_id')
             ->where('type', 'income')
             ->where('is_active', true)
-            ->orderBy('code')
+            ->ordered()
             ->first();
 
         return $account !== null ? (int) $account->id : null;

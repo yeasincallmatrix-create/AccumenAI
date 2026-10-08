@@ -665,7 +665,7 @@ class InvoiceService
             ->where('branch_id', $branchId)
             ->where('type', 'income')
             ->where('is_active', true)
-            ->orderBy('code')
+            ->ordered()
             ->first();
 
         if ($coa === null) {

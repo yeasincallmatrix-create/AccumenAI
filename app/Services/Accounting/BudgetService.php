@@ -329,7 +329,7 @@ class BudgetService
     {
         $query = ChartOfAccount::where('institute_id', $instituteId)
             ->where('is_active', true)
-            ->orderBy('code');
+            ->ordered();
 
         if ($branchId !== null) {
             $query->where(fn ($q) => $q->where('branch_id', $branchId)->orWhereNull('branch_id'));

@@ -30,7 +30,7 @@ class BankFeedController extends Controller
 
         $bankAccounts = ChartOfAccount::where('institute_id', $institute->id)
             ->where('is_bank', true)
-            ->orderBy('code')
+            ->ordered()
             ->get(['id', 'code', 'name']);
 
         $statements = BankStatement::where('institute_id', $institute->id)
@@ -50,7 +50,7 @@ class BankFeedController extends Controller
 
         $bankAccounts = ChartOfAccount::where('institute_id', $institute->id)
             ->where('is_bank', true)
-            ->orderBy('code')
+            ->ordered()
             ->get(['id', 'code', 'name']);
 
         return view('institute.accounting.bank-feed.upload', [
@@ -104,7 +104,7 @@ class BankFeedController extends Controller
         $statement->load(['lines' => fn ($q) => $q->orderBy('transaction_date')]);
 
         $accounts = ChartOfAccount::where('institute_id', $institute->id)
-            ->orderBy('code')
+            ->ordered()
             ->get(['id', 'code', 'name', 'type']);
 
         $summary = [
@@ -228,7 +228,7 @@ class BankFeedController extends Controller
             ->get();
 
         $accounts = ChartOfAccount::where('institute_id', $institute->id)
-            ->orderBy('code')
+            ->ordered()
             ->get(['id', 'code', 'name']);
 
         return view('institute.accounting.bank-feed.rules', [

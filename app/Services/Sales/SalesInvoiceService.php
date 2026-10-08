@@ -365,7 +365,7 @@ class SalesInvoiceService
             ->where('branch_id', $branchId)
             ->where('type', 'income')
             ->where('is_active', true)
-            ->orderBy('code')
+            ->ordered()
             ->first();
         if ($coa) {
             return (int) $coa->id;
@@ -374,7 +374,7 @@ class SalesInvoiceService
             ->where('institute_id', $instituteId)
             ->where('type', 'income')
             ->where('is_active', true)
-            ->orderBy('code')
+            ->ordered()
             ->first();
         return $coa ? (int) $coa->id : null;
     }

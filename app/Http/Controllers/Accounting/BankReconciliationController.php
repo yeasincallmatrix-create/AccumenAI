@@ -31,7 +31,7 @@ class BankReconciliationController extends Controller
             ->where('institute_id', $institute->id)
             ->where('is_bank', true)
             ->where('is_active', true)
-            ->orderBy('code')
+            ->ordered()
             ->get(['id', 'code', 'name']);
 
         return view('institute.accounting.bank-reconciliation.index', [

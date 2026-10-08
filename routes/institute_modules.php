@@ -1027,6 +1027,14 @@ Route::middleware($tenant)->group(function () {
         Route::get('payables', [$acctReport, 'payables'])->name('payables');
         Route::get('receivables', [$acctReport, 'receivables'])->name('receivables');
     });
+    // Audit & Compliance Reports (STEP 84)
+    $auditReport = \App\Http\Controllers\Accounting\AuditComplianceReportController::class;
+    Route::prefix('accounting/reports/audit')->name('accounting.reports.audit.')->middleware('advanced.accounting')->group(function () use ($auditReport) {
+        Route::get('journal-trail', [$auditReport, 'journalAuditTrail'])->name('journal-trail');
+        Route::get('user-activity', [$auditReport, 'userActivity'])->name('user-activity');
+        Route::get('financial-changes', [$auditReport, 'financialChangeHistory'])->name('financial-changes');
+        Route::get('approval-history', [$auditReport, 'approvalHistory'])->name('approval-history');
+    });
 
     // Accounting Aging Reports (Phase B)
     $acctAging = \App\Http\Controllers\Accounting\AgingReportController::class;

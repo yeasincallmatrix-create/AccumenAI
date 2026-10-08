@@ -186,7 +186,7 @@ class FinanceJournalController extends Controller
         return ChartOfAccount::query()
             ->where('institute_id', $instituteId)
             ->where('is_active', true)
-            ->orderBy('code')
+            ->ordered()
             ->get(['id', 'code', 'name', 'type']);
     }
 }

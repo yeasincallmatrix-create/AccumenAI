@@ -126,7 +126,7 @@ class FeeHeadService
             ->where('branch_id', $branchId)
             ->where('type', 'income')
             ->where('is_active', true)
-            ->orderBy('code')
+            ->ordered()
             ->first();
 
         return $fallback !== null ? (int) $fallback->id : null;

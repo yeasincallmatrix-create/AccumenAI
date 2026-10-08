@@ -426,7 +426,7 @@ class PurchaseAccountingService
                 ->where('institute_id', $instituteId)
                 ->where('branch_id', $branchId)
                 ->where('is_payable', true)
-                ->orderBy('code')
+                ->ordered()
                 ->first();
 
         if ($account === null) {
@@ -443,7 +443,7 @@ class PurchaseAccountingService
             ->where('branch_id', $branchId)
             ->where('type', 'expense')
             ->where('is_active', true)
-            ->orderBy('code')
+            ->ordered()
             ->first();
 
         if ($account === null) {

@@ -259,10 +259,10 @@ class ExpenseController extends Controller
         return [
             'paymentAccounts' => ChartOfAccount::where('institute_id', $instituteId)
                 ->where(fn ($q) => $q->where('is_bank', true)->orWhere('is_cash', true))
-                ->orderBy('code')->get(),
+                ->ordered()->get(),
             'expenseAccounts' => ChartOfAccount::where('institute_id', $instituteId)
                 ->where('type', 'expense')
-                ->orderBy('code')->get(),
+                ->ordered()->get(),
             'customers' => Party::where('institute_id', $instituteId)
                 ->whereIn('type', ['customer', 'both'])
                 ->orderBy('name')->get(),

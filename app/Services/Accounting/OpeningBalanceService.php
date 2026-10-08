@@ -46,7 +46,7 @@ class OpeningBalanceService
             ->when($branchId !== null, fn ($query) => $query->where(fn ($scope) => $scope
                 ->where('branch_id', $branchId)
                 ->orWhereNull('branch_id')))
-            ->orderBy('code')
+            ->ordered()
             ->get(['id', 'code', 'name', 'type'])
             ->map(function ($account) use ($existing) {
                 $row = $existing->get($account->id);

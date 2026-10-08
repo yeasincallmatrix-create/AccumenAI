@@ -2513,6 +2513,7 @@ CREATE TABLE `chart_of_accounts` (
   KEY `idx_coa_scope_type` (`institute_id`,`branch_id`,`type`),
   KEY `idx_coa_cash_flow_category` (`institute_id`,`cash_flow_category`),
   KEY `idx_coa_tenant_global` (`institute_id`,`is_system`,`is_active`),
+  KEY `idx_coa_code` (`code`),
   CONSTRAINT `chart_of_accounts_account_group_id_foreign` FOREIGN KEY (`account_group_id`) REFERENCES `account_groups` (`id`),
   CONSTRAINT `chart_of_accounts_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `chart_of_accounts_currency_id_foreign` FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`id`) ON DELETE SET NULL,
@@ -15078,3 +15079,4 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (683,'2026_10_07_22
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (685,'2026_10_08_090000_reanchor_account_groups_per_tenant',230);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (686,'2026_10_08_110000_schema_reconcile_with_live',231);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (688,'2026_10_08_120000_add_alive_to_coa_unique_indexes',232);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (689,'2026_10_08_220000_add_code_index_to_chart_of_accounts',233);

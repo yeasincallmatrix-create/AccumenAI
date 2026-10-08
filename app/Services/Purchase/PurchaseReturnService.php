@@ -546,14 +546,14 @@ class PurchaseReturnService
     private function payableAccount(int $instituteId, ?int $branchId): int
     {
         $account=app(\App\Services\Accounting\ChartOfAccountService::class)->accountByCode($instituteId,'2000.1',$branchId)
-            ?? \App\Models\ChartOfAccount::where('institute_id',$instituteId)->where('branch_id',$branchId)->where('is_payable',true)->orderBy('code')->first();
+            ?? \App\Models\ChartOfAccount::where('institute_id',$instituteId)->where('branch_id',$branchId)->where('is_payable',true)->ordered()->first();
         if(!$account) throw new \RuntimeException('No payable account configured.');
         return (int)$account->id;
     }
 
     private function expenseAccount(int $instituteId, ?int $branchId): int
     {
-        $account=\App\Models\ChartOfAccount::where('institute_id',$instituteId)->where('branch_id',$branchId)->where('type','expense')->where('is_active',true)->orderBy('code')->first();
+        $account=\App\Models\ChartOfAccount::where('institute_id',$instituteId)->where('branch_id',$branchId)->where('type','expense')->where('is_active',true)->ordered()->first();
         if(!$account) throw new \RuntimeException('No expense account configured.');
         return (int)$account->id;
     }
@@ -561,7 +561,7 @@ class PurchaseReturnService
     private function cashAccount(int $instituteId, ?int $branchId): int
     {
         $account=\App\Models\ChartOfAccount::where('institute_id',$instituteId)->where('is_cash',true)->where('is_active',true)->first()
-            ?? \App\Models\ChartOfAccount::where('institute_id',$instituteId)->where('is_active',true)->where('type','asset')->orderBy('code')->first();
+            ?? \App\Models\ChartOfAccount::where('institute_id',$instituteId)->where('is_active',true)->where('type','asset')->ordered()->first();
         if(!$account) throw new \RuntimeException('No cash account configured.');
         return (int)$account->id;
     }

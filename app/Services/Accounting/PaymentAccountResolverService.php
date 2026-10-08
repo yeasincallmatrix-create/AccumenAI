@@ -43,7 +43,7 @@ class PaymentAccountResolverService
             ->where('branch_id', $branchId)
             ->where($isBank ? 'is_bank' : 'is_cash', true)
             ->where('is_active', true)
-            ->orderBy('code')
+            ->ordered()
             ->first();
 
         if ($account === null && $isBank) {
@@ -52,7 +52,7 @@ class PaymentAccountResolverService
                 ->where('branch_id', $branchId)
                 ->where('is_cash', true)
                 ->where('is_active', true)
-                ->orderBy('code')
+                ->ordered()
                 ->first();
         }
 

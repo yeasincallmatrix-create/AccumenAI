@@ -233,7 +233,7 @@ class HrPayrollFinanceService
             ->where(function ($q) {
                 $q->where('is_cash', true)->orWhere('is_bank', true);
             })
-            ->orderBy('code')
+            ->ordered()
             ->first();
 
         if ($coa) {

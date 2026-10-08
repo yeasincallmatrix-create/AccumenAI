@@ -2513,6 +2513,7 @@ CREATE TABLE `chart_of_accounts` (
   KEY `idx_coa_scope_type` (`institute_id`,`branch_id`,`type`),
   KEY `idx_coa_cash_flow_category` (`institute_id`,`cash_flow_category`),
   KEY `idx_coa_tenant_global` (`institute_id`,`is_system`,`is_active`),
+  KEY `idx_coa_code` (`code`),
   CONSTRAINT `chart_of_accounts_account_group_id_foreign` FOREIGN KEY (`account_group_id`) REFERENCES `account_groups` (`id`),
   CONSTRAINT `chart_of_accounts_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `chart_of_accounts_currency_id_foreign` FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`id`) ON DELETE SET NULL,

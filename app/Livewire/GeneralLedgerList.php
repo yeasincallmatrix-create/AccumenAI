@@ -59,7 +59,7 @@ class GeneralLedgerList extends DataTable
         $this->accountFilterOptions = ChartOfAccount::query()
             ->where('institute_id', $this->instituteId)
             ->where('is_active', true)
-            ->orderBy('code')
+            ->ordered()
             ->get(['id', 'code', 'name'])
             ->toArray();
     }

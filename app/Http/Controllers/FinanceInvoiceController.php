@@ -77,7 +77,7 @@ class FinanceInvoiceController extends Controller
                 ->where('institute_id', $institute->id)
                 ->where('type', 'income')
                 ->where('is_active', true)
-                ->orderBy('code')
+                ->ordered()
                 ->get(['id', 'code', 'name']),
             'currencies' => Currency::query()->orderBy('code')->get(['id', 'code', 'name']),
             'types' => ['admission', 'course_fee', 'exam_fee', 'certificate_fee', 'other'],
