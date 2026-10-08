@@ -2,12 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\Auth\RegistrationFlowController;
 use App\Http\Controllers\InstituteOnboardingController;
 use App\Models\Institute;
 use App\Models\PendingRegistration;
 use App\Models\User;
+use App\Services\UserAccountService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class OwnerRegistrationTest extends TestCase
@@ -170,7 +171,7 @@ class OwnerRegistrationTest extends TestCase
         $pending->update(['verified_at' => now()]);
 
         // Organization step
-        $this->withSession([\App\Http\Controllers\Auth\RegistrationFlowController::PENDING_ID => $pending->id, \App\Http\Controllers\Auth\RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => true, 'step' => 2]])
+        $this->withSession([RegistrationFlowController::PENDING_ID => $pending->id, RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => true, 'step' => 2]])
             ->post('/register/organization', [
                 'organization_name' => 'Rafiq Academy',
                 'first_name' => 'Rafiq',
@@ -181,9 +182,9 @@ class OwnerRegistrationTest extends TestCase
                 'sub_industry' => 'school',
             ])->assertRedirect(route('register.address'));
 
-        $this->withSession([\App\Http\Controllers\Auth\RegistrationFlowController::PENDING_ID => $pending->id, \App\Http\Controllers\Auth\RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => true, 'step' => 3]])
+        $this->withSession([RegistrationFlowController::PENDING_ID => $pending->id, RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => true, 'step' => 3]])
             ->post('/register/address', ['address' => 'Test address'])
-            ->assertRedirect(route('register.education.placeholder'));
+            ->assertRedirect(route('register.package'));
 
         $institute = Institute::query()->where('slug', 'rafiq-academy')->firstOrFail();
         $this->assertSame('Bangladesh', $institute->country);
@@ -195,7 +196,7 @@ class OwnerRegistrationTest extends TestCase
 
     public function test_auth_users_redirected_away_from_selection_and_form(): void
     {
-        $user = (new \App\Services\UserAccountService)->registerOwner([
+        $user = (new UserAccountService)->registerOwner([
             'name' => 'Existing Owner',
             'email' => 'reg-existing@example.test',
             'password_hash' => bcrypt('secret12345'),

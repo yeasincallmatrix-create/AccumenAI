@@ -81,7 +81,7 @@
                 $sectionSelected = 0;
                 foreach ($sectionParents as $pg) {
                     foreach ($pg['children'] as $m) {
-                        $mBlocked = isset($industryDisabled[$m->key]);
+                        $mBlocked = isset($industryDisabled[$m->key]) || isset($industryDisabled[explode('.', $m->key, 2)[0]]);
                         $mCat = $matrix[$m->key] ?? null;
                         if ($mCat === null) {
                             $mCat = $mBlocked ? 'hidden' : ($service->isCoreModule($m->key) || isset($selection[$m->key]) ? 'default' : 'optional');
@@ -114,7 +114,7 @@
                             $children = $pg['children'];
                             $groupSelected = 0;
                             foreach ($children as $m) {
-                                $mBlocked = isset($industryDisabled[$m->key]);
+                                $mBlocked = isset($industryDisabled[$m->key]) || isset($industryDisabled[explode('.', $m->key, 2)[0]]);
                                 $mCat = $matrix[$m->key] ?? null;
                                 if ($mCat === null) {
                                     $mCat = $mBlocked ? 'hidden' : ($service->isCoreModule($m->key) || isset($selection[$m->key]) ? 'default' : 'optional');
@@ -169,7 +169,7 @@
                                         @foreach ($children as $module)
                                             @php
                                                 $isCore = $service->isCoreModule($module->key);
-                                                $blocked = isset($industryDisabled[$module->key]);
+                                                $blocked = isset($industryDisabled[$module->key]) || isset($industryDisabled[explode('.', $module->key, 2)[0]]);
                                                 $locked = $isCore || $blocked;
                                                 $isLocked = isset($lockedMap[$module->key]);
                                                 $current = $matrix[$module->key]

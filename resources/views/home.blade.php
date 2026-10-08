@@ -210,54 +210,7 @@
 </section>
 
 <!-- Pricing -->
-<section id="pricing" class="py-20 bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center max-w-3xl mx-auto mb-12">
-            <span class="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold tracking-widest uppercase mb-3">Pricing</span>
-            <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900">Simple, transparent pricing</h2>
-            <p class="mt-4 text-gray-600">Start free, scale as you grow. All plans include tenant isolation and support.</p>
-        </div>
-        <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <div class="bg-white rounded-2xl border border-gray-200 p-8">
-                <h3 class="font-bold text-gray-900">Starter</h3>
-                <p class="text-sm text-gray-500 mt-1">For small institutes</p>
-                <div class="mt-6 flex items-baseline gap-1"><span class="text-4xl font-extrabold text-gray-900">$29</span><span class="text-gray-500">/month</span></div>
-                <ul class="mt-8 space-y-3 text-sm">
-                    <li class="flex items-center gap-2"><i class="bi bi-check-circle-fill text-green-500"></i> Up to 500 students</li>
-                    <li class="flex items-center gap-2"><i class="bi bi-check-circle-fill text-green-500"></i> 3 branches</li>
-                    <li class="flex items-center gap-2"><i class="bi bi-check-circle-fill text-green-500"></i> Basic reports</li>
-                    <li class="flex items-center gap-2 text-gray-400"><i class="bi bi-x-circle"></i> AI assistant</li>
-                </ul>
-                <a href="{{ Route::has('owner.register') ? route('owner.register') : '#' }}" class="mt-8 block text-center w-full py-3 border border-gray-300 rounded-full font-semibold hover:bg-gray-50 transition">Get Started</a>
-            </div>
-            <div class="bg-blue-600 rounded-2xl p-8 text-white relative shadow-xl shadow-blue-600/20 scale-105">
-                <span class="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-gray-900 text-xs font-bold px-3 py-1 rounded-full">Most Popular</span>
-                <h3 class="font-bold">Professional</h3>
-                <p class="text-sm text-blue-100 mt-1">For growing businesses</p>
-                <div class="mt-6 flex items-baseline gap-1"><span class="text-4xl font-extrabold">$79</span><span class="text-blue-100">/month</span></div>
-                <ul class="mt-8 space-y-3 text-sm">
-                    <li class="flex items-center gap-2"><i class="bi bi-check-circle-fill text-blue-200"></i> Unlimited students</li>
-                    <li class="flex items-center gap-2"><i class="bi bi-check-circle-fill text-blue-200"></i> Unlimited branches</li>
-                    <li class="flex items-center gap-2"><i class="bi bi-check-circle-fill text-blue-200"></i> Advanced analytics</li>
-                    <li class="flex items-center gap-2"><i class="bi bi-check-circle-fill text-blue-200"></i> AI assistant</li>
-                </ul>
-                <a href="{{ Route::has('owner.register') ? route('owner.register') : '#' }}" class="mt-8 block text-center w-full py-3 bg-white text-blue-600 rounded-full font-bold hover:bg-blue-50 transition">Get Started</a>
-            </div>
-            <div class="bg-white rounded-2xl border border-gray-200 p-8">
-                <h3 class="font-bold text-gray-900">Enterprise</h3>
-                <p class="text-sm text-gray-500 mt-1">For large organizations</p>
-                <div class="mt-6 flex items-baseline gap-1"><span class="text-4xl font-extrabold text-gray-900">$199</span><span class="text-gray-500">/month</span></div>
-                <ul class="mt-8 space-y-3 text-sm">
-                    <li class="flex items-center gap-2"><i class="bi bi-check-circle-fill text-green-500"></i> Everything in Pro</li>
-                    <li class="flex items-center gap-2"><i class="bi bi-check-circle-fill text-green-500"></i> Dedicated support</li>
-                    <li class="flex items-center gap-2"><i class="bi bi-check-circle-fill text-green-500"></i> Custom integrations</li>
-                    <li class="flex items-center gap-2"><i class="bi bi-check-circle-fill text-green-500"></i> SLA guarantee</li>
-                </ul>
-                <a href="#cta" class="mt-8 block text-center w-full py-3 border border-gray-300 rounded-full font-semibold hover:bg-gray-50 transition">Contact Sales</a>
-            </div>
-        </div>
-    </div>
-</section>
+@include('partials.home-pricing')
 
 <!-- CTA -->
 <section id="cta" class="py-16 bg-gradient-to-r from-blue-600 to-violet-600">

@@ -78,8 +78,6 @@
                     <p class="auth-switch mb-0 text-center">
                         {{ mawa_e('guardian.back_to_other_portals') }}
                         <a href="{{ route('login') }}"><i class="bi bi-person-badge"></i> {{ mawa_e('auth.institute_portal') }}</a>
-                        /
-                        <a href="{{ route('admin.login') }}"><i class="bi bi-shield-lock"></i> {{ mawa_e('auth.admin_portal') }}</a>
                     </p>
                 </div>
             </div>

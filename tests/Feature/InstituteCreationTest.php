@@ -2,11 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\InstituteOnboardingController;
 use App\Models\Institute;
 use App\Models\Membership;
 use App\Models\Role;
 use App\Models\User;
-use App\Http\Controllers\InstituteOnboardingController;
 use App\Services\MembershipService;
 use App\Services\UserAccountService;
 use App\Support\TenantContext;
@@ -34,6 +34,7 @@ class InstituteCreationTest extends TestCase
             'email_verified_at' => now(),
         ]);
         $u->forceFill(['email_verified_at' => now()])->save();
+
         return $u->fresh();
     }
 
@@ -70,7 +71,7 @@ class InstituteCreationTest extends TestCase
         $this->actingAs($owner, 'web')
             ->withSession($this->withSelection())
             ->post('/workspace/create', ['name' => 'Owner Alpha Institute'])
-            ->assertRedirect('/');
+            ->assertRedirect(route('register.package'));
 
         $institute = Institute::where('slug', 'owner-alpha-institute')->firstOrFail();
 
@@ -98,8 +99,8 @@ class InstituteCreationTest extends TestCase
     {
         $owner = $this->owner('multi-owner2@example.test');
 
-        $this->actingAs($owner, 'web')->withSession($this->withSelection())->post('/workspace/create', ['name' => 'Owner Institute One'])->assertRedirect('/');
-        $this->actingAs($owner, 'web')->withSession($this->withSelection('healthcare', null, 'France'))->post('/workspace/create', ['name' => 'Owner Institute Two'])->assertRedirect('/');
+        $this->actingAs($owner, 'web')->withSession($this->withSelection())->post('/workspace/create', ['name' => 'Owner Institute One'])->assertRedirect(route('register.package'));
+        $this->actingAs($owner, 'web')->withSession($this->withSelection('healthcare', null, 'France'))->post('/workspace/create', ['name' => 'Owner Institute Two'])->assertRedirect(route('register.package'));
 
         $one = Institute::where('slug', 'owner-institute-one')->firstOrFail();
         $two = Institute::where('slug', 'owner-institute-two')->firstOrFail();

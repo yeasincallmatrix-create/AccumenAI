@@ -36,6 +36,11 @@ class SubscriptionPackage extends Model
         return $this->hasMany(PackageModule::class, 'package_id');
     }
 
+    public function packageFeatures(): HasMany
+    {
+        return $this->hasMany(PackageFeature::class, 'package_id');
+    }
+
     public function enabledModuleKeys(): array
     {
         return $this->packageModules()->where('enabled', true)->pluck('module_key')->toArray();

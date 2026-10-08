@@ -27,6 +27,10 @@ return [
         'disabled' => [
             'education',
             'training_center',
+            'real_estate',
+            'restaurant',
+            'manufacturing',
+            'retail',
         ],
     ],
 

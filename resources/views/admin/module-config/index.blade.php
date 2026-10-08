@@ -88,6 +88,69 @@
 </div>
 
 @if ($subcategory)
+    @php
+        $planUrl = route('admin.module-config.index', ['industry' => $industry, 'subcategory' => $subcategory->subcategory_key, 'mode' => 'plans']);
+        $baseUrl = route('admin.module-config.index', ['industry' => $industry, 'subcategory' => $subcategory->subcategory_key]);
+    @endphp
+    <ul class="nav nav-tabs mb-3" role="tablist">
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {{ $mode === 'plans' ? '' : 'active' }}" href="{{ $baseUrl }}">
+                <i class="bi bi-collection-fill me-1"></i> Base defaults
+                <span class="badge text-bg-light border ms-1">mandatory / default / optional / hidden</span>
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link {{ $mode === 'plans' ? 'active' : '' }}" href="{{ $planUrl }}">
+                <i class="bi bi-layers-fill me-1"></i> Plan tiers
+                @if (! empty($tiers))
+                    @foreach ($tiers as $tier)
+                        <span class="badge text-bg-primary ms-1">{{ $tier['name'] }}: {{ $planCounts[$tier['id']] ?? 0 }}</span>
+                    @endforeach
+                @endif
+            </a>
+        </li>
+    </ul>
+
+    @if ($mode === 'plans')
+    <form method="POST" action="{{ route('admin.module-config.update-plans') }}">
+        @csrf
+        @method('PUT')
+        <input type="hidden" name="industry" value="{{ $industry }}">
+        <input type="hidden" name="subcategory" value="{{ $subcategory->subcategory_key }}">
+
+        <div class="admin-card mb-3">
+            <div class="table-toolbar">
+                <div class="toolbar-info">
+                    <i class="bi bi-layers-fill"></i> {{ $subcategory->name }} — plan tiers
+                    <code class="ms-1">{{ $industry }} / {{ $subcategory->subcategory_key }}</code>
+                    <span class="text-muted ms-2">Higher tiers always include every lower-tier module (nesting enforced on save).</span>
+                </div>
+            </div>
+        </div>
+
+        @if (empty($tiers))
+            <div class="admin-card p-4 text-center text-muted">
+                <i class="bi bi-layers fs-3"></i>
+                <p class="mb-0 mt-2">No tier packages mapped for {{ $industry }} yet — map Starter / Growth / Enterprise on the Packages by Industry page first.</p>
+            </div>
+        @else
+            @foreach ($groups as $groupKey => $group)
+                @include('admin.module-config._plans', ['groupKey' => $groupKey, 'group' => $group])
+            @endforeach
+
+            <div class="admin-card p-3 d-flex align-items-center justify-content-between gap-3">
+                <div class="text-muted small">
+                    <i class="bi bi-info-circle text-primary"></i>
+                    Checking a lower tier checks every higher tier; unchecking a higher tier unchecks every lower tier.
+                    Core modules stay on and industry-disabled modules stay off in every tier.
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check2-circle"></i> Save Plan Tiers
+                </button>
+            </div>
+        @endif
+    </form>
+    @else
     <form method="POST" action="{{ route('admin.module-config.update') }}">
         @csrf
         @method('PUT')
@@ -122,6 +185,7 @@
             </button>
         </div>
     </form>
+    @endif
 @else
     <div class="admin-card p-4 text-center text-muted">
         <i class="bi bi-diagram-3 fs-3"></i>
@@ -341,6 +405,61 @@
         if (parentValue) {
             setOverrideMarker(childRow(radio), radio.value !== parentValue);
         }
+    });
+})();
+</script>
+<script>
+(function () {
+    // ─────────────────────────────────────────────────────────────
+    // Plan tiers nesting: higher tiers are supersets of lower tiers.
+    //   check  → checks the same module in every HIGHER tier (cascade up)
+    //   uncheck → unchecks the same module in every LOWER tier (cascade down)
+    // Rank comes from data-rank (low → high). Server re-enforces on save.
+    // ─────────────────────────────────────────────────────────────
+    function siblings(key) {
+        return Array.from(document.querySelectorAll('.plan-check[data-key="' + key + '"]'));
+    }
+
+    document.querySelectorAll('.plan-check:not(:disabled)').forEach(function (box) {
+        box.addEventListener('change', function () {
+            var key = this.dataset.key;
+            var rank = parseInt(this.dataset.rank, 10);
+
+            siblings(key).forEach(function (other) {
+                if (other.disabled || other === box) {
+                    return;
+                }
+                var otherRank = parseInt(other.dataset.rank, 10);
+                if (box.checked && otherRank >= rank) {
+                    other.checked = true;
+                } else if (!box.checked && otherRank <= rank) {
+                    other.checked = false;
+                }
+            });
+        });
+    });
+
+    document.querySelectorAll('[data-plan-tier-select]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var id = btn.getAttribute('data-plan-tier-select');
+            document.querySelectorAll('input.plan-check:not(:disabled)').forEach(function (el) {
+                if (el.name === 'plans[' + id + '][]') {
+                    el.checked = true;
+                    el.dispatchEvent(new Event('change'));
+                }
+            });
+        });
+    });
+    document.querySelectorAll('[data-plan-tier-clear]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var id = btn.getAttribute('data-plan-tier-clear');
+            document.querySelectorAll('input.plan-check:not(:disabled)').forEach(function (el) {
+                if (el.name === 'plans[' + id + '][]') {
+                    el.checked = false;
+                    el.dispatchEvent(new Event('change'));
+                }
+            });
+        });
     });
 })();
 </script>

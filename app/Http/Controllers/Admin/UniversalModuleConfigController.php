@@ -8,6 +8,7 @@ use App\Services\ModuleAccessService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -65,6 +66,9 @@ class UniversalModuleConfigController extends Controller
             ])->values()->all())
             ->all();
 
+        $tiers = $this->loadTiers($industry);
+        $planMatrix = $this->loadPlanMatrix($industry);
+
         return view('admin.module-config.index', [
             'industries' => $industries,
             'industry' => $industry,
@@ -74,6 +78,10 @@ class UniversalModuleConfigController extends Controller
             'subcategory' => $subcategory,
             'groups' => $this->loadModuleGroups(),
             'matrix' => $matrix,
+            'mode' => $request->query('mode') === 'plans' ? 'plans' : 'base',
+            'tiers' => $tiers,
+            'planMatrix' => $planMatrix,
+            'planCounts' => $this->planCounts($tiers, $planMatrix, $industry),
         ]);
     }
 
@@ -123,6 +131,252 @@ class UniversalModuleConfigController extends Controller
                 $counts['optional'] ?? 0,
                 $counts['hidden'] ?? 0,
             ));
+    }
+
+    /**
+     * Plan mode save — one checkbox matrix of Tier × Module for the industry.
+     *
+     * Writes package_industry_modules (category default/hidden + enabled in
+     * sync, same contract as PackageIndustryController::updateModules) for
+     * every tier package of the industry. Tier nesting (higher tiers are
+     * supersets of lower tiers) is enforced server-side: ON cascades up,
+     * OFF cascades down. Core modules are forced on, industry-disabled
+     * modules forced off, in every tier.
+     */
+    public function updatePlans(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'industry' => ['required', 'string', 'max:60', Rule::in($this->industryKeys())],
+            'subcategory' => ['required', 'string', 'max:60', 'regex:/^[a-z0-9_]+$/'],
+            'plans' => ['nullable', 'array'],
+            'plans.*' => ['nullable', 'array'],
+            'plans.*.*' => ['string', 'max:60', 'exists:module_registry,key'],
+        ], [
+            'subcategory.regex' => 'Sub-category key must be lowercase letters, numbers, underscores.',
+        ]);
+
+        $industry = $validated['industry'];
+        $tiers = $this->loadTiers($industry);
+        abort_if(empty($tiers), 404, 'No tier packages mapped for this industry.');
+
+        $tierIds = array_column($tiers, 'id');
+        $requested = [];
+        foreach ($tierIds as $packageId) {
+            $requested[$packageId] = array_flip(array_values($validated['plans'][$packageId] ?? []));
+        }
+
+        // Nesting: ON cascades up to higher tiers, OFF cascades down.
+        // Tiers are rank-ordered low → high, so a single pass each way holds.
+        $allKeys = DB::table('module_registry')
+            ->where('status', 'active')
+            ->pluck('key')
+            ->all();
+        $on = [];
+        foreach ($allKeys as $key) {
+            $flags = [];
+            foreach ($tierIds as $packageId) {
+                $flags[$packageId] = isset($requested[$packageId][$key]);
+            }
+            for ($i = 1, $n = count($tierIds); $i < $n; $i++) {
+                if ($flags[$tierIds[$i - 1]]) {
+                    $flags[$tierIds[$i]] = true;
+                }
+            }
+            for ($i = count($tierIds) - 2; $i >= 0; $i--) {
+                if (! $flags[$tierIds[$i + 1]]) {
+                    $flags[$tierIds[$i]] = false;
+                }
+            }
+            $on[$key] = $flags;
+        }
+
+        $industryConfig = config("industry-modules.{$industry}", []);
+        $disabledLookup = array_flip($industryConfig['disabled'] ?? []);
+        // A disabled root disables its whole subtree (e.g. real_estate ⇒
+        // real_estate.*), matching the resolver's root-based industry gate.
+        $isDisabled = static fn (string $key): bool => isset($disabledLookup[$key])
+            || isset($disabledLookup[explode('.', $key, 2)[0]]);
+
+        DB::transaction(function () use ($tiers, $industry, $allKeys, $on, $isDisabled) {
+            foreach ($tiers as $tier) {
+                $packageId = $tier['id'];
+
+                DB::table('package_industry_modules')
+                    ->where('package_id', $packageId)
+                    ->where('industry_key', $industry)
+                    ->delete();
+
+                $rows = [];
+                $now = now();
+                foreach ($allKeys as $key) {
+                    $category = $on[$key][$packageId] ? 'default' : 'hidden';
+
+                    if ($isDisabled($key)) {
+                        $category = 'hidden';
+                    }
+
+                    if ($this->moduleAccess->isCoreModule($key)) {
+                        $category = 'mandatory';
+                    }
+
+                    $rows[] = [
+                        'package_id' => $packageId,
+                        'industry_key' => $industry,
+                        'module_key' => $key,
+                        'enabled' => in_array($category, ['mandatory', 'default'], true),
+                        'category' => $category,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                }
+
+                foreach (array_chunk($rows, 500) as $chunk) {
+                    DB::table('package_industry_modules')->insert($chunk);
+                }
+            }
+        });
+
+        $this->flushCacheForSubcategory($industry, $validated['subcategory']);
+        foreach ($tierIds as $packageId) {
+            DB::table('institutes')
+                ->where('package_id', $packageId)
+                ->pluck('id')
+                ->each(function ($id): void {
+                    $this->moduleAccess->flushCache((int) $id);
+                    $this->moduleAccess->flushFeatureCache((int) $id);
+                });
+        }
+
+        $counts = [];
+        foreach ($tiers as $tier) {
+            $counts[] = sprintf(
+                '%s %d',
+                $tier['name'],
+                count(array_filter($allKeys, fn ($key) => $on[$key][$tier['id']] || $this->moduleAccess->isCoreModule($key)))
+            );
+        }
+
+        $this->logMatrixChange('plans_update', $industry, $validated['subcategory'], array_merge(...array_map(
+            fn ($tier) => array_combine(
+                array_filter($allKeys, fn ($key) => $on[$key][$tier['id']]),
+                array_fill(0, count(array_filter($allKeys, fn ($key) => $on[$key][$tier['id']])), 'default')
+            ),
+            $tiers
+        )), $request);
+
+        return redirect()
+            ->route('admin.module-config.index', [
+                'industry' => $industry,
+                'subcategory' => $validated['subcategory'],
+                'mode' => 'plans',
+            ])
+            ->with('success', sprintf(
+                'Plan tiers saved for %s — %s.',
+                $industry,
+                implode(', ', $counts)
+            ));
+    }
+
+    /**
+     * Tier packages for plan mode: packages mapped to the industry via
+     * package_industries (active), excluding FREE, ordered low → high by
+     * ModuleAccessService::packageTierRank() then sort_order.
+     *
+     * @return array<int, array{id: int, name: string, slug: string, rank: int}>
+     */
+    protected function loadTiers(string $industry): array
+    {
+        if ($industry === '' || ! Schema::hasTable('package_industries')) {
+            return [];
+        }
+
+        $rows = DB::table('package_industries')
+            ->join('subscription_packages', 'subscription_packages.id', '=', 'package_industries.package_id')
+            ->where('package_industries.industry_key', $industry)
+            ->where('package_industries.is_active', true)
+            ->where('subscription_packages.status', 'active')
+            ->whereRaw('LOWER(subscription_packages.slug) != ?', ['free'])
+            ->orderBy('package_industries.sort_order')
+            ->orderBy('package_industries.package_id')
+            ->select('subscription_packages.id', 'subscription_packages.name', 'subscription_packages.slug')
+            ->get();
+
+        $tiers = [];
+        foreach ($rows as $row) {
+            $tiers[] = [
+                'id' => (int) $row->id,
+                'name' => $row->name,
+                'slug' => $row->slug,
+                'rank' => ModuleAccessService::packageTierRank((string) $row->slug),
+            ];
+        }
+
+        usort($tiers, fn ($a, $b) => [$a['rank'], $a['id']] <=> [$b['rank'], $b['id']]);
+
+        return array_values($tiers);
+    }
+
+    /**
+     * Plan matrix: tier package id → module key → on-bool, using the same
+     * category-wins semantics as the resolver (mandatory/default = on,
+     * else legacy enabled flag).
+     *
+     * @return array<int, array<string, bool>>
+     */
+    protected function loadPlanMatrix(string $industry): array
+    {
+        $matrix = [];
+        if ($industry === '' || ! Schema::hasTable('package_industry_modules')) {
+            return $matrix;
+        }
+
+        $rows = DB::table('package_industry_modules')
+            ->where('industry_key', $industry)
+            ->get(['package_id', 'module_key', 'enabled', 'category']);
+
+        foreach ($rows as $row) {
+            $on = $row->category !== null
+                ? in_array($row->category, ['mandatory', 'default'], true)
+                : (bool) $row->enabled;
+            $matrix[(int) $row->package_id][$row->module_key] = $on;
+        }
+
+        return $matrix;
+    }
+
+    /**
+     * Effective ON counts per tier for the plan-mode headers: matrix ON or
+     * core, minus industry-disabled (mirrors the updatePlans forcing rules).
+     *
+     * @return array<int, int> package id => on-count
+     */
+    protected function planCounts(array $tiers, array $planMatrix, string $industry): array
+    {
+        if (empty($tiers)) {
+            return [];
+        }
+
+        $disabledLookup = array_flip(config("industry-modules.{$industry}.disabled", []));
+
+        $keys = DB::table('module_registry')
+            ->where('status', 'active')
+            ->pluck('key');
+
+        $counts = [];
+        foreach ($tiers as $tier) {
+            $n = 0;
+            foreach ($keys as $key) {
+                if (isset($disabledLookup[$key]) || isset($disabledLookup[explode('.', $key, 2)[0]])) {
+                    continue;
+                }
+                if (! empty($planMatrix[$tier['id']][$key]) || $this->moduleAccess->isCoreModule($key)) {
+                    $n++;
+                }
+            }
+            $counts[$tier['id']] = $n;
+        }
+
+        return $counts;
     }
 
     public function copy(Request $request): RedirectResponse

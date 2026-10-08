@@ -6,13 +6,22 @@ use App\Models\AdministrativeUnit;
 use App\Models\Country;
 use App\Models\IndustrySetting;
 use App\Models\Institute;
+use App\Models\InstituteSetting;
 use App\Models\Role;
 use App\Models\Theme;
 use App\Models\User;
+use App\Services\AcademicSetupService;
+use App\Services\Accounting\TenantCoaSeederService;
 use App\Services\Demo\DemoDataService;
+use App\Services\EducationModuleActivator;
+use App\Services\LearningStructureResolver;
+use App\Services\MedicalModuleActivator;
 use App\Services\MembershipService;
+use App\Services\RoleTemplateService;
+use App\Support\BranchContext;
 use App\Support\GeoHierarchy;
 use App\Support\IndustryRules;
+use App\Support\TenantContext;
 use App\Support\Workspace;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -114,6 +123,15 @@ class InstituteCreationController extends Controller
         $ownerRoleId = Role::query()->where('slug', 'institute-owner')->value('id');
         abort_unless($ownerRoleId !== null, 422, 'The institute-owner role is not configured.');
 
+        // A brand-new organization starts with no tenant scope. The active
+        // workspace of an owner creating a SECOND organization would otherwise
+        // leak into TenantScoped::creating(), which stamps institute_id from
+        // TenantContext and would file the new institute's settings row under
+        // the previous one (duplicate key uq_institute_settings_institute).
+        // Workspace::set() below re-pins the context to the new institute.
+        TenantContext::clear();
+        BranchContext::clear();
+
         $institute = DB::transaction(function () use ($user, $data, $selection, $ownerRoleId, $geoAddress) {
             $institute = Institute::create([
                 'name' => $data['name'],
@@ -138,9 +156,9 @@ class InstituteCreationController extends Controller
             ]);
 
             // Default certificate approval to Admin Controlled (new institutes)
-            \App\Models\InstituteSetting::withoutGlobalScope('institute')->updateOrCreate(
+            InstituteSetting::withoutGlobalScope('institute')->updateOrCreate(
                 ['institute_id' => $institute->id],
-                ['certificate_approval_mode' => \App\Models\InstituteSetting::CERTIFICATE_APPROVAL_ADMIN]
+                ['certificate_approval_mode' => InstituteSetting::CERTIFICATE_APPROVAL_ADMIN]
             );
 
             return $institute;
@@ -148,7 +166,7 @@ class InstituteCreationController extends Controller
 
         // Seed tenant COA children (industry-scoped)
         try {
-            app(\App\Services\Accounting\TenantCoaSeederService::class)
+            app(TenantCoaSeederService::class)
                 ->seedFullProvisioning($institute->id);
         } catch (\Throwable $e) {
             \Log::warning('TenantCoaSeeder failed', ['institute_id' => $institute->id, 'error' => $e->getMessage()]);
@@ -171,7 +189,7 @@ class InstituteCreationController extends Controller
 
         // Academic defaults (year + global grade scale) — idempotent, never blocks creation
         try {
-            app(\App\Services\AcademicSetupService::class)->ensureDefaults($institute);
+            app(AcademicSetupService::class)->ensureDefaults($institute);
         } catch (\Throwable $e) {
             Log::warning('InstituteCreation: academic defaults failed', [
                 'institute_id' => $institute->id,
@@ -181,9 +199,9 @@ class InstituteCreationController extends Controller
         }
 
         // Industry-aware staff role templates — idempotent, never blocks creation
-        if (class_exists(\App\Services\RoleTemplateService::class)) {
+        if (class_exists(RoleTemplateService::class)) {
             try {
-                app(\App\Services\RoleTemplateService::class)->seedForInstitute($institute);
+                app(RoleTemplateService::class)->seedForInstitute($institute);
             } catch (\Exception $e) {
                 Log::warning('InstituteCreation: role template seeding failed', [
                     'institute_id' => $institute->id,
@@ -207,7 +225,7 @@ class InstituteCreationController extends Controller
         // Auto-enable medical module for healthcare tenants
         if ($institute->industry === 'healthcare') {
             try {
-                app(\App\Services\MedicalModuleActivator::class)->activateForHealthcare($institute);
+                app(MedicalModuleActivator::class)->activateForHealthcare($institute);
             } catch (\Throwable $e) {
                 Log::warning('InstituteCreation: medical module activation failed', [
                     'institute_id' => $institute->id,
@@ -220,7 +238,7 @@ class InstituteCreationController extends Controller
         // Auto-enable education module for education tenants
         if ($institute->industry === 'education') {
             try {
-                app(\App\Services\EducationModuleActivator::class)->activateForEducation($institute);
+                app(EducationModuleActivator::class)->activateForEducation($institute);
             } catch (\Throwable $e) {
                 Log::warning('InstituteCreation: education module activation failed', [
                     'institute_id' => $institute->id,
@@ -231,7 +249,7 @@ class InstituteCreationController extends Controller
         }
 
         return redirect()
-            ->route('dashboard')
+            ->route('register.package')
             ->with('status', mawa_lang('workspace.created', ['name' => $institute->name]));
     }
 
@@ -301,17 +319,22 @@ class InstituteCreationController extends Controller
     protected function previewDefaultStructure(array $selection): array
     {
         try {
-            $dummy = new \App\Models\Institute([
+            $dummy = new Institute([
                 'country' => $selection['country'],
                 'industry' => $selection['industry'],
                 'sub_industry' => $selection['sub_industry'],
             ]);
-            $country = \App\Models\Country::where('name', $selection['country'])->first();
-            if ($country) $dummy->country_id = $country->id;
-            $resolved = app(\App\Services\LearningStructureResolver::class)->resolveTemplate($dummy);
+            $country = Country::where('name', $selection['country'])->first();
+            if ($country) {
+                $dummy->country_id = $country->id;
+            }
+            $resolved = app(LearningStructureResolver::class)->resolveTemplate($dummy);
             $template = $resolved['template'] ?? null;
-            if (! $template) return ['template' => null, 'levels' => []];
+            if (! $template) {
+                return ['template' => null, 'levels' => []];
+            }
             $levels = $template->levels()->orderBy('level_order')->get();
+
             return ['template' => $template, 'levels' => $levels];
         } catch (\Throwable) {
             return ['template' => null, 'levels' => []];
@@ -321,14 +344,18 @@ class InstituteCreationController extends Controller
     /**
      * Phase 4: assign default learning structure template without overwriting explicit one.
      */
-    protected function assignDefaultLearningStructure(\App\Models\Institute $institute): void
+    protected function assignDefaultLearningStructure(Institute $institute): void
     {
-        $existing = \App\Models\InstituteSetting::withoutGlobalScope('institute')->where('institute_id', $institute->id)->value('structure_template_id');
-        if ($existing) return;
-        $resolved = app(\App\Services\LearningStructureResolver::class)->resolveTemplate($institute);
+        $existing = InstituteSetting::withoutGlobalScope('institute')->where('institute_id', $institute->id)->value('structure_template_id');
+        if ($existing) {
+            return;
+        }
+        $resolved = app(LearningStructureResolver::class)->resolveTemplate($institute);
         $template = $resolved['template'] ?? null;
-        if (! $template) return;
-        \App\Models\InstituteSetting::withoutGlobalScope('institute')->updateOrCreate(
+        if (! $template) {
+            return;
+        }
+        InstituteSetting::withoutGlobalScope('institute')->updateOrCreate(
             ['institute_id' => $institute->id],
             ['structure_template_id' => $template->id]
         );

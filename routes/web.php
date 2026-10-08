@@ -1,34 +1,128 @@
 <?php
 
+use App\Http\Controllers\AcademicAnalyticsController;
+use App\Http\Controllers\AcademicAttendanceController;
+use App\Http\Controllers\AcademicAttendanceReportController;
+use App\Http\Controllers\AcademicDashboardController;
+use App\Http\Controllers\Accounting\AccountingDashboardController;
+use App\Http\Controllers\Accounting\AccountingReportController;
+use App\Http\Controllers\Accounting\RatioAnalysisController;
+use App\Http\Controllers\Admin\AcademicGradingAdminController;
+use App\Http\Controllers\Admin\AcademicStructureAdminController;
+use App\Http\Controllers\Admin\AcademicSubjectAdminController;
+use App\Http\Controllers\Admin\AiApiKeyController;
+use App\Http\Controllers\Admin\AiSettingController;
+use App\Http\Controllers\Admin\ArtisanCommandController;
 use App\Http\Controllers\Admin\CertificateAdminController;
+use App\Http\Controllers\Admin\ClassAdminController;
+use App\Http\Controllers\Admin\CountryBatchController;
 use App\Http\Controllers\Admin\CourseAdminController;
+use App\Http\Controllers\Admin\DeployController;
+use App\Http\Controllers\Admin\FeatureAdminController;
+use App\Http\Controllers\Admin\GitController;
+use App\Http\Controllers\Admin\HomePageController;
+use App\Http\Controllers\Admin\IndustryAdminController;
+use App\Http\Controllers\Admin\IndustrySettingController;
+use App\Http\Controllers\Admin\IndustrySubcategoryController;
 use App\Http\Controllers\Admin\InstituteAdminController;
+use App\Http\Controllers\Admin\InstituteModuleOverrideController;
+use App\Http\Controllers\Admin\ModuleAdminController;
 use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\Admin\PackageCountryPriceController;
+use App\Http\Controllers\Admin\PackageIndustryController;
 use App\Http\Controllers\Admin\PackageScopeAdminController;
+use App\Http\Controllers\Admin\PlatformAuditController;
+use App\Http\Controllers\Admin\PlatformSettingsController;
+use App\Http\Controllers\Admin\PlatformStaffController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\StudentAdminController;
+use App\Http\Controllers\Admin\SubIndustryAdminController;
+use App\Http\Controllers\Admin\SystemHealthController;
 use App\Http\Controllers\Admin\TenantAccessController;
-use App\Http\Controllers\Auth\InstituteUserLoginController;
+use App\Http\Controllers\Admin\TenantsAdminController;
+use App\Http\Controllers\Admin\ThemeController;
+use App\Http\Controllers\Admin\UniversalModuleConfigController;
+use App\Http\Controllers\Admin\UserAccountAdminController;
+use App\Http\Controllers\Ai\AiAssistantController;
+use App\Http\Controllers\Alumni\AlumniController;
+use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\Auth\IdentityController;
 use App\Http\Controllers\Auth\InstituteUserRegisterController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\OwnerRegisterController;
+use App\Http\Controllers\Auth\PackageSelectionController;
 use App\Http\Controllers\Auth\PlatformAdminLoginController;
+use App\Http\Controllers\Auth\RegistrationFlowController;
+use App\Http\Controllers\Auth\SecurityController;
 use App\Http\Controllers\Auth\UserLoginController;
 use App\Http\Controllers\BatchController;
+use App\Http\Controllers\BusinessProfileController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CourseController;
+use App\Http\Controllers\CrmDashboardController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DocumentScanController;
 use App\Http\Controllers\ExamController;
+use App\Http\Controllers\FeeStructureController;
+use App\Http\Controllers\FinanceAuditController;
+use App\Http\Controllers\FinanceBudgetController;
+use App\Http\Controllers\FinanceChartOfAccountController;
+use App\Http\Controllers\FinanceDashboardController;
+use App\Http\Controllers\FinanceExchangeRateController;
+use App\Http\Controllers\FinanceFxRevaluationController;
+use App\Http\Controllers\FinanceInvoiceController;
+use App\Http\Controllers\FinanceJournalController;
+use App\Http\Controllers\FinanceOpeningBalanceController;
+use App\Http\Controllers\FinancePartyController;
+use App\Http\Controllers\FinancePaymentController;
+use App\Http\Controllers\FinancePaymentMethodController;
+use App\Http\Controllers\FinancePeriodController;
+use App\Http\Controllers\FinanceReportController;
+use App\Http\Controllers\Hr\HrDashboardController;
+use App\Http\Controllers\Institute\FeatureAccessController;
+use App\Http\Controllers\InstituteLogoController;
 use App\Http\Controllers\InstituteNotificationController;
+use App\Http\Controllers\InstituteOnboardingController;
 use App\Http\Controllers\InstituteSettingController;
 use App\Http\Controllers\OfflineSyncController;
+use App\Http\Controllers\Purchase\PurchaseOrderController;
+use App\Http\Controllers\RecycleBinController;
+use App\Http\Controllers\Sales\SalesSettingsController;
+use App\Http\Controllers\Settings\AdvancedAccountingSettingController;
+use App\Http\Controllers\Settings\BusinessEntityController;
+use App\Http\Controllers\Settings\CorporateTaxController;
+use App\Http\Controllers\Settings\CurrencySettingController;
+use App\Http\Controllers\Settings\DividendController;
+use App\Http\Controllers\Settings\ModuleManagementController;
+use App\Http\Controllers\Settings\PartnerController;
+use App\Http\Controllers\Settings\ShareCapitalController;
+use App\Http\Controllers\Settings\ShareholderController;
+use App\Http\Controllers\Settings\TaxReconciliationController;
+use App\Http\Controllers\Settings\TaxReportController;
+use App\Http\Controllers\Settings\TdsCertificateReceivedController;
+use App\Http\Controllers\Settings\TdsController;
+use App\Http\Controllers\Settings\TdsReceivableController;
+use App\Http\Controllers\Settings\TerminologyController;
+use App\Http\Controllers\Staff\RoleController;
 use App\Http\Controllers\StaffInvitationController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\SuperAdmin\DatabaseControlCenterController;
 use App\Http\Controllers\SuperAdmin\DatabaseMonitoringController;
 use App\Http\Controllers\SuperAdmin\DatabaseOperationsController;
+use App\Http\Controllers\SuperAdmin\EmergencyOverrideController;
+use App\Http\Controllers\TeacherController;
+use App\Http\Controllers\UiPreferenceController;
+use App\Http\Controllers\UpgradeController;
 use App\Http\Controllers\UserPreferenceController;
+use App\Http\Controllers\VerifyCertificateController;
+use App\Http\Controllers\WorkflowController;
 use App\Http\Controllers\WorkspaceController;
+use App\Models\Country;
+use App\Models\HomePage;
+use App\Services\Geo\VisitorCountryResolver;
+use App\Support\PageMarker;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -38,8 +132,8 @@ use Illuminate\Support\Facades\Route;
 */
 Route::middleware(['auth:platform_admin', 'verified'])->prefix('super-admin')->name('super-admin.')->group(function () {
     // Phase 5 — Emergency Override (2FA + justification + typed confirmation)
-    Route::get('institutes/{institute}/emergency-override', [\App\Http\Controllers\SuperAdmin\EmergencyOverrideController::class, 'create'])->name('institutes.emergency-override.create')->whereNumber('institute');
-    Route::post('institutes/{institute}/emergency-override', [\App\Http\Controllers\SuperAdmin\EmergencyOverrideController::class, 'store'])->name('institutes.emergency-override.store')->whereNumber('institute');
+    Route::get('institutes/{institute}/emergency-override', [EmergencyOverrideController::class, 'create'])->name('institutes.emergency-override.create')->whereNumber('institute');
+    Route::post('institutes/{institute}/emergency-override', [EmergencyOverrideController::class, 'store'])->name('institutes.emergency-override.store')->whereNumber('institute');
 
     $ccc = DatabaseControlCenterController::class;
     Route::get('database/control-center', [$ccc, 'index'])->name('database.control-center');
@@ -75,15 +169,19 @@ Route::post('admin/login', [PlatformAdminLoginController::class, 'login'])->name
 
 // institute/login permanently removed — redirect to original unified login (web guard)
 // Old bookmarks / cached forms hitting /institute/login will 301 to /login
-Route::get('institute/login', function () { return redirect()->route('login', [], 301); })->name('institute.login');
-Route::post('institute/login', function (\Illuminate\Http\Request $r) { return redirect()->route('login', [], 301); })->name('institute.login.submit');
+Route::get('institute/login', function () {
+    return redirect()->route('login', [], 301);
+})->name('institute.login');
+Route::post('institute/login', function (Request $r) {
+    return redirect()->route('login', [], 301);
+})->name('institute.login.submit');
 
 // Google OAuth — web guard only (Phase 1, local)
 Route::prefix('auth/google')->name('auth.google.')->group(function () {
-    Route::get('/redirect', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'redirect'])
+    Route::get('/redirect', [GoogleAuthController::class, 'redirect'])
         ->middleware('guest:web')
         ->name('redirect');
-    Route::get('/callback', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'callback'])
+    Route::get('/callback', [GoogleAuthController::class, 'callback'])
         ->name('callback');
 });
 
@@ -92,22 +190,35 @@ Route::post('institute/register', [InstituteUserRegisterController::class, 'regi
     ->middleware('throttle:10,15');
 
 // OTP-First 5-step onboarding (new flow)
-Route::get('register', [\App\Http\Controllers\Auth\RegistrationFlowController::class, 'showAccount'])->name('owner.register')->middleware('throttle:10,15');
-Route::get('register/account', [\App\Http\Controllers\Auth\RegistrationFlowController::class, 'showAccount'])->name('register.account')->middleware('throttle:10,15');
-Route::post('register/account', [\App\Http\Controllers\Auth\RegistrationFlowController::class, 'storeAccount'])->name('register.account.submit')->middleware('throttle:10,15');
-Route::get('register/verify-otp', [\App\Http\Controllers\Auth\RegistrationFlowController::class, 'showOtp'])->name('register.otp.form')->middleware('throttle:10,15');
-Route::post('register/verify-otp', [\App\Http\Controllers\Auth\RegistrationFlowController::class, 'verifyOtp'])->name('register.otp.verify')->middleware('throttle:10,15');
-Route::post('register/resend-otp', [\App\Http\Controllers\Auth\RegistrationFlowController::class, 'resendOtp'])->name('register.otp.resend')->middleware('throttle:10,10');
-Route::get('register/organization', [\App\Http\Controllers\Auth\RegistrationFlowController::class, 'showOrganization'])->name('register.organization')->middleware('throttle:10,15');
-Route::post('register/organization', [\App\Http\Controllers\Auth\RegistrationFlowController::class, 'storeOrganization'])->name('register.organization.submit')->middleware('throttle:10,15');
-Route::get('register/address', [\App\Http\Controllers\Auth\RegistrationFlowController::class, 'showAddress'])->name('register.address')->middleware('throttle:10,15');
-Route::post('register/address', [\App\Http\Controllers\Auth\RegistrationFlowController::class, 'storeAddress'])->name('register.address.submit')->middleware('throttle:10,15');
-Route::get('register/education', [\App\Http\Controllers\Auth\RegistrationFlowController::class, 'educationPlaceholder'])->name('register.education.placeholder')->middleware(['auth:web']);
+Route::get('register', [RegistrationFlowController::class, 'showAccount'])->name('owner.register')->middleware('throttle:10,15');
+Route::get('register/account', [RegistrationFlowController::class, 'showAccount'])->name('register.account')->middleware('throttle:10,15');
+Route::post('register/account', [RegistrationFlowController::class, 'storeAccount'])->name('register.account.submit')->middleware('throttle:10,15');
+Route::get('register/verify-otp', [RegistrationFlowController::class, 'showOtp'])->name('register.otp.form')->middleware('throttle:10,15');
+Route::post('register/verify-otp', [RegistrationFlowController::class, 'verifyOtp'])->name('register.otp.verify')->middleware('throttle:10,15');
+Route::post('register/resend-otp', [RegistrationFlowController::class, 'resendOtp'])->name('register.otp.resend')->middleware('throttle:10,10');
+Route::get('register/organization', [RegistrationFlowController::class, 'showOrganization'])->name('register.organization')->middleware('throttle:10,15');
+Route::post('register/organization', [RegistrationFlowController::class, 'storeOrganization'])->name('register.organization.submit')->middleware('throttle:10,15');
+Route::get('register/address', [RegistrationFlowController::class, 'showAddress'])->name('register.address')->middleware('throttle:10,15');
+Route::post('register/address', [RegistrationFlowController::class, 'storeAddress'])->name('register.address.submit')->middleware('throttle:10,15');
+Route::get('register/education', [RegistrationFlowController::class, 'educationPlaceholder'])->name('register.education.placeholder')->middleware(['auth:web']);
+
+// Mandatory package selection — the dashboard stays locked until an
+// organization has picked a package (see App\Http\Middleware\EnsurePackageSelected).
+Route::get('register/package', [PackageSelectionController::class, 'show'])
+    ->name('register.package')
+    ->middleware(['auth:web,institute_user', 'throttle:10,15']);
+Route::post('register/package', [PackageSelectionController::class, 'store'])
+    ->name('register.package.submit')
+    ->middleware(['auth:web,institute_user', 'throttle:10,15']);
 
 // Legacy aliases kept for backwards compat (redirect into new flow)
 Route::post('register/selection', [OwnerRegisterController::class, 'select'])->name('owner.register.selection')->middleware('throttle:10,15');
-Route::get('register/form', function(){ return redirect()->route('register.account'); })->name('owner.register.form');
-Route::post('register', function(\Illuminate\Http\Request $r){ return app(\App\Http\Controllers\Auth\RegistrationFlowController::class)->storeAccount($r); })->name('owner.register.submit')->middleware('throttle:10,15');
+Route::get('register/form', function () {
+    return redirect()->route('register.account');
+})->name('owner.register.form');
+Route::post('register', function (Request $r) {
+    return app(RegistrationFlowController::class)->storeAccount($r);
+})->name('owner.register.submit')->middleware('throttle:10,15');
 
 Route::post('logout', LogoutController::class)->name('logout');
 // Non-destructive GET fallback: if CSRF/session expired, POST is blocked with 419
@@ -116,39 +227,41 @@ Route::post('logout', LogoutController::class)->name('logout');
 // from POST to preserve strict CSRF on the primary path.
 Route::get('logout', LogoutController::class)->name('logout.get');
 
-Route::get('verify/certificate/{certificate_number}', [\App\Http\Controllers\VerifyCertificateController::class, 'show'])->name('verify.certificate');
-Route::get('verify/certificate', [\App\Http\Controllers\VerifyCertificateController::class, 'index'])->name('verify.certificate.index');
-Route::post('verify/certificate', [\App\Http\Controllers\VerifyCertificateController::class, 'check'])->name('verify.certificate.check');
+Route::get('verify/certificate/{certificate_number}', [VerifyCertificateController::class, 'show'])->name('verify.certificate');
+Route::get('verify/certificate', [VerifyCertificateController::class, 'index'])->name('verify.certificate.index');
+Route::post('verify/certificate', [VerifyCertificateController::class, 'check'])->name('verify.certificate.check');
 
 Route::middleware(['auth:platform_admin,institute_user,web', 'verified'])->group(function () {
     Route::get('account/preferences', [UserPreferenceController::class, 'edit'])->name('account.preferences');
     Route::put('account/preferences', [UserPreferenceController::class, 'update'])->name('account.preferences.update');
     Route::post('account/preferences/theme', [UserPreferenceController::class, 'updateTheme'])->name('account.preferences.theme');
-    Route::post('ui/columns', [\App\Http\Controllers\UiPreferenceController::class, 'save'])->name('ui.columns');
+    Route::post('ui/columns', [UiPreferenceController::class, 'save'])->name('ui.columns');
 });
 
 // Public Home — AccumenAI landing (no auth, Tailwind + Bootstrap Icons)
-Route::get('/', function (\Illuminate\Http\Request $request) {
+Route::get('/', function (Request $request) {
     // Block dashboard for incomplete onboarding — resume same step after logout
-    if (\Illuminate\Support\Facades\Auth::guard('web')->check()) {
-        $u = \Illuminate\Support\Facades\Auth::guard('web')->user();
-        if ($u && \App\Http\Controllers\Auth\RegistrationFlowController::isOnboardingIncomplete($u)) {
-            $resume = \App\Http\Controllers\Auth\RegistrationFlowController::resumeRouteForUser($u) ?? 'register.organization';
+    if (Auth::guard('web')->check()) {
+        $u = Auth::guard('web')->user();
+        if ($u && RegistrationFlowController::isOnboardingIncomplete($u)) {
+            $resume = RegistrationFlowController::resumeRouteForUser($u) ?? 'register.organization';
+
             return redirect()->route($resume);
         }
     }
     // Authenticated users see their dashboard at root for backward compat
-    if (\Illuminate\Support\Facades\Auth::guard('platform_admin')->check()
-        || \Illuminate\Support\Facades\Auth::guard('institute_user')->check()
-        || \Illuminate\Support\Facades\Auth::guard('web')->check()) {
+    if (Auth::guard('platform_admin')->check()
+        || Auth::guard('institute_user')->check()
+        || Auth::guard('web')->check()) {
         return app(DashboardController::class)();
     }
-    // Resolve home page by visitor country (session cookie > platform default)
-    $countryIso2 = $request->session()->get('visitor_country', config('app.country'));
-    $homePage = \App\Models\HomePage::resolveForCountry($countryIso2);
+    // Resolve home page by visitor country (CDN/IP geolocation → session cookie > platform default)
+    $countryIso2 = app(VisitorCountryResolver::class)->resolve();
+    $homePage = HomePage::resolveForCountry($countryIso2);
     if ($homePage) {
         return view($homePage->viewPath(), ['homePage' => $homePage]);
     }
+
     return view('home');
 })->middleware(['web', 'tenant'])->name('home');
 
@@ -156,7 +269,7 @@ Route::middleware(['auth:platform_admin,institute_user,web', 'tenant', 'verified
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     // Backward compat: / still resolves to dashboard for authenticated via home above, but keep alias
     Route::get('academic-dashboard', [DashboardController::class, '__invoke'])->name('academic-dashboard');
-    Route::get('/upgrade', [\App\Http\Controllers\UpgradeController::class, 'show'])->name('upgrade.show');
+    Route::get('/upgrade', [UpgradeController::class, 'show'])->name('upgrade.show');
 });
 
 // Workspace — picker/switch are protected (verified), create/store are onboarding (accessible while unverified)
@@ -173,9 +286,9 @@ Route::middleware(['auth:web'])->group(function () {
 // Blade posts to workspace.onboarding.post (POST /workspace/onboarding); POST /workspace/onboarding/choose
 // is kept as backwards-compat alias for cached forms that still POST to /choose (prevents 405).
 Route::middleware(['auth:web'])->group(function () {
-    Route::get('workspace/onboarding', [\App\Http\Controllers\InstituteOnboardingController::class, 'step1'])->name('workspace.onboarding');
-    Route::post('workspace/onboarding', [\App\Http\Controllers\InstituteOnboardingController::class, 'choose'])->name('workspace.onboarding.post');
-    Route::match(['get', 'post'], 'workspace/onboarding/choose', [\App\Http\Controllers\InstituteOnboardingController::class, 'choose'])->name('workspace.onboarding.choose');
+    Route::get('workspace/onboarding', [InstituteOnboardingController::class, 'step1'])->name('workspace.onboarding');
+    Route::post('workspace/onboarding', [InstituteOnboardingController::class, 'choose'])->name('workspace.onboarding.post');
+    Route::match(['get', 'post'], 'workspace/onboarding/choose', [InstituteOnboardingController::class, 'choose'])->name('workspace.onboarding.choose');
 });
 
 Route::middleware(['auth:institute_user,web', 'tenant', 'verified', 'module_access:education.students'])->prefix('students')->name('students.')->group(function () {
@@ -192,7 +305,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified', 'module_acce
 
 // OCR Document Scan for Student form — auto-fill via Tesseract/cloud fallback
 Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->group(function () {
-    Route::post('document/scan', [\App\Http\Controllers\DocumentScanController::class, 'scan'])
+    Route::post('document/scan', [DocumentScanController::class, 'scan'])
         ->middleware(['permission:students.manage', 'throttle:10,30'])
         ->name('document.scan');
 });
@@ -205,10 +318,10 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->prefix('sy
 });
 
 Route::middleware(['auth:institute_user,web', 'tenant', 'verified', 'module_access:education.attendance'])->group(function () {
-    Route::get('academic/dashboard', [\App\Http\Controllers\AcademicDashboardController::class, '__invoke'])->name('academic.dashboard');
-    Route::get('academic/analytics', [\App\Http\Controllers\AcademicAnalyticsController::class, 'index'])->name('academic.analytics.index');
-    Route::get('academic-attendance/mark', [\App\Http\Controllers\AcademicAttendanceController::class, 'index'])->name('academic-attendance.mark.index');
-    Route::get('academic-attendance/reports', [\App\Http\Controllers\AcademicAttendanceReportController::class, 'index'])->name('academic-attendance.reports.index');
+    Route::get('academic/dashboard', [AcademicDashboardController::class, '__invoke'])->name('academic.dashboard');
+    Route::get('academic/analytics', [AcademicAnalyticsController::class, 'index'])->name('academic.analytics.index');
+    Route::get('academic-attendance/mark', [AcademicAttendanceController::class, 'index'])->name('academic-attendance.mark.index');
+    Route::get('academic-attendance/reports', [AcademicAttendanceReportController::class, 'index'])->name('academic-attendance.reports.index');
 });
 
 Route::middleware(['auth:institute_user,web', 'tenant', 'verified', 'module_access:education,training_center'])->prefix('batches')->name('batches.')->group(function () {
@@ -247,109 +360,109 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->group(func
     // Legacy institute-controlled toggle — now superseded by Super Admin panel (admin.institutes.certificate-approval-mode.update)
     // Kept for backwards compatibility (tests / cached forms); UI removed from settings.
     Route::put('settings/certificate-approval-mode', [InstituteSettingController::class, 'updateCertificateApprovalMode'])->middleware('permission:settings.manage')->name('settings.certificate-approval-mode.update');
-    Route::get('settings/modules', [\App\Http\Controllers\Settings\ModuleManagementController::class, 'index'])->middleware('permission:institute.settings.module.view')->name('settings.modules');
-    Route::post('settings/modules/toggle', [\App\Http\Controllers\Settings\ModuleManagementController::class, 'toggle'])->middleware('permission:institute.settings.module.toggle')->name('settings.modules.toggle');
-    Route::get('settings/features', [\App\Http\Controllers\Institute\FeatureAccessController::class, 'index'])->middleware('permission:settings.manage')->name('settings.features');
+    Route::get('settings/modules', [ModuleManagementController::class, 'index'])->middleware('permission:institute.settings.module.view')->name('settings.modules');
+    Route::post('settings/modules/toggle', [ModuleManagementController::class, 'toggle'])->middleware('permission:institute.settings.module.toggle')->name('settings.modules.toggle');
+    Route::get('settings/features', [FeatureAccessController::class, 'index'])->middleware('permission:settings.manage')->name('settings.features');
     // Phase 5 — tenant terminology overrides (Customer → Client, etc.)
-    Route::get('settings/terminology', [\App\Http\Controllers\Settings\TerminologyController::class, 'index'])->middleware('permission:settings.manage')->name('settings.terminology.index');
-    Route::put('settings/terminology', [\App\Http\Controllers\Settings\TerminologyController::class, 'update'])->middleware('permission:settings.manage')->name('settings.terminology.update');
+    Route::get('settings/terminology', [TerminologyController::class, 'index'])->middleware('permission:settings.manage')->name('settings.terminology.index');
+    Route::put('settings/terminology', [TerminologyController::class, 'update'])->middleware('permission:settings.manage')->name('settings.terminology.update');
     // Currency settings
-    Route::get('settings/currency', [\App\Http\Controllers\Settings\CurrencySettingController::class, 'index'])->middleware('permission:settings.manage')->name('settings.currency.index');
-    Route::put('settings/currency', [\App\Http\Controllers\Settings\CurrencySettingController::class, 'update'])->middleware('permission:settings.manage')->name('settings.currency.update');
-    Route::post('settings/currency/toggle-multi', [\App\Http\Controllers\Settings\CurrencySettingController::class, 'toggleMultiCurrency'])->middleware('permission:settings.manage')->name('settings.currency.toggle-multi');
-    Route::get('settings/currency/rates', [\App\Http\Controllers\Settings\CurrencySettingController::class, 'getExchangeRates'])->middleware('permission:settings.manage')->name('settings.currency.rates');
-    Route::post('settings/currency/rates', [\App\Http\Controllers\Settings\CurrencySettingController::class, 'storeExchangeRate'])->middleware('permission:settings.manage')->name('settings.currency.rates.store');
-    Route::delete('settings/currency/rates/{rate}', [\App\Http\Controllers\Settings\CurrencySettingController::class, 'destroyExchangeRate'])->middleware('permission:settings.manage')->name('settings.currency.rates.destroy');
+    Route::get('settings/currency', [CurrencySettingController::class, 'index'])->middleware('permission:settings.manage')->name('settings.currency.index');
+    Route::put('settings/currency', [CurrencySettingController::class, 'update'])->middleware('permission:settings.manage')->name('settings.currency.update');
+    Route::post('settings/currency/toggle-multi', [CurrencySettingController::class, 'toggleMultiCurrency'])->middleware('permission:settings.manage')->name('settings.currency.toggle-multi');
+    Route::get('settings/currency/rates', [CurrencySettingController::class, 'getExchangeRates'])->middleware('permission:settings.manage')->name('settings.currency.rates');
+    Route::post('settings/currency/rates', [CurrencySettingController::class, 'storeExchangeRate'])->middleware('permission:settings.manage')->name('settings.currency.rates.store');
+    Route::delete('settings/currency/rates/{rate}', [CurrencySettingController::class, 'destroyExchangeRate'])->middleware('permission:settings.manage')->name('settings.currency.rates.destroy');
     // Advanced accounting mode toggle
-    Route::get('settings/advanced-accounting', [\App\Http\Controllers\Settings\AdvancedAccountingSettingController::class, 'index'])->middleware('permission:settings.manage')->name('settings.advanced-accounting');
-    Route::post('settings/advanced-accounting/toggle', [\App\Http\Controllers\Settings\AdvancedAccountingSettingController::class, 'toggle'])->middleware('permission:settings.manage')->name('settings.advanced-accounting.toggle');
-    Route::put('settings/advanced-accounting/entity-type', [\App\Http\Controllers\Settings\AdvancedAccountingSettingController::class, 'updateEntityType'])->middleware('permission:settings.manage')->name('settings.advanced-accounting.entity-type.update');
+    Route::get('settings/advanced-accounting', [AdvancedAccountingSettingController::class, 'index'])->middleware('permission:settings.manage')->name('settings.advanced-accounting');
+    Route::post('settings/advanced-accounting/toggle', [AdvancedAccountingSettingController::class, 'toggle'])->middleware('permission:settings.manage')->name('settings.advanced-accounting.toggle');
+    Route::put('settings/advanced-accounting/entity-type', [AdvancedAccountingSettingController::class, 'updateEntityType'])->middleware('permission:settings.manage')->name('settings.advanced-accounting.entity-type.update');
     // Business entity type selector + entity pages
     Route::get('settings/business-entity', function () {
         return redirect()->route('settings.advanced-accounting');
     })->middleware('permission:settings.manage')->name('settings.business-entity');
-    Route::put('settings/business-entity', [\App\Http\Controllers\Settings\BusinessEntityController::class, 'update'])->middleware('permission:settings.manage')->name('settings.business-entity.update');
-    Route::get('settings/business-entity/sole-proprietorship', [\App\Http\Controllers\Settings\BusinessEntityController::class, 'soleProprietorship'])->middleware('permission:settings.manage')->name('settings.entity.sole-proprietorship');
-    Route::get('settings/business-entity/partnership', [\App\Http\Controllers\Settings\BusinessEntityController::class, 'partnership'])->middleware('permission:settings.manage')->name('settings.entity.partnership');
-    Route::get('settings/business-entity/private-limited', [\App\Http\Controllers\Settings\BusinessEntityController::class, 'privateLimited'])->middleware('permission:settings.manage')->name('settings.entity.private-limited');
+    Route::put('settings/business-entity', [BusinessEntityController::class, 'update'])->middleware('permission:settings.manage')->name('settings.business-entity.update');
+    Route::get('settings/business-entity/sole-proprietorship', [BusinessEntityController::class, 'soleProprietorship'])->middleware('permission:settings.manage')->name('settings.entity.sole-proprietorship');
+    Route::get('settings/business-entity/partnership', [BusinessEntityController::class, 'partnership'])->middleware('permission:settings.manage')->name('settings.entity.partnership');
+    Route::get('settings/business-entity/private-limited', [BusinessEntityController::class, 'privateLimited'])->middleware('permission:settings.manage')->name('settings.entity.private-limited');
     // Partner CRUD (URIs under partners/ to avoid colliding with entity landing pages)
     Route::prefix('settings/business-entity/partners')->name('settings.business-entity.partnership.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Settings\PartnerController::class, 'index'])->middleware('permission:settings.manage')->name('index');
-        Route::get('/create', [\App\Http\Controllers\Settings\PartnerController::class, 'create'])->middleware('permission:settings.manage')->name('create');
-        Route::post('/', [\App\Http\Controllers\Settings\PartnerController::class, 'store'])->middleware('permission:settings.manage')->name('store');
-        Route::get('/{partner}/edit', [\App\Http\Controllers\Settings\PartnerController::class, 'edit'])->middleware('permission:settings.manage')->name('edit');
-        Route::put('/{partner}', [\App\Http\Controllers\Settings\PartnerController::class, 'update'])->middleware('permission:settings.manage')->name('update');
-        Route::delete('/{partner}', [\App\Http\Controllers\Settings\PartnerController::class, 'destroy'])->middleware('permission:settings.manage')->name('destroy');
+        Route::get('/', [PartnerController::class, 'index'])->middleware('permission:settings.manage')->name('index');
+        Route::get('/create', [PartnerController::class, 'create'])->middleware('permission:settings.manage')->name('create');
+        Route::post('/', [PartnerController::class, 'store'])->middleware('permission:settings.manage')->name('store');
+        Route::get('/{partner}/edit', [PartnerController::class, 'edit'])->middleware('permission:settings.manage')->name('edit');
+        Route::put('/{partner}', [PartnerController::class, 'update'])->middleware('permission:settings.manage')->name('update');
+        Route::delete('/{partner}', [PartnerController::class, 'destroy'])->middleware('permission:settings.manage')->name('destroy');
     });
     // Shareholder CRUD
     Route::prefix('settings/business-entity/shareholders')->name('settings.business-entity.private-limited.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Settings\ShareholderController::class, 'index'])->middleware('permission:settings.manage')->name('index');
-        Route::get('/create', [\App\Http\Controllers\Settings\ShareholderController::class, 'create'])->middleware('permission:settings.manage')->name('create');
-        Route::post('/', [\App\Http\Controllers\Settings\ShareholderController::class, 'store'])->middleware('permission:settings.manage')->name('store');
-        Route::get('/{shareholder}/edit', [\App\Http\Controllers\Settings\ShareholderController::class, 'edit'])->middleware('permission:settings.manage')->name('edit');
-        Route::put('/{shareholder}', [\App\Http\Controllers\Settings\ShareholderController::class, 'update'])->middleware('permission:settings.manage')->name('update');
-        Route::delete('/{shareholder}', [\App\Http\Controllers\Settings\ShareholderController::class, 'destroy'])->middleware('permission:settings.manage')->name('destroy');
+        Route::get('/', [ShareholderController::class, 'index'])->middleware('permission:settings.manage')->name('index');
+        Route::get('/create', [ShareholderController::class, 'create'])->middleware('permission:settings.manage')->name('create');
+        Route::post('/', [ShareholderController::class, 'store'])->middleware('permission:settings.manage')->name('store');
+        Route::get('/{shareholder}/edit', [ShareholderController::class, 'edit'])->middleware('permission:settings.manage')->name('edit');
+        Route::put('/{shareholder}', [ShareholderController::class, 'update'])->middleware('permission:settings.manage')->name('update');
+        Route::delete('/{shareholder}', [ShareholderController::class, 'destroy'])->middleware('permission:settings.manage')->name('destroy');
     });
     // Share Capital (private limited)
     Route::prefix('settings/business-entity/share-capital')->name('settings.share-capital.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Settings\ShareCapitalController::class, 'index'])->middleware('permission:settings.manage')->name('index');
-        Route::get('/settings', [\App\Http\Controllers\Settings\ShareCapitalController::class, 'settings'])->middleware('permission:settings.manage')->name('settings');
-        Route::put('/settings', [\App\Http\Controllers\Settings\ShareCapitalController::class, 'updateSettings'])->middleware('permission:settings.manage')->name('settings.update');
-        Route::post('/issue', [\App\Http\Controllers\Settings\ShareCapitalController::class, 'issue'])->middleware('permission:settings.manage')->name('issue');
-        Route::post('/transfer', [\App\Http\Controllers\Settings\ShareCapitalController::class, 'transfer'])->middleware('permission:settings.manage')->name('transfer');
-        Route::get('/certificates', [\App\Http\Controllers\Settings\ShareCapitalController::class, 'certificates'])->middleware('permission:settings.manage')->name('certificates');
+        Route::get('/', [ShareCapitalController::class, 'index'])->middleware('permission:settings.manage')->name('index');
+        Route::get('/settings', [ShareCapitalController::class, 'settings'])->middleware('permission:settings.manage')->name('settings');
+        Route::put('/settings', [ShareCapitalController::class, 'updateSettings'])->middleware('permission:settings.manage')->name('settings.update');
+        Route::post('/issue', [ShareCapitalController::class, 'issue'])->middleware('permission:settings.manage')->name('issue');
+        Route::post('/transfer', [ShareCapitalController::class, 'transfer'])->middleware('permission:settings.manage')->name('transfer');
+        Route::get('/certificates', [ShareCapitalController::class, 'certificates'])->middleware('permission:settings.manage')->name('certificates');
     });
     // Dividends
     Route::prefix('settings/dividend')->name('settings.dividend.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Settings\DividendController::class, 'index'])->middleware('permission:settings.manage')->name('index');
-        Route::get('/register', [\App\Http\Controllers\Settings\DividendController::class, 'register'])->middleware('permission:settings.manage')->name('register');
-        Route::get('/create', [\App\Http\Controllers\Settings\DividendController::class, 'create'])->middleware('permission:settings.manage')->name('create');
-        Route::post('/', [\App\Http\Controllers\Settings\DividendController::class, 'store'])->middleware('permission:settings.manage')->name('store');
-        Route::get('/{dividend}', [\App\Http\Controllers\Settings\DividendController::class, 'show'])->middleware('permission:settings.manage')->name('show');
-        Route::post('/{dividend}/mark-declared', [\App\Http\Controllers\Settings\DividendController::class, 'markDeclared'])->middleware('permission:settings.manage')->name('mark-declared');
-        Route::post('/{dividend}/pay-all', [\App\Http\Controllers\Settings\DividendController::class, 'payAll'])->middleware('permission:settings.manage')->name('pay-all');
-        Route::post('/{dividend}/payouts/{payout}/pay', [\App\Http\Controllers\Settings\DividendController::class, 'payPayout'])->middleware('permission:settings.manage')->name('payouts.pay');
-        Route::delete('/{dividend}', [\App\Http\Controllers\Settings\DividendController::class, 'cancel'])->middleware('permission:settings.manage')->name('cancel');
+        Route::get('/', [DividendController::class, 'index'])->middleware('permission:settings.manage')->name('index');
+        Route::get('/register', [DividendController::class, 'register'])->middleware('permission:settings.manage')->name('register');
+        Route::get('/create', [DividendController::class, 'create'])->middleware('permission:settings.manage')->name('create');
+        Route::post('/', [DividendController::class, 'store'])->middleware('permission:settings.manage')->name('store');
+        Route::get('/{dividend}', [DividendController::class, 'show'])->middleware('permission:settings.manage')->name('show');
+        Route::post('/{dividend}/mark-declared', [DividendController::class, 'markDeclared'])->middleware('permission:settings.manage')->name('mark-declared');
+        Route::post('/{dividend}/pay-all', [DividendController::class, 'payAll'])->middleware('permission:settings.manage')->name('pay-all');
+        Route::post('/{dividend}/payouts/{payout}/pay', [DividendController::class, 'payPayout'])->middleware('permission:settings.manage')->name('payouts.pay');
+        Route::delete('/{dividend}', [DividendController::class, 'cancel'])->middleware('permission:settings.manage')->name('cancel');
     });
     // TDS
     Route::prefix('settings/tds')->name('settings.tds.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Settings\TdsController::class, 'index'])->middleware('permission:tax.manage')->name('index');
-        Route::get('/create', [\App\Http\Controllers\Settings\TdsController::class, 'create'])->middleware('permission:tax.manage')->name('create');
-        Route::post('/', [\App\Http\Controllers\Settings\TdsController::class, 'store'])->middleware('permission:tax.manage')->name('store');
-        Route::post('/{tds}/deposit', [\App\Http\Controllers\Settings\TdsController::class, 'deposit'])->middleware('permission:tax.manage')->name('deposit');
-        Route::get('/certificates', [\App\Http\Controllers\Settings\TdsController::class, 'certificates'])->middleware('permission:tax.manage')->name('certificates');
-        Route::post('/certificates/generate/{tds}', [\App\Http\Controllers\Settings\TdsController::class, 'generateCertificate'])->middleware('permission:tax.manage')->name('certificates.generate');
+        Route::get('/', [TdsController::class, 'index'])->middleware('permission:tax.manage')->name('index');
+        Route::get('/create', [TdsController::class, 'create'])->middleware('permission:tax.manage')->name('create');
+        Route::post('/', [TdsController::class, 'store'])->middleware('permission:tax.manage')->name('store');
+        Route::post('/{tds}/deposit', [TdsController::class, 'deposit'])->middleware('permission:tax.manage')->name('deposit');
+        Route::get('/certificates', [TdsController::class, 'certificates'])->middleware('permission:tax.manage')->name('certificates');
+        Route::post('/certificates/generate/{tds}', [TdsController::class, 'generateCertificate'])->middleware('permission:tax.manage')->name('certificates.generate');
     });
     // Corporate Tax
     Route::prefix('settings/corporate-tax')->name('settings.corporate-tax.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Settings\CorporateTaxController::class, 'index'])->middleware('permission:tax.manage')->name('index');
-        Route::post('/compute', [\App\Http\Controllers\Settings\CorporateTaxController::class, 'compute'])->middleware('permission:tax.manage')->name('compute');
-        Route::post('/advance', [\App\Http\Controllers\Settings\CorporateTaxController::class, 'recordAdvance'])->middleware('permission:tax.manage')->name('advance');
+        Route::get('/', [CorporateTaxController::class, 'index'])->middleware('permission:tax.manage')->name('index');
+        Route::post('/compute', [CorporateTaxController::class, 'compute'])->middleware('permission:tax.manage')->name('compute');
+        Route::post('/advance', [CorporateTaxController::class, 'recordAdvance'])->middleware('permission:tax.manage')->name('advance');
     });
     // Tax Reports
     Route::prefix('settings/tax-reports')->name('settings.tax-reports.')->group(function () {
-        Route::get('/tds-summary', [\App\Http\Controllers\Settings\TaxReportController::class, 'tdsSummary'])->middleware('permission:tax.report')->name('tds-summary');
-        Route::get('/advance-tax', [\App\Http\Controllers\Settings\TaxReportController::class, 'advanceTax'])->middleware('permission:tax.report')->name('advance-tax');
-        Route::get('/corporate-return', [\App\Http\Controllers\Settings\TaxReportController::class, 'corporateReturn'])->middleware('permission:tax.report')->name('corporate-return');
+        Route::get('/tds-summary', [TaxReportController::class, 'tdsSummary'])->middleware('permission:tax.report')->name('tds-summary');
+        Route::get('/advance-tax', [TaxReportController::class, 'advanceTax'])->middleware('permission:tax.report')->name('advance-tax');
+        Route::get('/corporate-return', [TaxReportController::class, 'corporateReturn'])->middleware('permission:tax.report')->name('corporate-return');
     });
     // TDS Receivable (deductee-side)
     Route::prefix('settings/tds-receivable')->name('settings.tds-receivable.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Settings\TdsReceivableController::class, 'index'])->middleware('permission:tax.manage')->name('index');
-        Route::get('/create', [\App\Http\Controllers\Settings\TdsReceivableController::class, 'create'])->middleware('permission:tax.manage')->name('create');
-        Route::post('/', [\App\Http\Controllers\Settings\TdsReceivableController::class, 'store'])->middleware('permission:tax.manage')->name('store');
+        Route::get('/', [TdsReceivableController::class, 'index'])->middleware('permission:tax.manage')->name('index');
+        Route::get('/create', [TdsReceivableController::class, 'create'])->middleware('permission:tax.manage')->name('create');
+        Route::post('/', [TdsReceivableController::class, 'store'])->middleware('permission:tax.manage')->name('store');
     });
     // TDS Certificates Received
     Route::prefix('settings/tds-certificates-received')->name('settings.tds-certificates-received.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Settings\TdsCertificateReceivedController::class, 'index'])->middleware('permission:tax.manage')->name('index');
-        Route::get('/create', [\App\Http\Controllers\Settings\TdsCertificateReceivedController::class, 'create'])->middleware('permission:tax.manage')->name('create');
-        Route::post('/', [\App\Http\Controllers\Settings\TdsCertificateReceivedController::class, 'store'])->middleware('permission:tax.manage')->name('store');
-        Route::post('/{certificate}/verify', [\App\Http\Controllers\Settings\TdsCertificateReceivedController::class, 'verify'])->middleware('permission:tax.manage')->name('verify');
+        Route::get('/', [TdsCertificateReceivedController::class, 'index'])->middleware('permission:tax.manage')->name('index');
+        Route::get('/create', [TdsCertificateReceivedController::class, 'create'])->middleware('permission:tax.manage')->name('create');
+        Route::post('/', [TdsCertificateReceivedController::class, 'store'])->middleware('permission:tax.manage')->name('store');
+        Route::post('/{certificate}/verify', [TdsCertificateReceivedController::class, 'verify'])->middleware('permission:tax.manage')->name('verify');
     });
     // Tax Return Reconciliation
     Route::prefix('settings/tax-reconciliation')->name('settings.tax-reconciliation.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Settings\TaxReconciliationController::class, 'index'])->middleware('permission:tax.manage')->name('index');
-        Route::post('/finalize', [\App\Http\Controllers\Settings\TaxReconciliationController::class, 'finalize'])->middleware('permission:tax.manage')->name('finalize');
-        Route::post('/{reconciliation}/mark-filed', [\App\Http\Controllers\Settings\TaxReconciliationController::class, 'markFiled'])->middleware('permission:tax.manage')->name('mark-filed');
+        Route::get('/', [TaxReconciliationController::class, 'index'])->middleware('permission:tax.manage')->name('index');
+        Route::post('/finalize', [TaxReconciliationController::class, 'finalize'])->middleware('permission:tax.manage')->name('finalize');
+        Route::post('/{reconciliation}/mark-filed', [TaxReconciliationController::class, 'markFiled'])->middleware('permission:tax.manage')->name('mark-filed');
     });
 });
 
@@ -358,20 +471,20 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->prefix('st
     Route::post('invite', [StaffInvitationController::class, 'store'])->middleware('permission:staff.manage')->name('invite.store');
     Route::put('members/{member}/role', [StaffInvitationController::class, 'updateRole'])->middleware('permission:staff.manage')->name('members.role');
     Route::delete('members/{member}', [StaffInvitationController::class, 'destroy'])->middleware('permission:staff.manage')->name('members.destroy');
-    Route::resource('roles', \App\Http\Controllers\Staff\RoleController::class)->except(['show']);
+    Route::resource('roles', RoleController::class)->except(['show']);
 });
 
 Route::middleware(['auth:platform_admin', 'verified'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('users', [\App\Http\Controllers\Admin\UserAccountAdminController::class, 'index'])->name('users.index');
-    Route::get('users/bin', [\App\Http\Controllers\Admin\UserAccountAdminController::class, 'bin'])->name('users.bin');
-    Route::get('users/{user}', [\App\Http\Controllers\Admin\UserAccountAdminController::class, 'show'])->name('users.show')->whereNumber('user');
-    Route::post('users/{user}/suspend', [\App\Http\Controllers\Admin\UserAccountAdminController::class, 'suspend'])->name('users.suspend')->whereNumber('user');
-    Route::post('users/{user}/reactivate', [\App\Http\Controllers\Admin\UserAccountAdminController::class, 'reactivate'])->name('users.reactivate')->whereNumber('user');
-    Route::delete('users/{user}', [\App\Http\Controllers\Admin\UserAccountAdminController::class, 'destroy'])->name('users.destroy')->whereNumber('user');
-    Route::post('users/{user}/restore', [\App\Http\Controllers\Admin\UserAccountAdminController::class, 'restore'])->name('users.restore')->withTrashed()->whereNumber('user');
-    Route::delete('users/{user}/force-delete', [\App\Http\Controllers\Admin\UserAccountAdminController::class, 'forceDelete'])->name('users.force-delete')->withTrashed()->whereNumber('user');
+    Route::get('users', [UserAccountAdminController::class, 'index'])->name('users.index');
+    Route::get('users/bin', [UserAccountAdminController::class, 'bin'])->name('users.bin');
+    Route::get('users/{user}', [UserAccountAdminController::class, 'show'])->name('users.show')->whereNumber('user');
+    Route::post('users/{user}/suspend', [UserAccountAdminController::class, 'suspend'])->name('users.suspend')->whereNumber('user');
+    Route::post('users/{user}/reactivate', [UserAccountAdminController::class, 'reactivate'])->name('users.reactivate')->whereNumber('user');
+    Route::delete('users/{user}', [UserAccountAdminController::class, 'destroy'])->name('users.destroy')->whereNumber('user');
+    Route::post('users/{user}/restore', [UserAccountAdminController::class, 'restore'])->name('users.restore')->withTrashed()->whereNumber('user');
+    Route::delete('users/{user}/force-delete', [UserAccountAdminController::class, 'forceDelete'])->name('users.force-delete')->withTrashed()->whereNumber('user');
 
-    Route::get('tenants', [\App\Http\Controllers\Admin\TenantsAdminController::class, 'index'])->name('tenants.index');
+    Route::get('tenants', [TenantsAdminController::class, 'index'])->name('tenants.index');
     Route::get('institutes', [InstituteAdminController::class, 'index'])->name('institutes.index');
     Route::get('institutes/bin', [InstituteAdminController::class, 'bin'])->name('institutes.bin');
     Route::post('institutes/bin/batch-action', [InstituteAdminController::class, 'batchBinAction'])->name('institutes.bin.batch-action');
@@ -415,43 +528,43 @@ Route::middleware(['auth:platform_admin', 'verified'])->prefix('admin')->name('a
     Route::delete('settings/logo', [SettingController::class, 'removeLogo'])->name('settings.logo.remove');
     Route::post('settings/mail-payment', [SettingController::class, 'updateMailPayment'])->name('settings.mail-payment.update');
     Route::post('settings/mail-payment/test', [SettingController::class, 'testMail'])->name('settings.mail-payment.test');
-    Route::get('settings/ai', [\App\Http\Controllers\Admin\AiSettingController::class, 'index'])->name('settings.ai');
-    Route::post('settings/ai', [\App\Http\Controllers\Admin\AiSettingController::class, 'update'])->name('settings.ai.update');
-    Route::post('settings/ai/test', [\App\Http\Controllers\Admin\AiSettingController::class, 'test'])->name('settings.ai.test');
+    Route::get('settings/ai', [AiSettingController::class, 'index'])->name('settings.ai');
+    Route::post('settings/ai', [AiSettingController::class, 'update'])->name('settings.ai.update');
+    Route::post('settings/ai/test', [AiSettingController::class, 'test'])->name('settings.ai.test');
     Route::post('settings/staff/{instituteUser}/action', [SettingController::class, 'staffAction'])->name('settings.staff-action');
 
     // API Key management (multiple per provider)
-    Route::get('ai-api-keys', [\App\Http\Controllers\Admin\AiApiKeyController::class, 'index'])->name('ai-api-keys.index');
-    Route::post('ai-api-keys', [\App\Http\Controllers\Admin\AiApiKeyController::class, 'store'])->name('ai-api-keys.store');
-    Route::put('ai-api-keys/{key}', [\App\Http\Controllers\Admin\AiApiKeyController::class, 'update'])->name('ai-api-keys.update');
-    Route::delete('ai-api-keys/{key}', [\App\Http\Controllers\Admin\AiApiKeyController::class, 'destroy'])->name('ai-api-keys.destroy');
-    Route::post('ai-api-keys/{key}/toggle', [\App\Http\Controllers\Admin\AiApiKeyController::class, 'toggleActive'])->name('ai-api-keys.toggle');
-    Route::post('ai-api-keys/{key}/configure', [\App\Http\Controllers\Admin\AiApiKeyController::class, 'configure'])->name('ai-api-keys.configure');
+    Route::get('ai-api-keys', [AiApiKeyController::class, 'index'])->name('ai-api-keys.index');
+    Route::post('ai-api-keys', [AiApiKeyController::class, 'store'])->name('ai-api-keys.store');
+    Route::put('ai-api-keys/{key}', [AiApiKeyController::class, 'update'])->name('ai-api-keys.update');
+    Route::delete('ai-api-keys/{key}', [AiApiKeyController::class, 'destroy'])->name('ai-api-keys.destroy');
+    Route::post('ai-api-keys/{key}/toggle', [AiApiKeyController::class, 'toggleActive'])->name('ai-api-keys.toggle');
+    Route::post('ai-api-keys/{key}/configure', [AiApiKeyController::class, 'configure'])->name('ai-api-keys.configure');
 
     // Platform Configuration Center (E19)
-    Route::get('platform-settings', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'index'])->name('platform-settings.index');
-    Route::post('platform-settings/general', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'updateGeneral'])->name('platform-settings.general');
-    Route::post('platform-settings/email', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'updateEmail'])->name('platform-settings.email');
-    Route::post('platform-settings/email/test', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'testEmail'])->name('platform-settings.email.test');
-    Route::post('platform-settings/sms', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'updateSms'])->name('platform-settings.sms');
-    Route::post('platform-settings/sms/test-connection', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'testSmsConnection'])->name('platform-settings.sms.test-connection')->middleware('throttle:10,15');
-    Route::post('platform-settings/sms/test', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'testSms'])->name('platform-settings.sms.test')->middleware('throttle:3,10');
-    Route::post('platform-settings/otp', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'updateOtp'])->name('platform-settings.otp');
-    Route::post('platform-settings/twofactor', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'updateTwoFactor'])->name('platform-settings.twofactor');
-    Route::post('platform-settings/login-security', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'updateLoginSecurity'])->name('platform-settings.login-security');
-    Route::post('platform-settings/queue/health', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'queueHealth'])->name('platform-settings.queue.health');
-    Route::post('platform-settings/payment', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'updatePayment'])->name('platform-settings.payment');
-    Route::post('platform-settings/storage', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'updateStorage'])->name('platform-settings.storage');
-    Route::post('platform-settings/maps', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'updateMaps'])->name('platform-settings.maps');
-    Route::post('platform-settings/notifications', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'updateNotifications'])->name('platform-settings.notifications');
-    Route::post('platform-settings/ai', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'updateAi'])->name('platform-settings.ai');
-    Route::post('platform-settings/api', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'updateApi'])->name('platform-settings.api');
-    Route::post('platform-settings/branding', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'updateBranding'])->name('platform-settings.branding');
-    Route::post('platform-settings/dgda', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'updateDgda'])->name('platform-settings.dgda');
-    Route::post('platform-settings/maintenance', [\App\Http\Controllers\Admin\PlatformSettingsController::class, 'updateMaintenance'])->name('platform-settings.maintenance');
+    Route::get('platform-settings', [PlatformSettingsController::class, 'index'])->name('platform-settings.index');
+    Route::post('platform-settings/general', [PlatformSettingsController::class, 'updateGeneral'])->name('platform-settings.general');
+    Route::post('platform-settings/email', [PlatformSettingsController::class, 'updateEmail'])->name('platform-settings.email');
+    Route::post('platform-settings/email/test', [PlatformSettingsController::class, 'testEmail'])->name('platform-settings.email.test');
+    Route::post('platform-settings/sms', [PlatformSettingsController::class, 'updateSms'])->name('platform-settings.sms');
+    Route::post('platform-settings/sms/test-connection', [PlatformSettingsController::class, 'testSmsConnection'])->name('platform-settings.sms.test-connection')->middleware('throttle:10,15');
+    Route::post('platform-settings/sms/test', [PlatformSettingsController::class, 'testSms'])->name('platform-settings.sms.test')->middleware('throttle:3,10');
+    Route::post('platform-settings/otp', [PlatformSettingsController::class, 'updateOtp'])->name('platform-settings.otp');
+    Route::post('platform-settings/twofactor', [PlatformSettingsController::class, 'updateTwoFactor'])->name('platform-settings.twofactor');
+    Route::post('platform-settings/login-security', [PlatformSettingsController::class, 'updateLoginSecurity'])->name('platform-settings.login-security');
+    Route::post('platform-settings/queue/health', [PlatformSettingsController::class, 'queueHealth'])->name('platform-settings.queue.health');
+    Route::post('platform-settings/payment', [PlatformSettingsController::class, 'updatePayment'])->name('platform-settings.payment');
+    Route::post('platform-settings/storage', [PlatformSettingsController::class, 'updateStorage'])->name('platform-settings.storage');
+    Route::post('platform-settings/maps', [PlatformSettingsController::class, 'updateMaps'])->name('platform-settings.maps');
+    Route::post('platform-settings/notifications', [PlatformSettingsController::class, 'updateNotifications'])->name('platform-settings.notifications');
+    Route::post('platform-settings/ai', [PlatformSettingsController::class, 'updateAi'])->name('platform-settings.ai');
+    Route::post('platform-settings/api', [PlatformSettingsController::class, 'updateApi'])->name('platform-settings.api');
+    Route::post('platform-settings/branding', [PlatformSettingsController::class, 'updateBranding'])->name('platform-settings.branding');
+    Route::post('platform-settings/dgda', [PlatformSettingsController::class, 'updateDgda'])->name('platform-settings.dgda');
+    Route::post('platform-settings/maintenance', [PlatformSettingsController::class, 'updateMaintenance'])->name('platform-settings.maintenance');
 
     // Home Page Manager
-    $hpc = \App\Http\Controllers\Admin\HomePageController::class;
+    $hpc = HomePageController::class;
     Route::get('home-pages', [$hpc, 'index'])->name('home-pages.index');
     Route::get('home-pages/create', [$hpc, 'create'])->name('home-pages.create');
     Route::post('home-pages', [$hpc, 'store'])->name('home-pages.store');
@@ -463,64 +576,69 @@ Route::middleware(['auth:platform_admin', 'verified'])->prefix('admin')->name('a
     Route::post('home-pages/{homePage}/countries', [$hpc, 'assignCountries'])->name('home-pages.countries');
     Route::get('home-pages/{homePage}/preview', [$hpc, 'preview'])->name('home-pages.preview');
 
-    Route::get('platform-audit', [\App\Http\Controllers\Admin\PlatformAuditController::class, 'index'])->name('platform-audit.index');
+    Route::get('platform-audit', [PlatformAuditController::class, 'index'])->name('platform-audit.index');
 
     // Platform Staff Management (delegated, least-privilege - NOT super admin)
-    Route::get('platform-staff', [\App\Http\Controllers\Admin\PlatformStaffController::class, 'index'])->name('platform-staff.index');
-    Route::get('platform-staff/create', [\App\Http\Controllers\Admin\PlatformStaffController::class, 'create'])->name('platform-staff.create');
-    Route::post('platform-staff', [\App\Http\Controllers\Admin\PlatformStaffController::class, 'store'])->name('platform-staff.store');
-    Route::get('platform-staff/{platformStaff}/edit', [\App\Http\Controllers\Admin\PlatformStaffController::class, 'edit'])->name('platform-staff.edit');
-    Route::put('platform-staff/{platformStaff}', [\App\Http\Controllers\Admin\PlatformStaffController::class, 'update'])->name('platform-staff.update');
-    Route::delete('platform-staff/{platformStaff}', [\App\Http\Controllers\Admin\PlatformStaffController::class, 'destroy'])->name('platform-staff.destroy');
-    Route::post('platform-staff/{platformStaff}/toggle', [\App\Http\Controllers\Admin\PlatformStaffController::class, 'toggleStatus'])->name('platform-staff.toggle');
+    Route::get('platform-staff', [PlatformStaffController::class, 'index'])->name('platform-staff.index');
+    Route::get('platform-staff/create', [PlatformStaffController::class, 'create'])->name('platform-staff.create');
+    Route::post('platform-staff', [PlatformStaffController::class, 'store'])->name('platform-staff.store');
+    Route::get('platform-staff/{platformStaff}/edit', [PlatformStaffController::class, 'edit'])->name('platform-staff.edit');
+    Route::put('platform-staff/{platformStaff}', [PlatformStaffController::class, 'update'])->name('platform-staff.update');
+    Route::delete('platform-staff/{platformStaff}', [PlatformStaffController::class, 'destroy'])->name('platform-staff.destroy');
+    Route::post('platform-staff/{platformStaff}/toggle', [PlatformStaffController::class, 'toggleStatus'])->name('platform-staff.toggle');
 
     // Safe Artisan Command Runner — platform_admin only, whitelist, rate-limited, audited
-    Route::get('artisan-commands', [\App\Http\Controllers\Admin\ArtisanCommandController::class, 'index'])->name('artisan-commands.index');
-    Route::post('artisan-commands/execute', [\App\Http\Controllers\Admin\ArtisanCommandController::class, 'execute'])->name('artisan-commands.execute')->middleware('throttle:10,60');
+    Route::get('artisan-commands', [ArtisanCommandController::class, 'index'])->name('artisan-commands.index');
+    Route::post('artisan-commands/execute', [ArtisanCommandController::class, 'execute'])->name('artisan-commands.execute')->middleware('throttle:10,60');
 
     // System Health Dashboard — RAM/storage/cache visibility + guarded cleanup
-    Route::get('system-health', [\App\Http\Controllers\Admin\SystemHealthController::class, 'index'])->name('system-health.index');
-    Route::post('system-health/clear-cache', [\App\Http\Controllers\Admin\SystemHealthController::class, 'clearCache'])->name('system-health.clear-cache')->middleware('throttle:5,60');
-    Route::post('system-health/clear-temp', [\App\Http\Controllers\Admin\SystemHealthController::class, 'clearTempFiles'])->name('system-health.clear-temp')->middleware('throttle:5,60');
+    Route::get('system-health', [SystemHealthController::class, 'index'])->name('system-health.index');
+    Route::post('system-health/clear-cache', [SystemHealthController::class, 'clearCache'])->name('system-health.clear-cache')->middleware('throttle:5,60');
+    Route::post('system-health/clear-temp', [SystemHealthController::class, 'clearTempFiles'])->name('system-health.clear-temp')->middleware('throttle:5,60');
 
     // Dual Deployment System — Git + ZIP (admin.deploy, audited, throttled, backup retention 5)
-    Route::get('deploy', [\App\Http\Controllers\Admin\DeployController::class, 'index'])->name('deploy.index')->middleware('permission:admin.deploy');
-    Route::post('deploy/git', [\App\Http\Controllers\Admin\DeployController::class, 'gitDeploy'])->name('deploy.git')->middleware(['permission:admin.deploy', 'throttle:5,60']);
-    Route::post('deploy/zip', [\App\Http\Controllers\Admin\DeployController::class, 'zipDeploy'])->name('deploy.zip')->middleware(['permission:admin.deploy', 'throttle:5,60']);
-    Route::post('deploy/rollback/{logId}', [\App\Http\Controllers\Admin\DeployController::class, 'rollback'])->name('deploy.rollback')->whereNumber('logId')->middleware(['permission:admin.deploy', 'throttle:5,60']);
+    Route::get('deploy', [DeployController::class, 'index'])->name('deploy.index')->middleware('permission:admin.deploy');
+    Route::post('deploy/git', [DeployController::class, 'gitDeploy'])->name('deploy.git')->middleware(['permission:admin.deploy', 'throttle:5,60']);
+    Route::post('deploy/zip', [DeployController::class, 'zipDeploy'])->name('deploy.zip')->middleware(['permission:admin.deploy', 'throttle:5,60']);
+    Route::post('deploy/rollback/{logId}', [DeployController::class, 'rollback'])->name('deploy.rollback')->whereNumber('logId')->middleware(['permission:admin.deploy', 'throttle:5,60']);
 
     // Comprehensive Git Management
-    Route::get('deploy/git-management', [\App\Http\Controllers\Admin\GitController::class, 'index'])->name('git.index')->middleware('permission:admin.deploy');
-    Route::get('deploy/git/status', [\App\Http\Controllers\Admin\GitController::class, 'status'])->name('git.status')->middleware('permission:admin.deploy');
-    Route::get('deploy/git/log', [\App\Http\Controllers\Admin\GitController::class, 'log'])->name('git.log')->middleware('permission:admin.deploy');
-    Route::get('deploy/git/diff', [\App\Http\Controllers\Admin\GitController::class, 'diff'])->name('git.diff')->middleware('permission:admin.deploy');
-    Route::post('deploy/git/pull', [\App\Http\Controllers\Admin\GitController::class, 'pull'])->name('git.pull')->middleware(['permission:admin.deploy', 'throttle:10,60']);
-    Route::post('deploy/git/push', [\App\Http\Controllers\Admin\GitController::class, 'push'])->name('git.push')->middleware(['permission:admin.deploy', 'throttle:10,60']);
-    Route::post('deploy/git/branch/create', [\App\Http\Controllers\Admin\GitController::class, 'createBranch'])->name('git.branch.create')->middleware(['permission:admin.deploy', 'throttle:10,60']);
-    Route::post('deploy/git/branch/switch', [\App\Http\Controllers\Admin\GitController::class, 'switchBranch'])->name('git.branch.switch')->middleware(['permission:admin.deploy', 'throttle:10,60']);
-    Route::post('deploy/git/branch/delete', [\App\Http\Controllers\Admin\GitController::class, 'deleteBranch'])->name('git.branch.delete')->middleware(['permission:admin.deploy', 'throttle:10,60']);
-    Route::post('deploy/git/branch/merge', [\App\Http\Controllers\Admin\GitController::class, 'mergeBranch'])->name('git.branch.merge')->middleware(['permission:admin.deploy', 'throttle:10,60']);
-    Route::post('deploy/git/stash', [\App\Http\Controllers\Admin\GitController::class, 'stash'])->name('git.stash')->middleware(['permission:admin.deploy', 'throttle:10,60']);
-    Route::post('deploy/git/stash/pop', [\App\Http\Controllers\Admin\GitController::class, 'stashPop'])->name('git.stash.pop')->middleware(['permission:admin.deploy', 'throttle:10,60']);
-    Route::post('deploy/git/stash/drop', [\App\Http\Controllers\Admin\GitController::class, 'stashDrop'])->name('git.stash.drop')->middleware(['permission:admin.deploy', 'throttle:10,60']);
-    Route::post('deploy/git/reset', [\App\Http\Controllers\Admin\GitController::class, 'reset'])->name('git.reset')->middleware(['permission:admin.deploy', 'throttle:10,60']);
-    Route::post('deploy/git/remote/add', [\App\Http\Controllers\Admin\GitController::class, 'addRemote'])->name('git.remote.add')->middleware(['permission:admin.deploy', 'throttle:10,60']);
-    Route::post('deploy/git/remote/remove', [\App\Http\Controllers\Admin\GitController::class, 'removeRemote'])->name('git.remote.remove')->middleware(['permission:admin.deploy', 'throttle:10,60']);
-    Route::get('deploy/git/remote', [\App\Http\Controllers\Admin\GitController::class, 'remotes'])->name('git.remote.list')->middleware('permission:admin.deploy');
-    Route::get('deploy/git/stash/list', [\App\Http\Controllers\Admin\GitController::class, 'stashList'])->name('git.stash.list')->middleware('permission:admin.deploy');
+    Route::get('deploy/git-management', [GitController::class, 'index'])->name('git.index')->middleware('permission:admin.deploy');
+    Route::get('deploy/git/status', [GitController::class, 'status'])->name('git.status')->middleware('permission:admin.deploy');
+    Route::get('deploy/git/log', [GitController::class, 'log'])->name('git.log')->middleware('permission:admin.deploy');
+    Route::get('deploy/git/diff', [GitController::class, 'diff'])->name('git.diff')->middleware('permission:admin.deploy');
+    Route::post('deploy/git/pull', [GitController::class, 'pull'])->name('git.pull')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::post('deploy/git/push', [GitController::class, 'push'])->name('git.push')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::post('deploy/git/branch/create', [GitController::class, 'createBranch'])->name('git.branch.create')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::post('deploy/git/branch/switch', [GitController::class, 'switchBranch'])->name('git.branch.switch')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::post('deploy/git/branch/delete', [GitController::class, 'deleteBranch'])->name('git.branch.delete')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::post('deploy/git/branch/merge', [GitController::class, 'mergeBranch'])->name('git.branch.merge')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::post('deploy/git/stash', [GitController::class, 'stash'])->name('git.stash')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::post('deploy/git/stash/pop', [GitController::class, 'stashPop'])->name('git.stash.pop')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::post('deploy/git/stash/drop', [GitController::class, 'stashDrop'])->name('git.stash.drop')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::post('deploy/git/reset', [GitController::class, 'reset'])->name('git.reset')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::post('deploy/git/remote/add', [GitController::class, 'addRemote'])->name('git.remote.add')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::post('deploy/git/remote/remove', [GitController::class, 'removeRemote'])->name('git.remote.remove')->middleware(['permission:admin.deploy', 'throttle:10,60']);
+    Route::get('deploy/git/remote', [GitController::class, 'remotes'])->name('git.remote.list')->middleware('permission:admin.deploy');
+    Route::get('deploy/git/stash/list', [GitController::class, 'stashList'])->name('git.stash.list')->middleware('permission:admin.deploy');
 });
 
 // DEV — Page Marker (temporary tool, gated by PageMarker::enabled())
 Route::get('dev/page-marker', function () {
-    if (!\App\Support\PageMarker::enabled()) abort(404);
-    return response()->json(['page' => \App\Support\PageMarker::page()]);
+    if (! PageMarker::enabled()) {
+        abort(404);
+    }
+
+    return response()->json(['page' => PageMarker::page()]);
 })->name('dev.page-marker');
 Route::post('dev/page-marker/toggle', function () {
-    \App\Support\PageMarker::toggle();
+    PageMarker::toggle();
+
     return back();
 })->name('dev.page-marker.toggle')->middleware('auth:platform_admin');
 Route::post('admin/dev/page-marker/toggle', function () {
-    \App\Support\PageMarker::toggle();
+    PageMarker::toggle();
+
     return back();
 })->name('admin.dev.page-marker.toggle')->middleware('auth:platform_admin');
 
@@ -532,72 +650,72 @@ Route::middleware(['auth:platform_admin,institute_user,web', 'verified'])->group
 });
 
 // ── Admin: Industry Settings (per-industry theme defaults, NOT global settings) ──
-Route::get('admin/industry-settings', [\App\Http\Controllers\Admin\IndustrySettingController::class, 'index'])->name('admin.industry-settings')->middleware(['auth:platform_admin', 'verified']);
-Route::post('admin/industry-settings/theme', [\App\Http\Controllers\Admin\IndustrySettingController::class, 'updateTheme'])->name('admin.industry-settings.theme')->middleware(['auth:platform_admin', 'verified']);
-Route::put('admin/themes/{theme}', [\App\Http\Controllers\Admin\ThemeController::class, 'update'])->name('admin.themes.update')->middleware(['auth:platform_admin', 'verified'])->whereNumber('theme');
+Route::get('admin/industry-settings', [IndustrySettingController::class, 'index'])->name('admin.industry-settings')->middleware(['auth:platform_admin', 'verified']);
+Route::post('admin/industry-settings/theme', [IndustrySettingController::class, 'updateTheme'])->name('admin.industry-settings.theme')->middleware(['auth:platform_admin', 'verified']);
+Route::put('admin/themes/{theme}', [ThemeController::class, 'update'])->name('admin.themes.update')->middleware(['auth:platform_admin', 'verified'])->whereNumber('theme');
 
 // ── Admin: Industry / Sub-Industry Taxonomy Management ──
 $adminMiddleware = ['auth:platform_admin', 'verified'];
-Route::get('admin/industries', [\App\Http\Controllers\Admin\IndustryAdminController::class, 'index'])->name('admin.industries.index')->middleware($adminMiddleware);
-Route::get('admin/industries/create', [\App\Http\Controllers\Admin\IndustryAdminController::class, 'create'])->name('admin.industries.create')->middleware($adminMiddleware);
-Route::post('admin/industries', [\App\Http\Controllers\Admin\IndustryAdminController::class, 'store'])->name('admin.industries.store')->middleware($adminMiddleware);
-Route::get('admin/industries/{industry}', [\App\Http\Controllers\Admin\IndustryAdminController::class, 'edit'])->name('admin.industries.edit')->middleware($adminMiddleware)->whereNumber('industry');
-Route::put('admin/industries/{industry}', [\App\Http\Controllers\Admin\IndustryAdminController::class, 'update'])->name('admin.industries.update')->middleware($adminMiddleware)->whereNumber('industry');
-Route::post('admin/industries/{industry}/toggle', [\App\Http\Controllers\Admin\IndustryAdminController::class, 'toggle'])->name('admin.industries.toggle')->middleware($adminMiddleware)->whereNumber('industry');
-Route::delete('admin/industries/{industry}', [\App\Http\Controllers\Admin\IndustryAdminController::class, 'destroy'])->name('admin.industries.destroy')->middleware($adminMiddleware)->whereNumber('industry');
-Route::get('admin/industries/{industry}/sub-industries', [\App\Http\Controllers\Admin\IndustryAdminController::class, 'subIndustries'])->name('admin.industries.sub-industries')->middleware($adminMiddleware)->whereNumber('industry');
-Route::get('admin/industries/{industry}/sub-industries/create', [\App\Http\Controllers\Admin\SubIndustryAdminController::class, 'create'])->name('admin.industries.sub-industry.create')->middleware($adminMiddleware)->whereNumber('industry');
-Route::post('admin/industries/{industry}/sub-industries', [\App\Http\Controllers\Admin\SubIndustryAdminController::class, 'store'])->name('admin.industries.sub-industry.store')->middleware($adminMiddleware)->whereNumber('industry');
-Route::get('admin/industries/{industry}/sub-industries/{subIndustry}/edit', [\App\Http\Controllers\Admin\SubIndustryAdminController::class, 'edit'])->name('admin.industries.sub-industry.edit')->middleware($adminMiddleware)->whereNumber('industry')->whereNumber('subIndustry');
-Route::put('admin/industries/{industry}/sub-industries/{subIndustry}', [\App\Http\Controllers\Admin\SubIndustryAdminController::class, 'update'])->name('admin.industries.sub-industry.update')->middleware($adminMiddleware)->whereNumber('industry')->whereNumber('subIndustry');
-Route::post('admin/industries/{industry}/sub-industries/{subIndustry}/toggle', [\App\Http\Controllers\Admin\SubIndustryAdminController::class, 'toggle'])->name('admin.industries.sub-industry.toggle')->middleware($adminMiddleware)->whereNumber('industry')->whereNumber('subIndustry');
-Route::delete('admin/industries/{industry}/sub-industries/{subIndustry}', [\App\Http\Controllers\Admin\SubIndustryAdminController::class, 'destroy'])->name('admin.industries.sub-industry.destroy')->middleware($adminMiddleware)->whereNumber('industry')->whereNumber('subIndustry');
+Route::get('admin/industries', [IndustryAdminController::class, 'index'])->name('admin.industries.index')->middleware($adminMiddleware);
+Route::get('admin/industries/create', [IndustryAdminController::class, 'create'])->name('admin.industries.create')->middleware($adminMiddleware);
+Route::post('admin/industries', [IndustryAdminController::class, 'store'])->name('admin.industries.store')->middleware($adminMiddleware);
+Route::get('admin/industries/{industry}', [IndustryAdminController::class, 'edit'])->name('admin.industries.edit')->middleware($adminMiddleware)->whereNumber('industry');
+Route::put('admin/industries/{industry}', [IndustryAdminController::class, 'update'])->name('admin.industries.update')->middleware($adminMiddleware)->whereNumber('industry');
+Route::post('admin/industries/{industry}/toggle', [IndustryAdminController::class, 'toggle'])->name('admin.industries.toggle')->middleware($adminMiddleware)->whereNumber('industry');
+Route::delete('admin/industries/{industry}', [IndustryAdminController::class, 'destroy'])->name('admin.industries.destroy')->middleware($adminMiddleware)->whereNumber('industry');
+Route::get('admin/industries/{industry}/sub-industries', [IndustryAdminController::class, 'subIndustries'])->name('admin.industries.sub-industries')->middleware($adminMiddleware)->whereNumber('industry');
+Route::get('admin/industries/{industry}/sub-industries/create', [SubIndustryAdminController::class, 'create'])->name('admin.industries.sub-industry.create')->middleware($adminMiddleware)->whereNumber('industry');
+Route::post('admin/industries/{industry}/sub-industries', [SubIndustryAdminController::class, 'store'])->name('admin.industries.sub-industry.store')->middleware($adminMiddleware)->whereNumber('industry');
+Route::get('admin/industries/{industry}/sub-industries/{subIndustry}/edit', [SubIndustryAdminController::class, 'edit'])->name('admin.industries.sub-industry.edit')->middleware($adminMiddleware)->whereNumber('industry')->whereNumber('subIndustry');
+Route::put('admin/industries/{industry}/sub-industries/{subIndustry}', [SubIndustryAdminController::class, 'update'])->name('admin.industries.sub-industry.update')->middleware($adminMiddleware)->whereNumber('industry')->whereNumber('subIndustry');
+Route::post('admin/industries/{industry}/sub-industries/{subIndustry}/toggle', [SubIndustryAdminController::class, 'toggle'])->name('admin.industries.sub-industry.toggle')->middleware($adminMiddleware)->whereNumber('industry')->whereNumber('subIndustry');
+Route::delete('admin/industries/{industry}/sub-industries/{subIndustry}', [SubIndustryAdminController::class, 'destroy'])->name('admin.industries.sub-industry.destroy')->middleware($adminMiddleware)->whereNumber('industry')->whereNumber('subIndustry');
 
 // ── Admin: Modules ──
-Route::get('admin/modules', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'index'])->name('admin.modules.index')->middleware(['auth:platform_admin', 'verified']);
-Route::put('admin/modules/{module}', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'update'])->name('admin.modules.update')->middleware(['auth:platform_admin', 'verified'])->whereNumber('module');
-Route::get('admin/modules/access-logs', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'accessLogs'])->name('admin.modules.access-logs')->middleware(['auth:platform_admin', 'verified']);
-Route::get('admin/packages/{package}/modules', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'packageModules'])->name('admin.packages.modules')->middleware(['auth:platform_admin', 'verified'])->whereNumber('package');
-Route::put('admin/packages/{package}/modules', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'updatePackageModules'])->name('admin.packages.modules.update')->middleware(['auth:platform_admin', 'verified'])->whereNumber('package');
-Route::get('admin/institutes/{institute}/modules', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'instituteModules'])->name('admin.institutes.modules')->middleware(['auth:platform_admin', 'verified'])->whereNumber('institute');
-Route::put('admin/institutes/{institute}/modules', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'updateInstituteModules'])->name('admin.institutes.modules.update')->middleware(['auth:platform_admin', 'verified'])->whereNumber('institute');
-Route::delete('admin/institutes/{institute}/modules/{moduleKey}', [\App\Http\Controllers\Admin\ModuleAdminController::class, 'removeOverride'])->name('admin.institutes.modules.remove')->middleware(['auth:platform_admin', 'verified'])->whereNumber('institute');
+Route::get('admin/modules', [ModuleAdminController::class, 'index'])->name('admin.modules.index')->middleware(['auth:platform_admin', 'verified']);
+Route::put('admin/modules/{module}', [ModuleAdminController::class, 'update'])->name('admin.modules.update')->middleware(['auth:platform_admin', 'verified'])->whereNumber('module');
+Route::get('admin/modules/access-logs', [ModuleAdminController::class, 'accessLogs'])->name('admin.modules.access-logs')->middleware(['auth:platform_admin', 'verified']);
+Route::get('admin/packages/{package}/modules', [ModuleAdminController::class, 'packageModules'])->name('admin.packages.modules')->middleware(['auth:platform_admin', 'verified'])->whereNumber('package');
+Route::put('admin/packages/{package}/modules', [ModuleAdminController::class, 'updatePackageModules'])->name('admin.packages.modules.update')->middleware(['auth:platform_admin', 'verified'])->whereNumber('package');
+Route::get('admin/institutes/{institute}/modules', [ModuleAdminController::class, 'instituteModules'])->name('admin.institutes.modules')->middleware(['auth:platform_admin', 'verified'])->whereNumber('institute');
+Route::put('admin/institutes/{institute}/modules', [ModuleAdminController::class, 'updateInstituteModules'])->name('admin.institutes.modules.update')->middleware(['auth:platform_admin', 'verified'])->whereNumber('institute');
+Route::delete('admin/institutes/{institute}/modules/{moduleKey}', [ModuleAdminController::class, 'removeOverride'])->name('admin.institutes.modules.remove')->middleware(['auth:platform_admin', 'verified'])->whereNumber('institute');
 
 // ── Admin: Features ──
-Route::get('admin/features', [\App\Http\Controllers\Admin\FeatureAdminController::class, 'index'])->name('admin.features.index')->middleware(['auth:platform_admin', 'verified']);
-Route::get('admin/features/{feature_key}', [\App\Http\Controllers\Admin\FeatureAdminController::class, 'show'])->name('admin.features.show')->middleware(['auth:platform_admin', 'verified']);
-Route::post('admin/features/{feature_key}/toggle-package/{package_id}', [\App\Http\Controllers\Admin\FeatureAdminController::class, 'togglePackage'])->name('admin.features.toggle-package')->middleware(['auth:platform_admin', 'verified'])->whereNumber('package_id');
-Route::post('admin/features/{feature_key}/institute-overrides', [\App\Http\Controllers\Admin\FeatureAdminController::class, 'addInstituteOverride'])->name('admin.features.institute-override.add')->middleware(['auth:platform_admin', 'verified']);
-Route::delete('admin/features/{feature_key}/institute-overrides/{institute_id}', [\App\Http\Controllers\Admin\FeatureAdminController::class, 'removeInstituteOverride'])->name('admin.features.institute-override.remove')->middleware(['auth:platform_admin', 'verified'])->whereNumber('institute_id');
+Route::get('admin/features', [FeatureAdminController::class, 'index'])->name('admin.features.index')->middleware(['auth:platform_admin', 'verified']);
+Route::get('admin/features/{feature_key}', [FeatureAdminController::class, 'show'])->name('admin.features.show')->middleware(['auth:platform_admin', 'verified']);
+Route::post('admin/features/{feature_key}/toggle-package/{package_id}', [FeatureAdminController::class, 'togglePackage'])->name('admin.features.toggle-package')->middleware(['auth:platform_admin', 'verified'])->whereNumber('package_id');
+Route::post('admin/features/{feature_key}/institute-overrides', [FeatureAdminController::class, 'addInstituteOverride'])->name('admin.features.institute-override.add')->middleware(['auth:platform_admin', 'verified']);
+Route::delete('admin/features/{feature_key}/institute-overrides/{institute_id}', [FeatureAdminController::class, 'removeInstituteOverride'])->name('admin.features.institute-override.remove')->middleware(['auth:platform_admin', 'verified'])->whereNumber('institute_id');
 
 // �?"�?"�?" Admin: Industry Sub-Categories (Phase 5) �?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?"�?
-Route::get('admin/industry-subcategories', [\App\Http\Controllers\Admin\IndustrySubcategoryController::class, 'index'])->name('admin.industry-subcategories.index')->middleware($adminMiddleware);
-Route::get('admin/industry-subcategories/create', [\App\Http\Controllers\Admin\IndustrySubcategoryController::class, 'create'])->name('admin.industry-subcategories.create')->middleware($adminMiddleware);
-Route::post('admin/industry-subcategories', [\App\Http\Controllers\Admin\IndustrySubcategoryController::class, 'store'])->name('admin.industry-subcategories.store')->middleware($adminMiddleware);
-Route::get('admin/industry-subcategories/{id}', [\App\Http\Controllers\Admin\IndustrySubcategoryController::class, 'show'])->name('admin.industry-subcategories.show')->middleware($adminMiddleware)->whereNumber('id');
-Route::get('admin/industry-subcategories/{id}/edit', [\App\Http\Controllers\Admin\IndustrySubcategoryController::class, 'edit'])->name('admin.industry-subcategories.edit')->middleware($adminMiddleware)->whereNumber('id');
-Route::put('admin/industry-subcategories/{id}', [\App\Http\Controllers\Admin\IndustrySubcategoryController::class, 'update'])->name('admin.industry-subcategories.update')->middleware($adminMiddleware)->whereNumber('id');
-Route::delete('admin/industry-subcategories/{id}', [\App\Http\Controllers\Admin\IndustrySubcategoryController::class, 'destroy'])->name('admin.industry-subcategories.destroy')->middleware($adminMiddleware)->whereNumber('id');
+Route::get('admin/industry-subcategories', [IndustrySubcategoryController::class, 'index'])->name('admin.industry-subcategories.index')->middleware($adminMiddleware);
+Route::get('admin/industry-subcategories/create', [IndustrySubcategoryController::class, 'create'])->name('admin.industry-subcategories.create')->middleware($adminMiddleware);
+Route::post('admin/industry-subcategories', [IndustrySubcategoryController::class, 'store'])->name('admin.industry-subcategories.store')->middleware($adminMiddleware);
+Route::get('admin/industry-subcategories/{id}', [IndustrySubcategoryController::class, 'show'])->name('admin.industry-subcategories.show')->middleware($adminMiddleware)->whereNumber('id');
+Route::get('admin/industry-subcategories/{id}/edit', [IndustrySubcategoryController::class, 'edit'])->name('admin.industry-subcategories.edit')->middleware($adminMiddleware)->whereNumber('id');
+Route::put('admin/industry-subcategories/{id}', [IndustrySubcategoryController::class, 'update'])->name('admin.industry-subcategories.update')->middleware($adminMiddleware)->whereNumber('id');
+Route::delete('admin/industry-subcategories/{id}', [IndustrySubcategoryController::class, 'destroy'])->name('admin.industry-subcategories.destroy')->middleware($adminMiddleware)->whereNumber('id');
 
 // ── Admin: Universal Module Config (Industry × Sub-Industry module matrix) ──
-Route::get('admin/module-config', [\App\Http\Controllers\Admin\UniversalModuleConfigController::class, 'index'])->name('admin.module-config.index')->middleware($adminMiddleware);
-Route::put('admin/module-config', [\App\Http\Controllers\Admin\UniversalModuleConfigController::class, 'update'])->name('admin.module-config.update')->middleware($adminMiddleware);
-Route::post('admin/module-config/copy', [\App\Http\Controllers\Admin\UniversalModuleConfigController::class, 'copy'])->name('admin.module-config.copy')->middleware($adminMiddleware);
+Route::get('admin/module-config', [UniversalModuleConfigController::class, 'index'])->name('admin.module-config.index')->middleware($adminMiddleware);
+Route::put('admin/module-config', [UniversalModuleConfigController::class, 'update'])->name('admin.module-config.update')->middleware($adminMiddleware);
+Route::put('admin/module-config/plans', [UniversalModuleConfigController::class, 'updatePlans'])->name('admin.module-config.update-plans')->middleware($adminMiddleware);
+Route::post('admin/module-config/copy', [UniversalModuleConfigController::class, 'copy'])->name('admin.module-config.copy')->middleware($adminMiddleware);
 
 // ── Admin: Per-Industry Package Configuration (package ↔ industry mapping, per-industry modules & pricing) ──
 Route::prefix('admin/package-industries')->name('admin.package-industries.')->middleware($adminMiddleware)->group(function () {
-    Route::get('/', [\App\Http\Controllers\Admin\PackageIndustryController::class, 'index'])->name('index');
-    Route::put('/', [\App\Http\Controllers\Admin\PackageIndustryController::class, 'update'])->name('update');
-    Route::get('pricing-cards', [\App\Http\Controllers\Admin\PackageIndustryController::class, 'pricingCards'])->name('pricing-cards');
-    Route::get('{package}/{industry}/modules', [\App\Http\Controllers\Admin\PackageIndustryController::class, 'showModules'])->name('show-modules')->whereNumber('package');
-    Route::put('{package}/{industry}/modules', [\App\Http\Controllers\Admin\PackageIndustryController::class, 'updateModules'])->name('update-modules')->whereNumber('package');
-    Route::post('country-prices', [\App\Http\Controllers\Admin\PackageCountryPriceController::class, 'save'])->name('country-prices.save');
+    Route::get('/', [PackageIndustryController::class, 'index'])->name('index');
+    Route::put('/', [PackageIndustryController::class, 'update'])->name('update');
+    Route::get('pricing-cards', [PackageIndustryController::class, 'pricingCards'])->name('pricing-cards');
+    Route::get('{package}/{industry}/modules', [PackageIndustryController::class, 'showModules'])->name('show-modules')->whereNumber('package');
+    Route::put('{package}/{industry}/modules', [PackageIndustryController::class, 'updateModules'])->name('update-modules')->whereNumber('package');
+    Route::post('country-prices', [PackageCountryPriceController::class, 'save'])->name('country-prices.save');
 });
 
 // Phase 5: per-tenant audit log + bulk overview (InstituteModuleOverrideController)
-Route::get('admin/institutes/{institute}/access-log', [\App\Http\Controllers\Admin\InstituteModuleOverrideController::class, 'accessLog'])->name('admin.institutes.access-log')->middleware($adminMiddleware)->whereNumber('institute');
-Route::get('admin/institutes/modules-overview', [\App\Http\Controllers\Admin\InstituteModuleOverrideController::class, 'overview'])->name('admin.institutes.modules-overview')->middleware($adminMiddleware);
-
+Route::get('admin/institutes/{institute}/access-log', [InstituteModuleOverrideController::class, 'accessLog'])->name('admin.institutes.access-log')->middleware($adminMiddleware)->whereNumber('institute');
+Route::get('admin/institutes/modules-overview', [InstituteModuleOverrideController::class, 'overview'])->name('admin.institutes.modules-overview')->middleware($adminMiddleware);
 
 // ── Admin: Scoped Packages (Phase 4b-6, UI-only — no new tables) ──
 Route::middleware(['auth:platform_admin', 'verified'])->prefix('admin')->name('admin.')->group(function () {
@@ -620,107 +738,116 @@ Route::middleware(['auth:platform_admin', 'verified'])->prefix('admin')->name('a
     Route::delete('institutes/{institute}/denials/{denial}', [TenantAccessController::class, 'liftDenial'])->name('institutes.denials.lift')->whereNumber('institute')->whereNumber('denial');
 });
 
-Route::get('admin/academic', [\App\Http\Controllers\Admin\AcademicStructureAdminController::class, 'index'])->name('admin.academic.index')->middleware(['auth:platform_admin', 'verified']);
-Route::get('admin/academic/subjects', [\App\Http\Controllers\Admin\AcademicSubjectAdminController::class, 'index'])->name('admin.academic.subjects.index')->middleware(['auth:platform_admin', 'verified']);
-Route::get('admin/academic/grading', [\App\Http\Controllers\Admin\AcademicGradingAdminController::class, 'index'])->name('admin.academic.grading.index')->middleware(['auth:platform_admin', 'verified']);
-Route::get('admin/classes', [\App\Http\Controllers\Admin\ClassAdminController::class, 'index'])->name('admin.classes.index')->middleware(['auth:platform_admin', 'verified']);
-Route::get('admin/security', [\App\Http\Controllers\Auth\SecurityController::class, '__invoke'])->name('admin.security')->middleware(['auth:platform_admin', 'verified']);
-Route::get('account/security', [\App\Http\Controllers\Auth\SecurityController::class, '__invoke'])->name('account.security')->middleware(['auth:platform_admin,institute_user,web', 'verified']);
+Route::get('admin/academic', [AcademicStructureAdminController::class, 'index'])->name('admin.academic.index')->middleware(['auth:platform_admin', 'verified']);
+Route::get('admin/academic/subjects', [AcademicSubjectAdminController::class, 'index'])->name('admin.academic.subjects.index')->middleware(['auth:platform_admin', 'verified']);
+Route::get('admin/academic/grading', [AcademicGradingAdminController::class, 'index'])->name('admin.academic.grading.index')->middleware(['auth:platform_admin', 'verified']);
+Route::get('admin/classes', [ClassAdminController::class, 'index'])->name('admin.classes.index')->middleware(['auth:platform_admin', 'verified']);
+Route::get('admin/security', [SecurityController::class, '__invoke'])->name('admin.security')->middleware(['auth:platform_admin', 'verified']);
+Route::get('account/security', [SecurityController::class, '__invoke'])->name('account.security')->middleware(['auth:platform_admin,institute_user,web', 'verified']);
 
 // ── Admin: Country Batch Actions ──
-Route::get('admin/countries', function (\Illuminate\Http\Request $request) {
-    $query = \App\Models\Country::query()->withCount('educationSystems');
+Route::get('admin/countries', function (Request $request) {
+    $query = Country::query()->withCount('educationSystems');
     if ($request->query('q') !== null && trim((string) $request->query('q')) !== '') {
         $q = trim((string) $request->query('q'));
         $query->where(function ($qq) use ($q) {
             $qq->where('name', 'like', "%{$q}%")
-               ->orWhere('iso2', 'like', "%{$q}%");
+                ->orWhere('iso2', 'like', "%{$q}%");
         });
     }
+
     return view('admin.countries.index', [
         'countries' => $query->orderBy('name')->get(),
         'q' => $request->query('q'),
     ]);
 })->name('admin.countries.index')->middleware(['auth:platform_admin', 'verified']);
-Route::post('admin/countries/batch', [\App\Http\Controllers\Admin\CountryBatchController::class, '__invoke'])
+Route::post('admin/countries/batch', [CountryBatchController::class, '__invoke'])
     ->name('admin.countries.batch')
     ->middleware(['auth:platform_admin', 'permission:countries.manage']);
 
 // Identity — Email/Phone verification, change, removal (E4–E5)
 Route::middleware(['auth:web', 'verified'])->prefix('account')->name('account.')->group(function () {
-    Route::post('phone/verify-send', [\App\Http\Controllers\Auth\IdentityController::class, 'sendPhoneVerification'])->name('phone.verify-send')->middleware('throttle:10,15');
-    Route::post('phone/verify', [\App\Http\Controllers\Auth\IdentityController::class, 'verifyPhone'])->name('phone.verify')->middleware('throttle:10,15');
-    Route::post('email/change-request', [\App\Http\Controllers\Auth\IdentityController::class, 'requestEmailChange'])->name('email.change-request')->middleware('throttle:10,15');
-    Route::post('email/verify-change', [\App\Http\Controllers\Auth\IdentityController::class, 'verifyEmailChange'])->name('email.verify-change')->middleware('throttle:10,15');
-    Route::get('email/verify', [\App\Http\Controllers\Auth\IdentityController::class, 'verifyEmailChangeLink'])->name('email.verify');
-    Route::post('phone/change-request', [\App\Http\Controllers\Auth\IdentityController::class, 'requestPhoneChange'])->name('phone.change-request')->middleware('throttle:10,15');
-    Route::post('phone/verify-change', [\App\Http\Controllers\Auth\IdentityController::class, 'verifyPhoneChange'])->name('phone.verify-change')->middleware('throttle:10,15');
-    Route::post('email/remove', [\App\Http\Controllers\Auth\IdentityController::class, 'removeEmail'])->name('email.remove')->middleware('throttle:10,15');
-    Route::post('phone/remove', [\App\Http\Controllers\Auth\IdentityController::class, 'removePhone'])->name('phone.remove')->middleware('throttle:10,15');
+    Route::post('phone/verify-send', [IdentityController::class, 'sendPhoneVerification'])->name('phone.verify-send')->middleware('throttle:10,15');
+    Route::post('phone/verify', [IdentityController::class, 'verifyPhone'])->name('phone.verify')->middleware('throttle:10,15');
+    Route::post('email/change-request', [IdentityController::class, 'requestEmailChange'])->name('email.change-request')->middleware('throttle:10,15');
+    Route::post('email/verify-change', [IdentityController::class, 'verifyEmailChange'])->name('email.verify-change')->middleware('throttle:10,15');
+    Route::get('email/verify', [IdentityController::class, 'verifyEmailChangeLink'])->name('email.verify');
+    Route::post('phone/change-request', [IdentityController::class, 'requestPhoneChange'])->name('phone.change-request')->middleware('throttle:10,15');
+    Route::post('phone/verify-change', [IdentityController::class, 'verifyPhoneChange'])->name('phone.verify-change')->middleware('throttle:10,15');
+    Route::post('email/remove', [IdentityController::class, 'removeEmail'])->name('email.remove')->middleware('throttle:10,15');
+    Route::post('phone/remove', [IdentityController::class, 'removePhone'])->name('phone.remove')->middleware('throttle:10,15');
 });
 
 // Business Profile — dedicated authenticated workspace profile (Phase B6)
 Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->group(function () {
-    Route::get('business/profile', [\App\Http\Controllers\BusinessProfileController::class, 'show'])->name('business.profile');
-    Route::post('institutes/logo', [\App\Http\Controllers\InstituteLogoController::class, 'upload'])->name('institute.logo.upload');
-    Route::delete('institutes/logo', [\App\Http\Controllers\InstituteLogoController::class, 'remove'])->name('institute.logo.remove');
+    Route::get('business/profile', [BusinessProfileController::class, 'show'])->name('business.profile');
+    Route::post('institutes/logo', [InstituteLogoController::class, 'upload'])->name('institute.logo.upload');
+    Route::delete('institutes/logo', [InstituteLogoController::class, 'remove'])->name('institute.logo.remove');
 });
 
 // institute/finance/accounting stubs
-Route::middleware(['auth:institute_user,web','tenant', 'deny.teacher.finance', 'finance.write', 'verified'])->group(function () {
-    Route::get('business/{institute}', function ($institute) { return redirect()->route('dashboard'); })->name('business.show');
-    Route::get('teachers', [\App\Http\Controllers\TeacherController::class, 'index'])->name('teachers.index');
-    Route::get('alumni', [\App\Http\Controllers\Alumni\AlumniController::class, 'index'])->name('alumni.index');
-    Route::get('workflows', [\App\Http\Controllers\WorkflowController::class, 'index'])->name('workflows.index');
-    Route::get('crm', [\App\Http\Controllers\CrmDashboardController::class, 'index'])->middleware('module_access:crm')->name('crm.dashboard');
-    Route::get('hr', [\App\Http\Controllers\Hr\HrDashboardController::class, 'index'])->middleware('module_access:hr')->name('hr.dashboard');
-    Route::get('hr/payroll/periods', function () { return redirect()->route('hr.dashboard'); })->middleware('module_access:hr')->name('hr.payroll.periods.index');
-    Route::get('sales/settings', [\App\Http\Controllers\Sales\SalesSettingsController::class, 'index'])->middleware(['module_access:sales', 'permission:sales.view'])->name('sales.settings.index');
-    Route::get('purchase/orders', [\App\Http\Controllers\Purchase\PurchaseOrderController::class, 'index'])->middleware(['module_access:purchase', 'permission:purchase.view'])->name('purchase.orders.index');
-    Route::get('finance', [\App\Http\Controllers\FinanceDashboardController::class, 'index'])->middleware('permission:finance.view')->name('finance.dashboard');
-    Route::get('finance/budgets/dashboard', [\App\Http\Controllers\FinanceBudgetController::class, 'index'])->name('finance.budgets.dashboard');
-    Route::get('finance/chart-of-accounts', [\App\Http\Controllers\FinanceChartOfAccountController::class, 'index'])->middleware(['permission:accounts.view', 'module_access:accounting'])->name('finance.chart-of-accounts.index');
-    Route::get('finance/journals', [\App\Http\Controllers\FinanceJournalController::class, 'index'])->middleware(['advanced.accounting', 'permission:finance.view', 'module_access:finance'])->name('finance.journals.index');
-    Route::get('finance/invoices', [\App\Http\Controllers\FinanceInvoiceController::class, 'index'])->middleware(['permission:finance.view', 'module_access:finance'])->name('finance.invoices.index');
-    Route::get('finance/payments', [\App\Http\Controllers\FinancePaymentController::class, 'index'])->middleware(['permission:finance.view', 'module_access:finance'])->name('finance.payments.index');
-    Route::get('finance/parties', [\App\Http\Controllers\FinancePartyController::class, 'index'])->middleware(['permission:finance.view', 'module_access:finance'])->name('finance.parties.index');
-    Route::get('finance/payment-methods', [\App\Http\Controllers\FinancePaymentMethodController::class, 'index'])->middleware(['permission:finance.view', 'module_access:finance'])->name('finance.payment-methods.index');
-    Route::post('finance/payment-methods/{method}/toggle', [\App\Http\Controllers\FinancePaymentMethodController::class, 'toggle'])->middleware(['permission:finance.manage', 'module_access:finance'])->name('finance.payment-methods.toggle');
-    Route::delete('finance/payment-methods/{method}', [\App\Http\Controllers\FinancePaymentMethodController::class, 'destroy'])->middleware(['permission:finance.manage', 'module_access:finance'])->name('finance.payment-methods.destroy');
-    Route::get('finance/periods', [\App\Http\Controllers\FinancePeriodController::class, 'index'])->middleware('permission:finance.view')->name('finance.periods.index');
-    Route::get('finance/opening-balances/create', [\App\Http\Controllers\FinanceOpeningBalanceController::class, 'create'])->name('finance.opening-balances.create');
-    Route::get('finance/exchange-rates', [\App\Http\Controllers\FinanceExchangeRateController::class, 'index'])->name('finance.exchange-rates.index');
-    Route::get('finance/fx-revaluations', [\App\Http\Controllers\FinanceFxRevaluationController::class, 'index'])->name('finance.fx-revaluations.index');
-    Route::get('finance/audit', [\App\Http\Controllers\FinanceAuditController::class, 'index'])->middleware('advanced.accounting')->name('finance.audit.index');
-    Route::get('finance/education/dashboard', function () { return redirect()->route('finance.dashboard'); })->name('finance.education.dashboard');
-    Route::get('finance/education/fee-structures', [\App\Http\Controllers\FeeStructureController::class, 'index'])
+Route::middleware(['auth:institute_user,web', 'tenant', 'deny.teacher.finance', 'finance.write', 'verified'])->group(function () {
+    Route::get('business/{institute}', function ($institute) {
+        return redirect()->route('dashboard');
+    })->name('business.show');
+    Route::get('teachers', [TeacherController::class, 'index'])->name('teachers.index');
+    Route::get('alumni', [AlumniController::class, 'index'])->name('alumni.index');
+    Route::get('workflows', [WorkflowController::class, 'index'])->name('workflows.index');
+    Route::get('crm', [CrmDashboardController::class, 'index'])->middleware('module_access:crm')->name('crm.dashboard');
+    Route::get('hr', [HrDashboardController::class, 'index'])->middleware('module_access:hr')->name('hr.dashboard');
+    Route::get('hr/payroll/periods', function () {
+        return redirect()->route('hr.dashboard');
+    })->middleware('module_access:hr')->name('hr.payroll.periods.index');
+    Route::get('sales/settings', [SalesSettingsController::class, 'index'])->middleware(['module_access:sales', 'permission:sales.view'])->name('sales.settings.index');
+    Route::get('purchase/orders', [PurchaseOrderController::class, 'index'])->middleware(['module_access:purchase', 'permission:purchase.view'])->name('purchase.orders.index');
+    Route::get('finance', [FinanceDashboardController::class, 'index'])->middleware('permission:finance.view')->name('finance.dashboard');
+    Route::get('finance/budgets/dashboard', [FinanceBudgetController::class, 'index'])->name('finance.budgets.dashboard');
+    Route::get('finance/chart-of-accounts', [FinanceChartOfAccountController::class, 'index'])->middleware(['permission:accounts.view', 'module_access:accounting'])->name('finance.chart-of-accounts.index');
+    Route::get('finance/journals', [FinanceJournalController::class, 'index'])->middleware(['advanced.accounting', 'permission:finance.view', 'module_access:finance'])->name('finance.journals.index');
+    Route::get('finance/invoices', [FinanceInvoiceController::class, 'index'])->middleware(['permission:finance.view', 'module_access:finance'])->name('finance.invoices.index');
+    Route::get('finance/payments', [FinancePaymentController::class, 'index'])->middleware(['permission:finance.view', 'module_access:finance'])->name('finance.payments.index');
+    Route::get('finance/parties', [FinancePartyController::class, 'index'])->middleware(['permission:finance.view', 'module_access:finance'])->name('finance.parties.index');
+    Route::get('finance/payment-methods', [FinancePaymentMethodController::class, 'index'])->middleware(['permission:finance.view', 'module_access:finance'])->name('finance.payment-methods.index');
+    Route::post('finance/payment-methods/{method}/toggle', [FinancePaymentMethodController::class, 'toggle'])->middleware(['permission:finance.manage', 'module_access:finance'])->name('finance.payment-methods.toggle');
+    Route::delete('finance/payment-methods/{method}', [FinancePaymentMethodController::class, 'destroy'])->middleware(['permission:finance.manage', 'module_access:finance'])->name('finance.payment-methods.destroy');
+    Route::get('finance/periods', [FinancePeriodController::class, 'index'])->middleware('permission:finance.view')->name('finance.periods.index');
+    Route::get('finance/opening-balances/create', [FinanceOpeningBalanceController::class, 'create'])->name('finance.opening-balances.create');
+    Route::get('finance/exchange-rates', [FinanceExchangeRateController::class, 'index'])->name('finance.exchange-rates.index');
+    Route::get('finance/fx-revaluations', [FinanceFxRevaluationController::class, 'index'])->name('finance.fx-revaluations.index');
+    Route::get('finance/audit', [FinanceAuditController::class, 'index'])->middleware('advanced.accounting')->name('finance.audit.index');
+    Route::get('finance/education/dashboard', function () {
+        return redirect()->route('finance.dashboard');
+    })->name('finance.education.dashboard');
+    Route::get('finance/education/fee-structures', [FeeStructureController::class, 'index'])
         ->middleware(['permission:finance.view', 'module_access:finance'])
         ->name('finance.education.fee-structures.index');
-    Route::get('finance/reports/trial-balance', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'trialBalance'])->name('finance.reports.trial-balance');
-    Route::get('finance/reports/income-statement', [\App\Http\Controllers\FinanceReportController::class, 'incomeStatement'])->name('finance.reports.income-statement');
-    Route::get('finance/reports/balance-sheet', [\App\Http\Controllers\FinanceReportController::class, 'balanceSheet'])->name('finance.reports.balance-sheet');
-    Route::get('finance/reports/ledger', [\App\Http\Controllers\FinanceReportController::class, 'ledger'])->name('finance.reports.ledger');
-    Route::get('finance/reports/cash-bank', [\App\Http\Controllers\FinanceReportController::class, 'cashBank'])->name('finance.reports.cash-bank');
-    Route::get('finance/reports/receivables', [\App\Http\Controllers\FinanceReportController::class, 'receivables'])->name('finance.reports.receivables');
-    Route::get('finance/reports/payables', [\App\Http\Controllers\FinanceReportController::class, 'payables'])->name('finance.reports.payables');
-    Route::get('accounting', [\App\Http\Controllers\Accounting\AccountingDashboardController::class, 'index'])->middleware('permission:finance.view')->name('accounting.dashboard');
-    Route::get('accounting/reports/trial-balance', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'trialBalance'])->middleware('advanced.accounting')->name('accounting.reports.trial-balance');
-    Route::get('accounting/reports/profit-loss', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'profitAndLoss'])->middleware('permission:finance.view')->name('accounting.reports.profit-loss');
-    Route::get('accounting/reports/balance-sheet', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'balanceSheet'])->middleware('permission:finance.view')->name('accounting.reports.balance-sheet');
-    Route::get('accounting/reports/cash-flow', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'cashFlow'])->middleware('permission:finance.view')->name('accounting.reports.cash-flow');
-    Route::get('accounting/reports/general-ledger', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'generalLedger'])->middleware('advanced.accounting')->name('accounting.reports.general-ledger');
-    Route::get('accounting/reports/account-ledger', [\App\Http\Controllers\Accounting\AccountingReportController::class, 'accountLedger'])->middleware('advanced.accounting')->name('accounting.reports.account-ledger');
-    Route::get('accounting/reports/ratio-analysis', [\App\Http\Controllers\Accounting\RatioAnalysisController::class, 'index'])->middleware('advanced.accounting')->name('accounting.reports.ratios');
-    Route::get('recycle', [\App\Http\Controllers\RecycleBinController::class, 'index'])->name('recycle.index');
-    Route::get('settings', [\App\Http\Controllers\InstituteSettingController::class, 'index'])->name('settings.index');
-    Route::get('owner/profile', function () { return redirect()->route('settings.index'); })->name('owner.profile');
-    Route::get('ai/assistant', [\App\Http\Controllers\Ai\AiAssistantController::class, 'index'])
+    Route::get('finance/reports/trial-balance', [AccountingReportController::class, 'trialBalance'])->name('finance.reports.trial-balance');
+    Route::get('finance/reports/income-statement', [FinanceReportController::class, 'incomeStatement'])->name('finance.reports.income-statement');
+    Route::get('finance/reports/balance-sheet', [FinanceReportController::class, 'balanceSheet'])->name('finance.reports.balance-sheet');
+    Route::get('finance/reports/ledger', [FinanceReportController::class, 'ledger'])->name('finance.reports.ledger');
+    Route::get('finance/reports/cash-bank', [FinanceReportController::class, 'cashBank'])->name('finance.reports.cash-bank');
+    Route::get('finance/reports/receivables', [FinanceReportController::class, 'receivables'])->name('finance.reports.receivables');
+    Route::get('finance/reports/payables', [FinanceReportController::class, 'payables'])->name('finance.reports.payables');
+    Route::get('accounting', [AccountingDashboardController::class, 'index'])->middleware('permission:finance.view')->name('accounting.dashboard');
+    Route::get('accounting/reports/trial-balance', [AccountingReportController::class, 'trialBalance'])->middleware('advanced.accounting')->name('accounting.reports.trial-balance');
+    Route::get('accounting/reports/profit-loss', [AccountingReportController::class, 'profitAndLoss'])->middleware('permission:finance.view')->name('accounting.reports.profit-loss');
+    Route::get('accounting/reports/balance-sheet', [AccountingReportController::class, 'balanceSheet'])->middleware('permission:finance.view')->name('accounting.reports.balance-sheet');
+    Route::get('accounting/reports/cash-flow', [AccountingReportController::class, 'cashFlow'])->middleware('permission:finance.view')->name('accounting.reports.cash-flow');
+    Route::get('accounting/reports/general-ledger', [AccountingReportController::class, 'generalLedger'])->middleware('advanced.accounting')->name('accounting.reports.general-ledger');
+    Route::get('accounting/reports/account-ledger', [AccountingReportController::class, 'accountLedger'])->middleware('advanced.accounting')->name('accounting.reports.account-ledger');
+    Route::get('accounting/reports/ratio-analysis', [RatioAnalysisController::class, 'index'])->middleware('advanced.accounting')->name('accounting.reports.ratios');
+    Route::get('recycle', [RecycleBinController::class, 'index'])->name('recycle.index');
+    Route::get('settings', [InstituteSettingController::class, 'index'])->name('settings.index');
+    Route::get('owner/profile', function () {
+        return redirect()->route('settings.index');
+    })->name('owner.profile');
+    Route::get('ai/assistant', [AiAssistantController::class, 'index'])
         ->middleware(['ai.enabled', 'permission:ai.assistant'])
         ->name('ai.assistant');
-    Route::get('finance/online-payments/gateways', function () { return redirect()->route('finance.dashboard'); })->name('finance.online-payments.gateways');
+    Route::get('finance/online-payments/gateways', function () {
+        return redirect()->route('finance.dashboard');
+    })->name('finance.online-payments.gateways');
 });
-
-
 
 // -- Institute Module Routes (778 routes mapped to controllers)
 require __DIR__.'/institute_modules.php';
@@ -730,7 +857,7 @@ require __DIR__.'/institute_modules.php';
 // for view generation (subjects list uses single {subject} param). The nested URI
 // remains registered for direct matching but route() will generate the shallow URI.
 Route::middleware(['auth:institute_user,web', 'tenant', 'verified'])->group(function () {
-    Route::put('courses/subjects/{subject}', [\App\Http\Controllers\CourseController::class, 'updateSubject'])
+    Route::put('courses/subjects/{subject}', [CourseController::class, 'updateSubject'])
         ->middleware('permission:courses.manage')
         ->name('courses.subjects.update');
 });

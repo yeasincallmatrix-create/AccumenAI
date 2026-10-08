@@ -15,11 +15,16 @@ use App\Models\PackageScope;
 use App\Models\PackageScopedFeature;
 use App\Models\PackageScopedModule;
 use App\Models\SubscriptionPackage;
+use App\Models\TenantAccessDenial;
+use App\Models\TenantAccessGrant;
 use App\Support\AccessDecisionContext;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Single entitlement engine for module access.
@@ -72,6 +77,7 @@ class ModuleAccessService
         if (! $free) {
             return false;
         }
+
         return PackageModule::where('package_id', $free->id)
             ->where('module_key', $moduleKey)
             ->where('enabled', true)
@@ -303,14 +309,23 @@ class ModuleAccessService
 
         // Step 4: Tenant overrides — optional modules may be toggled on;
         // any override also applies (enable adds / disable removes).
+        // Package × industry matrix wins over an enable: Settings renders
+        // everything outside that set as "Upgrade required" and refuses the
+        // toggle, so an override must not silently keep it alive.
+        $matrixModules = $this->industryMatrixModuleSet($institute);
+
         foreach ($this->resolveIndustryOptional($industry) as $key) {
-            if (isset($overrides[$key]) && $overrides[$key]->enabled) {
+            if (isset($overrides[$key]) && $overrides[$key]->enabled
+                && ($matrixModules === null || isset($matrixModules[$key]))) {
                 $candidate[$key] = true;
             }
         }
 
         foreach ($overrides as $key => $override) {
             if ($override->enabled) {
+                if ($matrixModules !== null && ! isset($matrixModules[$key])) {
+                    continue;
+                }
                 $candidate[$key] = true;
             } else {
                 unset($candidate[$key]);
@@ -479,14 +494,20 @@ class ModuleAccessService
             ->get()
             ->keyBy('module_key');
 
+        $matrixModules = $this->industryMatrixModuleSet($institute);
+
         foreach ($this->resolveIndustryOptional($industry) as $key) {
-            if (isset($overrides[$key]) && $overrides[$key]->enabled) {
+            if (isset($overrides[$key]) && $overrides[$key]->enabled
+                && ($matrixModules === null || isset($matrixModules[$key]))) {
                 $candidate[$key] = true;
             }
         }
 
         foreach ($overrides as $key => $override) {
             if ($override->enabled) {
+                if ($matrixModules !== null && ! isset($matrixModules[$key])) {
+                    continue;
+                }
                 $candidate[$key] = true;
             } else {
                 unset($candidate[$key]);
@@ -625,6 +646,7 @@ class ModuleAccessService
             if ($ent->trial_ends_at && $now->gt($ent->trial_ends_at)) {
                 return false;
             }
+
             return true;
         }
 
@@ -643,6 +665,7 @@ class ModuleAccessService
                 // trial ended but status still active — consider still active if main window open
                 // Spec says trialing status handles trial; active should ignore trial window
             }
+
             return true;
         }
 
@@ -666,6 +689,9 @@ class ModuleAccessService
             'medical' => 'healthcare',
             'training_center' => 'training_center',
             'restaurant' => 'restaurant',
+            'real_estate' => 'real_estate',
+            'manufacturing' => 'manufacturing',
+            'retail' => 'retail',
         ];
 
         // Resolve child modules to their parent for map lookup
@@ -850,19 +876,19 @@ class ModuleAccessService
         $archiveRows = [];
         foreach ($rows as $row) {
             $archiveRows[] = [
-                'original_id'    => $row->id,
-                'institute_id'   => $row->institute_id,
-                'module_key'     => $row->module_key,
-                'enabled'        => $row->enabled,
-                'overridden_by'  => $row->overridden_by,
-                'reason'         => $row->reason,
-                'archived_at'    => $now,
-                'archived_by'    => $actorId,
+                'original_id' => $row->id,
+                'institute_id' => $row->institute_id,
+                'module_key' => $row->module_key,
+                'enabled' => $row->enabled,
+                'overridden_by' => $row->overridden_by,
+                'reason' => $row->reason,
+                'archived_at' => $now,
+                'archived_by' => $actorId,
                 'archive_reason' => $archiveReason,
                 'old_package_id' => $oldPackageId,
                 'new_package_id' => $newPackageId,
-                'created_at'     => $row->created_at,
-                'updated_at'     => $row->updated_at,
+                'created_at' => $row->created_at,
+                'updated_at' => $row->updated_at,
             ];
         }
 
@@ -892,7 +918,7 @@ class ModuleAccessService
     {
         $module = ModuleRegistry::where('key', $moduleKey)->first();
         if (! $module) {
-            throw \Illuminate\Validation\ValidationException::withMessages(['module_key' => "Module {$moduleKey} does not exist."]);
+            throw ValidationException::withMessages(['module_key' => "Module {$moduleKey} does not exist."]);
         }
 
         $previousState = $this->isEnabled($institute, $moduleKey) ? 'enabled' : 'disabled';
@@ -995,7 +1021,7 @@ class ModuleAccessService
         }
         // Industry still enforced
         if (! $this->isIndustryCompatible($institute, $entitlement->module_key)) {
-            throw \Illuminate\Validation\ValidationException::withMessages(['module_key' => 'Module is incompatible with institute industry.']);
+            throw ValidationException::withMessages(['module_key' => 'Module is incompatible with institute industry.']);
         }
 
         // Prevent duplicate active entitlements race — use transaction with lock
@@ -1059,6 +1085,7 @@ class ModuleAccessService
     public function isEntitled(Institute $institute, string $moduleKey): bool
     {
         $map = $this->getActiveEntitlementMap($institute);
+
         return isset($map[$moduleKey]) && $map[$moduleKey]->is_grant;
     }
 
@@ -1183,32 +1210,32 @@ class ModuleAccessService
      * The institute's package_id is untouched (stays FREE) — access
      * resolves from the trial package via activeTrialPackageId().
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
     public function startTrial(Institute $institute, int $packageId, ?int $actorId = null): object
     {
         $package = SubscriptionPackage::find($packageId);
         if (! $package || ($package->status ?? null) !== 'active') {
-            throw \Illuminate\Validation\ValidationException::withMessages(['package_id' => 'Selected package is not available.']);
+            throw ValidationException::withMessages(['package_id' => 'Selected package is not available.']);
         }
         if ($this->isFreePackage($packageId)) {
-            throw \Illuminate\Validation\ValidationException::withMessages(['package_id' => 'FREE package does not need a trial.']);
+            throw ValidationException::withMessages(['package_id' => 'FREE package does not need a trial.']);
         }
 
         $industryKey = $institute->industry ?? '';
         if ($industryKey === '') {
-            throw \Illuminate\Validation\ValidationException::withMessages(['industry' => 'Institute industry is not set.']);
+            throw ValidationException::withMessages(['industry' => 'Institute industry is not set.']);
         }
 
         $map = $this->industryPackageMap($industryKey);
         if ($map === null || ! isset($map[$packageId])) {
-            throw \Illuminate\Validation\ValidationException::withMessages(['package_id' => 'Package is not offered in this industry.']);
+            throw ValidationException::withMessages(['package_id' => 'Package is not offered in this industry.']);
         }
 
         $trialDays = $this->packageTrialDays($packageId, $institute);
 
         if ($trialDays === null || (int) $trialDays <= 0) {
-            throw \Illuminate\Validation\ValidationException::withMessages(['package_id' => 'Trial is not offered for this package.']);
+            throw ValidationException::withMessages(['package_id' => 'Trial is not offered for this package.']);
         }
 
         $id = DB::table('institute_subscriptions')->insertGetId([
@@ -1271,7 +1298,7 @@ class ModuleAccessService
     /**
      * Get all active sub-modules for a given parent key, ordered by sort_order.
      */
-    public function getSubModules(string $parentKey): \Illuminate\Support\Collection
+    public function getSubModules(string $parentKey): Collection
     {
         return ModuleRegistry::where('parent_key', $parentKey)
             ->where('status', 'active')
@@ -1282,7 +1309,7 @@ class ModuleAccessService
     /**
      * Shorthand for medical sub-modules.
      */
-    public function getMedicalSubModules(): \Illuminate\Support\Collection
+    public function getMedicalSubModules(): Collection
     {
         return $this->getSubModules('medical');
     }
@@ -1309,9 +1336,7 @@ class ModuleAccessService
      * belongs in the middleware layer (consistent with
      * existing CheckModuleAccess / MedicalModuleAccess).
      *
-     * @param  Institute  $institute
-     * @param  string     $featureKey  e.g. 'medical.pharmacy'
-     * @return bool
+     * @param  string  $featureKey  e.g. 'medical.pharmacy'
      */
     public function isFeatureEnabled(Institute $institute, string $featureKey): bool
     {
@@ -1336,7 +1361,7 @@ class ModuleAccessService
     {
         $scope = $this->resolveScopedPackage($institute);
         $scopeHash = $scope?->scope_hash ?? 'global';
-        $cacheKey = $this->featureCachePrefix . $institute->id . ':' . $scopeHash;
+        $cacheKey = $this->featureCachePrefix.$institute->id.':'.$scopeHash;
 
         return Cache::remember($cacheKey, 3600, function () use ($institute) {
             return $this->computeFeatureAccessMap($institute);
@@ -1437,6 +1462,13 @@ class ModuleAccessService
             ->get()
             ->keyBy('feature_key');
 
+        // Tenant module toggles (Settings → Modules) keyed by module_key.
+        // A feature whose key equals a module key (e.g. medical.bloodbank)
+        // must not outlive its own module switch.
+        $moduleOverrides = InstituteModuleOverride::where('institute_id', $institute->id)
+            ->get()
+            ->keyBy('module_key');
+
         $map = [];
         $reasons = [];
 
@@ -1451,6 +1483,16 @@ class ModuleAccessService
             if (! $this->isEnabled($institute, $moduleKey)) {
                 $map[$key] = false;
                 $reasons[$key] = $moduleResolution['reasons'][$moduleKey] ?? AccessDecisionContext::REASON_MODULE_NOT_ENABLED;
+
+                continue;
+            }
+
+            // Gate 1.5: an explicit tenant module toggle on this exact key
+            // denies the feature (additive grants below may still restore it).
+            if (isset($moduleOverrides[$key]) && ! (bool) $moduleOverrides[$key]->enabled) {
+                $map[$key] = false;
+                $reasons[$key] = AccessDecisionContext::REASON_MODULE_NOT_ENABLED;
+
                 continue;
             }
 
@@ -1464,6 +1506,7 @@ class ModuleAccessService
                 $reasons[$key] = $overrideVal
                     ? AccessDecisionContext::REASON_OVERRIDE_ENABLED
                     : AccessDecisionContext::REASON_OVERRIDE_DISABLED;
+
                 continue;
             }
 
@@ -1476,7 +1519,7 @@ class ModuleAccessService
         }
 
         // Gate 4: Super admin grants (additive — applied after package + institute overrides)
-        $grants = \App\Models\TenantAccessGrant::where('institute_id', $institute->id)
+        $grants = TenantAccessGrant::where('institute_id', $institute->id)
             ->where('status', 'active')
             ->where(function ($q) {
                 $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
@@ -1501,7 +1544,7 @@ class ModuleAccessService
                     continue;
                 }
                 // All features in this module
-                $moduleFeatures = \App\Models\FeatureRegistry::where('module_key', $grant->grant_key)
+                $moduleFeatures = FeatureRegistry::where('module_key', $grant->grant_key)
                     ->pluck('feature_key');
                 foreach ($moduleFeatures as $fk) {
                     if (array_key_exists($fk, $map)) {
@@ -1516,11 +1559,12 @@ class ModuleAccessService
                 // requires its parent module to be enabled.
                 $tierPackage = SubscriptionPackage::whereRaw('LOWER(slug) = ?', [strtolower((string) $grant->grant_key)])->first();
                 if (! $tierPackage) {
-                    \Illuminate\Support\Facades\Log::warning('TenantAccessGrant tier grant skipped: unknown tier package', [
+                    Log::warning('TenantAccessGrant tier grant skipped: unknown tier package', [
                         'institute_id' => $institute->id,
                         'grant_id' => $grant->id,
                         'grant_key' => $grant->grant_key,
                     ]);
+
                     continue;
                 }
 
@@ -1539,7 +1583,7 @@ class ModuleAccessService
         }
 
         // Gate 5: Super admin denials (subtractive — applied LAST, wins over everything)
-        $denials = \App\Models\TenantAccessDenial::where('institute_id', $institute->id)
+        $denials = TenantAccessDenial::where('institute_id', $institute->id)
             ->where('status', 'active')
             ->where(function ($q) {
                 $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
@@ -1553,7 +1597,7 @@ class ModuleAccessService
                     $reasons[$denial->deny_key] = AccessDecisionContext::REASON_DENIAL_APPLIED;
                 }
             } elseif ($denial->deny_type === 'module') {
-                $moduleFeatures = \App\Models\FeatureRegistry::where('module_key', $denial->deny_key)
+                $moduleFeatures = FeatureRegistry::where('module_key', $denial->deny_key)
                     ->pluck('feature_key');
                 foreach ($moduleFeatures as $fk) {
                     if (array_key_exists($fk, $map)) {
@@ -1600,9 +1644,9 @@ class ModuleAccessService
      */
     public function flushFeatureCache(int $instituteId): void
     {
-        Cache::forget($this->featureCachePrefix . $instituteId);
+        Cache::forget($this->featureCachePrefix.$instituteId);
         // Also flush scope-aware keys (wildcard not possible, but GLOBAL is common)
-        Cache::forget($this->featureCachePrefix . $instituteId . ':global');
+        Cache::forget($this->featureCachePrefix.$instituteId.':global');
 
         try {
             $institute = Institute::withoutGlobalScopes()->find($instituteId);
@@ -1614,7 +1658,7 @@ class ModuleAccessService
                     ->pluck('scope_hash')
                     ->unique();
                 foreach ($hashes as $hash) {
-                    Cache::forget($this->featureCachePrefix . $instituteId . ':' . $hash);
+                    Cache::forget($this->featureCachePrefix.$instituteId.':'.$hash);
                 }
             }
         } catch (\Throwable $e) {
@@ -1835,6 +1879,65 @@ class ModuleAccessService
     }
 
     /**
+     * Package id used for package-layer resolution: lapsed or untitled
+     * tenants fall back to FREE, and a running trial wins while the institute
+     * itself is entitled as FREE.
+     */
+    private function packageIdForResolution(Institute $institute): ?int
+    {
+        $packageId = $institute->package_id;
+        if (! $this->isSubscriptionActive($institute) || $packageId === null) {
+            $packageId = SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['free'])->value('id');
+        }
+
+        if ($packageId === null) {
+            return null;
+        }
+
+        // Trial: a tenant entitled as FREE resolves tier modules while an
+        // active trial subscription runs (package_id itself stays FREE).
+        if ($this->isFreePackage($packageId)) {
+            $trialPackageId = $this->activeTrialPackageId($institute);
+            if ($trialPackageId !== null) {
+                return $trialPackageId;
+            }
+        }
+
+        return (int) $packageId;
+    }
+
+    /**
+     * Package × industry matrix as a lookup set (module_key => true).
+     *
+     * Null when the industry/package has no explicit matrix configuration,
+     * so tenants without a matrix keep the legacy behaviour. Mirrors the
+     * package-layer resolution used by resolvePackageModules(), which is what
+     * Settings renders: everything outside this set reads as "Upgrade
+     * required" there and cannot be tenant-enabled.
+     *
+     * @return array<string, bool>|null
+     */
+    private function industryMatrixModuleSet(Institute $institute): ?array
+    {
+        $industryKey = $institute->industry ?? '';
+        if ($industryKey === '') {
+            return null;
+        }
+
+        $packageId = $this->packageIdForResolution($institute);
+        if ($packageId === null) {
+            return null;
+        }
+
+        $modules = $this->resolveIndustryPackageModules(
+            $this->applyIndustryPackageAllowList($packageId, $industryKey),
+            $industryKey
+        );
+
+        return $modules === null ? null : array_fill_keys($modules, true);
+    }
+
+    /**
      * Resolve the package-level module base for an institute (Phase 6).
      *
      * Dual-read with legacy fallback:
@@ -1848,22 +1951,10 @@ class ModuleAccessService
      */
     private function resolvePackageModules(Institute $institute): array
     {
-        $packageId = $institute->package_id;
-        if (! $this->isSubscriptionActive($institute) || $packageId === null) {
-            $packageId = SubscriptionPackage::whereRaw('LOWER(slug) = ?', ['free'])->value('id');
-        }
+        $packageId = $this->packageIdForResolution($institute);
 
         if ($packageId === null) {
             return [];
-        }
-
-        // Trial: a tenant entitled as FREE resolves tier modules while an
-        // active trial subscription runs (package_id itself stays FREE).
-        if ($this->isFreePackage($packageId)) {
-            $trialPackageId = $this->activeTrialPackageId($institute);
-            if ($trialPackageId !== null) {
-                $packageId = $trialPackageId;
-            }
         }
 
         // Per-industry package configuration (package_industries +
@@ -1985,7 +2076,7 @@ class ModuleAccessService
      */
     private function resolveIndustryPackageModules(int $packageId, string $industryKey): ?array
     {
-        $memoKey = $packageId . '|' . $this->normalizeIndustryKey($industryKey);
+        $memoKey = $packageId.'|'.$this->normalizeIndustryKey($industryKey);
         if (array_key_exists($memoKey, $this->industryPackageModulesMemo)) {
             return $this->industryPackageModulesMemo[$memoKey];
         }
@@ -2019,6 +2110,7 @@ class ModuleAccessService
                 if (in_array($category, ['mandatory', 'default'], true)) {
                     $modules[] = $row->module_key;
                 }
+
                 continue;
             }
             if ($row->enabled) {
@@ -2042,7 +2134,7 @@ class ModuleAccessService
      */
     public function upgradeUnlockedBy(int $packageId, string $industryKey): array
     {
-        $package = \App\Models\SubscriptionPackage::find($packageId);
+        $package = SubscriptionPackage::find($packageId);
         if (! $package) {
             return [];
         }
@@ -2266,6 +2358,7 @@ class ModuleAccessService
         $scope = $this->resolveScopedPackage($institute);
         if (! $scope) {
             $package = SubscriptionPackage::find($institute->package_id);
+
             return [
                 'monthly' => (float) ($package?->price_monthly ?? 0),
                 'yearly' => (float) ($package?->price_yearly ?? 0),
@@ -2473,8 +2566,8 @@ class ModuleAccessService
 
         $query->pluck('id')->each(function ($id) use ($scope) {
             $this->flushFeatureCache($id);
-            Cache::forget($this->featureCachePrefix . $id . ':' . $scope->scope_hash);
-            Cache::forget($this->featureCachePrefix . $id . ':global');
+            Cache::forget($this->featureCachePrefix.$id.':'.$scope->scope_hash);
+            Cache::forget($this->featureCachePrefix.$id.':global');
         });
     }
 

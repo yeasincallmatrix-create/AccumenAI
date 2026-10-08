@@ -1,4 +1,4 @@
-@php $steps = ['Account','Verify Email','Organization','Address','Setup']; @endphp
+@php $steps = ['Account','Verify Email','Organization','Address','Package','Setup']; @endphp
 <div class="d-flex justify-content-center align-items-center gap-1 mb-3 flex-wrap">
     @foreach($steps as $i => $label)
         @php $n = $i+1; $active = ($step ?? 1) == $n; $done = ($step ?? 1) > $n; @endphp

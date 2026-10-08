@@ -4,26 +4,51 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\InstituteOnboardingController;
+use App\Models\AdministrativeUnit;
 use App\Models\Country;
 use App\Models\Institute;
+use App\Models\InstituteSetting;
+use App\Models\InstituteUser;
 use App\Models\PendingRegistration;
+use App\Models\PlatformAdmin;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\AcademicSetupService;
+use App\Services\Accounting\TenantCoaSeederService;
+use App\Services\Auth\EmailBanService;
+use App\Services\Auth\PasswordService;
+use App\Services\Auth\RecaptchaService;
+use App\Services\Demo\DemoDataService;
+use App\Services\EducationModuleActivator;
+use App\Services\Identity\EmailDomainPolicy;
 use App\Services\Identity\PendingRegistrationOtpService;
+use App\Services\LearningStructureResolver;
+use App\Services\MedicalModuleActivator;
 use App\Services\MembershipService;
+use App\Services\RoleTemplateService;
+use App\Support\EmailNormalizer;
+use App\Support\GeoHierarchy;
+use App\Support\IdentityConfig;
 use App\Support\IndustryRules;
+use App\Support\PasswordPolicy;
+use App\Support\PhoneNormalizer;
 use App\Support\Workspace;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class RegistrationFlowController extends Controller
 {
     public const SESSION_KEY = 'registration_flow';
+
     public const PENDING_ID = 'pending_registration_id';
 
     // ---- Step 1 : Account Credentials ----
@@ -38,80 +63,89 @@ class RegistrationFlowController extends Controller
                 if ($pending) {
                     session([self::PENDING_ID => $pending->id, self::SESSION_KEY => ['email' => $pending->email, 'verified' => true, 'step' => 2]]);
                 }
+
                 return redirect()->route($resume);
             }
+
             return redirect()->route('dashboard');
         }
         // Guest with verified pending session should skip to next step
         $pending = $this->resolvePending($request);
         if ($pending && $pending->isVerified()) {
-            if (empty($pending->organization_data)) return redirect()->route('register.organization');
-            if (empty($pending->address_data)) return redirect()->route('register.address');
+            if (empty($pending->organization_data)) {
+                return redirect()->route('register.organization');
+            }
+            if (empty($pending->address_data)) {
+                return redirect()->route('register.address');
+            }
         }
+
         return view('auth.register-account', [
-            'email' => session(self::SESSION_KEY . '.email'),
+            'email' => session(self::SESSION_KEY.'.email'),
         ]);
     }
 
     public function storeAccount(Request $request): RedirectResponse
     {
-        app(\App\Services\Auth\RecaptchaService::class)->assertValid($request);
+        app(RecaptchaService::class)->assertValid($request);
 
         // Layered abuse protection: per-IP and per-normalized-email
-        $ipKey = 'register_account_ip:' . $request->ip();
-        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($ipKey, 10)) {
+        $ipKey = 'register_account_ip:'.$request->ip();
+        if (RateLimiter::tooManyAttempts($ipKey, 10)) {
             return back()->withErrors(['email' => 'Too many attempts. Please try again later.'])->withInput();
         }
         // Pre-validate email format for rate-key before full validation to avoid bypass via whitespace/casing
         $rawEmailForKey = strtolower(trim((string) $request->input('email', '')));
-        $emailKey = 'register_account_email:' . md5($rawEmailForKey);
-        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($emailKey, 5)) {
-            \Illuminate\Support\Facades\RateLimiter::hit($ipKey, 3600);
+        $emailKey = 'register_account_email:'.md5($rawEmailForKey);
+        if (RateLimiter::tooManyAttempts($emailKey, 5)) {
+            RateLimiter::hit($ipKey, 3600);
+
             return back()->withErrors(['email' => 'Too many attempts. Please try again later.'])->withInput();
         }
-        \Illuminate\Support\Facades\RateLimiter::hit($ipKey, 3600);
-        \Illuminate\Support\Facades\RateLimiter::hit($emailKey, 3600);
+        RateLimiter::hit($ipKey, 3600);
+        RateLimiter::hit($emailKey, 3600);
 
         $data = $request->validate([
             'email' => ['required', 'string', 'email', 'max:150'],
-            'password' => \App\Support\PasswordPolicy::rules(),
+            'password' => PasswordPolicy::rules(),
         ]);
 
-        $normalizedEmail = \App\Support\EmailNormalizer::normalize($data['email']);
-        if (! \App\Services\Identity\EmailDomainPolicy::isAllowed($normalizedEmail)) {
+        $normalizedEmail = EmailNormalizer::normalize($data['email']);
+        if (! EmailDomainPolicy::isAllowed($normalizedEmail)) {
             return back()->withErrors(['email' => 'Email domain is not allowed.'])->withInput();
         }
         // BAN CHECK (before duplicate checks — ban survives hard-delete)
-        if (app(\App\Services\Auth\EmailBanService::class)->isBanned($normalizedEmail)) {
+        if (app(EmailBanService::class)->isBanned($normalizedEmail)) {
             return back()->withErrors(['email' => 'This email has been banned. Please contact support.'])->withInput();
         }
         // Cross-table duplicate + pending check — allow resumable onboarding (OTP verified but org not done)
-        $hasUser = \App\Models\User::where('email', $normalizedEmail)->exists();
+        $hasUser = User::where('email', $normalizedEmail)->exists();
         $hasPendingVerified = PendingRegistration::where('email', $normalizedEmail)->whereNotNull('verified_at')->exists();
         if ($hasUser && $hasPendingVerified) {
-            $tmpUser = \App\Models\User::where('email', $normalizedEmail)->first();
+            $tmpUser = User::where('email', $normalizedEmail)->first();
             if ($tmpUser && self::isOnboardingIncomplete($tmpUser)) {
                 $resume = self::resumeRouteForUser($tmpUser) ?? 'register.organization';
                 $pendingResume = self::findPendingForUser($tmpUser);
                 if ($pendingResume) {
                     session([self::PENDING_ID => $pendingResume->id, self::SESSION_KEY => ['email' => $pendingResume->email, 'verified' => true, 'step' => 2]]);
+
                     return redirect()->route($resume);
                 }
             }
         }
-        if (\App\Models\User::where('email', $normalizedEmail)->exists()
-            || \App\Models\InstituteUser::where('email', $normalizedEmail)->exists()
-            || \App\Models\PlatformAdmin::where('email', $normalizedEmail)->exists()
+        if (User::where('email', $normalizedEmail)->exists()
+            || InstituteUser::where('email', $normalizedEmail)->exists()
+            || PlatformAdmin::where('email', $normalizedEmail)->exists()
             || PendingRegistration::where('email', $normalizedEmail)->whereNull('verified_at')->where('expires_at', '>', now())->exists()
         ) {
             // If pending exists but expired, allow reuse by deleting expired
             $existingPending = PendingRegistration::where('email', $normalizedEmail)->first();
             if ($existingPending && $existingPending->expires_at && $existingPending->expires_at->isPast()) {
                 $existingPending->delete();
-            } else if (\App\Models\User::where('email', $normalizedEmail)->exists() || \App\Models\InstituteUser::where('email', $normalizedEmail)->exists() || \App\Models\PlatformAdmin::where('email', $normalizedEmail)->exists()) {
+            } elseif (User::where('email', $normalizedEmail)->exists() || InstituteUser::where('email', $normalizedEmail)->exists() || PlatformAdmin::where('email', $normalizedEmail)->exists()) {
                 // Verified pending with incomplete onboarding already handled above — now it's true duplicate
                 $maybePending = PendingRegistration::where('email', $normalizedEmail)->whereNotNull('verified_at')->first();
-                if ($maybePending && ! $maybePending->isAbandonedExpired() && self::findPendingForUser(\App\Models\User::where('email', $normalizedEmail)->first() ?? new \App\Models\User(['email' => $normalizedEmail]))) {
+                if ($maybePending && ! $maybePending->isAbandonedExpired() && self::findPendingForUser(User::where('email', $normalizedEmail)->first() ?? new User(['email' => $normalizedEmail]))) {
                     // still resumable, don't block
                 } else {
                     return back()->withErrors(['email' => 'Email already taken.'])->withInput();
@@ -121,19 +155,21 @@ class RegistrationFlowController extends Controller
 
         // Check duplicate pending still valid
         $existing = PendingRegistration::where('email', $normalizedEmail)->first();
-        if ($existing && !$existing->isVerified() && $existing->otp_expires_at && !$existing->isGraceExpired()) {
+        if ($existing && ! $existing->isVerified() && $existing->otp_expires_at && ! $existing->isGraceExpired()) {
             // Reuse existing pending if not verified - resend OTP instead of duplicate error
             // Update password hash to latest via canonical PasswordService
             $existing->update([
-                'password_hash' => app(\App\Services\Auth\PasswordService::class)->hash($data['password']),
+                'password_hash' => app(PasswordService::class)->hash($data['password']),
                 'expires_at' => now()->addHours(24),
             ]);
             $pending = $existing;
         } else {
-            if ($existing) { $existing->delete(); }
+            if ($existing) {
+                $existing->delete();
+            }
             $pending = PendingRegistration::create([
                 'email' => $normalizedEmail,
-                'password_hash' => app(\App\Services\Auth\PasswordService::class)->hash($data['password']),
+                'password_hash' => app(PasswordService::class)->hash($data['password']),
                 'expires_at' => now()->addHours(24),
                 'attempts' => 0,
                 'resend_count' => 0,
@@ -146,14 +182,14 @@ class RegistrationFlowController extends Controller
                 'email' => $normalizedEmail,
                 'verified' => false,
                 'step' => 1,
-            ]
+            ],
         ]);
         // Regenerate session ID to prevent fixation
         $request->session()->regenerate();
 
         try {
             app(PendingRegistrationOtpService::class)->send($pending);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             // Throttled - still redirect to OTP page with error
             throw $e;
         } catch (\Throwable $e) {
@@ -167,14 +203,16 @@ class RegistrationFlowController extends Controller
     public function showOtp(Request $request): View|RedirectResponse
     {
         $pending = $this->resolvePending($request);
-        if (!$pending) {
+        if (! $pending) {
             return redirect()->route('register.account')->withErrors(['email' => 'Please start registration from the beginning.']);
         }
         if ($pending->isVerified()) {
-            session([self::SESSION_KEY . '.verified' => true, self::SESSION_KEY . '.step' => 2]);
+            session([self::SESSION_KEY.'.verified' => true, self::SESSION_KEY.'.step' => 2]);
+
             return redirect()->route('register.organization');
         }
         $cooldown = $this->remainingCooldown($pending);
+
         return view('auth.register-otp', [
             'email' => $pending->email,
             'maskedEmail' => $this->maskEmail($pending->email),
@@ -187,7 +225,7 @@ class RegistrationFlowController extends Controller
     public function verifyOtp(Request $request): RedirectResponse
     {
         $pending = $this->resolvePending($request);
-        if (!$pending) {
+        if (! $pending) {
             return redirect()->route('register.account');
         }
         $data = $request->validate([
@@ -195,15 +233,15 @@ class RegistrationFlowController extends Controller
         ]);
 
         // Rate limit OTP attempts per pending
-        $throttleKey = 'pending_otp_verify:' . $pending->id . ':' . $request->ip();
-        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($throttleKey, 10)) {
+        $throttleKey = 'pending_otp_verify:'.$pending->id.':'.$request->ip();
+        if (RateLimiter::tooManyAttempts($throttleKey, 10)) {
             return back()->withErrors(['otp' => 'Too many verification attempts. Please try again later.']);
         }
-        \Illuminate\Support\Facades\RateLimiter::hit($throttleKey, 60);
+        RateLimiter::hit($throttleKey, 60);
 
         try {
             app(PendingRegistrationOtpService::class)->verify($pending, $data['otp']);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             throw $e;
         }
 
@@ -211,11 +249,11 @@ class RegistrationFlowController extends Controller
         $this->ensureUserFromPending($pending->fresh());
 
         $request->session()->regenerate();
-        session([self::SESSION_KEY . '.verified' => true, self::SESSION_KEY . '.step' => 2]);
+        session([self::SESSION_KEY.'.verified' => true, self::SESSION_KEY.'.step' => 2]);
         // Re-store pending id after regenerate to keep resumable via session + DB (email)
         session([self::PENDING_ID => $pending->id]);
         // Clear rate limiter on success
-        \Illuminate\Support\Facades\RateLimiter::clear($throttleKey);
+        RateLimiter::clear($throttleKey);
 
         return redirect()->route('register.organization')->with('status', 'Verification code verified successfully. Please continue.');
     }
@@ -223,7 +261,7 @@ class RegistrationFlowController extends Controller
     public function resendOtp(Request $request): RedirectResponse
     {
         $pending = $this->resolvePending($request);
-        if (!$pending) {
+        if (! $pending) {
             return redirect()->route('register.account');
         }
         if ($pending->isVerified()) {
@@ -231,12 +269,14 @@ class RegistrationFlowController extends Controller
         }
         try {
             app(PendingRegistrationOtpService::class)->send($pending);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             throw $e;
         } catch (\Throwable $e) {
             report($e);
+
             return back()->withErrors(['otp' => 'Failed to resend code. Please try again.']);
         }
+
         return back()->with('status', 'Verification code resent.');
     }
 
@@ -244,9 +284,10 @@ class RegistrationFlowController extends Controller
     public function showOrganization(Request $request): View|RedirectResponse
     {
         $pending = $this->resolvePending($request);
-        if (!$pending || !$pending->isVerified()) {
+        if (! $pending || ! $pending->isVerified()) {
             return redirect()->route('register.otp.form')->withErrors(['otp' => 'Please verify your email first.']);
         }
+
         return view('auth.register-organization', [
             'industries' => IndustryRules::industries(null),
             'countries' => config('countries', []),
@@ -259,7 +300,7 @@ class RegistrationFlowController extends Controller
     public function storeOrganization(Request $request): RedirectResponse
     {
         $pending = $this->resolvePending($request);
-        if (!$pending || !$pending->isVerified()) {
+        if (! $pending || ! $pending->isVerified()) {
             return redirect()->route('register.otp.form');
         }
         $validated = InstituteOnboardingController::validatedSelection($request->all());
@@ -271,11 +312,11 @@ class RegistrationFlowController extends Controller
             'phone' => ['required', 'string', 'max:30'],
         ]);
         $country = $validated['country'];
-        $phoneNorm = \App\Support\PhoneNormalizer::toE164($data['phone'], $country);
+        $phoneNorm = PhoneNormalizer::toE164($data['phone'], $country);
         if ($phoneNorm === null) {
             return back()->withErrors(['phone' => 'Invalid phone number.'])->withInput();
         }
-        if (\App\Models\User::where('phone', $phoneNorm)->exists() || \App\Models\InstituteUser::where('phone', $phoneNorm)->exists()) {
+        if (User::where('phone', $phoneNorm)->exists() || InstituteUser::where('phone', $phoneNorm)->exists()) {
             return back()->withErrors(['phone' => 'Phone already taken.'])->withInput();
         }
 
@@ -285,9 +326,9 @@ class RegistrationFlowController extends Controller
                 'first_name' => $data['first_name'],
                 'last_name' => $data['last_name'],
                 'phone' => $phoneNorm,
-            ])
+            ]),
         ]);
-        session([self::SESSION_KEY . '.step' => 3]);
+        session([self::SESSION_KEY.'.step' => 3]);
 
         return redirect()->route('register.address');
     }
@@ -296,7 +337,7 @@ class RegistrationFlowController extends Controller
     public function showAddress(Request $request): View|RedirectResponse
     {
         $pending = $this->resolvePending($request);
-        if (!$pending || !$pending->isVerified()) {
+        if (! $pending || ! $pending->isVerified()) {
             return redirect()->route('register.otp.form');
         }
         if (empty($pending->organization_data)) {
@@ -305,6 +346,7 @@ class RegistrationFlowController extends Controller
         $org = $pending->organization_data;
         // 9b-3: default via locale config (default 'Bangladesh', unchanged).
         $geoAddress = $this->geoAddress($org['country'] ?? config('locale.country.default_name', 'Bangladesh'));
+
         return view('auth.register-address', [
             'geoAddress' => $geoAddress,
             'selection' => $org,
@@ -316,7 +358,7 @@ class RegistrationFlowController extends Controller
     public function storeAddress(Request $request): RedirectResponse
     {
         $pending = $this->resolvePending($request);
-        if (!$pending || !$pending->isVerified()) {
+        if (! $pending || ! $pending->isVerified()) {
             return redirect()->route('register.otp.form');
         }
         if (empty($pending->organization_data)) {
@@ -335,21 +377,21 @@ class RegistrationFlowController extends Controller
 
         if ($geoAddress !== null) {
             if (array_key_exists('country_id', $data) && $data['country_id'] !== null && $data['country_id'] !== '' && (int) $data['country_id'] !== (int) $geoAddress['country_id']) {
-                throw \Illuminate\Validation\ValidationException::withMessages(['country_id' => 'The address country must match the selected organization country.']);
+                throw ValidationException::withMessages(['country_id' => 'The address country must match the selected organization country.']);
             }
-            $error = \App\Support\GeoHierarchy::validateHierarchy(
+            $error = GeoHierarchy::validateHierarchy(
                 (int) $geoAddress['country_id'],
                 $data['admin_1_id'] ?? null,
                 $data['admin_2_id'] ?? null,
                 $data['admin_3_id'] ?? null
             );
             if ($error !== null) {
-                throw \Illuminate\Validation\ValidationException::withMessages(['admin_1_id' => mawa_lang($error)]);
+                throw ValidationException::withMessages(['admin_1_id' => mawa_lang($error)]);
             }
         }
 
         $pending->update(['address_data' => $data]);
-        session([self::SESSION_KEY . '.step' => 4]);
+        session([self::SESSION_KEY.'.step' => 4]);
 
         // Create User + Institute now
         return $this->finalizeRegistration($pending, $request);
@@ -368,73 +410,75 @@ class RegistrationFlowController extends Controller
         $institute = null;
         try {
             DB::transaction(function () use ($pending, $org, $addr, $geoAddress, $ownerRoleId, &$user, &$institute) {
-            // Lock pending row to prevent concurrent finalization
-            $lockedPending = PendingRegistration::whereKey($pending->id)->lockForUpdate()->first();
-            if (!$lockedPending) throw new \Illuminate\Validation\ValidationException(validator([],[]), response()->redirectToRoute('register.account'));
-            // User may already exist (created at OTP verification for resumable flow) — reuse it
-            $existingUser = \App\Models\User::where('email', $lockedPending->email)->first();
-            if ($existingUser) {
-                $user = $existingUser;
-                // Update profile fields from organization step if missing
-                $user->forceFill([
-                    'name' => trim($org['first_name'].' '.$org['last_name']),
-                    'first_name' => $org['first_name'],
-                    'last_name' => $org['last_name'],
-                    'phone' => $org['phone'] ?? $user->phone,
-                    'email_verified_at' => $user->email_verified_at ?? now(),
-                ])->save();
-            } else {
-                $user = User::create([
-                    'name' => trim($org['first_name'].' '.$org['last_name']),
-                    'first_name' => $org['first_name'],
-                    'last_name' => $org['last_name'],
-                    'email' => $pending->email,
-                    'phone' => $org['phone'],
-                    'preferred_language' => mawa_current_lang(),
-                    'password_hash' => $pending->password_hash,
+                // Lock pending row to prevent concurrent finalization
+                $lockedPending = PendingRegistration::whereKey($pending->id)->lockForUpdate()->first();
+                if (! $lockedPending) {
+                    throw new ValidationException(validator([], []), response()->redirectToRoute('register.account'));
+                }
+                // User may already exist (created at OTP verification for resumable flow) — reuse it
+                $existingUser = User::where('email', $lockedPending->email)->first();
+                if ($existingUser) {
+                    $user = $existingUser;
+                    // Update profile fields from organization step if missing
+                    $user->forceFill([
+                        'name' => trim($org['first_name'].' '.$org['last_name']),
+                        'first_name' => $org['first_name'],
+                        'last_name' => $org['last_name'],
+                        'phone' => $org['phone'] ?? $user->phone,
+                        'email_verified_at' => $user->email_verified_at ?? now(),
+                    ])->save();
+                } else {
+                    $user = User::create([
+                        'name' => trim($org['first_name'].' '.$org['last_name']),
+                        'first_name' => $org['first_name'],
+                        'last_name' => $org['last_name'],
+                        'email' => $pending->email,
+                        'phone' => $org['phone'],
+                        'preferred_language' => mawa_current_lang(),
+                        'password_hash' => $pending->password_hash,
+                        'status' => 'active',
+                        'account_type' => 'owner',
+                        'email_verified_at' => now(),
+                    ]);
+                }
+
+                $institute = Institute::create([
+                    'name' => $org['organization_name'],
+                    'slug' => $this->uniqueSlug($org['organization_name']),
+                    'industry' => $org['industry'],
+                    'sub_industry' => $org['sub_industry'],
+                    'country' => $org['country'],
+                    'country_id' => $geoAddress['country_id'] ?? null,
+                    'admin_level_1_id' => $addr['admin_1_id'] ?? null,
+                    'admin_level_2_id' => $addr['admin_2_id'] ?? null,
+                    'admin_level_3_id' => $addr['admin_3_id'] ?? null,
+                    'postal_code' => $addr['zip_code'] ?? null,
+                    'address' => $addr['address'] ?? null,
                     'status' => 'active',
-                    'account_type' => 'owner',
-                    'email_verified_at' => now(),
                 ]);
+
+                app(MembershipService::class)->assign($user, $institute->id, $ownerRoleId, [
+                    'branch_id' => null,
+                    'status' => 'active',
+                ]);
+
+                // Default certificate approval to Admin Controlled (new institutes)
+                InstituteSetting::withoutGlobalScope('institute')->updateOrCreate(
+                    ['institute_id' => $institute->id],
+                    ['certificate_approval_mode' => InstituteSetting::CERTIFICATE_APPROVAL_ADMIN]
+                );
+
+                // Clean pending (locked)
+                $lockedPending->delete();
+            });
+
+            try {
+                app(TenantCoaSeederService::class)
+                    ->seedFullProvisioning($institute->id);
+            } catch (\Throwable $e) {
+                \Log::warning('TenantCoaSeeder failed', ['institute_id' => $institute->id, 'error' => $e->getMessage()]);
             }
-
-            $institute = Institute::create([
-                'name' => $org['organization_name'],
-                'slug' => $this->uniqueSlug($org['organization_name']),
-                'industry' => $org['industry'],
-                'sub_industry' => $org['sub_industry'],
-                'country' => $org['country'],
-                'country_id' => $geoAddress['country_id'] ?? null,
-                'admin_level_1_id' => $addr['admin_1_id'] ?? null,
-                'admin_level_2_id' => $addr['admin_2_id'] ?? null,
-                'admin_level_3_id' => $addr['admin_3_id'] ?? null,
-                'postal_code' => $addr['zip_code'] ?? null,
-                'address' => $addr['address'] ?? null,
-                'status' => 'active',
-            ]);
-
-            app(MembershipService::class)->assign($user, $institute->id, $ownerRoleId, [
-                'branch_id' => null,
-                'status' => 'active',
-            ]);
-
-            // Default certificate approval to Admin Controlled (new institutes)
-            \App\Models\InstituteSetting::withoutGlobalScope('institute')->updateOrCreate(
-                ['institute_id' => $institute->id],
-                ['certificate_approval_mode' => \App\Models\InstituteSetting::CERTIFICATE_APPROVAL_ADMIN]
-            );
-
-            // Clean pending (locked)
-            $lockedPending->delete();
-        });
-
-        try {
-            app(\App\Services\Accounting\TenantCoaSeederService::class)
-                ->seedFullProvisioning($institute->id);
-        } catch (\Throwable $e) {
-            \Log::warning('TenantCoaSeeder failed', ['institute_id' => $institute->id, 'error' => $e->getMessage()]);
-        }
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             // Duplicate email race — pending still exists for retry with new email or login
             throw $e;
         } catch (\Throwable $e) {
@@ -445,17 +489,34 @@ class RegistrationFlowController extends Controller
         // Auto-assign learning structure etc (same as InstituteCreationController)
         try {
             $this->assignDefaultLearningStructure($institute);
-        } catch (\Throwable $e) { Log::warning('RegistrationFlow: learning structure failed', ['institute_id' => $institute->id, 'error' => $e->getMessage()]); report($e); }
-        try { app(\App\Services\AcademicSetupService::class)->ensureDefaults($institute); } catch (\Throwable $e) { Log::warning('RegistrationFlow: academic defaults failed', ['institute_id' => $institute->id, 'error' => $e->getMessage()]); report($e); }
-        try { app(\App\Services\Demo\DemoDataService::class)->seed($institute, $user, ['force' => false]); } catch (\Throwable $e) { Log::warning('RegistrationFlow: demo seeding failed', ['institute_id' => $institute->id, 'error' => $e->getMessage()]); report($e); }
-        if (class_exists(\App\Services\RoleTemplateService::class)) {
-            try { app(\App\Services\RoleTemplateService::class)->seedForInstitute($institute); } catch (\Exception $e) { Log::warning('RegistrationFlow: role template seeding failed', ['institute_id' => $institute->id, 'error' => $e->getMessage()]); }
+        } catch (\Throwable $e) {
+            Log::warning('RegistrationFlow: learning structure failed', ['institute_id' => $institute->id, 'error' => $e->getMessage()]);
+            report($e);
+        }
+        try {
+            app(AcademicSetupService::class)->ensureDefaults($institute);
+        } catch (\Throwable $e) {
+            Log::warning('RegistrationFlow: academic defaults failed', ['institute_id' => $institute->id, 'error' => $e->getMessage()]);
+            report($e);
+        }
+        try {
+            app(DemoDataService::class)->seed($institute, $user, ['force' => false]);
+        } catch (\Throwable $e) {
+            Log::warning('RegistrationFlow: demo seeding failed', ['institute_id' => $institute->id, 'error' => $e->getMessage()]);
+            report($e);
+        }
+        if (class_exists(RoleTemplateService::class)) {
+            try {
+                app(RoleTemplateService::class)->seedForInstitute($institute);
+            } catch (\Exception $e) {
+                Log::warning('RegistrationFlow: role template seeding failed', ['institute_id' => $institute->id, 'error' => $e->getMessage()]);
+            }
         }
 
         // Auto-enable medical module for healthcare tenants
         if (($org['industry'] ?? null) === 'healthcare') {
             try {
-                app(\App\Services\MedicalModuleActivator::class)->activateForHealthcare($institute);
+                app(MedicalModuleActivator::class)->activateForHealthcare($institute);
             } catch (\Throwable $e) {
                 Log::warning('RegistrationFlow: medical module activation failed', [
                     'institute_id' => $institute->id,
@@ -468,7 +529,7 @@ class RegistrationFlowController extends Controller
         // Auto-enable education module for education tenants
         if (($org['industry'] ?? null) === 'education') {
             try {
-                app(\App\Services\EducationModuleActivator::class)->activateForEducation($institute);
+                app(EducationModuleActivator::class)->activateForEducation($institute);
             } catch (\Throwable $e) {
                 Log::warning('RegistrationFlow: education module activation failed', [
                     'institute_id' => $institute->id,
@@ -479,18 +540,17 @@ class RegistrationFlowController extends Controller
         }
 
         // Log the new user in? Spec says do not automatically log in after Step1, but after full flow should land on setup/dashboard. We will log in now.
-        \Illuminate\Support\Facades\Auth::guard('web')->login($user);
+        Auth::guard('web')->login($user);
         $request->session()->regenerate();
         session()->forget([self::PENDING_ID, self::SESSION_KEY]);
         // Clear onboarding session if any
-        \App\Http\Controllers\InstituteOnboardingController::clear();
+        InstituteOnboardingController::clear();
         Workspace::set($institute->id);
 
-        // Step 5 routing
-        if (($org['industry'] ?? null) === 'education') {
-            return redirect()->route('register.education.placeholder')->with('status', mawa_lang('workspace.created', ['name' => $institute->name]));
-        }
-        return redirect()->route('dashboard')->with('status', mawa_lang('workspace.created', ['name' => $institute->name]));
+        // Step 5 routing — package selection is mandatory before any dashboard.
+        return redirect()
+            ->route('register.package')
+            ->with('status', mawa_lang('workspace.created', ['name' => $institute->name]));
     }
 
     public function educationPlaceholder(Request $request): View
@@ -506,84 +566,113 @@ class RegistrationFlowController extends Controller
         $id = session(self::PENDING_ID);
         $pending = $id ? PendingRegistration::find($id) : null;
         // Fallback: resume via authenticated user (after logout) — continue from same step
-        if (!$pending && $request->user('web')) {
+        if (! $pending && $request->user('web')) {
             $email = $request->user('web')->email;
             $pending = PendingRegistration::where('email', $email)
                 ->whereNotNull('verified_at')
                 ->latest('id')->first();
-            if ($pending && !$pending->isAbandonedExpired() && !$pending->isGraceExpired()) {
+            if ($pending && ! $pending->isAbandonedExpired() && ! $pending->isGraceExpired()) {
                 // Restore session for continuity
                 session([self::PENDING_ID => $pending->id, self::SESSION_KEY => ['email' => $pending->email, 'verified' => true, 'step' => $this->detectStep($pending)]]);
+
                 return $pending;
             }
+
             return null;
         }
-        if (!$pending) {
+        if (! $pending) {
             return null;
         }
         // Schedule is NOT security boundary — enforce synchronously
         if ($pending->isVerified() ? $pending->isAbandonedExpired() : $pending->isGraceExpired()) {
-            try { $pending->delete(); } catch (\Throwable $e) {}
+            try {
+                $pending->delete();
+            } catch (\Throwable $e) {
+            }
             session()->forget([self::PENDING_ID, self::SESSION_KEY]);
+
             return null;
         }
-        if (!$pending->isVerified() && $pending->otp_expires_at && $pending->otp_expires_at->isPast() && $pending->verified_at === null) {
+        if (! $pending->isVerified() && $pending->otp_expires_at && $pending->otp_expires_at->isPast() && $pending->verified_at === null) {
             // OTP expired does not delete pending but blocks verification; keep pending for resend
         }
         // Prevent tampering: session email must match pending email
-        $sessionEmail = session(self::SESSION_KEY . '.email');
+        $sessionEmail = session(self::SESSION_KEY.'.email');
         if ($sessionEmail && $sessionEmail !== $pending->email) {
             // Allow authenticated user email to override session tampering check for resume
             $authEmail = $request->user('web')?->email;
             if ($authEmail !== $pending->email) {
                 session()->forget([self::PENDING_ID, self::SESSION_KEY]);
+
                 return null;
             }
         }
+
         return $pending;
     }
 
-    public static function findPendingForUser(\App\Models\User $user): ?PendingRegistration
+    public static function findPendingForUser(User $user): ?PendingRegistration
     {
         return self::findPendingForUserStatic($user);
     }
 
-    public static function resumeRouteForUser(\App\Models\User $user): ?string
+    public static function resumeRouteForUser(User $user): ?string
     {
         $pending = self::findPendingForUserStatic($user);
-        if (!$pending || $pending->isAbandonedExpired()) return null;
-        if (empty($pending->organization_data)) return 'register.organization';
-        if (empty($pending->address_data)) return 'register.address';
+        if (! $pending || $pending->isAbandonedExpired()) {
+            return null;
+        }
+        if (empty($pending->organization_data)) {
+            return 'register.organization';
+        }
+        if (empty($pending->address_data)) {
+            return 'register.address';
+        }
+
         return null; // completed — no redirect
     }
 
-    protected static function findPendingForUserStatic(\App\Models\User $user): ?PendingRegistration
+    protected static function findPendingForUserStatic(User $user): ?PendingRegistration
     {
         $p = PendingRegistration::where('email', $user->email)->whereNotNull('verified_at')->latest('id')->first();
-        if (!$p || $p->isAbandonedExpired() || $p->isGraceExpired()) return null;
+        if (! $p || $p->isAbandonedExpired() || $p->isGraceExpired()) {
+            return null;
+        }
+
         return $p;
     }
 
     protected function detectStep(PendingRegistration $pending): int
     {
-        if (!$pending->isVerified()) return 1;
-        if (empty($pending->organization_data)) return 2;
-        if (empty($pending->address_data)) return 3;
+        if (! $pending->isVerified()) {
+            return 1;
+        }
+        if (empty($pending->organization_data)) {
+            return 2;
+        }
+        if (empty($pending->address_data)) {
+            return 3;
+        }
+
         return 4;
     }
 
-    public static function isOnboardingIncomplete(\App\Models\User $user): bool
+    public static function isOnboardingIncomplete(User $user): bool
     {
         $p = self::findPendingForUserStatic($user);
-        return $p !== null && !$p->isAbandonedExpired();
+
+        return $p !== null && ! $p->isAbandonedExpired();
     }
 
-    protected function ensureUserFromPending(PendingRegistration $pending): \App\Models\User
+    protected function ensureUserFromPending(PendingRegistration $pending): User
     {
-        $existing = \App\Models\User::where('email', $pending->email)->first();
-        if ($existing) return $existing;
+        $existing = User::where('email', $pending->email)->first();
+        if ($existing) {
+            return $existing;
+        }
         $local = explode('@', $pending->email)[0] ?? 'User';
-        return \App\Models\User::create([
+
+        return User::create([
             'name' => ucfirst($local),
             'first_name' => ucfirst($local),
             'last_name' => '',
@@ -598,33 +687,44 @@ class RegistrationFlowController extends Controller
 
     protected function remainingCooldown(PendingRegistration $pending): int
     {
-        if (!$pending->last_sent_at) return 0;
-        $cooldown = (int) \App\Support\IdentityConfig::emailOtp('resend_throttle_seconds', 60);
+        if (! $pending->last_sent_at) {
+            return 0;
+        }
+        $cooldown = (int) IdentityConfig::emailOtp('resend_throttle_seconds', 60);
         $elapsed = now()->diffInSeconds($pending->last_sent_at, false);
         // diffInSeconds returns absolute; compute manually
         $elapsed = now()->timestamp - $pending->last_sent_at->timestamp;
         $remaining = $cooldown - $elapsed;
+
         return $remaining > 0 ? $remaining : 0;
     }
 
     protected function maskEmail(string $email): string
     {
         $parts = explode('@', $email);
-        if (count($parts) !== 2) return '***';
+        if (count($parts) !== 2) {
+            return '***';
+        }
         $local = $parts[0];
         $domain = $parts[1] ?? '';
-        if (strlen($local) <= 2) return str_repeat('*', strlen($local)) . '@' . $domain;
-        return substr($local, 0, 1) . str_repeat('*', max(1, strlen($local)-2)) . substr($local, -1) . '@' . $domain;
+        if (strlen($local) <= 2) {
+            return str_repeat('*', strlen($local)).'@'.$domain;
+        }
+
+        return substr($local, 0, 1).str_repeat('*', max(1, strlen($local) - 2)).substr($local, -1).'@'.$domain;
     }
 
     protected function geoAddress(string $countryName): ?array
     {
         $country = Country::query()->where('name', $countryName)->where('status', true)->first();
-        if ($country === null) return null;
-        $labels = \App\Support\GeoHierarchy::levelLabels($country);
-        $level1 = \App\Models\AdministrativeUnit::query()
+        if ($country === null) {
+            return null;
+        }
+        $labels = GeoHierarchy::levelLabels($country);
+        $level1 = AdministrativeUnit::query()
             ->where('country_id', $country->id)->where('status', true)->whereNull('parent_id')
             ->whereHas('level', fn ($q) => $q->where('level_number', 1))->orderBy('name')->get();
+
         return [
             'country' => $country,
             'country_id' => $country->id,
@@ -637,20 +737,29 @@ class RegistrationFlowController extends Controller
 
     protected function uniqueSlug(string $name): string
     {
-        $base = \Illuminate\Support\Str::slug($name) ?: 'institute';
-        $slug = $base; $suffix = 2;
-        while (Institute::query()->where('slug', $slug)->exists()) { $slug = $base.'-'.$suffix; $suffix++; }
+        $base = Str::slug($name) ?: 'institute';
+        $slug = $base;
+        $suffix = 2;
+        while (Institute::query()->where('slug', $slug)->exists()) {
+            $slug = $base.'-'.$suffix;
+            $suffix++;
+        }
+
         return $slug;
     }
 
     protected function assignDefaultLearningStructure(Institute $institute): void
     {
-        $existing = \App\Models\InstituteSetting::withoutGlobalScope('institute')->where('institute_id', $institute->id)->value('structure_template_id');
-        if ($existing) return;
-        $resolved = app(\App\Services\LearningStructureResolver::class)->resolveTemplate($institute);
+        $existing = InstituteSetting::withoutGlobalScope('institute')->where('institute_id', $institute->id)->value('structure_template_id');
+        if ($existing) {
+            return;
+        }
+        $resolved = app(LearningStructureResolver::class)->resolveTemplate($institute);
         $template = $resolved['template'] ?? null;
-        if (! $template) return;
-        \App\Models\InstituteSetting::withoutGlobalScope('institute')->updateOrCreate(['institute_id' => $institute->id], ['structure_template_id' => $template->id]);
+        if (! $template) {
+            return;
+        }
+        InstituteSetting::withoutGlobalScope('institute')->updateOrCreate(['institute_id' => $institute->id], ['structure_template_id' => $template->id]);
     }
 
     protected function previewDefaultStructure(array $selection): array
@@ -658,12 +767,19 @@ class RegistrationFlowController extends Controller
         try {
             $dummy = new Institute(['country' => $selection['country'], 'industry' => $selection['industry'], 'sub_industry' => $selection['sub_industry']]);
             $country = Country::where('name', $selection['country'])->first();
-            if ($country) $dummy->country_id = $country->id;
-            $resolved = app(\App\Services\LearningStructureResolver::class)->resolveTemplate($dummy);
+            if ($country) {
+                $dummy->country_id = $country->id;
+            }
+            $resolved = app(LearningStructureResolver::class)->resolveTemplate($dummy);
             $template = $resolved['template'] ?? null;
-            if (! $template) return ['template' => null, 'levels' => []];
+            if (! $template) {
+                return ['template' => null, 'levels' => []];
+            }
             $levels = $template->levels()->orderBy('level_order')->get();
+
             return ['template' => $template, 'levels' => $levels];
-        } catch (\Throwable) { return ['template' => null, 'levels' => []]; }
+        } catch (\Throwable) {
+            return ['template' => null, 'levels' => []];
+        }
     }
 }

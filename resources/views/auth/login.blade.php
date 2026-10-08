@@ -102,8 +102,6 @@
 
                     <p class="auth-switch mt-4">
                         <a href="{{ route('login') }}"><i class="bi bi-person-badge"></i> {{ mawa_e('auth.institute_portal') }}</a>
-                        <span class="mx-1">/</span>
-                        <a href="{{ route('admin.login') }}"><i class="bi bi-shield-lock"></i> {{ mawa_e('auth.admin_portal') }}</a>
                     </p>
 
                     <hr class="my-4">

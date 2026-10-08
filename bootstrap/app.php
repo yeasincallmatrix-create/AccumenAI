@@ -1,13 +1,16 @@
 <?php
 
-use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\Api\IdempotencyMiddleware;
+use App\Http\Middleware\AssignRequestId;
+use App\Http\Middleware\AuthenticateLabDevice;
 use App\Http\Middleware\CheckFeatureAccess;
 use App\Http\Middleware\CheckModuleAccess;
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\DenyTeacherFromFinance;
 use App\Http\Middleware\EnsureAiEnabled;
 use App\Http\Middleware\EnsureInstituteContext;
+use App\Http\Middleware\EnsureLivewireContext;
+use App\Http\Middleware\EnsurePackageSelected;
 use App\Http\Middleware\FinanceWriteGate;
 use App\Http\Middleware\ForceJsonResponse;
 use App\Http\Middleware\MedicalDomain;
@@ -19,15 +22,21 @@ use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetFortifyGuard;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\SetTenantContext;
+use App\Support\TenantContext;
+use App\Support\Workspace;
 use Illuminate\Auth\Middleware\EnsureEmailIsVerified;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Session\TokenMismatchException;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -66,6 +75,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'force.json' => ForceJsonResponse::class,
             'idempotency' => IdempotencyMiddleware::class,
             'platform.maintenance' => PlatformMaintenance::class,
+            // Dashboard stays locked until the organization picks a package.
+            'package.selected' => EnsurePackageSelected::class,
             // Phase 0 — HMS Foundation (no app/Http/Kernel.php on Laravel 12;
             // aliases registered here instead).
             'medical' => MedicalDomain::class,
@@ -73,7 +84,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'medical_module' => MedicalModuleAccess::class,
             // Phase 4 lab analyzer integration: device (analyzer/gateway)
             // authentication, separate from user auth guards.
-            'lab.device' => \App\Http\Middleware\AuthenticateLabDevice::class,
+            'lab.device' => AuthenticateLabDevice::class,
         ]);
 
         $middleware->web(append: [
@@ -82,6 +93,14 @@ return Application::configure(basePath: dirname(__DIR__))
             SetLocale::class,
             SecurityHeaders::class,
             PlatformMaintenance::class,
+            // Locks the dashboard (and every tenant route) until the
+            // organization has picked a package during registration.
+            EnsurePackageSelected::class,
+            // Livewire's update/upload/preview routes ship with only the `web`
+            // group, so they never see the page routes' `auth` + `tenant`
+            // middleware: bind guard + tenant context there or every component
+            // re-render queries tenant-scoped models with the scope disabled.
+            EnsureLivewireContext::class,
         ]);
 
         $middleware->api(append: [
@@ -178,32 +197,35 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         // Friendly 429 — convert throttle errors to redirect-back with Retry-After message
         // instead of raw "Too Many Requests" page. Affects super-admin password reset (routes/auth.php:35 throttle:5,10)
-        $exceptions->render(function (\Illuminate\Http\Exceptions\ThrottleRequestsException $e, Request $request) {
+        $exceptions->render(function (ThrottleRequestsException $e, Request $request) {
             $retryAfter = $e->getHeaders()['Retry-After'] ?? 60;
             $seconds = (int) $retryAfter;
             $msg = $seconds > 60
-                ? 'Too many attempts. Please try again in '.ceil($seconds/60).' minute(s).'
+                ? 'Too many attempts. Please try again in '.ceil($seconds / 60).' minute(s).'
                 : 'Too many attempts. Please try again in '.$seconds.' seconds.';
             if ($request->expectsJson() || $request->ajax() || $request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $msg, 'retry_after' => $seconds], 429)
                     ->withHeaders(['Retry-After' => (string) $seconds]);
             }
+
             // For web, redirect back with error bag so forgot-password.blade.php shows it
             return back()->withErrors(['email' => $msg])->withInput();
         });
-        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpException $e, Request $request) {
+        $exceptions->render(function (HttpException $e, Request $request) {
             if ($e->getStatusCode() === 429) {
                 $retryAfter = $e->getHeaders()['Retry-After'] ?? 60;
                 $seconds = (int) $retryAfter;
                 $msg = $seconds > 60
-                    ? 'Too many attempts. Please try again in '.ceil($seconds/60).' minute(s).'
+                    ? 'Too many attempts. Please try again in '.ceil($seconds / 60).' minute(s).'
                     : 'Too many attempts. Please try again in '.$seconds.' seconds.';
                 if ($request->expectsJson() || $request->ajax() || $request->wantsJson()) {
                     return response()->json(['success' => false, 'message' => $msg, 'retry_after' => $seconds], 429)
                         ->withHeaders(['Retry-After' => (string) $seconds]);
                 }
+
                 return back()->withErrors(['email' => $msg])->withInput();
             }
+
             return null;
         });
         $exceptions->render(function (ValidationException $e, Request $request) {
@@ -222,17 +244,34 @@ return Application::configure(basePath: dirname(__DIR__))
         // When session/CSRF expired, the POST /logout form would show the
         // generic 419 page instead of logging out. We intercept it, clear
         // any residue, and redirect to the correct login portal.
-        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, Request $request) {
+        $exceptions->render(function (TokenMismatchException $e, Request $request) {
             $isLogout = $request->is('logout') || $request->is('*/logout') || $request->routeIs('logout') || $request->routeIs('logout.get') || $request->routeIs('guardian.logout') || $request->routeIs('guardian.logout.get');
 
             if ($isLogout) {
                 // Best-effort session invalidation even if token mismatched
-                try { $request->session()->invalidate(); } catch (\Throwable $_) {}
-                try { $request->session()->regenerateToken(); } catch (\Throwable $_) {}
-                try { \App\Support\TenantContext::clear(); } catch (\Throwable $_) {}
-                try { \App\Support\Workspace::clear(); } catch (\Throwable $_) {}
+                try {
+                    $request->session()->invalidate();
+                } catch (Throwable $_) {
+                }
+                try {
+                    $request->session()->regenerateToken();
+                } catch (Throwable $_) {
+                }
+                try {
+                    TenantContext::clear();
+                } catch (Throwable $_) {
+                }
+                try {
+                    Workspace::clear();
+                } catch (Throwable $_) {
+                }
                 foreach (['web', 'institute_user', 'platform_admin', 'guardian'] as $guard) {
-                    try { if (\Illuminate\Support\Facades\Auth::guard($guard)->check()) \Illuminate\Support\Facades\Auth::guard($guard)->logout(); } catch (\Throwable $_) {}
+                    try {
+                        if (Auth::guard($guard)->check()) {
+                            Auth::guard($guard)->logout();
+                        }
+                    } catch (Throwable $_) {
+                    }
                 }
 
                 if ($request->expectsJson() || $request->ajax() || $request->wantsJson()) {

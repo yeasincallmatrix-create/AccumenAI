@@ -2,10 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\Auth\RegistrationFlowController;
 use App\Models\Institute;
 use App\Models\PendingRegistration;
-use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
@@ -24,6 +25,7 @@ class RegistrationFlowTest extends TestCase
         ]);
         // Simulate send then verify via service
         $pending->update(['verified_at' => now()]);
+
         return $pending;
     }
 
@@ -61,7 +63,7 @@ class RegistrationFlowTest extends TestCase
             'otp_expires_at' => now()->addMinutes(10),
             'expires_at' => now()->addHours(24),
         ]);
-        $this->withSession([\App\Http\Controllers\Auth\RegistrationFlowController::PENDING_ID => $pending->id, \App\Http\Controllers\Auth\RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => false]])
+        $this->withSession([RegistrationFlowController::PENDING_ID => $pending->id, RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => false]])
             ->post('/register/verify-otp', ['otp' => '123456'])
             ->assertRedirect(route('register.organization'));
         $this->assertNotNull($pending->fresh()->verified_at);
@@ -76,7 +78,7 @@ class RegistrationFlowTest extends TestCase
             'otp_expires_at' => now()->addMinutes(10),
             'expires_at' => now()->addHours(24),
         ]);
-        $this->withSession([\App\Http\Controllers\Auth\RegistrationFlowController::PENDING_ID => $pending->id, \App\Http\Controllers\Auth\RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => false]])
+        $this->withSession([RegistrationFlowController::PENDING_ID => $pending->id, RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => false]])
             ->post('/register/verify-otp', ['otp' => '999999'])
             ->assertSessionHasErrors('otp');
         $this->assertNull($pending->fresh()->verified_at);
@@ -92,7 +94,7 @@ class RegistrationFlowTest extends TestCase
             'otp_expires_at' => now()->subMinutes(5),
             'expires_at' => now()->addHours(24),
         ]);
-        $this->withSession([\App\Http\Controllers\Auth\RegistrationFlowController::PENDING_ID => $pending->id, \App\Http\Controllers\Auth\RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => false]])
+        $this->withSession([RegistrationFlowController::PENDING_ID => $pending->id, RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => false]])
             ->post('/register/verify-otp', ['otp' => '123456'])
             ->assertSessionHasErrors('otp');
     }
@@ -108,8 +110,8 @@ class RegistrationFlowTest extends TestCase
             'expires_at' => now()->addHours(24),
         ]);
         // Put cache throttle manually to simulate cooldown
-        \Illuminate\Support\Facades\Cache::put('pending_otp_send:'.$pending->id.':'.$pending->email, 1, 60);
-        $this->withSession([\App\Http\Controllers\Auth\RegistrationFlowController::PENDING_ID => $pending->id, \App\Http\Controllers\Auth\RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => false]])
+        Cache::put('pending_otp_send:'.$pending->id.':'.$pending->email, 1, 60);
+        $this->withSession([RegistrationFlowController::PENDING_ID => $pending->id, RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => false]])
             ->post('/register/resend-otp')
             ->assertSessionHasErrors('otp');
     }
@@ -124,7 +126,7 @@ class RegistrationFlowTest extends TestCase
             'attempts' => 5,
             'expires_at' => now()->addHours(24),
         ]);
-        $this->withSession([\App\Http\Controllers\Auth\RegistrationFlowController::PENDING_ID => $pending->id, \App\Http\Controllers\Auth\RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => false]])
+        $this->withSession([RegistrationFlowController::PENDING_ID => $pending->id, RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => false]])
             ->post('/register/verify-otp', ['otp' => '123456'])
             ->assertSessionHasErrors('otp');
     }
@@ -138,7 +140,7 @@ class RegistrationFlowTest extends TestCase
             'otp_expires_at' => now()->addMinutes(10),
             'expires_at' => now()->addHours(24),
         ]);
-        $this->withSession([\App\Http\Controllers\Auth\RegistrationFlowController::PENDING_ID => $pending->id, \App\Http\Controllers\Auth\RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => false]])
+        $this->withSession([RegistrationFlowController::PENDING_ID => $pending->id, RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => false]])
             ->get('/register/organization')
             ->assertRedirect(route('register.otp.form'));
     }
@@ -153,7 +155,7 @@ class RegistrationFlowTest extends TestCase
             'otp_expires_at' => now()->addMinutes(10),
             'expires_at' => now()->addHours(24),
         ]);
-        $this->withSession([\App\Http\Controllers\Auth\RegistrationFlowController::PENDING_ID => $pending->id, \App\Http\Controllers\Auth\RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => false]])
+        $this->withSession([RegistrationFlowController::PENDING_ID => $pending->id, RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => false]])
             ->post('/register/organization', [
                 'organization_name' => 'Hacker Org',
                 'first_name' => 'Hacker',
@@ -169,7 +171,7 @@ class RegistrationFlowTest extends TestCase
     public function test_successful_org_after_otp(): void
     {
         $pending = $this->createVerifiedPending('org-success@example.test');
-        $this->withSession([\App\Http\Controllers\Auth\RegistrationFlowController::PENDING_ID => $pending->id, \App\Http\Controllers\Auth\RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => true, 'step' => 2]])
+        $this->withSession([RegistrationFlowController::PENDING_ID => $pending->id, RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => true, 'step' => 2]])
             ->post('/register/organization', [
                 'organization_name' => 'Success Org',
                 'first_name' => 'Test',
@@ -186,7 +188,7 @@ class RegistrationFlowTest extends TestCase
     {
         $pending = $this->createVerifiedPending('subdep@example.test');
         // Missing sub_industry should fail for education in Bangladesh
-        $this->withSession([\App\Http\Controllers\Auth\RegistrationFlowController::PENDING_ID => $pending->id, \App\Http\Controllers\Auth\RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => true]])
+        $this->withSession([RegistrationFlowController::PENDING_ID => $pending->id, RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => true]])
             ->post('/register/organization', [
                 'organization_name' => 'Test Org',
                 'first_name' => 'A', 'last_name' => 'B', 'phone' => '01711111112',
@@ -195,7 +197,7 @@ class RegistrationFlowTest extends TestCase
                 'sub_industry' => '',
             ])->assertSessionHasErrors('sub_industry');
         // Valid sub passes
-        $this->withSession([\App\Http\Controllers\Auth\RegistrationFlowController::PENDING_ID => $pending->id, \App\Http\Controllers\Auth\RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => true]])
+        $this->withSession([RegistrationFlowController::PENDING_ID => $pending->id, RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => true]])
             ->post('/register/organization', [
                 'organization_name' => 'Test Org2',
                 'first_name' => 'A', 'last_name' => 'B', 'phone' => '01711111113',
@@ -209,9 +211,9 @@ class RegistrationFlowTest extends TestCase
     {
         $pending = $this->createVerifiedPending('geo@example.test');
         $pending->update(['organization_data' => [
-            'country' => 'Bangladesh','industry' => 'education','sub_industry' => 'school','organization_name'=>'Geo Org','first_name'=>'A','last_name'=>'B','phone'=>'01711111114'
+            'country' => 'Bangladesh', 'industry' => 'education', 'sub_industry' => 'school', 'organization_name' => 'Geo Org', 'first_name' => 'A', 'last_name' => 'B', 'phone' => '01711111114',
         ]]);
-        $this->withSession([\App\Http\Controllers\Auth\RegistrationFlowController::PENDING_ID => $pending->id, \App\Http\Controllers\Auth\RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => true]])
+        $this->withSession([RegistrationFlowController::PENDING_ID => $pending->id, RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => true]])
             ->get('/register/address')
             ->assertOk()
             ->assertSee('name="country_id"', false);
@@ -221,11 +223,11 @@ class RegistrationFlowTest extends TestCase
     {
         $pending = $this->createVerifiedPending('edu-route@example.test');
         $pending->update(['organization_data' => [
-            'country' => 'Bangladesh','industry' => 'education','sub_industry' => 'school','organization_name'=>'Edu Org','first_name'=>'A','last_name'=>'B','phone'=>'01711111115'
+            'country' => 'Bangladesh', 'industry' => 'education', 'sub_industry' => 'school', 'organization_name' => 'Edu Org', 'first_name' => 'A', 'last_name' => 'B', 'phone' => '01711111115',
         ]]);
-        $this->withSession([\App\Http\Controllers\Auth\RegistrationFlowController::PENDING_ID => $pending->id, \App\Http\Controllers\Auth\RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => true]])
+        $this->withSession([RegistrationFlowController::PENDING_ID => $pending->id, RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => true]])
             ->post('/register/address', ['address' => 'Dhaka'])
-            ->assertRedirect(route('register.education.placeholder'));
+            ->assertRedirect(route('register.package'));
         $this->assertDatabaseHas('users', ['email' => 'edu-route@example.test']);
         $this->assertDatabaseHas('institutes', ['name' => 'Edu Org']);
     }
@@ -234,11 +236,11 @@ class RegistrationFlowTest extends TestCase
     {
         $pending = $this->createVerifiedPending('nonedu@example.test');
         $pending->update(['organization_data' => [
-            'country' => 'Bangladesh','industry' => 'healthcare','sub_industry' => 'hospital','organization_name'=>'Health Org','first_name'=>'A','last_name'=>'B','phone'=>'01711111116'
+            'country' => 'Bangladesh', 'industry' => 'healthcare', 'sub_industry' => 'hospital', 'organization_name' => 'Health Org', 'first_name' => 'A', 'last_name' => 'B', 'phone' => '01711111116',
         ]]);
-        $this->withSession([\App\Http\Controllers\Auth\RegistrationFlowController::PENDING_ID => $pending->id, \App\Http\Controllers\Auth\RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => true]])
+        $this->withSession([RegistrationFlowController::PENDING_ID => $pending->id, RegistrationFlowController::SESSION_KEY => ['email' => $pending->email, 'verified' => true]])
             ->post('/register/address', ['address' => 'Dhaka'])
-            ->assertRedirect(route('dashboard'));
+            ->assertRedirect(route('register.package'));
         $this->assertDatabaseHas('institutes', ['name' => 'Health Org']);
     }
 
@@ -261,7 +263,7 @@ class RegistrationFlowTest extends TestCase
             'verified_at' => now(),
         ]);
         // Try to use session email mismatch
-        $this->withSession([\App\Http\Controllers\Auth\RegistrationFlowController::PENDING_ID => $other->id, \App\Http\Controllers\Auth\RegistrationFlowController::SESSION_KEY => ['email' => 'tenant@example.test', 'verified' => true]])
+        $this->withSession([RegistrationFlowController::PENDING_ID => $other->id, RegistrationFlowController::SESSION_KEY => ['email' => 'tenant@example.test', 'verified' => true]])
             ->get('/register/organization')
             ->assertRedirect(route('register.otp.form'));
     }

@@ -14,7 +14,7 @@
         <div class="col-md-8 col-lg-6">
             <div class="card">
                 <div class="card-body p-4 text-center">
-                    @include('auth.partials.register-progress', ['step' => 5])
+                    @include('auth.partials.register-progress', ['step' => 6])
                     <h1 class="h4">Education Onboarding</h1>
                     <p class="text-muted">This is the extension point for Education-specific onboarding. It will be implemented in a follow-up task.</p>
                     <p class="text-muted small">Institute: {{ $institute->name ?? '—' }} ({{ $institute->industry ?? '' }})</p>
