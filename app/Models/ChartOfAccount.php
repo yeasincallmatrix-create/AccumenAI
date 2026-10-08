@@ -33,6 +33,19 @@ class ChartOfAccount extends Model
     ];
 
     /**
+     * Financial statement each type flows into: asset/liability/equity
+     * are permanent (Balance Sheet) accounts; income/expense are
+     * temporary (Profit & Loss) accounts closed at year end.
+     */
+    public const STATEMENT_BY_TYPE = [
+        'asset' => 'Balance Sheet',
+        'liability' => 'Balance Sheet',
+        'equity' => 'Balance Sheet',
+        'income' => 'Profit & Loss',
+        'expense' => 'Profit & Loss',
+    ];
+
+    /**
      * Tables holding RESTRICT foreign keys to chart_of_accounts.id. Each is
      * checked before delete so a referenced account is blocked with a clear
      * DomainException instead of a raw SQLSTATE 23000 from the database.
@@ -257,6 +270,31 @@ class ChartOfAccount extends Model
     protected static array $industrySlugCache = [];
 
     /**
+     * Cached existence of the chart_of_accounts.industries column, so
+     * scopeVisible() and the COA popup's unique-code rule don't run a
+     * SHOW COLUMNS query on every COA query within the same process.
+     */
+    protected static ?bool $industriesColumnAvailable = null;
+
+    /**
+     * Whether the Phase-F industry tagging column exists (cached).
+     */
+    public static function industriesTaggingAvailable(): bool
+    {
+        if (self::$industriesColumnAvailable !== null) {
+            return self::$industriesColumnAvailable;
+        }
+
+        try {
+            self::$industriesColumnAvailable = Schema::hasColumn('chart_of_accounts', 'industries');
+        } catch (\Throwable) {
+            self::$industriesColumnAvailable = false;
+        }
+
+        return self::$industriesColumnAvailable;
+    }
+
+    /**
      * Resolve an institute's industry slug (Phase F - industry-scoped COA).
      *
      * IMPORTANT: never use `$institute->industry->slug` - the `industry`
@@ -404,12 +442,7 @@ class ChartOfAccount extends Model
     public function scopeVisible($query, int $instituteId)
     {
         $slug = static::resolveIndustrySlug($instituteId);
-
-        try {
-            $hasIndustries = Schema::hasColumn('chart_of_accounts', 'industries');
-        } catch (\Throwable) {
-            $hasIndustries = false;
-        }
+        $hasIndustries = static::industriesTaggingAvailable();
 
         // Pre-Phase-F schema: no industry filtering possible.
         if (! $hasIndustries) {
@@ -448,6 +481,15 @@ class ChartOfAccount extends Model
     public function isGlobal(): bool
     {
         return is_null($this->institute_id) && (bool) $this->is_system;
+    }
+
+    /**
+     * Which financial statement reports this account on:
+     * "Balance Sheet" or "Profit & Loss".
+     */
+    public function reportStatement(): string
+    {
+        return self::STATEMENT_BY_TYPE[$this->type] ?? '—';
     }
 
     public function isEditableBy(int $instituteId): bool

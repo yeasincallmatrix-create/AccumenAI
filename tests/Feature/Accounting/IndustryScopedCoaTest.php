@@ -2,14 +2,17 @@
 
 namespace Tests\Feature\Accounting;
 
+use App\Livewire\ChartOfAccountList;
 use App\Models\AccountGroup;
 use App\Models\ChartOfAccount;
 use App\Models\Industry;
 use App\Models\Institute;
 use App\Models\InstituteUser;
 use App\Models\Role;
+use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Str;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
@@ -67,6 +70,14 @@ class IndustryScopedCoaTest extends TestCase
                 ->value('id');
     }
 
+    protected function tearDown(): void
+    {
+        TenantContext::clear();
+        ChartOfAccount::clearIndustrySlugCache();
+
+        parent::tearDown();
+    }
+
     public function test_school_sees_tuition_via_training_center_slug(): void
     {
         $tenant = $this->tenantWithIndustry('training_center');
@@ -113,5 +124,39 @@ class IndustryScopedCoaTest extends TestCase
 
         $visibleIds = ChartOfAccount::visibleTo($tenant->id)->pluck('id')->toArray();
         $this->assertContains($custom->id, $visibleIds);
+    }
+
+    public function test_coa_list_hides_cross_industry_global_accounts(): void
+    {
+        $tenant = $this->tenantWithIndustry('healthcare');
+        TenantContext::set($tenant->id);
+
+        // Search keeps the result set under one page so pagination can't
+        // mask a hidden/visible row.
+        $codes = Livewire::test(ChartOfAccountList::class)
+            ->set('search', 'Fees')
+            ->viewData('accounts')
+            ->pluck('code');
+
+        $this->assertContains('4000.3', $codes, 'Universal account must stay visible');
+        $this->assertNotContains('4100.1', $codes, 'Education Tuition Fees must be hidden');
+        $this->assertNotContains('4100.2', $codes, 'Education Admission Fees must be hidden');
+        $this->assertNotContains('4200.2', $codes, 'Training Registration Fees must be hidden');
+    }
+
+    public function test_coa_list_shows_own_industry_globals_only(): void
+    {
+        $tenant = $this->tenantWithIndustry('education');
+        TenantContext::set($tenant->id);
+
+        $codes = Livewire::test(ChartOfAccountList::class)
+            ->set('search', 'Fees')
+            ->viewData('accounts')
+            ->pluck('code');
+
+        $this->assertContains('4100.1', $codes, 'Own-industry Tuition Fees must be visible');
+        $this->assertContains('4100.2', $codes, 'Own-industry Admission Fees must be visible');
+        $this->assertContains('4000.3', $codes, 'Universal account must stay visible');
+        $this->assertNotContains('4200.2', $codes, 'Training Registration Fees must be hidden');
     }
 }

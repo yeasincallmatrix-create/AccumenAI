@@ -116,6 +116,141 @@ class OpeningBalanceService
     }
 
     /**
+     * Record (or replace) the opening balance of one account from the New
+     * Account popup or the list page's Edit Opening Balance popup. Unlike
+     * upsert(), the batch total-debit === total-credit guard cannot apply
+     * here: the counterpart lines for this fiscal year are entered later on
+     * the Opening Balances page, so a single non-zero row is a valid interim
+     * state.
+     */
+    public function upsertSingle(int $instituteId, ?int $branchId, FiscalYear $year, int $coaId, float $debit, float $credit, ?int $actorId = null): void
+    {
+        $debit = round($debit, 4);
+        $credit = round($credit, 4);
+
+        if ($debit < 0 || $credit < 0) {
+            throw ValidationException::withMessages([
+                'form.opening_balance' => 'Opening balance amounts cannot be negative.',
+            ]);
+        }
+
+        if ($debit === 0.0 && $credit === 0.0) {
+            return;
+        }
+
+        // Tenant-owned rows plus globals in this institute's visible
+        // namespace (universal or industry-tagged): opening balances are
+        // tenant data even when they reference a shared global account.
+        $account = ChartOfAccount::visible($instituteId)
+            ->where('id', $coaId)
+            ->where(fn ($query) => $query
+                ->where('branch_id', $branchId)
+                ->orWhereNull('branch_id'))
+            ->first(['id', 'type']);
+
+        if ($account === null) {
+            throw ValidationException::withMessages([
+                'form' => 'The account is not available to this institute.',
+            ]);
+        }
+
+        // Real-life rule: only balance sheet accounts (asset, liability,
+        // equity) carry an opening position — cash/bank/payables/capital
+        // etc. P&L accounts start fresh each period.
+        if (! in_array($account->type, ['asset', 'liability', 'equity'], true)) {
+            throw ValidationException::withMessages([
+                'form' => 'Opening balances apply to asset, liability, or equity (balance sheet) accounts only.',
+            ]);
+        }
+
+        DB::transaction(function () use ($instituteId, $branchId, $year, $coaId, $debit, $credit, $actorId) {
+            $existing = OpeningBalance::query()
+                ->where('institute_id', $instituteId)
+                ->where('fiscal_year_id', $year->id)
+                ->where('coa_id', $coaId)
+                ->when($branchId === null, fn ($query) => $query->whereNull('branch_id'), fn ($query) => $query->where('branch_id', $branchId))
+                ->first();
+
+            if ($existing !== null) {
+                $existing->forceFill([
+                    'debit' => $debit,
+                    'credit' => $credit,
+                    'updated_by' => $actorId,
+                ])->save();
+            } else {
+                OpeningBalance::create([
+                    'institute_id' => $instituteId,
+                    'branch_id' => $branchId,
+                    'fiscal_year_id' => $year->id,
+                    'coa_id' => $coaId,
+                    'debit' => $debit,
+                    'credit' => $credit,
+                    'source' => 'manual',
+                    'created_by' => $actorId,
+                ]);
+            }
+
+            $this->audit->log($instituteId, [
+                'branch_id' => $branchId,
+                'actor_type' => 'user',
+                'actor_id' => $actorId,
+                'action' => 'create',
+                'entity_type' => 'opening_balance',
+                'entity_id' => $year->id,
+                'after_payload' => ['fiscal_year' => $year->name, 'coa_id' => $coaId, 'debit' => $debit, 'credit' => $credit],
+            ]);
+        });
+    }
+
+    /**
+     * Clear the opening balance of one account (blank amount in the list
+     * page's Edit Opening Balance popup). The row is hard-deleted on
+     * purpose: the unique key (institute, branch, fiscal_year, coa)
+     * ignores deleted_at, so a soft-deleted row would block any future
+     * write for the same key. Returns whether a row was removed.
+     */
+    public function removeSingle(int $instituteId, ?int $branchId, FiscalYear $year, int $coaId, ?int $actorId): bool
+    {
+        $owned = ChartOfAccount::visible($instituteId)
+            ->where('id', $coaId)
+            ->where(fn ($query) => $query
+                ->where('branch_id', $branchId)
+                ->orWhereNull('branch_id'))
+            ->exists();
+
+        if (! $owned) {
+            throw ValidationException::withMessages([
+                'form' => 'The account is not available to this institute.',
+            ]);
+        }
+
+        $existing = OpeningBalance::query()
+            ->where('institute_id', $instituteId)
+            ->where('fiscal_year_id', $year->id)
+            ->where('coa_id', $coaId)
+            ->when($branchId === null, fn ($query) => $query->whereNull('branch_id'), fn ($query) => $query->where('branch_id', $branchId))
+            ->first();
+
+        if ($existing === null) {
+            return false;
+        }
+
+        $existing->forceDelete();
+
+        $this->audit->log($instituteId, [
+            'branch_id' => $branchId,
+            'actor_type' => 'user',
+            'actor_id' => $actorId,
+            'action' => 'delete',
+            'entity_type' => 'opening_balance',
+            'entity_id' => $year->id,
+            'after_payload' => ['fiscal_year' => $year->name, 'coa_id' => $coaId, 'cleared' => true],
+        ]);
+
+        return true;
+    }
+
+    /**
      * @param  array<int, array{coa_id: int, debit: float, credit: float}>  $entries
      * @return array<int, array{coa_id: int, debit: float, credit: float}>
      */
@@ -140,17 +275,25 @@ class OpeningBalanceService
                 continue;
             }
 
-            $owned = ChartOfAccount::query()
+            $account = ChartOfAccount::query()
                 ->where('institute_id', $instituteId)
                 ->where('id', $coaId)
                 ->where(fn ($query) => $query
                     ->where('branch_id', $branchId)
                     ->orWhereNull('branch_id'))
-                ->exists();
+                ->first(['id', 'type']);
 
-            if (! $owned) {
+            if ($account === null) {
                 throw ValidationException::withMessages([
                     'entries' => 'One or more accounts do not belong to this institute or its branch.',
+                ]);
+            }
+
+            // Same real-life rule as the popups: P&L accounts never carry
+            // an opening balance, even via a tampered HTTP payload.
+            if (! in_array($account->type, ['asset', 'liability', 'equity'], true)) {
+                throw ValidationException::withMessages([
+                    'entries' => 'Opening balances apply to asset, liability, or equity (balance sheet) accounts only.',
                 ]);
             }
 

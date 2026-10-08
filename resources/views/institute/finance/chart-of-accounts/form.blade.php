@@ -5,11 +5,28 @@
 
 @section('content')
 
+@php($editable = $editable ?? true)
+@php($opening = $opening ?? null)
+
 <div class="standalone-heading">
-    <h4>{{ $account ? 'Edit Account' : 'New Account' }}</h4>
-    <p>Account codes must be unique within the institute scope. Deactivating an account is preferred over deleting one with journal activity.</p>
+    <h4>{{ $account ? ($editable ? 'Edit Account' : 'Shared Account') : 'New Account' }}</h4>
+    <p>{{ $account && ! $editable
+        ? 'Shared platform account: the definition is global; only the settings belonging to your own institute below are editable.'
+        : 'Account codes must be unique within the institute scope. Deactivating an account is preferred over deleting one with journal activity.' }}</p>
 </div>
 
+@if ($account && ! $editable)
+    <div class="alert alert-info py-2 d-flex align-items-start gap-2" role="alert">
+        <i class="bi bi-lock-fill mt-1"></i>
+        <div>
+            <strong>{{ $account->code }} — {{ $account->name }}</strong> is shared by every institute, so its definition
+            (code, name, type, group, parent and behaviour flags) cannot be changed here. Your own institute-scoped
+            settings below remain editable.
+        </div>
+    </div>
+@endif
+
+@if (! $account || $editable)
 <div class="admin-card">
     <form method="POST" action="{{ $account ? route('finance.chart-of-accounts.update', $account) : route('finance.chart-of-accounts.store') }}">
         @csrf
@@ -96,6 +113,87 @@
         </div>
     </form>
 </div>
+@else
+<div class="admin-card">
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label">Code <i class="bi bi-lock ms-1 text-muted" title="Shared definition"></i></label>
+            <div class="form-control form-control-sm form-control-plaintext border">{{ $account->code }}</div>
+        </div>
+        <div class="col-md-8">
+            <label class="form-label">Name <i class="bi bi-lock ms-1 text-muted" title="Shared definition"></i></label>
+            <div class="form-control form-control-sm form-control-plaintext border">{{ $account->name }}</div>
+        </div>
+
+        <div class="col-md-4">
+            <label class="form-label">Type</label>
+            <div class="form-control form-control-sm form-control-plaintext border">{{ ucfirst($account->type) }}</div>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Group <small class="text-muted">(Category)</small></label>
+            <div class="form-control form-control-sm form-control-plaintext border">{{ $account->accountGroup?->code ? $account->accountGroup->code.' — '.$account->accountGroup->name : '— Auto (by Type) —' }}</div>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Parent account</label>
+            <div class="form-control form-control-sm form-control-plaintext border">{{ $account->parent ? $account->parent->code.' — '.$account->parent->name : '— None (top-level) —' }}</div>
+        </div>
+
+        <div class="col-md-4">
+            <label class="form-label">Cash Flow Category</label>
+            <div class="form-control form-control-sm form-control-plaintext border">{{ $account->cash_flow_category ? ucfirst($account->cash_flow_category) : '— Not Classified —' }}</div>
+        </div>
+        <div class="col-md-8">
+            <label class="form-label">Behaviour</label>
+            <div class="pt-1">
+                @if ($account->is_cash)<span class="badge text-bg-info me-1">Cash</span>@endif
+                @if ($account->is_bank)<span class="badge text-bg-info me-1">Bank</span>@endif
+                @if ($account->is_receivable)<span class="badge text-bg-warning me-1">Receivable</span>@endif
+                @if ($account->is_payable)<span class="badge text-bg-warning me-1">Payable</span>@endif
+                <span class="badge text-bg-{{ $account->is_active ? 'success' : 'secondary' }}">{{ $account->is_active ? 'Active' : 'Inactive' }}</span>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <a class="btn btn-outline-secondary btn-sm" href="{{ route('finance.chart-of-accounts.index') }}">Back</a>
+        </div>
+    </div>
+</div>
+@endif
+
+@if ($account && $opening !== null)
+<div class="admin-card mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="mb-0">Opening balance <small class="text-muted">(your institute only)</small></h6>
+        @if ($opening['year'] !== null)
+            <small class="text-muted">Fiscal year: {{ $opening['year'] }}</small>
+        @endif
+    </div>
+    <p class="text-muted small mb-2">
+        Opening balances are stored per institute, so they stay editable for shared accounts too.
+        Leave the amount empty to clear the stored value for the selected fiscal year.
+    </p>
+
+    <form method="POST" action="{{ route('finance.chart-of-accounts.update.opening', $account) }}">
+        @csrf
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Opening balance</label>
+                <input type="number" step="0.01" min="0" class="form-control form-control-sm" name="opening_balance"
+                       value="{{ old('opening_balance', $opening['balance']) }}" placeholder="0.00">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">As of date <span class="text-danger">*</span></label>
+                <input type="date" class="form-control form-control-sm" name="opening_balance_date"
+                       value="{{ old('opening_balance_date', $opening['date']) }}" required>
+                <small class="text-muted">Must fall inside an open fiscal year.</small>
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-wallet2 me-1"></i>Save opening balance</button>
+            </div>
+        </div>
+    </form>
+</div>
+@endif
 
 @push('scripts')
 <script>

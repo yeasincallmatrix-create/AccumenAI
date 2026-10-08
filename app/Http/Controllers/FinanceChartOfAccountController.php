@@ -7,12 +7,18 @@ use App\Http\Requests\StoreTenantAccountRequest;
 use App\Http\Requests\UpdateTenantAccountRequest;
 use App\Models\AccountGroup;
 use App\Models\ChartOfAccount;
+use App\Models\Institute;
+use App\Models\OpeningBalance;
+use App\Services\Accounting\AccountingPeriodService;
 use App\Services\Accounting\ChartOfAccountService;
+use App\Services\Accounting\OpeningBalanceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
@@ -29,7 +35,8 @@ class FinanceChartOfAccountController extends Controller
     {
         $institute = $this->requireInstitute($request);
 
-        $query = ChartOfAccount::query()
+        // visible(): only universal + this tenant's industry globals (Phase F).
+        $query = ChartOfAccount::visible((int) $institute->id)
             ->with('parent');
 
         if (filled($q = $request->query('q'))) {
@@ -96,13 +103,132 @@ class FinanceChartOfAccountController extends Controller
     {
         $institute = $this->requireInstitute($request);
 
+        // Every visible row is openable: own rows are fully editable, shared
+        // globals only expose this institute's own settings (opening balance).
+        $editable = $account->isEditableBy((int) $institute->id);
+
         return view('institute.finance.chart-of-accounts.form', [
             'institute' => $institute,
             'account' => $account,
+            'editable' => $editable,
+            'opening' => $this->openingState($request, $institute, $account),
             'groups' => $this->groups($institute->id),
             'parents' => $this->parents($institute->id),
             'types' => ['asset', 'liability', 'equity', 'income', 'expense'],
         ]);
+    }
+
+    /**
+     * Tenant-scoped opening balance for one account: opening_balances rows are
+     * per-institute, so they stay editable even when the account definition
+     * itself belongs to a shared global row.
+     *
+     * @return array{balance: float|null, date: string, year: string|null}|null
+     */
+    private function openingState(Request $request, Institute $institute, ChartOfAccount $account): ?array
+    {
+        if (! in_array($account->type, ['asset', 'liability', 'equity'], true)) {
+            return null;
+        }
+
+        $branchId = $this->actingBranchId($request);
+        $existing = OpeningBalance::query()
+            ->where('institute_id', (int) $institute->id)
+            ->where('coa_id', $account->id)
+            ->when($branchId === null, fn ($query) => $query->whereNull('branch_id'), fn ($query) => $query->where('branch_id', $branchId))
+            ->with('fiscalYear')
+            ->get()
+            ->sortByDesc(fn ($row) => $row->fiscalYear?->start_date?->getTimestamp() ?? 0)
+            ->first();
+
+        return [
+            'balance' => $existing === null
+                ? null
+                : round((float) ($existing->debit > 0 ? $existing->debit : $existing->credit), 2),
+            'date' => $existing?->fiscalYear?->start_date?->toDateString() ?? now()->toDateString(),
+            'year' => $existing?->fiscalYear?->name,
+        ];
+    }
+
+    /**
+     * Save the tenant's opening position for this account (works for shared
+     * global accounts too — the row referenced is tenant data).
+     */
+    public function updateOpening(Request $request, ChartOfAccount $account): RedirectResponse
+    {
+        $institute = $this->requireInstitute($request);
+
+        Gate::authorize('view', $account);
+
+        if (! in_array($account->type, ['asset', 'liability', 'equity'], true)) {
+            return back()->with('error', 'Opening balances apply to balance sheet accounts (asset, liability, equity) only.');
+        }
+
+        $validated = $request->validate([
+            'opening_balance' => ['nullable', 'numeric', 'min:0'],
+            'opening_balance_date' => ['required', 'date'],
+        ]);
+
+        $branchId = $this->actingBranchId($request);
+        $actorId = $this->actorId($request);
+        $amount = round((float) ($validated['opening_balance'] ?? 0), 4);
+        $date = $validated['opening_balance_date'];
+
+        // A ValidationException from inside the transaction rolls the write
+        // back and surfaces as a form error (same contract as store()).
+        $cleared = DB::transaction(function () use ($institute, $branchId, $actorId, $account, $amount, $date) {
+            $year = app(AccountingPeriodService::class)->covering((int) $institute->id, $branchId, $date)['year'];
+
+            if ($amount > 0.0) {
+                if ($year === null) {
+                    throw ValidationException::withMessages([
+                        'opening_balance_date' => 'No fiscal year covers this date. Create a fiscal year first (Finance > Periods).',
+                    ]);
+                }
+
+                if ($year->status !== 'open') {
+                    throw ValidationException::withMessages([
+                        'opening_balance_date' => 'The fiscal year covering this date is '.$year->status.'. Pick a date in an open fiscal year.',
+                    ]);
+                }
+
+                $isDebit = in_array($account->type, ['asset', 'expense'], true);
+
+                app(OpeningBalanceService::class)->upsertSingle(
+                    (int) $institute->id,
+                    $branchId,
+                    $year,
+                    (int) $account->id,
+                    $isDebit ? $amount : 0.0,
+                    $isDebit ? 0.0 : $amount,
+                    $actorId,
+                );
+
+                return false;
+            }
+
+            // Blank amount clears the stored row for the date's fiscal year.
+            if ($year === null) {
+                return false;
+            }
+
+            return app(OpeningBalanceService::class)->removeSingle(
+                (int) $institute->id,
+                $branchId,
+                $year,
+                (int) $account->id,
+                $actorId,
+            );
+        });
+
+        $label = $account->code.' '.$account->name;
+        $message = $amount > 0.0
+            ? 'Opening balance updated for "'.$label.'".'
+            : ($cleared ? 'Opening balance cleared for "'.$label.'".' : 'Opening balance saved for "'.$label.'".');
+
+        return redirect()
+            ->route('finance.chart-of-accounts.edit', $account)
+            ->with('status', $message);
     }
 
     public function update(UpdateTenantAccountRequest $request, int $chartOfAccount): RedirectResponse
@@ -200,12 +326,10 @@ class FinanceChartOfAccountController extends Controller
         // Post-C1 (reanchor): only tenant-owned rows may be offered. The
         // shared globals are read-only templates and assertValidParent()
         // rejects them, so showing them would only produce dead options.
-        return ChartOfAccount::query()
+        return ChartOfAccount::visible($instituteId)
             ->where('institute_id', $instituteId)
             ->where('is_active', true)
             ->ordered()
             ->get(['id', 'code', 'name', 'type']);
     }
 }
-
-

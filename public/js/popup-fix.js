@@ -156,7 +156,10 @@
             }
         });
         // 2) Generic: any .modal not already direct child of <body>
+        //    data-no-relocate: Livewire-managed modals must stay inside their
+        //    component root or server re-renders can no longer update/remove them.
         document.querySelectorAll('.modal').forEach(function (m) {
+            if (m.hasAttribute('data-no-relocate')) { return; }
             if (m.parentElement !== document.body) {
                 // Keep Bootstrap's data/ARIA intact ΓÇö just re-parent
                 document.body.appendChild(m);
@@ -226,7 +229,7 @@
             if (isModalActuallyVisible(m)) {
                 m.style.zIndex = '1055';
                 // Re-append to body ensures it is above every backdrop node order-wise
-                if (m.parentElement !== document.body) document.body.appendChild(m);
+                if (!m.hasAttribute('data-no-relocate') && m.parentElement !== document.body) document.body.appendChild(m);
                 m.style.display = 'block';
             }
         });
@@ -260,7 +263,7 @@
             }
         });
         // Ensure modal is already in body before Bootstrap computes position
-        if (e.target && e.target.parentElement !== document.body) {
+        if (e.target && !e.target.hasAttribute('data-no-relocate') && e.target.parentElement !== document.body) {
             document.body.appendChild(e.target);
         }
     });

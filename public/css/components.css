@@ -1737,6 +1737,24 @@ body:not(:has(.modal.show)){
     overflow:auto !important;
 }
 
+/* ===================== Livewire COA popup (data-no-relocate) =====================
+   This popup stays inside the Livewire component root (so close actions can
+   re-render it away), which means it cannot rely on body.modal-open like
+   Bootstrap-managed modals. Two additive rules give it the standard glass
+   behaviour, scoped to this popup only:
+   1) Release main.content's will-change stacking context (layout.css
+      `main.content { will-change: opacity }`) so the popup's z-index:1055
+      competes at root level and clears the fixed topbar (z-index:1030).
+   2) The standard .modal-backdrop is hidden unless body.modal-open; show it
+      while this popup is open so its default blur applies.
+   Both rules deactivate automatically when Livewire removes the modal (:has). */
+body:has(.modal[data-no-relocate]) main.content{
+    will-change: auto !important;
+}
+body:has(.modal[data-no-relocate]) .modal-backdrop{
+    display: block !important;
+}
+
 /* ===================== Popup / Dropdown escape fix (non-destructive) =====================
    Fixes trapped dropdowns/menus that were clipped by ancestor overflow.
    No HTML structure change ∩┐╜ only overflow/position tweaks.
