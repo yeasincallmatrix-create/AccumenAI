@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Chart of Accounts ledger account. Replaces the legacy income/expense
@@ -29,6 +30,18 @@ class ChartOfAccount extends Model
         'equity' => 3,
         'income' => 4,
         'expense' => 5,
+    ];
+
+    /**
+     * Tables holding RESTRICT foreign keys to chart_of_accounts.id. Each is
+     * checked before delete so a referenced account is blocked with a clear
+     * DomainException instead of a raw SQLSTATE 23000 from the database.
+     */
+    private const DELETE_BLOCKERS = [
+        'journal_entries' => ['label' => 'journal entries', 'columns' => ['coa_id']],
+        'budget_lines' => ['label' => 'budget lines', 'columns' => ['coa_id']],
+        'expenses' => ['label' => 'expenses', 'columns' => ['expense_account_id', 'payment_account_id']],
+        'opening_balances' => ['label' => 'opening balances', 'columns' => ['coa_id']],
     ];
 
     protected $table = 'chart_of_accounts';
@@ -94,7 +107,7 @@ class ChartOfAccount extends Model
         static::updating(function (ChartOfAccount $acc) {
             if ($acc->is_system && $acc->isDirty([
                 'code', 'name', 'type', 'parent_id',
-                'industries', 'is_header', 'is_postable'
+                'industries', 'is_header', 'is_postable',
             ])) {
                 throw new \DomainException("Cannot modify system account: {$acc->code}");
             }
@@ -104,8 +117,10 @@ class ChartOfAccount extends Model
             if ($acc->is_system) {
                 throw new \DomainException("Cannot delete system account: {$acc->code}");
             }
-            if (\DB::table('journal_entries')->where('coa_id', $acc->id)->exists()) {
-                throw new \DomainException("Cannot delete account with journals: {$acc->code}");
+
+            $blocker = static::deleteBlockerLabel($acc->id);
+            if ($blocker !== null) {
+                throw new \DomainException("Cannot delete account with {$blocker}: {$acc->code}");
             }
         });
     }
@@ -177,11 +192,33 @@ class ChartOfAccount extends Model
         if ($this->children()->exists()) {
             return false;
         }
-        if (\DB::table('journal_entries')->where('coa_id', $this->id)->exists()) {
-            return false;
+
+        return static::deleteBlockerLabel($this->id) === null;
+    }
+
+    /**
+     * Label of the first RESTRICT-referencing row set touching this account,
+     * or null when nothing blocks the delete.
+     */
+    private static function deleteBlockerLabel(int $accountId): ?string
+    {
+        foreach (self::DELETE_BLOCKERS as $table => $blocker) {
+            $exists = \DB::table($table)
+                ->where(function ($query) use ($blocker, $accountId) {
+                    foreach ($blocker['columns'] as $index => $column) {
+                        $index === 0
+                            ? $query->where($column, $accountId)
+                            : $query->orWhere($column, $accountId);
+                    }
+                })
+                ->exists();
+
+            if ($exists) {
+                return $blocker['label'];
+            }
         }
 
-        return true;
+        return null;
     }
 
     public function scopeEditable($q)
@@ -239,7 +276,7 @@ class ChartOfAccount extends Model
             // FK) still resolve via the string-column fallback.
             $institute = Institute::withTrashed()->find($instituteId, ['id', 'industry_id', 'industry']);
             if ($institute) {
-                $slug = \App\Models\Industry::where('id', $institute->industry_id)->value('slug')
+                $slug = Industry::where('id', $institute->industry_id)->value('slug')
                     ?? ($institute->getAttribute('industry') ?: null);
             }
         } catch (\Throwable) {
@@ -369,7 +406,7 @@ class ChartOfAccount extends Model
         $slug = static::resolveIndustrySlug($instituteId);
 
         try {
-            $hasIndustries = \Illuminate\Support\Facades\Schema::hasColumn('chart_of_accounts', 'industries');
+            $hasIndustries = Schema::hasColumn('chart_of_accounts', 'industries');
         } catch (\Throwable) {
             $hasIndustries = false;
         }
@@ -482,7 +519,7 @@ class ChartOfAccount extends Model
 
     public function canBePosted(): bool
     {
-        return $this->is_postable && !$this->hasChildren();
+        return $this->is_postable && ! $this->hasChildren();
     }
 
     public static function sortByCodeNatural($collection)
@@ -507,13 +544,19 @@ class ChartOfAccount extends Model
                 $aPart = $aParts[$i] ?? null;
                 $bPart = $bParts[$i] ?? null;
 
-                if ($aPart === null) return -1;
-                if ($bPart === null) return 1;
+                if ($aPart === null) {
+                    return -1;
+                }
+                if ($bPart === null) {
+                    return 1;
+                }
 
                 $aNum = is_numeric($aPart) ? (int) $aPart : 0;
                 $bNum = is_numeric($bPart) ? (int) $bPart : 0;
 
-                if ($aNum !== $bNum) return $aNum <=> $bNum;
+                if ($aNum !== $bNum) {
+                    return $aNum <=> $bNum;
+                }
             }
 
             return 0;

@@ -15,6 +15,7 @@ use App\Services\UserAccountService;
 use App\Support\TenantContext;
 use App\Support\Workspace;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -24,6 +25,7 @@ use Tests\TestCase;
  *  - F-001 cross-tenant parent_id on update (and the service layer behind it)
  *  - N-1   parent-flag hooks must never rewrite shared global rows
  *  - F-010 creating a child must flip a tenant parent to header
+ *  - F-011 delete guard blocks every RESTRICT-referenced account
  *  - F-012 is_system cannot be mass-assigned over HTTP
  */
 class CrossTenantParentGuardTest extends TestCase
@@ -446,5 +448,33 @@ class CrossTenantParentGuardTest extends TestCase
             ->assertHasErrors(['form.code']);
 
         $this->assertDatabaseMissing('chart_of_accounts', ['name' => 'Livewire Duplicate']);
+    }
+
+    // ------------------------------------------------------------ F-011
+
+    public function test_delete_blocked_when_account_has_opening_balance(): void
+    {
+        [$a] = $this->institutes();
+
+        $account = $this->createTenantAccount($a->id, ['code' => '9177']);
+
+        $fiscalYearId = DB::table('fiscal_years')->insertGetId([
+            'institute_id' => $a->id,
+            'name' => 'Guard FY',
+            'start_date' => '2026-01-01',
+            'end_date' => '2026-12-31',
+        ]);
+
+        DB::table('opening_balances')->insert([
+            'institute_id' => $a->id,
+            'fiscal_year_id' => $fiscalYearId,
+            'coa_id' => $account->id,
+            'debit' => 100,
+        ]);
+
+        $this->expectException(\DomainException::class);
+        $this->expectExceptionMessage("Cannot delete account with opening balances: {$account->code}");
+
+        $account->delete();
     }
 }
