@@ -1,6 +1,5 @@
-@extends('layouts.standalone')
+@extends('layouts.institute')
 @section('title', 'Input VAT — AccumenAI')
-@section('page_title', 'Reports')
 
 @section('content')
 <div class="standalone-heading">

@@ -1,7 +1,6 @@
-@extends('layouts.standalone')
+@extends('layouts.institute')
 
 @section('title', 'Import Bank Statement — AccumenAI')
-@section('page_title', 'Accounting')
 
 @section('content')
 

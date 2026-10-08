@@ -1,7 +1,6 @@
-@extends('layouts.standalone')
+@extends('layouts.institute')
 
 @section('title', $party ? 'Edit Party — AccumenAI' : 'New Party — AccumenAI')
-@section('page_title', $party ? 'Edit Party' : 'New Party')
 
 @section('content')
 

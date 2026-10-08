@@ -1,7 +1,6 @@
-@extends('layouts.standalone')
+@extends('layouts.institute')
 
 @section('title', 'Statement ' . $statement->id . ' — AccumenAI')
-@section('page_title', 'Accounting')
 
 @section('content')
 

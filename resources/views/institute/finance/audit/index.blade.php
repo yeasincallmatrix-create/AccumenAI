@@ -1,7 +1,6 @@
-@extends('layouts.standalone')
+@extends('layouts.institute')
 
 @section('title', 'Audit Trail — AccumenAI')
-@section('page_title', 'Finance')
 
 @push('styles')
 <style>

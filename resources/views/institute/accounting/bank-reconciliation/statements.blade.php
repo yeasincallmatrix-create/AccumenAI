@@ -1,7 +1,6 @@
-@extends('layouts.standalone')
+@extends('layouts.institute')
 
 @section('title', 'Bank Statements — ' . $account->code . ' — AccumenAI')
-@section('page_title', 'Bank Reconciliation')
 
 @section('content')
 

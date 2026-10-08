@@ -985,6 +985,7 @@
                             </a>
                         </div>
                     </div>
+                    @if (moduleEnabled('accounting'))
                     <div class="nav-group">
                         <button class="nav-link w-100 d-flex align-items-center justify-content-between {{ $accountingNavOpen ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#accountingNavGroup" aria-expanded="{{ $accountingNavOpen ? 'true' : 'false' }}" aria-controls="accountingNavGroup">
                             <span class="d-flex align-items-center gap-2"><i class="bi bi-journal-text"></i><span class="sidebar-label fw-semibold">Accounting</span></span>
@@ -1046,6 +1047,7 @@
                             @endif
                         </div>
                     </div>
+                    @endif
                 @endif
                 @php
                     $restaurantNavItems = [];
@@ -1328,11 +1330,24 @@
 <script src="{{ asset('js/geo-select.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/geo-select.js')) }}"></script>
 <script src="{{ asset('js/popup-fix.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/popup-fix.js')) }}"></script>
 <script src="{{ asset('js/auto-caps.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/auto-caps.js')) }}"></script>
-{{-- Alpine.js (global) — used by <x-connectivity-signal />. If you move Alpine into
-     the @vite build instead, import 'alpinejs' and Alpine.start() in resources/js.
-     Passing the page defer-safely: if this ever fails to load the component simply
-     stays on its inert/stable visual state with no console errors. --}}
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+{{-- Alpine.js (global) — used by <x-connectivity-signal /> and the x-data toast below.
+     The @vite build alternative: import 'alpinejs' and Alpine.start() in resources/js.
+
+     Loaded conditionally: Livewire bundles Alpine and sets window.Livewire /
+     window.Alpine while the page parses (its script is auto-injected before
+     </body>). A second CDN instance loaded after that overwrites window.Alpine,
+     and Livewire's internals then throw "Alpine.transaction is not a function",
+     which kills every wire:model / wire:click update (filters, pagination, …)
+     while the page still renders normally. So: only fetch the CDN build when the
+     page does NOT already have Alpine (i.e. no Livewire component). --}}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.Alpine) { return; }
+        var alpine = document.createElement('script');
+        alpine.src = 'https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js';
+        document.body.appendChild(alpine);
+    });
+</script>
 <script>
 (function () {
     var root = document.documentElement;
@@ -1785,6 +1800,7 @@
     @stack('scripts')
 </div>
 <div x-data="{ show: false, message: '', type: 'info' }"
+     x-cloak
      x-on:notify.window="show = true; message = $event.detail.message; type = $event.detail.type; setTimeout(() => show = false, 5000)"
      x-show="show"
      x-transition

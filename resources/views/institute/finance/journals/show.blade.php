@@ -1,7 +1,6 @@
-@extends('layouts.standalone')
+@extends('layouts.institute')
 
 @section('title', 'Journal '.$journal->journal_no.' — AccumenAI')
-@section('page_title', 'Finance')
 
 @section('content')
 

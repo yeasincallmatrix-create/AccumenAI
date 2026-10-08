@@ -1,7 +1,6 @@
-@extends('layouts.standalone')
+@extends('layouts.institute')
 
 @section('title', 'Account Ledger — AccumenAI')
-@section('page_title', 'Accounting Reports')
 
 @push('styles')
 <style>

@@ -1,7 +1,6 @@
-@extends('layouts.standalone')
+@extends('layouts.institute')
 
 @section('title', 'Template ' . $template->template_number . ' — AccumenAI')
-@section('page_title', 'Finance')
 
 @section('content')
 

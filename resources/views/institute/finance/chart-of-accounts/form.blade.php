@@ -1,7 +1,6 @@
-@extends('layouts.standalone')
+@extends('layouts.institute')
 
 @section('title', $account ? 'Edit Account — AccumenAI' : 'New Account — AccumenAI')
-@section('page_title', $account ? 'Edit Account' : 'New Account')
 
 @section('content')
 

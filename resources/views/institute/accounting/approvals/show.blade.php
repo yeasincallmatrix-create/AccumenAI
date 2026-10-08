@@ -1,7 +1,6 @@
-@extends('layouts.standalone')
+@extends('layouts.institute')
 
 @section('title', $workflow->name . ' — AccumenAI')
-@section('page_title', 'Approvals')
 
 @section('content')
 

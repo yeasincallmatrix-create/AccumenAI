@@ -1,7 +1,6 @@
-@extends('layouts.standalone')
+@extends('layouts.institute')
 
 @section('title', $method ? 'Edit Payment Method — AccumenAI' : 'New Payment Method — AccumenAI')
-@section('page_title', $method ? 'Edit Payment Method' : 'New Payment Method')
 
 @section('content')
 

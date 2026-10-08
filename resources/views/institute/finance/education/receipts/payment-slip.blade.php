@@ -1,7 +1,6 @@
-@extends('layouts.standalone')
+@extends('layouts.institute')
 
 @section('title', 'Payment Receipt — AccumenAI')
-@section('page_title', 'Payment Receipt')
 
 @section('content')
 @php

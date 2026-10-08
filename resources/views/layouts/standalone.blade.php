@@ -22,12 +22,15 @@
 
 @include('partials.page_marker')
 
+@if (empty($hideTopbar))
 <header class="topbar">
     <div class="container-fluid px-4 d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center gap-3">
-            <a class="btn btn-sm btn-outline-secondary rounded-pill px-3" href="{{ $backUrl ?? route('dashboard') }}">
-                <i class="bi bi-arrow-left me-1"></i>{{ isset($backUrl) ? mawa_e('settings_page.back_to_hub') : mawa_e('settings_page.back') }}
-            </a>
+            @if (empty($hideBack))
+                <a class="btn btn-sm btn-outline-secondary rounded-pill px-3" href="{{ $backUrl ?? route('dashboard') }}">
+                    <i class="bi bi-arrow-left me-1"></i>{{ isset($backUrl) ? mawa_e('settings_page.back_to_hub') : mawa_e('settings_page.back') }}
+                </a>
+            @endif
             <span class="standalone-page-title">@yield('page_title')</span>
         </div>
         <div class="d-flex align-items-center gap-2">
@@ -46,6 +49,7 @@
         </div>
     </div>
 </header>
+@endif
 
 <main class="standalone-page">
     <div class="standalone-container">

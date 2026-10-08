@@ -1,7 +1,6 @@
-@extends('layouts.standalone')
+@extends('layouts.institute')
 
 @section('title', 'Accounts Receivable — AccumenAI')
-@section('page_title', 'Receivables')
 
 @push('styles')
 <style>

@@ -1,7 +1,6 @@
-@extends('layouts.standalone')
+@extends('layouts.institute')
 
 @section('title', 'Approval Workflows — AccumenAI')
-@section('page_title', 'Approvals')
 
 @section('content')
 

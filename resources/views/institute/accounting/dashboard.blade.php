@@ -1,7 +1,6 @@
-@extends('layouts.standalone')
+@extends('layouts.institute')
 
 @section('title', 'Accounting Dashboard — AccumenAI')
-@section('page_title', 'Accounting')
 
 @push('styles')
 <style>

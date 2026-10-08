@@ -593,9 +593,19 @@
 <script src="{{ asset('js/auto-caps.js') }}?v={{ \Illuminate\Support\Facades\File::lastModified(public_path('js/auto-caps.js')) }}"></script>
 {{-- Alpine.js (global) — used by <x-connectivity-signal />. If you move Alpine into
      the @vite build instead, import 'alpinejs' and Alpine.start() in resources/js.
-     Passing the page defer-safely: if this ever fails to load the component simply
-     stays on its inert/stable visual state with no console errors. --}}
-<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+
+     Loaded conditionally: Livewire bundles Alpine and sets window.Livewire /
+     window.Alpine while the page parses. A second CDN instance loaded after that
+     overwrites window.Alpine and breaks Livewire updates ("Alpine.transaction is
+     not a function"), so only fetch the CDN build when Alpine isn't already there. --}}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.Alpine) { return; }
+        var alpine = document.createElement('script');
+        alpine.src = 'https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js';
+        document.body.appendChild(alpine);
+    });
+</script>
 <script>
 (function () {
     var root = document.documentElement;

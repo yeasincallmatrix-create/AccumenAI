@@ -1,7 +1,6 @@
-@extends('layouts.standalone')
+@extends('layouts.institute')
 
 @section('title', $journal ? 'Edit Journal — AccumenAI' : 'New Journal — AccumenAI')
-@section('page_title', $journal ? 'Edit Journal' : 'New Journal')
 
 @section('content')
 
