@@ -435,6 +435,11 @@ class ChartOfAccount extends Model
      * rows are always visible. The default TenantScoped hybrid branch is
      * intentionally untouched - reports/postings keep unfiltered access.
      *
+     * F1: a global row is additionally hidden when the tenant already
+     * owns a row with the same code (post-C1 reanchor copies), so the
+     * listing never shows the same account twice. Globals the tenant has
+     * not adopted stay visible.
+     *
      * NOTE: scope name is 'institute' (per TenantScoped).
      * `visibleTo` is the canonical Phase-D name; `visible` is kept
      * as an alias (service layer already calls ::visible()).
@@ -444,26 +449,36 @@ class ChartOfAccount extends Model
         $slug = static::resolveIndustrySlug($instituteId);
         $hasIndustries = static::industriesTaggingAvailable();
 
+        // F1 dedup: global row only when the tenant has no own copy of the code.
+        $notOwnedByTenant = function ($sub) use ($instituteId) {
+            $sub->selectRaw('1')->from('chart_of_accounts as t')
+                ->whereColumn('t.code', 'chart_of_accounts.code')
+                ->where('t.institute_id', $instituteId)
+                ->whereNull('t.deleted_at');
+        };
+
         // Pre-Phase-F schema: no industry filtering possible.
         if (! $hasIndustries) {
             return $query->withoutGlobalScope('institute')
-                ->where(function ($q) use ($instituteId) {
-                    $q->where(function ($g) {
-                        $g->whereNull('institute_id')->where('is_system', 1);
+                ->where(function ($q) use ($instituteId, $notOwnedByTenant) {
+                    $q->where(function ($g) use ($notOwnedByTenant) {
+                        $g->whereNull('institute_id')->where('is_system', 1)
+                            ->whereNotExists($notOwnedByTenant);
                     })->orWhere('institute_id', $instituteId);
                 });
         }
 
         return $query->withoutGlobalScope('institute')
-            ->where(function ($q) use ($instituteId, $slug) {
-                $q->where(function ($g) use ($slug) {
+            ->where(function ($q) use ($instituteId, $slug, $notOwnedByTenant) {
+                $q->where(function ($g) use ($slug, $notOwnedByTenant) {
                     $g->whereNull('institute_id')->where('is_system', 1)
                         ->where(function ($inner) use ($slug) {
                             $inner->whereNull('industries');
                             if ($slug) {
                                 $inner->orWhereJsonContains('industries', $slug);
                             }
-                        });
+                        })
+                        ->whereNotExists($notOwnedByTenant);
                 })->orWhere('institute_id', $instituteId);
             });
     }

@@ -477,4 +477,138 @@ class CrossTenantParentGuardTest extends TestCase
 
         $account->delete();
     }
+
+    // ------------------------------------------------------------ F1 dedup
+
+    /**
+     * Universal (untagged) global asset the tenant has not adopted:
+     * Phase-F gate passes it for any industry, so the fixture is stable.
+     */
+    protected function unownedUniversalGlobal(): ChartOfAccount
+    {
+        $global = ChartOfAccount::withoutGlobalScopes()
+            ->whereNull('institute_id')
+            ->where('is_system', 1)
+            ->whereNull('industries')
+            ->where('type', 'asset')
+            ->orderBy('code')
+            ->first();
+
+        $this->assertNotNull($global, 'Expected a universal global asset account in the fixture.');
+
+        return $global;
+    }
+
+    public function test_tenant_listing_dedupes_global_codes(): void
+    {
+        [$a] = $this->institutes();
+
+        $code = (string) $this->unownedUniversalGlobal()->code;
+
+        // Fixture precondition: the tenant owns no copy of this code yet.
+        $this->assertSame(
+            0,
+            ChartOfAccount::withoutGlobalScope('institute')
+                ->where('institute_id', $a->id)
+                ->where('code', $code)
+                ->count(),
+        );
+
+        // Unadopted global: exactly one visible row (the global itself).
+        $this->assertSame(1, ChartOfAccount::visible($a->id)->where('code', $code)->count());
+
+        $copy = $this->createTenantAccount($a->id, ['code' => $code, 'name' => 'Tenant Copy '.$code]);
+
+        $visible = ChartOfAccount::visible($a->id)->where('code', $code)->get();
+
+        $this->assertCount(1, $visible, 'A global and its tenant copy must never both be visible.');
+        $this->assertSame($a->id, (int) $visible->first()->institute_id, 'The tenant-owned copy wins.');
+        $this->assertTrue($visible->first()->is($copy));
+    }
+
+    public function test_global_code_visible_when_tenant_does_not_own_it(): void
+    {
+        [$a] = $this->institutes();
+
+        $global = $this->unownedUniversalGlobal();
+        $code = (string) $global->code;
+
+        $visible = ChartOfAccount::visible($a->id)->where('code', $code)->get();
+
+        $this->assertCount(1, $visible, 'A global the tenant has not adopted must stay visible.');
+        $this->assertNull($visible->first()->institute_id, 'The unadopted row is still the shared global.');
+        $this->assertTrue($visible->first()->is($global));
+    }
+
+    public function test_groups_listing_dedupes_global_codes(): void
+    {
+        [$a] = $this->institutes();
+
+        $code = '1';
+        $global = AccountGroup::withoutGlobalScope('institute')
+            ->whereNull('institute_id')
+            ->where('is_system', 1)
+            ->where('code', $code)
+            ->first();
+
+        $this->assertNotNull($global, 'Expected the seeded global asset group in the fixture.');
+        $this->assertSame(1, AccountGroup::visible($a->id)->where('code', $code)->count());
+
+        AccountGroup::withoutGlobalScope('institute')->create([
+            'institute_id' => $a->id,
+            'code' => $code,
+            'name' => 'Tenant Asset Group',
+            'category' => 'asset',
+            'is_system' => 0,
+        ]);
+
+        $visible = AccountGroup::visible($a->id)->get();
+        $duplicated = $visible->groupBy('code')->filter(fn ($rows) => $rows->count() > 1);
+
+        $this->assertCount(0, $duplicated, 'The account-group dropdown must never repeat a code.');
+
+        $row = $visible->firstWhere('code', $code);
+        $this->assertNotNull($row, 'The code must still be offered after the tenant adopts it.');
+        $this->assertSame($a->id, (int) $row->institute_id, 'The tenant-owned group wins.');
+    }
+
+    public function test_listing_route_renders_no_duplicate_codes(): void
+    {
+        [$a] = $this->institutes();
+
+        $global = $this->unownedUniversalGlobal();
+        $code = (string) $global->code;
+        $copy = $this->createTenantAccount($a->id, ['code' => $code, 'name' => 'Listing Copy '.$code]);
+
+        $owner = $this->owner('guard-dedup-listing@example.test');
+        $this->assign($owner, $a);
+
+        $html = $this->asUser($owner, $a->id)
+            ->get(route('finance.chart-of-accounts.index'))
+            ->assertOk()
+            ->getContent();
+
+        preg_match_all('/<td class="text-muted">([^<]*)<\/td>/', $html, $matches);
+        $codes = array_values(array_filter(array_map('trim', $matches[1]), fn ($cell) => $cell !== ''));
+
+        $this->assertNotEmpty($codes, 'Expected rendered CoA code cells in the listing.');
+        $this->assertSame($codes, array_values(array_unique($codes)), 'The CoA listing must not render a code twice.');
+        $this->assertSame(
+            1,
+            count(array_filter($codes, fn ($cell) => $cell === $code)),
+            "Code {$code} must render exactly once (the tenant copy, not both rows).",
+        );
+
+        // Row identity: the hidden global never renders, the tenant copy does.
+        $this->assertStringNotContainsString(
+            '<span class="fw-semibold">'.e($global->name).'</span>',
+            $html,
+            'The deduped global row must not be rendered.',
+        );
+        $this->assertStringContainsString(
+            '<span class="fw-semibold">'.$copy->name.'</span>',
+            $html,
+            'The tenant-owned row must be rendered.',
+        );
+    }
 }

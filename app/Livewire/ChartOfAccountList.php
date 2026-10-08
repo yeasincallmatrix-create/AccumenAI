@@ -516,12 +516,7 @@ class ChartOfAccountList extends DataTable
     {
         $instituteId = (int) tenant_id();
 
-        return AccountGroup::query()
-            ->where(function ($q) use ($instituteId) {
-                $q->where(function ($g) {
-                    $g->whereNull('institute_id')->where('is_system', 1);
-                })->orWhere('institute_id', $instituteId);
-            })
+        return AccountGroup::visible($instituteId)
             ->where('category', $this->form['type'] ?? 'asset')
             ->orderBy('sort_order')
             ->get(['id', 'name', 'category', 'code']);

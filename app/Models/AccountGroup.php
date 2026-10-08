@@ -112,6 +112,10 @@ class AccountGroup extends Model
     /**
      * Scope: everything visible to a tenant (globals + own).
      *
+     * F1 dedup: a global group is hidden when the tenant already owns a
+     * group with the same code, so the account-group dropdown never
+     * repeats an option twice.
+     *
      * Usage: AccountGroup::visibleTo($tenantId)->...
      * NOTE: scope name is 'institute' (per TenantScoped).
      */
@@ -119,8 +123,14 @@ class AccountGroup extends Model
     {
         return $query->withoutGlobalScope('institute')
             ->where(function ($q) use ($instituteId) {
-                $q->where(function ($g) {
-                    $g->whereNull('institute_id')->where('is_system', 1);
+                $q->where(function ($g) use ($instituteId) {
+                    $g->whereNull('institute_id')->where('is_system', 1)
+                        ->whereNotExists(function ($sub) use ($instituteId) {
+                            $sub->selectRaw('1')->from('account_groups as t')
+                                ->whereColumn('t.code', 'account_groups.code')
+                                ->where('t.institute_id', $instituteId)
+                                ->whereNull('t.deleted_at');
+                        });
                 })->orWhere('institute_id', $instituteId);
             });
     }

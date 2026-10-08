@@ -311,12 +311,7 @@ class FinanceChartOfAccountController extends Controller
 
     private function groups(int $instituteId): Collection
     {
-        return AccountGroup::query()
-            ->where(function ($q) use ($instituteId) {
-                $q->where(function ($g) {
-                    $g->whereNull('institute_id')->where('is_system', 1);
-                })->orWhere('institute_id', $instituteId);
-            })
+        return AccountGroup::visible($instituteId)
             ->orderBy('sort_order')
             ->get(['id', 'name', 'category', 'code']);
     }
