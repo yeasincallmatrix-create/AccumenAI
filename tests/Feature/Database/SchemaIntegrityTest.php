@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Database;
 
+use App\Services\Accounting\ChartOfAccountService;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
@@ -206,6 +207,43 @@ class SchemaIntegrityTest extends TestCase
             'name' => 'Alive lifecycle',
             'type' => 'asset',
         ]);
+    }
+
+    /**
+     * N-7 — account_group_id nullability invariant.
+     *
+     * The column is NOT NULL while FormRequests/Livewire rules allow the field to
+     * be omitted: ChartOfAccountService always resolves a category-matched group
+     * (explicit id → institute match → ensureGroups) before insert.
+     */
+    public function test_account_group_id_is_not_null_and_service_autofills(): void
+    {
+        $column = DB::selectOne(
+            'SELECT IS_NULLABLE AS nullable FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = \'chart_of_accounts\' AND COLUMN_NAME = \'account_group_id\''
+        );
+        $this->assertNotNull($column, 'chart_of_accounts.account_group_id is missing.');
+        $this->assertSame('NO', (string) $column->nullable);
+
+        $instituteId = DB::table('institutes')->orderBy('id')->value('id');
+        $this->assertNotNull($instituteId, 'No seeded institute — run `composer test:setup`.');
+        $branchId = DB::table('branches')->where('institute_id', $instituteId)->value('id');
+
+        $account = app(ChartOfAccountService::class)->createAccount(
+            (int) $instituteId,
+            $branchId !== null ? (int) $branchId : null,
+            [
+                'code' => 'ZZN7'.substr(uniqid(), -8),
+                'name' => 'N-7 group auto-fill probe',
+                'type' => 'asset',
+            ],
+            null
+        );
+
+        $this->assertNotNull(
+            $account->account_group_id,
+            'Service must auto-fill account_group_id — a NULL would violate the NOT NULL column (N-7).'
+        );
     }
 
     private function assertSoftDeleteCodeLifecycle(string $table, array $base): void

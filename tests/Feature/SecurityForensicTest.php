@@ -242,9 +242,9 @@ class SecurityForensicTest extends TestCase
             }
         }
 
-        $this->assertNotEmpty(
+        $this->assertEmpty(
             $routesWithoutPermission,
-            'Finance/accounting web routes should NOT have route-level permission middleware (documented gap). '
+            'Finance/accounting web routes should all carry route-level permission middleware (A2 hardening). '
             .'Routes without permission: '.implode(', ', $routesWithoutPermission)
         );
     }

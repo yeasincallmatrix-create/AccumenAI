@@ -58,6 +58,10 @@ class ChartOfAccountService
     ): ChartOfAccount {
         $data = $this->validateAccountData($instituteId, $branchId, $data);
 
+        // N-7 invariant: chart_of_accounts.account_group_id is NOT NULL while every
+        // validation rule allows it to be omitted — this resolver (explicit id, else
+        // category match, else ensureGroups) always fills a group before insert,
+        // so a NULL can never reach the table.
         $data['account_group_id'] = $data['account_group_id']
             ?? AccountGroup::query()
                 ->where('institute_id', $instituteId)
