@@ -2,16 +2,17 @@
 
 namespace Tests\Feature\Database;
 
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * F-009 / N-006 — schema drift guards (TASK C3).
+ * F-009 / N-006 / F-004 — schema drift and soft-delete index guards (TASK C3 + C4).
  *
  * Precondition: run `composer test:setup` after pulling so every migration file
  * (including the 0000_00_00_* placeholders) has been applied to this database.
- * Two of the three tests deliberately fail otherwise — that is the guard working.
+ * Several tests below deliberately fail otherwise — that is the guard working.
  *
  * Sources of truth and the regeneration procedure live in docs/SCHEMA_DRIFT.md.
  */
@@ -137,6 +138,98 @@ class SchemaIntegrityTest extends TestCase
             $schema,
             'schema.sql must stay pure DDL — migrations_data.sql owns the migrations rows for parallel imports.'
         );
+    }
+
+    public function test_soft_delete_unique_index_uses_alive_column(): void
+    {
+        $tables = [
+            'chart_of_accounts' => 'uq_coa_code_v3',
+            'account_groups' => 'uq_account_groups_code_v3',
+        ];
+
+        foreach ($tables as $table => $v3) {
+            $column = DB::selectOne(
+                'SELECT COLUMN_TYPE AS type, EXTRA AS extra FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = \'alive\'',
+                [$table]
+            );
+            $this->assertNotNull($column, "{$table}.alive is missing — run `composer test:setup`.");
+            $this->assertSame('bigint(20)', strtolower((string) $column->type));
+            $this->assertStringNotContainsString(
+                'GENERATED',
+                strtoupper((string) $column->extra),
+                "{$table}.alive must be plain: MariaDB rejects unique indexes over generated expressions that reference auto_increment ids."
+            );
+
+            foreach (["trg_{$table}_alive_ins", "trg_{$table}_alive_upd"] as $trigger) {
+                $exists = DB::selectOne(
+                    'SELECT 1 AS ok FROM information_schema.TRIGGERS
+                     WHERE TRIGGER_SCHEMA = DATABASE() AND TRIGGER_NAME = ?',
+                    [$trigger]
+                );
+                $this->assertNotNull($exists, "Trigger [{$trigger}] is missing on {$table}.");
+            }
+
+            $indexed = array_map(
+                fn (object $row) => $row->col,
+                DB::select(
+                    'SELECT COLUMN_NAME AS col FROM information_schema.STATISTICS
+                     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?
+                     ORDER BY SEQ_IN_INDEX',
+                    [$table, $v3]
+                )
+            );
+            $this->assertSame(['institute_key', 'branch_key', 'code', 'alive'], $indexed);
+
+            $v2 = str_replace('_v3', '_v2', $v3);
+            $oldIndex = DB::selectOne(
+                'SELECT 1 AS ok FROM information_schema.STATISTICS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?',
+                [$table, $v2]
+            );
+            $this->assertNull($oldIndex, "{$table}.{$v2} must be replaced by {$v3}.");
+        }
+
+        $this->assertSoftDeleteCodeLifecycle('account_groups', [
+            'name' => 'Alive lifecycle',
+            'category' => 'asset',
+        ]);
+
+        $groupId = DB::table('account_groups')->insertGetId([
+            'code' => 'ZZALIVEFK',
+            'name' => 'Alive FK group',
+            'category' => 'asset',
+        ]);
+
+        $this->assertSoftDeleteCodeLifecycle('chart_of_accounts', [
+            'account_group_id' => $groupId,
+            'name' => 'Alive lifecycle',
+            'type' => 'asset',
+        ]);
+    }
+
+    private function assertSoftDeleteCodeLifecycle(string $table, array $base): void
+    {
+        $code = 'ZZALIVE'.strtoupper(substr($table, 0, 8));
+
+        $idA = DB::table($table)->insertGetId(array_merge($base, ['code' => $code]));
+        DB::table($table)->where('id', $idA)->update(['deleted_at' => now()]);
+
+        $idB = DB::table($table)->insertGetId(array_merge($base, ['code' => $code]));
+        DB::table($table)->where('id', $idB)->update(['deleted_at' => now()]);
+
+        $idC = DB::table($table)->insertGetId(array_merge($base, ['code' => $code]));
+
+        $this->assertSame(1, (int) DB::table($table)->where('id', $idC)->value('alive'));
+        $this->assertSame(-$idA, (int) DB::table($table)->where('id', $idA)->value('alive'));
+        $this->assertSame(-$idB, (int) DB::table($table)->where('id', $idB)->value('alive'));
+
+        try {
+            DB::table($table)->insert(array_merge($base, ['code' => $code]));
+            $this->fail("{$table} accepted a second live row for code [{$code}].");
+        } catch (QueryException $e) {
+            $this->assertSame('23000', (string) $e->errorInfo[0]);
+        }
     }
 
     private function assertFreshUtf8Dump(string $path, int $tableCount, string $label): void

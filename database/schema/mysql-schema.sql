@@ -244,7 +244,7 @@ CREATE TABLE `academic_groups` (
   CONSTRAINT `academic_groups_class_grade_id_foreign` FOREIGN KEY (`class_grade_id`) REFERENCES `class_grades` (`id`) ON DELETE CASCADE,
   CONSTRAINT `academic_groups_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE,
   CONSTRAINT `academic_groups_education_system_id_foreign` FOREIGN KEY (`education_system_id`) REFERENCES `education_systems` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `academic_levels`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -265,7 +265,7 @@ CREATE TABLE `academic_levels` (
   KEY `academic_levels_country_id_education_system_id_status_index` (`country_id`,`education_system_id`,`status`),
   CONSTRAINT `academic_levels_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE,
   CONSTRAINT `academic_levels_education_system_id_foreign` FOREIGN KEY (`education_system_id`) REFERENCES `education_systems` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `academic_result_aggregation_items`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -396,7 +396,7 @@ CREATE TABLE `academic_years` (
   UNIQUE KEY `academic_years_institute_id_code_unique` (`institute_id`,`code`),
   KEY `academic_years_institute_id_status_index` (`institute_id`,`status`),
   CONSTRAINT `academic_years_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `account_groups`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -418,16 +418,47 @@ CREATE TABLE `account_groups` (
   `deleted_at` timestamp NULL DEFAULT NULL,
   `institute_key` bigint(20) GENERATED ALWAYS AS (coalesce(`institute_id`,0)) VIRTUAL,
   `branch_key` bigint(20) GENERATED ALWAYS AS (coalesce(`branch_id`,0)) VIRTUAL,
+  `alive` bigint(20) NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_account_groups_code_v2` (`institute_key`,`branch_key`,`code`),
+  UNIQUE KEY `uq_account_groups_code_v3` (`institute_key`,`branch_key`,`code`,`alive`),
   KEY `account_groups_branch_id_foreign` (`branch_id`),
   KEY `account_groups_parent_id_foreign` (`parent_id`),
   KEY `idx_groups_tenant_global` (`institute_id`,`is_system`),
   CONSTRAINT `account_groups_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `account_groups_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `account_groups_parent_id_foreign` FOREIGN KEY (`parent_id`) REFERENCES `account_groups` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_unicode_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `trg_account_groups_alive_ins` BEFORE INSERT ON `account_groups` FOR EACH ROW SET NEW.alive = IF(NEW.deleted_at IS NULL, 1, -NEW.id) */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_unicode_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `trg_account_groups_alive_upd` BEFORE UPDATE ON `account_groups` FOR EACH ROW SET NEW.alive = IF(NEW.deleted_at IS NULL, 1, -OLD.id) */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
 DROP TABLE IF EXISTS `account_heads`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -466,7 +497,7 @@ CREATE TABLE `accounting_audit_trails` (
   KEY `idx_audit_date` (`institute_id`,`created_at`),
   CONSTRAINT `accounting_audit_trails_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `accounting_audit_trails_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `accounting_periods`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -496,7 +527,7 @@ CREATE TABLE `accounting_periods` (
   CONSTRAINT `accounting_periods_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `accounting_periods_fiscal_year_id_foreign` FOREIGN KEY (`fiscal_year_id`) REFERENCES `fiscal_years` (`id`) ON DELETE CASCADE,
   CONSTRAINT `accounting_periods_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `accounting_settings`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -516,7 +547,7 @@ CREATE TABLE `accounting_settings` (
   KEY `accounting_settings_branch_id_foreign` (`branch_id`),
   CONSTRAINT `accounting_settings_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `accounting_settings_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `activity_logs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -566,7 +597,7 @@ CREATE TABLE `administrative_levels` (
   UNIQUE KEY `administrative_levels_country_id_level_number_unique` (`country_id`,`level_number`),
   KEY `administrative_levels_country_id_status_index` (`country_id`,`status`),
   CONSTRAINT `administrative_levels_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `administrative_units`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -594,7 +625,7 @@ CREATE TABLE `administrative_units` (
   CONSTRAINT `administrative_units_administrative_level_id_foreign` FOREIGN KEY (`administrative_level_id`) REFERENCES `administrative_levels` (`id`) ON DELETE CASCADE,
   CONSTRAINT `administrative_units_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE,
   CONSTRAINT `administrative_units_parent_id_foreign` FOREIGN KEY (`parent_id`) REFERENCES `administrative_units` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `admissions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -634,7 +665,7 @@ CREATE TABLE `admissions` (
   CONSTRAINT `admissions_discharged_by_foreign` FOREIGN KEY (`discharged_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `admissions_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `admissions_patient_id_foreign` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `advance_tax_payments`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -961,7 +992,7 @@ CREATE TABLE `appointments` (
   CONSTRAINT `appointments_doctor_id_foreign` FOREIGN KEY (`doctor_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `appointments_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `appointments_patient_id_foreign` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `approval_actions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1136,7 +1167,7 @@ CREATE TABLE `assessment_types` (
   KEY `assessment_types_country_id_foreign` (`country_id`),
   CONSTRAINT `assessment_types_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE SET NULL,
   CONSTRAINT `assessment_types_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `asset_audit_logs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1533,7 +1564,7 @@ CREATE TABLE `audit_logs` (
   KEY `idx_audit_logs_module_record` (`module`,`record_id`),
   KEY `idx_audit_logs_created` (`created_at`),
   CONSTRAINT `audit_logs_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `audit_logs_archive`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1569,7 +1600,7 @@ CREATE TABLE `backup_chunk_references` (
   KEY `backup_chunk_references_drive_file_id_index` (`drive_file_id`),
   KEY `bc_ref_tenant_hash_idx` (`tenant_id`,`content_sha256`),
   KEY `bc_ref_tenant_file_idx` (`tenant_id`,`drive_file_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `backup_chunk_trash`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1587,7 +1618,7 @@ CREATE TABLE `backup_chunk_trash` (
   PRIMARY KEY (`id`),
   KEY `backup_chunk_trash_tenant_id_index` (`tenant_id`),
   KEY `backup_chunk_trash_expires_at_index` (`expires_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `backup_chunks`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1610,7 +1641,7 @@ CREATE TABLE `backup_chunks` (
   UNIQUE KEY `backup_chunks_manifest_id_content_sha256_unique` (`manifest_id`,`content_sha256`),
   KEY `backup_chunks_manifest_id_index` (`manifest_id`),
   KEY `backup_chunks_tenant_id_content_sha256_index` (`tenant_id`,`content_sha256`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `backup_manifests`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1631,7 +1662,7 @@ CREATE TABLE `backup_manifests` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `backup_manifests_backup_id_unique` (`backup_id`),
   KEY `backup_manifests_tenant_id_index` (`tenant_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `backup_verification_logs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1651,7 +1682,7 @@ CREATE TABLE `backup_verification_logs` (
   PRIMARY KEY (`id`),
   KEY `backup_verification_logs_backup_id_index` (`backup_id`),
   KEY `backup_verification_logs_status_index` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `backups`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1684,7 +1715,7 @@ CREATE TABLE `backups` (
   PRIMARY KEY (`id`),
   KEY `backups_tenant_id_index` (`tenant_id`),
   KEY `backups_status_index` (`status`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `bank_reconciliations`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -1895,7 +1926,7 @@ CREATE TABLE `beds` (
   CONSTRAINT `beds_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `beds_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `beds_ward_id_foreign` FOREIGN KEY (`ward_id`) REFERENCES `wards` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `blood_donors`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2065,7 +2096,7 @@ CREATE TABLE `branches` (
   KEY `fk_branches_manager` (`manager_user_id`),
   CONSTRAINT `fk_branches_institute` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_branches_manager` FOREIGN KEY (`manager_user_id`) REFERENCES `institute_users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `budget_lines`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2345,7 +2376,7 @@ CREATE TABLE `cds_rule_versions` (
   UNIQUE KEY `uq_cds_rule_version` (`cds_rule_id`,`version`),
   KEY `cds_rule_versions_status_index` (`status`),
   CONSTRAINT `cds_rule_versions_cds_rule_id_foreign` FOREIGN KEY (`cds_rule_id`) REFERENCES `cds_rules` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `cds_rules`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2369,7 +2400,7 @@ CREATE TABLE `cds_rules` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `cds_rules_rule_key_unique` (`rule_key`),
   KEY `cds_rules_status_rule_type_index` (`status`,`rule_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `certificate_types`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2470,8 +2501,9 @@ CREATE TABLE `chart_of_accounts` (
   `institute_key` bigint(20) GENERATED ALWAYS AS (coalesce(`institute_id`,0)) VIRTUAL,
   `branch_key` bigint(20) GENERATED ALWAYS AS (coalesce(`branch_id`,0)) VIRTUAL,
   `category` varchar(50) GENERATED ALWAYS AS (case when `type` in ('asset','liability','equity') then 'balance_sheet' when `type` in ('income','expense') then 'income_statement' else NULL end) VIRTUAL,
+  `alive` bigint(20) NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_coa_code_v2` (`institute_key`,`branch_key`,`code`),
+  UNIQUE KEY `uq_coa_code_v3` (`institute_key`,`branch_key`,`code`,`alive`),
   KEY `chart_of_accounts_branch_id_foreign` (`branch_id`),
   KEY `chart_of_accounts_parent_id_foreign` (`parent_id`),
   KEY `idx_coa_group` (`account_group_id`),
@@ -2486,8 +2518,38 @@ CREATE TABLE `chart_of_accounts` (
   CONSTRAINT `chart_of_accounts_currency_id_foreign` FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`id`) ON DELETE SET NULL,
   CONSTRAINT `chart_of_accounts_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `chart_of_accounts_parent_id_foreign` FOREIGN KEY (`parent_id`) REFERENCES `chart_of_accounts` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_unicode_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `trg_chart_of_accounts_alive_ins` BEFORE INSERT ON `chart_of_accounts` FOR EACH ROW SET NEW.alive = IF(NEW.deleted_at IS NULL, 1, -NEW.id) */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_unicode_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`localhost`*/ /*!50003 TRIGGER `trg_chart_of_accounts_alive_upd` BEFORE UPDATE ON `chart_of_accounts` FOR EACH ROW SET NEW.alive = IF(NEW.deleted_at IS NULL, 1, -OLD.id) */;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
 DROP TABLE IF EXISTS `class_grades`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -2512,7 +2574,7 @@ CREATE TABLE `class_grades` (
   CONSTRAINT `class_grades_academic_level_id_foreign` FOREIGN KEY (`academic_level_id`) REFERENCES `academic_levels` (`id`) ON DELETE CASCADE,
   CONSTRAINT `class_grades_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE,
   CONSTRAINT `class_grades_education_system_id_foreign` FOREIGN KEY (`education_system_id`) REFERENCES `education_systems` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `clinical_audit_logs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2542,7 +2604,7 @@ CREATE TABLE `clinical_audit_logs` (
   CONSTRAINT `clinical_audit_logs_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `clinical_audit_logs_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `clinical_audit_logs_patient_id_foreign` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `clinical_notes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2645,7 +2707,7 @@ CREATE TABLE `command_logs` (
   KEY `command_logs_created_at_index` (`created_at`),
   KEY `command_logs_admin_id_index` (`admin_id`),
   KEY `command_logs_command_index` (`command`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `components`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2666,7 +2728,7 @@ CREATE TABLE `components` (
   KEY `components_country_id_foreign` (`country_id`),
   CONSTRAINT `components_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE SET NULL,
   CONSTRAINT `components_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `corporate_tax_computations`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2716,7 +2778,7 @@ CREATE TABLE `countries` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `countries_iso2_unique` (`iso2`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `country_currency_map`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2730,7 +2792,7 @@ CREATE TABLE `country_currency_map` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `country_currency_map_country_code_unique` (`country_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `country_pass_mark_defaults`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2777,7 +2839,7 @@ CREATE TABLE `country_tax_configs` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `country_tax_configs_country_code_unique` (`country_code`),
   KEY `country_tax_configs_country_code_index` (`country_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `country_tax_modules`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2795,7 +2857,7 @@ CREATE TABLE `country_tax_modules` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `country_tax_modules_country_code_tax_module_unique` (`country_code`,`tax_module`),
   KEY `country_tax_modules_country_code_index` (`country_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `course_categories`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2811,7 +2873,7 @@ CREATE TABLE `course_categories` (
   UNIQUE KEY `uq_course_categories_inst_slug` (`institute_id`,`slug`),
   KEY `idx_course_categories_institute` (`institute_id`),
   CONSTRAINT `fk_course_categories_institute` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `course_curricula`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -2993,7 +3055,7 @@ CREATE TABLE `courses` (
   CONSTRAINT `fk_courses_category` FOREIGN KEY (`category_id`) REFERENCES `course_categories` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_courses_institute` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_courses_subcategory` FOREIGN KEY (`sub_category_id`) REFERENCES `course_sub_categories` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `crm_activities`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -3102,7 +3164,7 @@ CREATE TABLE `crm_contacts` (
   CONSTRAINT `crm_contacts_organization_id_foreign` FOREIGN KEY (`organization_id`) REFERENCES `crm_organizations` (`id`) ON DELETE SET NULL,
   CONSTRAINT `crm_contacts_source_id_foreign` FOREIGN KEY (`source_id`) REFERENCES `crm_lead_sources` (`id`) ON DELETE SET NULL,
   CONSTRAINT `crm_contacts_updated_by_foreign` FOREIGN KEY (`updated_by`) REFERENCES `institute_users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `crm_lead_sources`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -3117,7 +3179,7 @@ CREATE TABLE `crm_lead_sources` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `crm_lead_sources_slug_unique` (`slug`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `crm_lead_statuses`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -3134,7 +3196,7 @@ CREATE TABLE `crm_lead_statuses` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `crm_lead_statuses_slug_unique` (`slug`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `crm_leads`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -3184,7 +3246,7 @@ CREATE TABLE `crm_leads` (
   CONSTRAINT `crm_leads_source_id_foreign` FOREIGN KEY (`source_id`) REFERENCES `crm_lead_sources` (`id`) ON DELETE SET NULL,
   CONSTRAINT `crm_leads_status_id_foreign` FOREIGN KEY (`status_id`) REFERENCES `crm_lead_statuses` (`id`) ON DELETE SET NULL,
   CONSTRAINT `crm_leads_updated_by_foreign` FOREIGN KEY (`updated_by`) REFERENCES `institute_users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `crm_notes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -3310,7 +3372,7 @@ CREATE TABLE `currencies` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_currencies_code` (`code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `curriculum_lessons`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -4054,7 +4116,7 @@ CREATE TABLE `deployment_logs` (
   KEY `deployment_logs_type_index` (`type`),
   KEY `deployment_logs_status_index` (`status`),
   KEY `deployment_logs_created_at_index` (`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `dgda_import_batches`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -4110,7 +4172,7 @@ CREATE TABLE `dgda_medicines` (
   KEY `dgda_medicines_brand_name_index` (`brand_name`),
   KEY `dgda_medicines_generic_name_index` (`generic_name`),
   KEY `dgda_medicines_normalized_name_index` (`normalized_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `dgda_registrations`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -4163,7 +4225,7 @@ CREATE TABLE `dgda_sync_batches` (
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `diet_plans`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -4355,7 +4417,7 @@ CREATE TABLE `doctor_availabilities` (
   KEY `doctor_availabilities_doctor_id_index` (`doctor_id`),
   KEY `doctor_availabilities_day_of_week_index` (`day_of_week`),
   CONSTRAINT `doctor_availabilities_doctor_id_foreign` FOREIGN KEY (`doctor_id`) REFERENCES `medical_doctors` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `doctor_branch`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -4403,7 +4465,7 @@ CREATE TABLE `document_categories` (
   KEY `idx_document_categories_institute` (`institute_id`),
   KEY `idx_document_categories_active_order` (`is_active`,`sort_order`),
   CONSTRAINT `document_categories_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `document_versions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -4502,7 +4564,7 @@ CREATE TABLE `education_systems` (
   UNIQUE KEY `education_systems_country_id_code_unique` (`country_id`,`code`),
   KEY `education_systems_country_id_status_index` (`country_id`,`status`),
   CONSTRAINT `education_systems_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `email_otps`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -4751,7 +4813,7 @@ CREATE TABLE `exam_types` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_exam_types_institute_slug` (`institute_id`,`slug`),
   CONSTRAINT `fk_exam_types_institute` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `exams`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -4883,7 +4945,7 @@ CREATE TABLE `failed_jobs` (
   `failed_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `failed_jobs_uuid_unique` (`uuid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `feature_registry`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -4904,7 +4966,7 @@ CREATE TABLE `feature_registry` (
   KEY `feature_registry_module_key_status_index` (`module_key`,`status`),
   KEY `feature_registry_module_key_index` (`module_key`),
   KEY `feature_registry_parent_feature_key_index` (`parent_feature_key`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `fee_heads`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -5024,7 +5086,7 @@ CREATE TABLE `fiscal_years` (
   KEY `idx_fy_current` (`institute_id`,`is_current`,`status`),
   CONSTRAINT `fiscal_years_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fiscal_years_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `fixed_assets`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -5193,7 +5255,7 @@ CREATE TABLE `geo_imports` (
   KEY `geo_imports_status_country_id_index` (`status`,`country_id`),
   CONSTRAINT `geo_imports_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE,
   CONSTRAINT `geo_imports_created_by_foreign` FOREIGN KEY (`created_by`) REFERENCES `platform_admins` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `goods_receipt_items`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -5225,7 +5287,7 @@ CREATE TABLE `goods_receipt_items` (
   CONSTRAINT `goods_receipt_items_batch_id_foreign` FOREIGN KEY (`batch_id`) REFERENCES `inventory_batches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `goods_receipt_items_goods_receipt_id_foreign` FOREIGN KEY (`goods_receipt_id`) REFERENCES `goods_receipts` (`id`) ON DELETE CASCADE,
   CONSTRAINT `goods_receipt_items_inventory_item_id_foreign` FOREIGN KEY (`inventory_item_id`) REFERENCES `inventory_items` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `goods_receipts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -5265,7 +5327,7 @@ CREATE TABLE `goods_receipts` (
   CONSTRAINT `goods_receipts_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `goods_receipts_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `parties` (`id`) ON DELETE CASCADE,
   CONSTRAINT `goods_receipts_warehouse_id_foreign` FOREIGN KEY (`warehouse_id`) REFERENCES `inventory_warehouses` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `grade_scale_rows`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -5286,7 +5348,7 @@ CREATE TABLE `grade_scale_rows` (
   PRIMARY KEY (`id`),
   KEY `grade_scale_rows_scale_status_idx` (`grade_scale_id`,`status`),
   CONSTRAINT `grade_scale_rows_grade_scale_id_foreign` FOREIGN KEY (`grade_scale_id`) REFERENCES `grade_scales` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `grade_scales`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -5324,7 +5386,7 @@ CREATE TABLE `grade_scales` (
   CONSTRAINT `grade_scales_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE CASCADE,
   CONSTRAINT `grade_scales_education_system_id_foreign` FOREIGN KEY (`education_system_id`) REFERENCES `education_systems` (`id`) ON DELETE CASCADE,
   CONSTRAINT `grade_scales_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `grading_scale`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -5414,7 +5476,7 @@ CREATE TABLE `home_pages` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `home_pages_slug_unique` (`slug`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `hr_application_histories`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -6743,7 +6805,7 @@ CREATE TABLE `identity_audit_logs` (
   PRIMARY KEY (`id`),
   KEY `identity_audit_logs_user_id_event_index` (`user_id`,`event`),
   CONSTRAINT `identity_audit_logs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `import_batch_rows`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -6799,7 +6861,7 @@ CREATE TABLE `industries` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `industries_slug_unique` (`slug`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `industry_settings`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -6812,7 +6874,7 @@ CREATE TABLE `industry_settings` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `industry_key` (`industry_key`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `industry_subcategories`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -6831,7 +6893,7 @@ CREATE TABLE `industry_subcategories` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `industry_subcategories_industry_key_subcategory_key_unique` (`industry_key`,`subcategory_key`),
   KEY `industry_subcategories_industry_key_index` (`industry_key`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `industry_template_mappings`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -7026,7 +7088,7 @@ CREATE TABLE `institute_medicines` (
   KEY `institute_medicines_institute_id_active_index` (`institute_id`,`active`),
   CONSTRAINT `institute_medicines_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `institute_medicines_medicine_product_id_foreign` FOREIGN KEY (`medicine_product_id`) REFERENCES `medicine_products` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `institute_module_entitlements`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -7080,7 +7142,7 @@ CREATE TABLE `institute_module_overrides` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `institute_module_overrides_institute_id_module_key_unique` (`institute_id`,`module_key`),
   CONSTRAINT `institute_module_overrides_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `institute_module_overrides_archive`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -7103,7 +7165,7 @@ CREATE TABLE `institute_module_overrides_archive` (
   PRIMARY KEY (`id`),
   KEY `idx_institute` (`institute_id`),
   KEY `idx_archived_at` (`archived_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `institute_payment_gateways`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -7170,7 +7232,7 @@ CREATE TABLE `institute_settings` (
   KEY `institute_settings_deleted_at_index` (`deleted_at`),
   CONSTRAINT `fk_institute_settings_institute` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `institute_settings_structure_template_id_foreign` FOREIGN KEY (`structure_template_id`) REFERENCES `structure_templates` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `institute_subjects`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -7224,7 +7286,7 @@ CREATE TABLE `institute_subscriptions` (
   KEY `idx_inst_subs_package` (`package_id`),
   CONSTRAINT `fk_inst_subs_institute` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_inst_subs_package` FOREIGN KEY (`package_id`) REFERENCES `subscription_packages` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `institute_users`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -7285,7 +7347,7 @@ CREATE TABLE `institute_users` (
   CONSTRAINT `fk_institute_users_branch` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_institute_users_institute` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_institute_users_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `institutes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -7366,7 +7428,7 @@ CREATE TABLE `institutes` (
   CONSTRAINT `fk_institutes_package` FOREIGN KEY (`package_id`) REFERENCES `subscription_packages` (`id`) ON DELETE SET NULL,
   CONSTRAINT `institutes_industry_id_foreign` FOREIGN KEY (`industry_id`) REFERENCES `industries` (`id`) ON DELETE SET NULL,
   CONSTRAINT `institutes_sub_industry_id_foreign` FOREIGN KEY (`sub_industry_id`) REFERENCES `sub_industries` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `institution_user`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -7408,7 +7470,7 @@ CREATE TABLE `institution_user` (
   CONSTRAINT `fk_institution_user_institute` FOREIGN KEY (`institution_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_institution_user_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`),
   CONSTRAINT `fk_institution_user_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `inventory_adjustment_items`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -7533,7 +7595,7 @@ CREATE TABLE `inventory_categories` (
   CONSTRAINT `inventory_categories_inventory_account_id_foreign` FOREIGN KEY (`inventory_account_id`) REFERENCES `chart_of_accounts` (`id`) ON DELETE SET NULL,
   CONSTRAINT `inventory_categories_parent_id_foreign` FOREIGN KEY (`parent_id`) REFERENCES `inventory_categories` (`id`) ON DELETE SET NULL,
   CONSTRAINT `inventory_categories_sales_account_id_foreign` FOREIGN KEY (`sales_account_id`) REFERENCES `chart_of_accounts` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `inventory_count_items`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -7638,7 +7700,7 @@ CREATE TABLE `inventory_items` (
   CONSTRAINT `inventory_items_inventory_account_id_foreign` FOREIGN KEY (`inventory_account_id`) REFERENCES `chart_of_accounts` (`id`) ON DELETE SET NULL,
   CONSTRAINT `inventory_items_sales_account_id_foreign` FOREIGN KEY (`sales_account_id`) REFERENCES `chart_of_accounts` (`id`) ON DELETE SET NULL,
   CONSTRAINT `inventory_items_tax_group_id_foreign` FOREIGN KEY (`tax_group_id`) REFERENCES `tax_groups` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `inventory_movements`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -7681,7 +7743,7 @@ CREATE TABLE `inventory_movements` (
   CONSTRAINT `inventory_movements_item_id_foreign` FOREIGN KEY (`item_id`) REFERENCES `inventory_items` (`id`) ON DELETE CASCADE,
   CONSTRAINT `inventory_movements_journal_id_foreign` FOREIGN KEY (`journal_id`) REFERENCES `journals` (`id`) ON DELETE SET NULL,
   CONSTRAINT `inventory_movements_warehouse_id_foreign` FOREIGN KEY (`warehouse_id`) REFERENCES `inventory_warehouses` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `inventory_serial_numbers`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -7737,7 +7799,7 @@ CREATE TABLE `inventory_stock_levels` (
   CONSTRAINT `inventory_stock_levels_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `inventory_stock_levels_item_id_foreign` FOREIGN KEY (`item_id`) REFERENCES `inventory_items` (`id`) ON DELETE CASCADE,
   CONSTRAINT `inventory_stock_levels_warehouse_id_foreign` FOREIGN KEY (`warehouse_id`) REFERENCES `inventory_warehouses` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `inventory_transfer_items`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -7816,7 +7878,7 @@ CREATE TABLE `inventory_warehouses` (
   KEY `inventory_warehouses_branch_id_foreign` (`branch_id`),
   CONSTRAINT `inventory_warehouses_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `inventory_warehouses_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `invoice_items`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -7852,7 +7914,7 @@ CREATE TABLE `invoice_items` (
   CONSTRAINT `invoice_items_inventory_item_id_foreign` FOREIGN KEY (`inventory_item_id`) REFERENCES `inventory_items` (`id`) ON DELETE SET NULL,
   CONSTRAINT `invoice_items_sales_order_line_id_foreign` FOREIGN KEY (`sales_order_line_id`) REFERENCES `sales_order_lines` (`id`) ON DELETE SET NULL,
   CONSTRAINT `invoice_items_tax_group_id_foreign` FOREIGN KEY (`tax_group_id`) REFERENCES `tax_groups` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `invoices`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -7920,7 +7982,7 @@ CREATE TABLE `invoices` (
   CONSTRAINT `invoices_sales_delivery_id_foreign` FOREIGN KEY (`sales_delivery_id`) REFERENCES `sales_deliveries` (`id`) ON DELETE SET NULL,
   CONSTRAINT `invoices_sales_order_id_foreign` FOREIGN KEY (`sales_order_id`) REFERENCES `sales_orders` (`id`) ON DELETE SET NULL,
   CONSTRAINT `invoices_tax_group_id_foreign` FOREIGN KEY (`tax_group_id`) REFERENCES `tax_groups` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `job_batches`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -7952,7 +8014,7 @@ CREATE TABLE `jobs` (
   `created_at` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id`),
   KEY `jobs_queue_index` (`queue`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `journal_entries`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -7996,7 +8058,7 @@ CREATE TABLE `journal_entries` (
   CONSTRAINT `journal_entries_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `journal_entries_journal_id_foreign` FOREIGN KEY (`journal_id`) REFERENCES `journals` (`id`) ON DELETE CASCADE,
   CONSTRAINT `journal_entries_party_id_foreign` FOREIGN KEY (`party_id`) REFERENCES `parties` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `journals`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -8044,7 +8106,7 @@ CREATE TABLE `journals` (
   CONSTRAINT `journals_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `journals_period_id_foreign` FOREIGN KEY (`period_id`) REFERENCES `accounting_periods` (`id`),
   CONSTRAINT `journals_reversal_of_foreign` FOREIGN KEY (`reversal_of`) REFERENCES `journals` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `lab_analyzer_parameter_maps`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -8254,7 +8316,7 @@ CREATE TABLE `lab_orders` (
   CONSTRAINT `lab_orders_patient_id_foreign` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE,
   CONSTRAINT `lab_orders_prescription_id_foreign` FOREIGN KEY (`prescription_id`) REFERENCES `prescriptions` (`id`) ON DELETE SET NULL,
   CONSTRAINT `lab_orders_sample_id_foreign` FOREIGN KEY (`sample_id`) REFERENCES `lab_samples` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `lab_result_parameters`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -8320,7 +8382,7 @@ CREATE TABLE `lab_results` (
   CONSTRAINT `lab_results_lab_message_id_foreign` FOREIGN KEY (`lab_message_id`) REFERENCES `lab_messages` (`id`) ON DELETE SET NULL,
   CONSTRAINT `lab_results_lab_order_id_foreign` FOREIGN KEY (`lab_order_id`) REFERENCES `lab_orders` (`id`) ON DELETE CASCADE,
   CONSTRAINT `lab_results_lab_test_id_foreign` FOREIGN KEY (`lab_test_id`) REFERENCES `lab_tests` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `lab_samples`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -8382,7 +8444,7 @@ CREATE TABLE `lab_tests` (
   KEY `lab_tests_institute_id_index` (`institute_id`),
   KEY `lab_tests_code_index` (`code`),
   CONSTRAINT `lab_tests_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `lab_worklists`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -8474,7 +8536,7 @@ CREATE TABLE `medical_departments` (
   PRIMARY KEY (`id`),
   KEY `medical_departments_institute_id_index` (`institute_id`),
   CONSTRAINT `medical_departments_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `medical_doctors`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -8518,7 +8580,7 @@ CREATE TABLE `medical_doctors` (
   CONSTRAINT `medical_doctors_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `medical_doctors_specialty_id_foreign` FOREIGN KEY (`specialty_id`) REFERENCES `medical_specialties` (`id`) ON DELETE CASCADE,
   CONSTRAINT `medical_doctors_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `medical_documents`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -8620,7 +8682,7 @@ CREATE TABLE `medical_encounters` (
   CONSTRAINT `medical_encounters_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `medical_encounters_patient_id_foreign` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE,
   CONSTRAINT `medical_encounters_specialty_id_foreign` FOREIGN KEY (`specialty_id`) REFERENCES `medical_specialties` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `medical_follow_ups`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -8705,7 +8767,7 @@ CREATE TABLE `medical_invoices` (
   CONSTRAINT `medical_invoices_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `medical_invoices_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `medical_invoices_patient_id_foreign` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `medical_patient_problems`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -8762,7 +8824,7 @@ CREATE TABLE `medical_specialties` (
   KEY `medical_specialties_department_id_index` (`department_id`),
   CONSTRAINT `medical_specialties_department_id_foreign` FOREIGN KEY (`department_id`) REFERENCES `medical_departments` (`id`) ON DELETE CASCADE,
   CONSTRAINT `medical_specialties_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `medicine_code_history`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -8801,7 +8863,7 @@ CREATE TABLE `medicine_concepts` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `medicine_concepts_normalized_name_unique` (`normalized_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `medicine_forms`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -8814,7 +8876,7 @@ CREATE TABLE `medicine_forms` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `medicine_forms_name_unique` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `medicine_identifiers`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -8879,7 +8941,7 @@ CREATE TABLE `medicine_ingredients` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `medicine_ingredients_normalized_name_unique` (`normalized_name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `medicine_product_ingredients`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -8898,7 +8960,7 @@ CREATE TABLE `medicine_product_ingredients` (
   KEY `medicine_product_ingredients_medicine_ingredient_id_foreign` (`medicine_ingredient_id`),
   CONSTRAINT `medicine_product_ingredients_medicine_ingredient_id_foreign` FOREIGN KEY (`medicine_ingredient_id`) REFERENCES `medicine_ingredients` (`id`),
   CONSTRAINT `medicine_product_ingredients_medicine_product_id_foreign` FOREIGN KEY (`medicine_product_id`) REFERENCES `medicine_products` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `medicine_products`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -8929,7 +8991,7 @@ CREATE TABLE `medicine_products` (
   CONSTRAINT `medicine_products_medicine_concept_id_foreign` FOREIGN KEY (`medicine_concept_id`) REFERENCES `medicine_concepts` (`id`),
   CONSTRAINT `medicine_products_medicine_form_id_foreign` FOREIGN KEY (`medicine_form_id`) REFERENCES `medicine_forms` (`id`) ON DELETE SET NULL,
   CONSTRAINT `medicine_products_medicine_route_id_foreign` FOREIGN KEY (`medicine_route_id`) REFERENCES `medicine_routes` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `medicine_routes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -8942,7 +9004,7 @@ CREATE TABLE `medicine_routes` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `medicine_routes_name_unique` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `medicines`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -8991,7 +9053,7 @@ CREATE TABLE `medicines` (
   KEY `idx_medicines_deleted_at` (`deleted_at`),
   CONSTRAINT `medicines_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `medicines_medicine_product_id_foreign` FOREIGN KEY (`medicine_product_id`) REFERENCES `medicine_products` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `migrations`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9001,7 +9063,7 @@ CREATE TABLE `migrations` (
   `migration` varchar(255) NOT NULL,
   `batch` int(11) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `mobile_devices`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9068,7 +9130,7 @@ CREATE TABLE `module_access_logs` (
   KEY `module_access_logs_risk_level_index` (`risk_level`),
   CONSTRAINT `module_access_logs_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE SET NULL,
   CONSTRAINT `module_access_logs_package_id_foreign` FOREIGN KEY (`package_id`) REFERENCES `subscription_packages` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `module_registry`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9092,7 +9154,7 @@ CREATE TABLE `module_registry` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `module_registry_key_unique` (`key`),
   KEY `module_registry_is_core_index` (`is_core`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `module_rules`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9111,7 +9173,7 @@ CREATE TABLE `module_rules` (
   UNIQUE KEY `module_rules_country_code_module_key_rule_key_unique` (`country_code`,`module_key`,`rule_key`),
   KEY `module_rules_module_key_index` (`module_key`),
   KEY `module_rules_country_code_index` (`country_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `module_terminology`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9130,7 +9192,7 @@ CREATE TABLE `module_terminology` (
   UNIQUE KEY `module_terminology_country_code_term_key_unique` (`country_code`,`term_key`),
   KEY `module_terminology_term_key_index` (`term_key`),
   KEY `module_terminology_country_code_index` (`country_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `monthly_fee_periods`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9308,7 +9370,7 @@ CREATE TABLE `notifications` (
   KEY `idx_notifications_created` (`created_at`),
   KEY `fk_notifications_institute` (`institute_id`),
   CONSTRAINT `fk_notifications_institute` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `notifications_archive`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9337,7 +9399,7 @@ CREATE TABLE `number_sequences` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_number_sequences` (`institute_id`,`sequence_type`,`year`),
   CONSTRAINT `number_sequences_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `nursing_notes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9357,7 +9419,7 @@ CREATE TABLE `nursing_notes` (
   KEY `nursing_notes_recorded_at_index` (`recorded_at`),
   CONSTRAINT `nursing_notes_admission_id_foreign` FOREIGN KEY (`admission_id`) REFERENCES `admissions` (`id`) ON DELETE CASCADE,
   CONSTRAINT `nursing_notes_recorded_by_foreign` FOREIGN KEY (`recorded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `offline_sync_queue`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9433,7 +9495,7 @@ CREATE TABLE `online_payment_attempts` (
   CONSTRAINT `online_payment_attempts_journal_id_foreign` FOREIGN KEY (`journal_id`) REFERENCES `journals` (`id`) ON DELETE SET NULL,
   CONSTRAINT `online_payment_attempts_payment_id_foreign` FOREIGN KEY (`payment_id`) REFERENCES `payments` (`id`) ON DELETE SET NULL,
   CONSTRAINT `online_payment_attempts_student_id_foreign` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `opening_balances`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9483,7 +9545,7 @@ CREATE TABLE `package_country_prices` (
   UNIQUE KEY `uq_pkg_country` (`package_id`,`country_code`),
   KEY `package_country_prices_country_code_index` (`country_code`),
   CONSTRAINT `package_country_prices_package_id_foreign` FOREIGN KEY (`package_id`) REFERENCES `subscription_packages` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `package_features`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9499,7 +9561,7 @@ CREATE TABLE `package_features` (
   UNIQUE KEY `package_features_package_id_feature_key_unique` (`package_id`,`feature_key`),
   KEY `package_features_package_id_index` (`package_id`),
   KEY `package_features_feature_key_index` (`feature_key`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `package_industries`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9522,7 +9584,7 @@ CREATE TABLE `package_industries` (
   UNIQUE KEY `uq_package_industry` (`package_id`,`industry_key`),
   KEY `package_industries_industry_key_index` (`industry_key`),
   CONSTRAINT `package_industries_package_id_foreign` FOREIGN KEY (`package_id`) REFERENCES `subscription_packages` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `package_industry_modules`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9541,7 +9603,7 @@ CREATE TABLE `package_industry_modules` (
   KEY `idx_industry_package` (`industry_key`,`package_id`),
   KEY `package_industry_modules_module_key_index` (`module_key`),
   CONSTRAINT `package_industry_modules_package_id_foreign` FOREIGN KEY (`package_id`) REFERENCES `subscription_packages` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `package_modules`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9556,7 +9618,7 @@ CREATE TABLE `package_modules` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `package_modules_package_id_module_key_unique` (`package_id`,`module_key`),
   CONSTRAINT `package_modules_package_id_foreign` FOREIGN KEY (`package_id`) REFERENCES `subscription_packages` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `package_scoped_features`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9619,7 +9681,7 @@ CREATE TABLE `package_scopes` (
   CONSTRAINT `package_scopes_industry_id_foreign` FOREIGN KEY (`industry_id`) REFERENCES `industries` (`id`) ON DELETE SET NULL,
   CONSTRAINT `package_scopes_package_id_foreign` FOREIGN KEY (`package_id`) REFERENCES `subscription_packages` (`id`) ON DELETE CASCADE,
   CONSTRAINT `package_scopes_sub_industry_id_foreign` FOREIGN KEY (`sub_industry_id`) REFERENCES `sub_industries` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `parties`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9657,7 +9719,7 @@ CREATE TABLE `parties` (
   CONSTRAINT `parties_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `parties_customer_group_id_foreign` FOREIGN KEY (`customer_group_id`) REFERENCES `customer_groups` (`id`) ON DELETE SET NULL,
   CONSTRAINT `parties_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `partners`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9719,7 +9781,7 @@ CREATE TABLE `patient_allergies` (
   CONSTRAINT `patient_allergies_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `patient_allergies_medicine_id_foreign` FOREIGN KEY (`medicine_id`) REFERENCES `medicines` (`id`) ON DELETE SET NULL,
   CONSTRAINT `patient_allergies_patient_id_foreign` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `patient_timeline_events`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9804,7 +9866,7 @@ CREATE TABLE `patients` (
   CONSTRAINT `patients_present_admin_3_id_foreign` FOREIGN KEY (`present_admin_3_id`) REFERENCES `administrative_units` (`id`) ON DELETE SET NULL,
   CONSTRAINT `patients_present_country_id_foreign` FOREIGN KEY (`present_country_id`) REFERENCES `countries` (`id`) ON DELETE SET NULL,
   CONSTRAINT `patients_primary_contact_id_foreign` FOREIGN KEY (`primary_contact_id`) REFERENCES `patients` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `payment_gateways`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9820,7 +9882,7 @@ CREATE TABLE `payment_gateways` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `payment_gateways_slug_unique` (`slug`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `payment_methods`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9845,7 +9907,7 @@ CREATE TABLE `payment_methods` (
   CONSTRAINT `payment_methods_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `payment_methods_coa_id_foreign` FOREIGN KEY (`coa_id`) REFERENCES `chart_of_accounts` (`id`) ON DELETE SET NULL,
   CONSTRAINT `payment_methods_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `payments`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9895,7 +9957,7 @@ CREATE TABLE `payments` (
   CONSTRAINT `payments_journal_id_foreign` FOREIGN KEY (`journal_id`) REFERENCES `journals` (`id`) ON DELETE SET NULL,
   CONSTRAINT `payments_party_id_foreign` FOREIGN KEY (`party_id`) REFERENCES `parties` (`id`) ON DELETE SET NULL,
   CONSTRAINT `payments_payment_method_id_foreign` FOREIGN KEY (`payment_method_id`) REFERENCES `payment_methods` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `pending_registrations`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9920,7 +9982,7 @@ CREATE TABLE `pending_registrations` (
   KEY `pending_registrations_otp_expires_at_index` (`otp_expires_at`),
   KEY `pending_registrations_expires_at_index` (`expires_at`),
   KEY `pending_registrations_verified_at_index` (`verified_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `permissions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9934,7 +9996,7 @@ CREATE TABLE `permissions` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_permissions_slug` (`slug`),
   KEY `idx_permissions_module` (`module`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `personal_access_tokens`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9954,7 +10016,7 @@ CREATE TABLE `personal_access_tokens` (
   UNIQUE KEY `personal_access_tokens_token_unique` (`token`),
   KEY `personal_access_tokens_tokenable_type_tokenable_id_index` (`tokenable_type`,`tokenable_id`),
   KEY `personal_access_tokens_expires_at_index` (`expires_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `pharmacy_dispenses`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -9983,7 +10045,7 @@ CREATE TABLE `pharmacy_dispenses` (
   CONSTRAINT `pharmacy_dispenses_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `pharmacy_dispenses_prescription_item_id_foreign` FOREIGN KEY (`prescription_item_id`) REFERENCES `prescription_items` (`id`) ON DELETE CASCADE,
   CONSTRAINT `pharmacy_dispenses_stock_id_foreign` FOREIGN KEY (`stock_id`) REFERENCES `pharmacy_stock` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `pharmacy_stock`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -10014,7 +10076,7 @@ CREATE TABLE `pharmacy_stock` (
   CONSTRAINT `pharmacy_stock_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `pharmacy_stock_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `pharmacy_stock_medicine_id_foreign` FOREIGN KEY (`medicine_id`) REFERENCES `medicines` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `phone_2fa_otps`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -10227,7 +10289,7 @@ CREATE TABLE `platform_admins` (
   UNIQUE KEY `uq_platform_admins_email` (`email`),
   UNIQUE KEY `uq_platform_admins_uuid` (`uuid`),
   UNIQUE KEY `uq_platform_admins_singleton` (`singleton_guard`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `platform_audit_logs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -10247,7 +10309,7 @@ CREATE TABLE `platform_audit_logs` (
   KEY `platform_audit_logs_section_created_at_index` (`section`,`created_at`),
   KEY `platform_audit_logs_admin_id_created_at_index` (`admin_id`,`created_at`),
   CONSTRAINT `platform_audit_logs_admin_id_foreign` FOREIGN KEY (`admin_id`) REFERENCES `platform_admins` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `platform_service_configs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -10331,7 +10393,7 @@ CREATE TABLE `prescription_audit_logs` (
   KEY `prescription_audit_logs_institute_id_prescription_id_index` (`institute_id`,`prescription_id`),
   CONSTRAINT `prescription_audit_logs_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `prescription_audit_logs_prescription_id_foreign` FOREIGN KEY (`prescription_id`) REFERENCES `prescriptions` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `prescription_items`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -10375,7 +10437,7 @@ CREATE TABLE `prescription_items` (
   CONSTRAINT `prescription_items_continued_from_item_id_foreign` FOREIGN KEY (`continued_from_item_id`) REFERENCES `prescription_items` (`id`) ON DELETE SET NULL,
   CONSTRAINT `prescription_items_medicine_id_foreign` FOREIGN KEY (`medicine_id`) REFERENCES `medicines` (`id`) ON DELETE SET NULL,
   CONSTRAINT `prescription_items_prescription_id_foreign` FOREIGN KEY (`prescription_id`) REFERENCES `prescriptions` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `prescriptions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -10428,7 +10490,7 @@ CREATE TABLE `prescriptions` (
   CONSTRAINT `prescriptions_encounter_id_foreign` FOREIGN KEY (`encounter_id`) REFERENCES `medical_encounters` (`id`) ON DELETE SET NULL,
   CONSTRAINT `prescriptions_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `prescriptions_patient_id_foreign` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `progressive_contracts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -10647,7 +10709,7 @@ CREATE TABLE `purchase_invoice_items` (
   CONSTRAINT `purchase_invoice_items_purchase_invoice_id_foreign` FOREIGN KEY (`purchase_invoice_id`) REFERENCES `purchase_invoices` (`id`) ON DELETE CASCADE,
   CONSTRAINT `purchase_invoice_items_purchase_order_line_id_foreign` FOREIGN KEY (`purchase_order_line_id`) REFERENCES `purchase_order_lines` (`id`) ON DELETE SET NULL,
   CONSTRAINT `purchase_invoice_items_tax_group_id_foreign` FOREIGN KEY (`tax_group_id`) REFERENCES `tax_groups` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `purchase_invoices`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -10698,7 +10760,7 @@ CREATE TABLE `purchase_invoices` (
   CONSTRAINT `purchase_invoices_journal_id_foreign` FOREIGN KEY (`journal_id`) REFERENCES `journals` (`id`) ON DELETE SET NULL,
   CONSTRAINT `purchase_invoices_purchase_order_id_foreign` FOREIGN KEY (`purchase_order_id`) REFERENCES `purchase_orders` (`id`) ON DELETE SET NULL,
   CONSTRAINT `purchase_invoices_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `parties` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `purchase_order_lines`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -10733,7 +10795,7 @@ CREATE TABLE `purchase_order_lines` (
   CONSTRAINT `purchase_order_lines_inventory_item_id_foreign` FOREIGN KEY (`inventory_item_id`) REFERENCES `inventory_items` (`id`) ON DELETE SET NULL,
   CONSTRAINT `purchase_order_lines_order_id_foreign` FOREIGN KEY (`order_id`) REFERENCES `purchase_orders` (`id`) ON DELETE CASCADE,
   CONSTRAINT `purchase_order_lines_tax_group_id_foreign` FOREIGN KEY (`tax_group_id`) REFERENCES `tax_groups` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `purchase_orders`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -10780,7 +10842,7 @@ CREATE TABLE `purchase_orders` (
   CONSTRAINT `purchase_orders_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `purchase_orders_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `parties` (`id`) ON DELETE CASCADE,
   CONSTRAINT `purchase_orders_warehouse_id_foreign` FOREIGN KEY (`warehouse_id`) REFERENCES `inventory_warehouses` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `purchase_quotation_lines`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -10812,7 +10874,7 @@ CREATE TABLE `purchase_quotation_lines` (
   CONSTRAINT `purchase_quotation_lines_inventory_item_id_foreign` FOREIGN KEY (`inventory_item_id`) REFERENCES `inventory_items` (`id`) ON DELETE SET NULL,
   CONSTRAINT `purchase_quotation_lines_quotation_id_foreign` FOREIGN KEY (`quotation_id`) REFERENCES `purchase_quotations` (`id`) ON DELETE CASCADE,
   CONSTRAINT `purchase_quotation_lines_tax_group_id_foreign` FOREIGN KEY (`tax_group_id`) REFERENCES `tax_groups` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `purchase_quotations`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -10855,7 +10917,7 @@ CREATE TABLE `purchase_quotations` (
   CONSTRAINT `purchase_quotations_currency_id_foreign` FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`id`) ON DELETE SET NULL,
   CONSTRAINT `purchase_quotations_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `purchase_quotations_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `parties` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `purchase_request_items`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -10880,7 +10942,7 @@ CREATE TABLE `purchase_request_items` (
   CONSTRAINT `purchase_request_items_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `purchase_request_items_inventory_item_id_foreign` FOREIGN KEY (`inventory_item_id`) REFERENCES `inventory_items` (`id`) ON DELETE SET NULL,
   CONSTRAINT `purchase_request_items_purchase_request_id_foreign` FOREIGN KEY (`purchase_request_id`) REFERENCES `purchase_requests` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `purchase_requests`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -10925,7 +10987,7 @@ CREATE TABLE `purchase_requests` (
   CONSTRAINT `purchase_requests_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `purchase_requests_requester_id_foreign` FOREIGN KEY (`requester_id`) REFERENCES `institute_users` (`id`) ON DELETE CASCADE,
   CONSTRAINT `purchase_requests_warehouse_id_foreign` FOREIGN KEY (`warehouse_id`) REFERENCES `inventory_warehouses` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `purchase_return_items`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -10960,7 +11022,7 @@ CREATE TABLE `purchase_return_items` (
   CONSTRAINT `purchase_return_items_inventory_item_id_foreign` FOREIGN KEY (`inventory_item_id`) REFERENCES `inventory_items` (`id`) ON DELETE SET NULL,
   CONSTRAINT `purchase_return_items_purchase_order_line_id_foreign` FOREIGN KEY (`purchase_order_line_id`) REFERENCES `purchase_order_lines` (`id`) ON DELETE SET NULL,
   CONSTRAINT `purchase_return_items_purchase_return_id_foreign` FOREIGN KEY (`purchase_return_id`) REFERENCES `purchase_returns` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `purchase_returns`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -11013,7 +11075,7 @@ CREATE TABLE `purchase_returns` (
   CONSTRAINT `purchase_returns_purchase_order_id_foreign` FOREIGN KEY (`purchase_order_id`) REFERENCES `purchase_orders` (`id`) ON DELETE SET NULL,
   CONSTRAINT `purchase_returns_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `parties` (`id`) ON DELETE CASCADE,
   CONSTRAINT `purchase_returns_warehouse_id_foreign` FOREIGN KEY (`warehouse_id`) REFERENCES `inventory_warehouses` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `purchase_sequences`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -11033,7 +11095,7 @@ CREATE TABLE `purchase_sequences` (
   KEY `purchase_sequences_branch_id_foreign` (`branch_id`),
   CONSTRAINT `purchase_sequences_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `purchase_sequences_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `purchase_supplier_payments`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -11067,7 +11129,7 @@ CREATE TABLE `purchase_supplier_payments` (
   CONSTRAINT `purchase_supplier_payments_payment_method_id_foreign` FOREIGN KEY (`payment_method_id`) REFERENCES `payment_methods` (`id`) ON DELETE SET NULL,
   CONSTRAINT `purchase_supplier_payments_purchase_invoice_id_foreign` FOREIGN KEY (`purchase_invoice_id`) REFERENCES `purchase_invoices` (`id`) ON DELETE CASCADE,
   CONSTRAINT `purchase_supplier_payments_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `parties` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `query_fingerprints`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -11112,7 +11174,7 @@ CREATE TABLE `queue_audit_logs` (
   KEY `queue_audit_logs_institute_id_appointment_id_index` (`institute_id`,`appointment_id`),
   CONSTRAINT `queue_audit_logs_appointment_id_foreign` FOREIGN KEY (`appointment_id`) REFERENCES `appointments` (`id`) ON DELETE CASCADE,
   CONSTRAINT `queue_audit_logs_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `radiology_images`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -11268,7 +11330,7 @@ CREATE TABLE `restore_audits` (
   PRIMARY KEY (`id`),
   KEY `restore_audits_tenant_id_index` (`tenant_id`),
   KEY `restore_audits_restore_log_id_index` (`restore_log_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `restore_logs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -11297,7 +11359,7 @@ CREATE TABLE `restore_logs` (
   PRIMARY KEY (`id`),
   KEY `restore_logs_tenant_id_index` (`tenant_id`),
   KEY `restore_logs_rollback_token_index` (`rollback_token`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `restore_previews`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -11320,7 +11382,7 @@ CREATE TABLE `restore_previews` (
   PRIMARY KEY (`id`),
   KEY `restore_previews_tenant_id_backup_id_index` (`tenant_id`,`backup_id`),
   KEY `restore_previews_expires_at_index` (`expires_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `restore_rollbacks`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -11340,7 +11402,7 @@ CREATE TABLE `restore_rollbacks` (
   UNIQUE KEY `restore_rollbacks_rollback_token_unique` (`rollback_token`),
   KEY `restore_rollbacks_tenant_id_index` (`tenant_id`),
   KEY `restore_rollbacks_expires_at_index` (`expires_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `restore_tokens`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -11358,7 +11420,7 @@ CREATE TABLE `restore_tokens` (
   PRIMARY KEY (`id`),
   KEY `restore_tokens_tenant_id_user_id_index` (`tenant_id`,`user_id`),
   KEY `restore_tokens_expires_at_index` (`expires_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `results`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -11405,7 +11467,7 @@ CREATE TABLE `role_permissions` (
   KEY `fk_role_permissions_permission` (`permission_id`),
   CONSTRAINT `fk_role_permissions_permission` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_role_permissions_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `roles`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -11422,7 +11484,7 @@ CREATE TABLE `roles` (
   UNIQUE KEY `uq_roles_institute_slug` (`institute_id`,`slug`),
   KEY `idx_roles_institute` (`institute_id`),
   CONSTRAINT `fk_roles_institute` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `rooms`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -11537,7 +11599,7 @@ CREATE TABLE `sales_deliveries` (
   CONSTRAINT `sales_deliveries_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `sales_deliveries_order_id_foreign` FOREIGN KEY (`order_id`) REFERENCES `sales_orders` (`id`) ON DELETE CASCADE,
   CONSTRAINT `sales_deliveries_warehouse_id_foreign` FOREIGN KEY (`warehouse_id`) REFERENCES `inventory_warehouses` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `sales_delivery_lines`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -11564,7 +11626,7 @@ CREATE TABLE `sales_delivery_lines` (
   CONSTRAINT `sales_delivery_lines_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `sales_delivery_lines_inventory_item_id_foreign` FOREIGN KEY (`inventory_item_id`) REFERENCES `inventory_items` (`id`) ON DELETE SET NULL,
   CONSTRAINT `sales_delivery_lines_order_line_id_foreign` FOREIGN KEY (`order_line_id`) REFERENCES `sales_order_lines` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `sales_order_lines`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -11600,7 +11662,7 @@ CREATE TABLE `sales_order_lines` (
   CONSTRAINT `sales_order_lines_inventory_item_id_foreign` FOREIGN KEY (`inventory_item_id`) REFERENCES `inventory_items` (`id`) ON DELETE SET NULL,
   CONSTRAINT `sales_order_lines_order_id_foreign` FOREIGN KEY (`order_id`) REFERENCES `sales_orders` (`id`) ON DELETE CASCADE,
   CONSTRAINT `sales_order_lines_tax_group_id_foreign` FOREIGN KEY (`tax_group_id`) REFERENCES `tax_groups` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `sales_orders`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -11649,7 +11711,7 @@ CREATE TABLE `sales_orders` (
   CONSTRAINT `sales_orders_customer_id_foreign` FOREIGN KEY (`customer_id`) REFERENCES `parties` (`id`) ON DELETE CASCADE,
   CONSTRAINT `sales_orders_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `sales_orders_quotation_id_foreign` FOREIGN KEY (`quotation_id`) REFERENCES `sales_quotations` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `sales_quotation_lines`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -11681,7 +11743,7 @@ CREATE TABLE `sales_quotation_lines` (
   CONSTRAINT `sales_quotation_lines_inventory_item_id_foreign` FOREIGN KEY (`inventory_item_id`) REFERENCES `inventory_items` (`id`) ON DELETE SET NULL,
   CONSTRAINT `sales_quotation_lines_quotation_id_foreign` FOREIGN KEY (`quotation_id`) REFERENCES `sales_quotations` (`id`) ON DELETE CASCADE,
   CONSTRAINT `sales_quotation_lines_tax_group_id_foreign` FOREIGN KEY (`tax_group_id`) REFERENCES `tax_groups` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `sales_quotations`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -11725,7 +11787,7 @@ CREATE TABLE `sales_quotations` (
   CONSTRAINT `sales_quotations_currency_id_foreign` FOREIGN KEY (`currency_id`) REFERENCES `currencies` (`id`),
   CONSTRAINT `sales_quotations_customer_id_foreign` FOREIGN KEY (`customer_id`) REFERENCES `parties` (`id`) ON DELETE CASCADE,
   CONSTRAINT `sales_quotations_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `sales_return_items`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -11757,7 +11819,7 @@ CREATE TABLE `sales_return_items` (
   CONSTRAINT `sales_return_items_invoice_item_id_foreign` FOREIGN KEY (`invoice_item_id`) REFERENCES `invoice_items` (`id`) ON DELETE SET NULL,
   CONSTRAINT `sales_return_items_return_id_foreign` FOREIGN KEY (`return_id`) REFERENCES `sales_returns` (`id`) ON DELETE CASCADE,
   CONSTRAINT `sales_return_items_sales_order_line_id_foreign` FOREIGN KEY (`sales_order_line_id`) REFERENCES `sales_order_lines` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `sales_return_refunds`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -11863,7 +11925,7 @@ CREATE TABLE `sales_returns` (
   CONSTRAINT `sales_returns_posted_by_foreign` FOREIGN KEY (`posted_by`) REFERENCES `institute_users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `sales_returns_reversal_of_foreign` FOREIGN KEY (`reversal_of`) REFERENCES `sales_returns` (`id`) ON DELETE SET NULL,
   CONSTRAINT `sales_returns_warehouse_id_foreign` FOREIGN KEY (`warehouse_id`) REFERENCES `inventory_warehouses` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `sales_sequences`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -11883,7 +11945,7 @@ CREATE TABLE `sales_sequences` (
   KEY `sales_sequences_branch_id_foreign` (`branch_id`),
   CONSTRAINT `sales_sequences_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `sales_sequences_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `schema_migrations`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -11922,7 +11984,7 @@ CREATE TABLE `settings` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `settings_key_unique` (`key`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `share_capital_transactions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -12396,7 +12458,7 @@ CREATE TABLE `students` (
   CONSTRAINT `students_crm_lead_id_foreign` FOREIGN KEY (`crm_lead_id`) REFERENCES `crm_leads` (`id`) ON DELETE SET NULL,
   CONSTRAINT `students_preferred_batch_fk` FOREIGN KEY (`preferred_batch_id`) REFERENCES `batches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `students_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `sub_industries`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -12420,7 +12482,7 @@ CREATE TABLE `sub_industries` (
   KEY `sub_industries_country_id_index` (`country_id`),
   CONSTRAINT `sub_industries_country_id_foreign` FOREIGN KEY (`country_id`) REFERENCES `countries` (`id`) ON DELETE SET NULL,
   CONSTRAINT `sub_industries_industry_id_foreign` FOREIGN KEY (`industry_id`) REFERENCES `industries` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `subcategory_default_modules`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -12435,7 +12497,7 @@ CREATE TABLE `subcategory_default_modules` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `subcategory_default_modules_subcategory_id_module_key_unique` (`subcategory_id`,`module_key`),
   CONSTRAINT `subcategory_default_modules_subcategory_id_foreign` FOREIGN KEY (`subcategory_id`) REFERENCES `industry_subcategories` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `subject_academic_assignments`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -12543,7 +12605,7 @@ CREATE TABLE `subscription_packages` (
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_subscription_packages_slug` (`slug`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `super_admin_overrides`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -12567,7 +12629,7 @@ CREATE TABLE `super_admin_overrides` (
   KEY `super_admin_overrides_expires_at_index` (`expires_at`),
   CONSTRAINT `super_admin_overrides_approved_by_foreign` FOREIGN KEY (`approved_by`) REFERENCES `platform_admins` (`id`) ON DELETE SET NULL,
   CONSTRAINT `super_admin_overrides_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `supplier_credit_balances`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -12593,7 +12655,7 @@ CREATE TABLE `supplier_credit_balances` (
   CONSTRAINT `supplier_credit_balances_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `supplier_credit_balances_purchase_return_id_foreign` FOREIGN KEY (`purchase_return_id`) REFERENCES `purchase_returns` (`id`) ON DELETE CASCADE,
   CONSTRAINT `supplier_credit_balances_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `parties` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `supplier_refunds`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -12622,7 +12684,7 @@ CREATE TABLE `supplier_refunds` (
   CONSTRAINT `supplier_refunds_journal_id_foreign` FOREIGN KEY (`journal_id`) REFERENCES `journals` (`id`) ON DELETE SET NULL,
   CONSTRAINT `supplier_refunds_purchase_return_id_foreign` FOREIGN KEY (`purchase_return_id`) REFERENCES `purchase_returns` (`id`) ON DELETE SET NULL,
   CONSTRAINT `supplier_refunds_supplier_id_foreign` FOREIGN KEY (`supplier_id`) REFERENCES `parties` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `system_backups`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -12646,7 +12708,7 @@ CREATE TABLE `system_backups` (
   PRIMARY KEY (`id`),
   KEY `system_backups_type_status_index` (`type`,`status`),
   KEY `system_backups_created_at_index` (`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `system_health_audits`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -12761,7 +12823,7 @@ CREATE TABLE `tax_deduction_rules` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `tax_deduction_rules_country_code_code_unique` (`country_code`,`code`),
   KEY `tax_deduction_rules_is_active_index` (`is_active`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `tax_groups`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -12786,7 +12848,7 @@ CREATE TABLE `tax_groups` (
   KEY `idx_tax_groups_institute` (`institute_id`,`is_active`),
   CONSTRAINT `tax_groups_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `tax_groups_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `tax_jurisdictions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -13280,7 +13342,7 @@ CREATE TABLE `tenant_backup_keys` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `tenant_backup_keys_tenant_id_unique` (`tenant_id`),
   KEY `tenant_backup_keys_tenant_id_index` (`tenant_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `tenant_currency_settings`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -13351,7 +13413,7 @@ CREATE TABLE `tenant_drive_connections` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `tenant_drive_connections_tenant_id_unique` (`tenant_id`),
   KEY `tenant_drive_connections_tenant_id_index` (`tenant_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `tenant_recovery_archives`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -13388,7 +13450,7 @@ CREATE TABLE `themes` (
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_themes_slug` (`slug`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `tpa_claims`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -13421,7 +13483,7 @@ CREATE TABLE `tpa_claims` (
   CONSTRAINT `tpa_claims_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `tpa_claims_invoice_id_foreign` FOREIGN KEY (`invoice_id`) REFERENCES `medical_invoices` (`id`) ON DELETE CASCADE,
   CONSTRAINT `tpa_claims_patient_id_foreign` FOREIGN KEY (`patient_id`) REFERENCES `patients` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `training_attendance`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -13442,7 +13504,7 @@ CREATE TABLE `training_attendance` (
   KEY `training_attendance_institute_id_class_date_index` (`institute_id`,`class_date`),
   KEY `training_attendance_batch_id_index` (`batch_id`),
   KEY `training_attendance_student_id_index` (`student_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `training_batch_results`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -13466,7 +13528,7 @@ CREATE TABLE `training_batch_results` (
   CONSTRAINT `training_batch_results_batch_id_foreign` FOREIGN KEY (`batch_id`) REFERENCES `training_batches` (`id`) ON DELETE CASCADE,
   CONSTRAINT `training_batch_results_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE,
   CONSTRAINT `training_batch_results_student_id_foreign` FOREIGN KEY (`student_id`) REFERENCES `training_students` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `training_batches`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -13496,7 +13558,7 @@ CREATE TABLE `training_batches` (
   PRIMARY KEY (`id`),
   KEY `training_batches_institute_id_index` (`institute_id`),
   KEY `training_batches_batch_code_index` (`batch_code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `training_certificates`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -13531,7 +13593,7 @@ CREATE TABLE `training_certificates` (
   KEY `training_certificates_batch_id_index` (`batch_id`),
   KEY `training_certificates_certificate_number_index` (`certificate_number`),
   KEY `training_certificates_uuid_index` (`uuid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `training_classes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -13572,7 +13634,7 @@ CREATE TABLE `training_course_categories` (
   UNIQUE KEY `uq_tcc_inst_slug` (`institute_id`,`slug`),
   KEY `training_course_categories_institute_id_index` (`institute_id`),
   CONSTRAINT `training_course_categories_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `training_course_curricula`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -13659,7 +13721,7 @@ CREATE TABLE `training_course_subjects` (
   KEY `training_course_subjects_subject_id_index` (`subject_id`),
   CONSTRAINT `training_course_subjects_course_id_foreign` FOREIGN KEY (`course_id`) REFERENCES `training_courses` (`id`) ON DELETE CASCADE,
   CONSTRAINT `training_course_subjects_subject_id_foreign` FOREIGN KEY (`subject_id`) REFERENCES `training_subjects` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `training_courses`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -13716,7 +13778,7 @@ CREATE TABLE `training_courses` (
   CONSTRAINT `training_courses_category_id_foreign` FOREIGN KEY (`category_id`) REFERENCES `training_course_categories` (`id`) ON DELETE SET NULL,
   CONSTRAINT `training_courses_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE SET NULL,
   CONSTRAINT `training_courses_sub_category_id_foreign` FOREIGN KEY (`sub_category_id`) REFERENCES `training_course_sub_categories` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `training_enrollments`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -13739,7 +13801,7 @@ CREATE TABLE `training_enrollments` (
   KEY `training_enrollments_batch_id_index` (`batch_id`),
   KEY `training_enrollments_student_id_index` (`student_id`),
   KEY `training_enrollments_trainee_id_index` (`trainee_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `training_exam_results`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -13771,7 +13833,7 @@ CREATE TABLE `training_exam_results` (
   KEY `training_exam_results_exam_id_index` (`exam_id`),
   KEY `training_exam_results_student_id_index` (`student_id`),
   KEY `training_exam_results_subject_id_index` (`subject_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `training_exams`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -13799,7 +13861,7 @@ CREATE TABLE `training_exams` (
   PRIMARY KEY (`id`),
   KEY `training_exams_institute_id_index` (`institute_id`),
   KEY `training_exams_batch_id_index` (`batch_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `training_schedules`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -13826,7 +13888,7 @@ CREATE TABLE `training_schedules` (
   KEY `training_schedules_subject_id_index` (`subject_id`),
   KEY `training_schedules_batch_id_day_of_week_index` (`batch_id`,`day_of_week`),
   KEY `training_schedules_batch_effective_index` (`batch_id`,`effective_to`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `training_students`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -13905,7 +13967,7 @@ CREATE TABLE `training_students` (
   KEY `training_students_reg_no_index` (`reg_no`),
   KEY `training_students_student_id_index` (`student_id`),
   KEY `training_students_uuid_index` (`uuid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `training_subjects`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -13930,7 +13992,7 @@ CREATE TABLE `training_subjects` (
   KEY `training_subjects_subject_code_index` (`subject_code`),
   KEY `training_subjects_category_id_foreign` (`category_id`),
   CONSTRAINT `training_subjects_category_id_foreign` FOREIGN KEY (`category_id`) REFERENCES `training_course_categories` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `transactions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -14038,7 +14100,7 @@ CREATE TABLE `users` (
   UNIQUE KEY `users_google_id_unique` (`google_id`),
   KEY `users_last_login_at_index` (`last_login_at`),
   KEY `users_inactivity_warning_sent_at_index` (`inactivity_warning_sent_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `vaccination_records`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -14221,7 +14283,7 @@ CREATE TABLE `vital_signs` (
   KEY `vital_signs_doctor_id_recorded_at_index` (`doctor_id`,`recorded_at`),
   CONSTRAINT `vital_signs_admission_id_foreign` FOREIGN KEY (`admission_id`) REFERENCES `admissions` (`id`) ON DELETE CASCADE,
   CONSTRAINT `vital_signs_recorded_by_foreign` FOREIGN KEY (`recorded_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `wards`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -14244,7 +14306,7 @@ CREATE TABLE `wards` (
   KEY `wards_branch_id_index` (`branch_id`),
   CONSTRAINT `wards_branch_id_foreign` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE SET NULL,
   CONSTRAINT `wards_institute_id_foreign` FOREIGN KEY (`institute_id`) REFERENCES `institutes` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `worker_heartbeats`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -14263,7 +14325,7 @@ CREATE TABLE `worker_heartbeats` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `worker_heartbeats_worker_id_unique` (`worker_id`),
   KEY `worker_heartbeats_last_seen_at_index` (`last_seen_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `workflow_histories`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -15015,3 +15077,4 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (681,'2026_10_07_21
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (683,'2026_10_07_220000_reanchor_coa_per_tenant',229);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (685,'2026_10_08_090000_reanchor_account_groups_per_tenant',230);
 INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (686,'2026_10_08_110000_schema_reconcile_with_live',231);
+INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES (688,'2026_10_08_120000_add_alive_to_coa_unique_indexes',232);
