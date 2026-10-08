@@ -223,6 +223,16 @@ final class CoaTemplate
         return isset(self::map()[$code]);
     }
 
+    /**
+     * Canonical row tuple for a code, or null when unknown.
+     *
+     * @return array{0:string, 1:string, 2:?string, 3:bool, 4:bool, 5:string, 6:?array, 7:array}|null
+     */
+    public static function findByCode(string $code): ?array
+    {
+        return self::map()[$code] ?? null;
+    }
+
     /** Fail loud when a hardcoded code is absent from the canonical registry. */
     public static function validateCode(string $code): void
     {

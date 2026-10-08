@@ -18,6 +18,7 @@ use App\Support\BranchContext;
 use App\Support\TenantContext;
 use App\Support\Workspace;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\Concerns\ResolvesLegacyCoaCodes;
 
 /**
  * STEP 70 — Ledger Reconciliation Tests.
@@ -28,6 +29,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 class LedgerReconciliationTest extends \Tests\TestCase
 {
     use DatabaseTransactions;
+    use ResolvesLegacyCoaCodes;
 
     protected function setUp(): void
     {
@@ -66,6 +68,7 @@ class LedgerReconciliationTest extends \Tests\TestCase
     protected function setupAccounting(Institute $institute, ?int $branchId = null): void
     {
         app(AccountingSetupService::class)->setupForInstitute($institute->id, $branchId);
+        $this->ensureLegacyCoaFixture((int) $institute->id);
     }
 
     protected function asUser(User $user, int $workspaceId): static
@@ -77,7 +80,7 @@ class LedgerReconciliationTest extends \Tests\TestCase
     {
         return ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $institute->id)
-            ->where('code', $code)
+            ->where('code', $this->resolveCoaCode($code))
             ->firstOrFail();
     }
 
@@ -186,12 +189,12 @@ class LedgerReconciliationTest extends \Tests\TestCase
         $cashA = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)
             ->where('branch_id', $branchA->id)
-            ->where('code', '1000')
+            ->where('code', $this->resolveCoaCode('1000'))
             ->firstOrFail();
         $revenueA = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)
             ->where('branch_id', $branchA->id)
-            ->where('code', '4001')
+            ->where('code', $this->resolveCoaCode('4001'))
             ->firstOrFail();
 
         $this->postJournal($mawa, $branchA->id, '2026-10-01', [
@@ -247,7 +250,7 @@ class LedgerReconciliationTest extends \Tests\TestCase
         // Verify Tenant B does NOT see Tenant A's transactions
         $reports = app(AccountingReportService::class);
         $tbB = $reports->trialBalance($other->id, null, '2026-10-31');
-        $cashRowB = $tbB->firstWhere('code', '1000');
+        $cashRowB = $tbB->firstWhere('code', $this->resolveCoaCode('1000'));
         if ($cashRowB !== null) {
             $this->assertEqualsWithDelta(0.0, (float) $cashRowB->debit, 0.001);
         }

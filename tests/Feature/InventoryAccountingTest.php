@@ -25,6 +25,7 @@ use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Tests\Concerns\ResolvesLegacyCoaCodes;
 use Tests\TestCase;
 
 /**
@@ -41,6 +42,7 @@ use Tests\TestCase;
 class InventoryAccountingTest extends TestCase
 {
     use DatabaseTransactions;
+    use ResolvesLegacyCoaCodes;
 
     protected string $password = 'secret12345';
 
@@ -90,11 +92,12 @@ class InventoryAccountingTest extends TestCase
     private function setupAccounting(Institute $institute, ?Branch $branch = null): void
     {
         app(AccountingSetupService::class)->setupForInstitute($institute->id, $branch?->id);
+        $this->ensureLegacyCoaFixture((int) $institute->id);
     }
 
     private function coaId(Institute $institute, string $code): int
     {
-        $account = app(ChartOfAccountService::class)->accountByCode($institute->id, $code);
+        $account = app(ChartOfAccountService::class)->accountByCode($institute->id, $this->resolveCoaCode($code));
 
         return (int) $account->id;
     }

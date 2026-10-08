@@ -23,6 +23,7 @@ use App\Support\TenantContext;
 use App\Support\Workspace;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\Concerns\ResolvesLegacyCoaCodes;
 use Tests\TestCase;
 
 /**
@@ -37,6 +38,7 @@ use Tests\TestCase;
 class AccountingReportsTest extends TestCase
 {
     use DatabaseTransactions;
+    use ResolvesLegacyCoaCodes;
 
     protected string $password = 'secret12345';
 
@@ -102,15 +104,27 @@ class AccountingReportsTest extends TestCase
     protected function setupAccounting(Institute $institute, ?int $branchId = null): void
     {
         app(AccountingSetupService::class)->setupForInstitute($institute->id, $branchId);
+        $this->ensureLegacyCoaFixture((int) $institute->id);
     }
 
     protected function coaId(int $instituteId, ?int $branchId, string $code): int
     {
-        return (int) ChartOfAccount::withoutGlobalScopes()
+        $canonical = $this->resolveCoaCode($code);
+
+        $query = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $instituteId)
-            ->where('branch_id', $branchId)
-            ->where('code', $code)
-            ->value('id');
+            ->where('code', $canonical);
+
+        if ($branchId !== null) {
+            $id = (clone $query)->where('branch_id', $branchId)->value('id');
+            if ($id) {
+                return (int) $id;
+            }
+        }
+
+        $id = (clone $query)->whereNull('branch_id')->value('id');
+
+        return (int) ($id ?: $query->value('id'));
     }
 
     protected function currencyId(): int
@@ -159,8 +173,8 @@ class AccountingReportsTest extends TestCase
 
         $rows = $this->reports()->trialBalance((int) $mawa->id, null, now()->toDateString());
 
-        $cash = $rows->firstWhere('code', '1000');
-        $tuition = $rows->firstWhere('code', '4001');
+        $cash = $rows->firstWhere('code', $this->resolveCoaCode('1000'));
+        $tuition = $rows->firstWhere('code', $this->resolveCoaCode('4001'));
 
         $this->assertNotNull($cash);
         $this->assertNotNull($tuition);
@@ -225,7 +239,7 @@ class AccountingReportsTest extends TestCase
 
         $rows = $this->reports()->trialBalance((int) $mawa->id, null, now()->toDateString());
 
-        $cash = $rows->firstWhere('code', '1000');
+        $cash = $rows->firstWhere('code', $this->resolveCoaCode('1000'));
         $this->assertNotNull($cash);
         $this->assertSame(10000.0, $cash->balance);
     }
@@ -238,12 +252,12 @@ class AccountingReportsTest extends TestCase
         $journal = $this->postCashToIncome($mawa, null, 5000);
 
         $rows = $this->reports()->trialBalance((int) $mawa->id, null, now()->toDateString());
-        $this->assertSame(5000.0, $rows->firstWhere('code', '1000')->balance);
+        $this->assertSame(5000.0, $rows->firstWhere('code', $this->resolveCoaCode('1000'))->balance);
 
         $this->posting()->reverse($journal, (int) $mawa->id, 1, 'cancel');
 
         $rows = $this->reports()->trialBalance((int) $mawa->id, null, now()->toDateString());
-        $cash = $rows->firstWhere('code', '1000');
+        $cash = $rows->firstWhere('code', $this->resolveCoaCode('1000'));
         $this->assertNull($cash);
         $this->assertTrue($rows->isEmpty());
     }
@@ -274,8 +288,8 @@ class AccountingReportsTest extends TestCase
 
         $rows = $this->reports()->trialBalance((int) $mawa->id, null, now()->toDateString(), (int) $year->id);
 
-        $this->assertSame(2000.0, $rows->firstWhere('code', '1000')->balance);
-        $this->assertSame(-2000.0, $rows->firstWhere('code', '3001')->balance);
+        $this->assertSame(2000.0, $rows->firstWhere('code', $this->resolveCoaCode('1000'))->balance);
+        $this->assertSame(-2000.0, $rows->firstWhere('code', $this->resolveCoaCode('3001'))->balance);
     }
 
     // ------------------------------------------------------------ General ledger
@@ -455,8 +469,8 @@ class AccountingReportsTest extends TestCase
 
         $rows = $this->reports()->cashBankSummary((int) $mawa->id, null, now()->toDateString());
 
-        $cash = $rows->firstWhere('code', '1000');
-        $bank = $rows->firstWhere('code', '1100');
+        $cash = $rows->firstWhere('code', $this->resolveCoaCode('1000'));
+        $bank = $rows->firstWhere('code', $this->resolveCoaCode('1100'));
 
         $this->assertNotNull($cash);
         $this->assertNotNull($bank);

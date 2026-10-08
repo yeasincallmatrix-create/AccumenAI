@@ -16,11 +16,13 @@ use App\Services\Accounting\BillableExpenseBillingService;
 use App\Services\Accounting\ExpenseService;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\Concerns\ResolvesLegacyCoaCodes;
 use Tests\TestCase;
 
 class BillableExpenseTest extends TestCase
 {
     use DatabaseTransactions;
+    use ResolvesLegacyCoaCodes;
 
     protected Institute $institute;
     protected InstituteUser $actor;
@@ -47,6 +49,7 @@ class BillableExpenseTest extends TestCase
         ]);
 
         app(AccountingSetupService::class)->setupForInstitute($this->institute->id);
+        $this->ensureLegacyCoaFixture((int) $this->institute->id);
 
         $role = Role::where('slug', 'institute-admin')->whereNull('institute_id')->first();
         $this->actor = InstituteUser::create([
@@ -61,7 +64,7 @@ class BillableExpenseTest extends TestCase
         ]);
 
         $this->cashAccountId = ChartOfAccount::where('institute_id', $this->institute->id)
-            ->where('code', '1000')->first()->id;
+            ->where('code', $this->resolveCoaCode('1000'))->first()->id;
         $this->expenseAccountId = ChartOfAccount::where('institute_id', $this->institute->id)
             ->where('code', '5005')->first()->id;
 

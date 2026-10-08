@@ -19,6 +19,7 @@ use App\Support\BranchContext;
 use App\Support\TenantContext;
 use App\Support\Workspace;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\Concerns\ResolvesLegacyCoaCodes;
 
 /**
  * STEP 74 — Budget Variance Tests.
@@ -26,6 +27,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 class BudgetVarianceTest extends \Tests\TestCase
 {
     use DatabaseTransactions;
+    use ResolvesLegacyCoaCodes;
 
     protected function setUp(): void
     {
@@ -64,6 +66,7 @@ class BudgetVarianceTest extends \Tests\TestCase
     protected function setupAccounting(Institute $institute, ?int $branchId = null): void
     {
         app(AccountingSetupService::class)->setupForInstitute($institute->id, $branchId);
+        $this->ensureLegacyCoaFixture((int) $institute->id);
     }
 
     protected function asUser(User $user, int $workspaceId): static
@@ -75,7 +78,7 @@ class BudgetVarianceTest extends \Tests\TestCase
     {
         return ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $institute->id)
-            ->where('code', $code)
+            ->where('code', $this->resolveCoaCode($code))
             ->firstOrFail();
     }
 
@@ -241,12 +244,12 @@ class BudgetVarianceTest extends \Tests\TestCase
         $expense = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)
             ->where('branch_id', $branchA->id)
-            ->where('code', '5001')
+            ->where('code', $this->resolveCoaCode('5001'))
             ->firstOrFail();
         $cash = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)
             ->where('branch_id', $branchA->id)
-            ->where('code', '1000')
+            ->where('code', $this->resolveCoaCode('1000'))
             ->firstOrFail();
 
         $budgetSvc = app(BudgetService::class);

@@ -13,11 +13,13 @@ use App\Services\Accounting\AccountingSetupService;
 use App\Services\Accounting\RecurringTransactionService;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\Concerns\ResolvesLegacyCoaCodes;
 use Tests\TestCase;
 
 class RecurringTransactionTest extends TestCase
 {
     use DatabaseTransactions;
+    use ResolvesLegacyCoaCodes;
 
     protected RecurringTransactionService $service;
     protected Institute $institute;
@@ -44,6 +46,7 @@ class RecurringTransactionTest extends TestCase
         ]);
 
         app(AccountingSetupService::class)->setupForInstitute($this->institute->id);
+        $this->ensureLegacyCoaFixture((int) $this->institute->id);
 
         $role = Role::where('slug', 'institute-admin')->whereNull('institute_id')->first();
         $this->actor = InstituteUser::create([
@@ -69,9 +72,9 @@ class RecurringTransactionTest extends TestCase
     private function validJournalLines(): array
     {
         $cash = ChartOfAccount::where('institute_id', $this->institute->id)
-            ->where('code', '1000')->first();
+            ->where('code', $this->resolveCoaCode('1000'))->first();
         $revenue = ChartOfAccount::where('institute_id', $this->institute->id)
-            ->where('code', '4001')->first();
+            ->where('code', $this->resolveCoaCode('4001'))->first();
 
         return [
             ['coa_id' => $cash->id, 'debit' => 5000, 'credit' => 0],

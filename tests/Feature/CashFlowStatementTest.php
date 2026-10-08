@@ -16,10 +16,12 @@ use App\Support\BranchContext;
 use App\Support\TenantContext;
 use App\Support\Workspace;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\Concerns\ResolvesLegacyCoaCodes;
 
 class CashFlowStatementTest extends \Tests\TestCase
 {
     use DatabaseTransactions;
+    use ResolvesLegacyCoaCodes;
 
     protected function setUp(): void
     {
@@ -58,6 +60,7 @@ class CashFlowStatementTest extends \Tests\TestCase
     protected function setupAccounting(Institute $institute, ?int $branchId = null): void
     {
         app(AccountingSetupService::class)->setupForInstitute($institute->id, $branchId);
+        $this->ensureLegacyCoaFixture((int) $institute->id);
     }
 
     protected function asUser(User $user, int $workspaceId): static
@@ -69,7 +72,7 @@ class CashFlowStatementTest extends \Tests\TestCase
     {
         return ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $institute->id)
-            ->where('code', $code)
+            ->where('code', $this->resolveCoaCode($code))
             ->firstOrFail();
     }
 
@@ -363,12 +366,12 @@ class CashFlowStatementTest extends \Tests\TestCase
         $cash = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)
             ->where('branch_id', $branch->id)
-            ->where('code', '1000')
+            ->where('code', $this->resolveCoaCode('1000'))
             ->firstOrFail();
         $revenue = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)
             ->where('branch_id', $branch->id)
-            ->where('code', '4001')
+            ->where('code', $this->resolveCoaCode('4001'))
             ->firstOrFail();
 
         ChartOfAccount::withoutGlobalScopes()->where('id', $revenue->id)->update(['cash_flow_category' => 'operating']);

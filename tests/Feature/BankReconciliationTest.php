@@ -20,6 +20,7 @@ use App\Support\BranchContext;
 use App\Support\TenantContext;
 use App\Support\Workspace;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\Concerns\ResolvesLegacyCoaCodes;
 
 /**
  * STEP 71 — Bank Reconciliation Tests.
@@ -27,6 +28,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 class BankReconciliationTest extends \Tests\TestCase
 {
     use DatabaseTransactions;
+    use ResolvesLegacyCoaCodes;
 
     protected function setUp(): void
     {
@@ -65,6 +67,7 @@ class BankReconciliationTest extends \Tests\TestCase
     protected function setupAccounting(Institute $institute, ?int $branchId = null): void
     {
         app(AccountingSetupService::class)->setupForInstitute($institute->id, $branchId);
+        $this->ensureLegacyCoaFixture((int) $institute->id);
     }
 
     protected function asUser(User $user, int $workspaceId): static
@@ -76,7 +79,7 @@ class BankReconciliationTest extends \Tests\TestCase
     {
         return ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $institute->id)
-            ->where('code', $code)
+            ->where('code', $this->resolveCoaCode($code))
             ->firstOrFail();
     }
 
@@ -281,12 +284,12 @@ class BankReconciliationTest extends \Tests\TestCase
         $bankA = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)
             ->where('branch_id', $branchA->id)
-            ->where('code', '1100')
+            ->where('code', $this->resolveCoaCode('1100'))
             ->firstOrFail();
         $revenueA = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)
             ->where('branch_id', $branchA->id)
-            ->where('code', '4001')
+            ->where('code', $this->resolveCoaCode('4001'))
             ->firstOrFail();
 
         $journal = $this->postJournal($mawa, $branchA->id, '2026-11-01', [
@@ -320,7 +323,7 @@ class BankReconciliationTest extends \Tests\TestCase
         $bankB = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)
             ->where('branch_id', $branchB->id)
-            ->where('code', '1100')
+            ->where('code', $this->resolveCoaCode('1100'))
             ->firstOrFail();
 
         $stmtB = BankStatement::create([

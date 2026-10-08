@@ -21,11 +21,13 @@ use App\Support\Workspace;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Tests\Concerns\ResolvesLegacyCoaCodes;
 use Tests\TestCase;
 
 class BankFeedImportTest extends TestCase
 {
     use DatabaseTransactions;
+    use ResolvesLegacyCoaCodes;
 
     protected Institute $institute;
     protected int $bankAccountId;
@@ -51,11 +53,12 @@ class BankFeedImportTest extends TestCase
         ]);
 
         app(AccountingSetupService::class)->setupForInstitute($this->institute->id);
+        $this->ensureLegacyCoaFixture((int) $this->institute->id);
 
         $this->bankAccountId = ChartOfAccount::where('institute_id', $this->institute->id)
-            ->where('code', '1100')->first()->id;
+            ->where('code', $this->resolveCoaCode('1100'))->first()->id;
         $this->revenueAccountId = ChartOfAccount::where('institute_id', $this->institute->id)
-            ->where('code', '4001')->first()->id;
+            ->where('code', $this->resolveCoaCode('4001'))->first()->id;
 
         TenantContext::set($this->institute->id);
     }

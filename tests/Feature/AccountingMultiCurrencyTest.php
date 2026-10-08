@@ -28,6 +28,7 @@ use App\Support\Workspace;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Tests\Concerns\ResolvesLegacyCoaCodes;
 use Tests\TestCase;
 
 /**
@@ -41,6 +42,7 @@ use Tests\TestCase;
 class AccountingMultiCurrencyTest extends TestCase
 {
     use DatabaseTransactions;
+    use ResolvesLegacyCoaCodes;
 
     protected string $password = 'secret12345';
 
@@ -97,6 +99,7 @@ class AccountingMultiCurrencyTest extends TestCase
     protected function setupAccounting(Institute $institute, ?int $branchId = null): void
     {
         app(AccountingSetupService::class)->setupForInstitute($institute->id, $branchId);
+        $this->ensureLegacyCoaFixture((int) $institute->id);
     }
 
     protected function currencyId(string $code): int
@@ -116,11 +119,22 @@ class AccountingMultiCurrencyTest extends TestCase
 
     protected function coaId(int $instituteId, ?int $branchId, string $code): int
     {
-        return (int) ChartOfAccount::withoutGlobalScopes()
+        $canonical = $this->resolveCoaCode($code);
+
+        $query = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $instituteId)
-            ->where('branch_id', $branchId)
-            ->where('code', $code)
-            ->value('id');
+            ->where('code', $canonical);
+
+        if ($branchId !== null) {
+            $id = (clone $query)->where('branch_id', $branchId)->value('id');
+            if ($id) {
+                return (int) $id;
+            }
+        }
+
+        $id = (clone $query)->whereNull('branch_id')->value('id');
+
+        return (int) ($id ?: $query->value('id'));
     }
 
     protected function fx(): FxConversionService

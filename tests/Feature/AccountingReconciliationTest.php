@@ -17,6 +17,7 @@ use App\Support\BranchContext;
 use App\Support\TenantContext;
 use App\Support\Workspace;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Tests\Concerns\ResolvesLegacyCoaCodes;
 
 /**
  * STEP 69E — Accounting reconciliation tests.
@@ -27,6 +28,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 class AccountingReconciliationTest extends \Tests\TestCase
 {
     use DatabaseTransactions;
+    use ResolvesLegacyCoaCodes;
 
     protected function setUp(): void
     {
@@ -65,6 +67,7 @@ class AccountingReconciliationTest extends \Tests\TestCase
     protected function setupAccounting(Institute $institute, ?int $branchId = null): void
     {
         app(AccountingSetupService::class)->setupForInstitute($institute->id, $branchId);
+        $this->ensureLegacyCoaFixture((int) $institute->id);
     }
 
     protected function asUser(User $user, int $workspaceId): static
@@ -76,7 +79,7 @@ class AccountingReconciliationTest extends \Tests\TestCase
     {
         return ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $institute->id)
-            ->where('code', $code)
+            ->where('code', $this->resolveCoaCode($code))
             ->firstOrFail();
     }
 
@@ -211,12 +214,12 @@ class AccountingReconciliationTest extends \Tests\TestCase
         $cashA = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)
             ->where('branch_id', $branchA->id)
-            ->where('code', '1000')
+            ->where('code', $this->resolveCoaCode('1000'))
             ->firstOrFail();
         $revenueA = ChartOfAccount::withoutGlobalScopes()
             ->where('institute_id', $mawa->id)
             ->where('branch_id', $branchA->id)
-            ->where('code', '4001')
+            ->where('code', $this->resolveCoaCode('4001'))
             ->firstOrFail();
 
         // Branch A transaction

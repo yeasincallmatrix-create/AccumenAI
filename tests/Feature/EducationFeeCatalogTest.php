@@ -22,11 +22,13 @@ use App\Services\Education\FeeStructureService;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Validation\ValidationException;
+use Tests\Concerns\ResolvesLegacyCoaCodes;
 use Tests\TestCase;
 
 class EducationFeeCatalogTest extends TestCase
 {
     use DatabaseTransactions;
+    use ResolvesLegacyCoaCodes;
 
     private string $password = 'password123';
 
@@ -143,6 +145,7 @@ class EducationFeeCatalogTest extends TestCase
     private function setupAccounting(Institute $institute, ?Branch $branch = null): void
     {
         app(AccountingSetupService::class)->setupForInstitute($institute->id, $branch?->id);
+        $this->ensureLegacyCoaFixture((int) $institute->id);
     }
 
     private function feeHead(Institute $institute, ?Branch $branch, string $type, string $name): FeeHead
@@ -173,7 +176,7 @@ class EducationFeeCatalogTest extends TestCase
         $this->assertSame((int) $coa->accountByCode($institute->id, '4002', $branch->id)->id, (int) $admission->income_coa_id);
 
         $tuition = $this->feeHead($institute, $branch, 'course_tuition', 'Tuition Fee');
-        $this->assertSame((int) $coa->accountByCode($institute->id, '4001', $branch->id)->id, (int) $tuition->income_coa_id);
+        $this->assertSame((int) $coa->accountByCode($institute->id, $this->resolveCoaCode('4001'), $branch->id)->id, (int) $tuition->income_coa_id);
 
         $other = $this->feeHead($institute, $branch, 'other', 'Library Fee');
         $this->assertSame((int) $coa->accountByCode($institute->id, '4004', $branch->id)->id, (int) $other->income_coa_id);
