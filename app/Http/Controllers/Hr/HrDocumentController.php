@@ -38,6 +38,7 @@ class HrDocumentController extends Controller
                 return true;
             }
         }
+
         return false;
     }
 
@@ -76,17 +77,18 @@ class HrDocumentController extends Controller
                 'expiry_applicable' => (bool) $c->expiry_applicable,
                 'verification_required' => (bool) $c->verification_required,
             ]);
+
         return response()->json(['success' => true, 'data' => $categories]);
     }
 
-    public function index(Request $request, HrEmployee $hrEmployee)
+    public function index(Request $request, HrEmployee $employee)
     {
         $institute = $this->requireInstitute($request);
-        $this->ensureSameInstitute($hrEmployee, (int) $institute->id, $this->actingBranchId($request));
+        $this->ensureSameInstitute($employee, (int) $institute->id, $this->actingBranchId($request));
 
         $docs = Document::query()
             ->where('documentable_type', HrEmployee::class)
-            ->where('documentable_id', $hrEmployee->id)
+            ->where('documentable_id', $employee->id)
             ->when(! $request->boolean('include_archived'), fn ($q) => $q->where('status', Document::STATUS_ACTIVE))
             ->with(['category', 'uploader', 'verifier'])
             ->orderByDesc('id')
@@ -96,7 +98,7 @@ class HrDocumentController extends Controller
         return response()->json(['success' => true, 'data' => $docs]);
     }
 
-    public function store(Request $request, HrEmployee $hrEmployee)
+    public function store(Request $request, HrEmployee $employee)
     {
         $request->validate([
             'category_id' => ['required', 'integer'],
@@ -109,12 +111,12 @@ class HrDocumentController extends Controller
         ]);
 
         $institute = $this->requireInstitute($request);
-        $this->ensureSameInstitute($hrEmployee, (int) $institute->id, $this->actingBranchId($request));
+        $this->ensureSameInstitute($employee, (int) $institute->id, $this->actingBranchId($request));
 
         $document = $this->documents->upload(
             instituteId: (int) $institute->id,
             entitySlug: 'hr-employee',
-            entityId: (int) $hrEmployee->id,
+            entityId: (int) $employee->id,
             categoryId: (int) $request->integer('category_id'),
             file: $request->file('file'),
             actorId: $this->actorId($request),
@@ -164,6 +166,7 @@ class HrDocumentController extends Controller
         if ($response instanceof BinaryFileResponse || $response instanceof StreamedResponse) {
             return $response;
         }
+
         return $response;
     }
 
@@ -175,6 +178,7 @@ class HrDocumentController extends Controller
         abort_if($document->documentable_type !== HrEmployee::class, 404);
 
         $document = $this->documents->replace($document, $request->file('file'), $this->actorId($request));
+
         return response()->json(['success' => true, 'message' => 'Document replaced (version '.$document->version.').', 'data' => $this->present($document->load('category', 'uploader'))]);
     }
 
@@ -184,6 +188,7 @@ class HrDocumentController extends Controller
         $this->ensureDocumentAccess($document, (int) $institute->id, $this->actingBranchId($request));
         abort_if($document->documentable_type !== HrEmployee::class, 404);
         $this->documents->archive($document, $this->actorId($request));
+
         return response()->json(['success' => true, 'message' => 'Document archived.', 'data' => $this->present($document->fresh()->load('category', 'uploader'))]);
     }
 
@@ -193,6 +198,7 @@ class HrDocumentController extends Controller
         $this->ensureDocumentAccess($document, (int) $institute->id, $this->actingBranchId($request));
         abort_if($document->documentable_type !== HrEmployee::class, 404);
         $this->documents->delete($document, $this->actorId($request));
+
         return response()->json(['success' => true, 'message' => 'Document deleted.']);
     }
 
@@ -203,6 +209,7 @@ class HrDocumentController extends Controller
         $this->ensureDocumentAccess($document, (int) $institute->id, $this->actingBranchId($request));
         abort_if($document->documentable_type !== HrEmployee::class, 404);
         $document = $this->verification->verify($document, (int) $this->actorId($request), $request->string('notes')->toString() ?: null);
+
         return response()->json(['success' => true, 'message' => 'Document verified.', 'data' => $this->present($document->load('category', 'uploader', 'verifier'))]);
     }
 
@@ -213,6 +220,7 @@ class HrDocumentController extends Controller
         $this->ensureDocumentAccess($document, (int) $institute->id, $this->actingBranchId($request));
         abort_if($document->documentable_type !== HrEmployee::class, 404);
         $document = $this->verification->reject($document, (int) $this->actorId($request), $request->string('reason')->toString(), $request->string('notes')->toString() ?: null);
+
         return response()->json(['success' => true, 'message' => 'Document rejected.', 'data' => $this->present($document->load('category', 'uploader', 'verifier'))]);
     }
 
@@ -229,6 +237,7 @@ class HrDocumentController extends Controller
             'uploaded_by' => $v->uploader?->name ?? 'System',
             'created_at' => optional($v->created_at)->format('d M Y H:i'),
         ]);
+
         return response()->json(['success' => true, 'data' => ['current_version' => $document->version, 'versions' => $versions]]);
     }
 
@@ -239,6 +248,7 @@ class HrDocumentController extends Controller
         $days = (int) ($request->query('days', 30));
         $expired = $this->hrDocs->expiredDocuments((int) $institute->id, $branchId)->map(fn ($d) => $this->present($d->load('category')));
         $expiringSoon = $this->hrDocs->expiringSoonDocuments((int) $institute->id, $days, $branchId)->map(fn ($d) => $this->present($d->load('category')));
+
         return response()->json(['success' => true, 'data' => ['expired' => $expired, 'expiring_soon' => $expiringSoon]]);
     }
 
@@ -256,6 +266,7 @@ class HrDocumentController extends Controller
             ],
             'missing' => $row['missing']->map(fn ($c) => ['id' => $c->id, 'name' => $c->name, 'slug' => $c->slug]),
         ]);
+
         return response()->json(['success' => true, 'data' => $missing]);
     }
 

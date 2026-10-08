@@ -46,11 +46,16 @@ class HrEmployee extends Model
 
     public const GENDERS = ['male', 'female', 'other'];
 
+    public const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
+    public const MARITAL_STATUSES = ['single', 'married', 'divorced', 'separated', 'widowed'];
+
     protected function casts(): array
     {
         return [
             'date_of_birth' => 'date',
             'joining_date' => 'date',
+            'expertise' => 'array',
         ];
     }
 

@@ -40,10 +40,10 @@ class HrPayrollController extends Controller
 
     // ---------------- Salary Assignment
 
-    public function assignSalary(Request $request, HrEmployee $hrEmployee)
+    public function assignSalary(Request $request, HrEmployee $employee)
     {
         $institute = $this->requireInstitute($request);
-        $this->ensureSameInstitute($hrEmployee, $institute->id, $this->actingBranchId($request));
+        $this->ensureSameInstitute($employee, $institute->id, $this->actingBranchId($request));
         $data = $request->validate([
             'salary_structure_id' => ['nullable', 'integer', 'exists:hr_salary_structures,id'],
             'effective_date' => ['required', 'date'],
@@ -60,7 +60,7 @@ class HrPayrollController extends Controller
             'deduction_amount' => ['nullable', 'numeric', 'min:0'],
             'tax_deduction' => ['nullable', 'numeric', 'min:0'],
         ]);
-        $data['employee_id'] = $hrEmployee->id;
+        $data['employee_id'] = $employee->id;
         $assignment = $this->payrolls->assignSalary($data, $institute->id, $this->actorId($request));
 
         return back()->with('status', 'Salary assigned effective '.$assignment->effective_date->format('Y-m-d'));
@@ -127,12 +127,12 @@ class HrPayrollController extends Controller
         return back()->with('status', 'Payroll generated.');
     }
 
-    public function preview(Request $request, HrEmployee $hrEmployee, HrPayrollPeriod $hrPayrollPeriod)
+    public function preview(Request $request, HrEmployee $employee, HrPayrollPeriod $hrPayrollPeriod)
     {
         $institute = $this->requireInstitute($request);
-        $this->ensureSameInstitute($hrEmployee, $institute->id, $this->actingBranchId($request));
+        $this->ensureSameInstitute($employee, $institute->id, $this->actingBranchId($request));
         $this->ensureSameInstitute($hrPayrollPeriod, $institute->id, $this->actingBranchId($request));
-        $calc = $this->payrolls->preview($hrEmployee->id, $hrPayrollPeriod->id, $institute->id);
+        $calc = $this->payrolls->preview($employee->id, $hrPayrollPeriod->id, $institute->id);
 
         return response()->json(['success' => true, 'data' => $calc]);
     }

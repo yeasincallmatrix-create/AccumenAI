@@ -4,15 +4,22 @@ namespace App\Http\Controllers\Hr;
 
 use App\Http\Controllers\Concerns\ResolvesInstitute;
 use App\Http\Controllers\Controller;
+use App\Models\AdministrativeUnit;
 use App\Models\Branch;
+use App\Models\Country;
 use App\Models\HrDepartment;
 use App\Models\HrDesignation;
 use App\Models\HrEmployee;
+use App\Models\HrEmployeeSkill;
 use App\Models\HrEmploymentHistory;
 use App\Models\HrEmploymentPeriod;
+use App\Models\HrPerformanceReview;
+use App\Models\HrTrainingEnrollment;
+use App\Models\Institute;
 use App\Services\HrEmployeeService;
 use App\Services\HrEmploymentLifecycleService;
 use App\Services\ProfileImageService;
+use App\Support\GeoHierarchy;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -81,6 +88,9 @@ class HrEmployeeController extends Controller
     {
         $institute = $this->requireInstitute($request);
 
+        $employee = new HrEmployee(['institute_id' => $institute->id]);
+        $countryId = $this->instituteCountryId($institute);
+
         return view('hr.employees.form', [
             'institute' => $institute,
             'employee' => null,
@@ -91,6 +101,9 @@ class HrEmployeeController extends Controller
             'statuses' => HrEmployee::EMPLOYMENT_STATUSES,
             'types' => HrEmployee::EMPLOYMENT_TYPES,
             'genders' => HrEmployee::GENDERS,
+            'presentAddress' => $this->addressData($employee, 'present_', $countryId),
+            'permanentAddress' => $this->addressData($employee, 'permanent_', $countryId),
+            'defaultCountryId' => $countryId,
         ]);
     }
 
@@ -109,20 +122,20 @@ class HrEmployeeController extends Controller
         return redirect()->route('hr.employees.show', $employee)->with('status', 'Employee "'.$employee->display_name.'" created ('.$employee->employee_code.').');
     }
 
-    public function show(Request $request, HrEmployee $hrEmployee): View
+    public function show(Request $request, HrEmployee $employee): View
     {
         $institute = $this->requireInstitute($request);
-        $this->ensureSameInstitute($hrEmployee, $institute->id);
-        $hrEmployee->load(['branch', 'department', 'designation', 'reportingManager', 'instituteUser']);
+        $this->ensureSameInstitute($employee, $institute->id);
+        $employee->load(['branch', 'department', 'designation', 'reportingManager', 'instituteUser']);
 
         $histories = HrEmploymentHistory::query()
-            ->where('employee_id', $hrEmployee->id)
+            ->where('employee_id', $employee->id)
             ->where('institute_id', $institute->id)
             ->with(['previousBranch', 'newBranch', 'previousDepartment', 'newDepartment', 'previousDesignation', 'newDesignation', 'previousManager', 'newManager', 'changedBy'])
             ->orderBy('effective_date')->orderBy('id')->get();
 
         $periods = HrEmploymentPeriod::query()
-            ->where('employee_id', $hrEmployee->id)
+            ->where('employee_id', $employee->id)
             ->where('institute_id', $institute->id)
             ->orderBy('start_date')->orderBy('id')->get();
 
@@ -133,13 +146,13 @@ class HrEmployeeController extends Controller
         }
 
         // HR-8: performance & training history for employee profile
-        $performanceReviews = \App\Models\HrPerformanceReview::where('employee_id', $hrEmployee->id)->where('institute_id', $institute->id)->with(['period', 'kpis'])->orderByDesc('review_date')->limit(10)->get();
-        $trainingEnrollments = \App\Models\HrTrainingEnrollment::where('employee_id', $hrEmployee->id)->where('institute_id', $institute->id)->with(['training'])->orderByDesc('created_at')->limit(10)->get();
-        $skills = \App\Models\HrEmployeeSkill::where('employee_id', $hrEmployee->id)->where('institute_id', $institute->id)->orderByDesc('acquired_date')->limit(20)->get();
+        $performanceReviews = HrPerformanceReview::where('employee_id', $employee->id)->where('institute_id', $institute->id)->with(['period', 'kpis'])->orderByDesc('review_date')->limit(10)->get();
+        $trainingEnrollments = HrTrainingEnrollment::where('employee_id', $employee->id)->where('institute_id', $institute->id)->with(['training'])->orderByDesc('created_at')->limit(10)->get();
+        $skills = HrEmployeeSkill::where('employee_id', $employee->id)->where('institute_id', $institute->id)->orderByDesc('acquired_date')->limit(20)->get();
 
         return view('hr.employees.show', [
             'institute' => $institute,
-            'employee' => $hrEmployee,
+            'employee' => $employee,
             'histories' => $histories,
             'periods' => $periods,
             'currentPeriod' => $currentPeriod,
@@ -150,7 +163,7 @@ class HrEmployeeController extends Controller
             'branches' => $this->branchOptions($institute->id),
             'departments' => HrDepartment::query()->where('is_active', true)->ordered()->get(),
             'designations' => HrDesignation::query()->where('is_active', true)->ordered()->get(),
-            'managers' => $this->managerOptions($hrEmployee->id),
+            'managers' => $this->managerOptions($employee->id),
             'canUpdate' => $this->can($request, ['hr.employee.update', 'hr.manage']),
             'canDelete' => $this->can($request, ['hr.employee.delete', 'hr.manage']),
             'canTransfer' => $this->can($request, ['hr.transfer', 'hr.employee.update', 'hr.manage', 'hr.employee.manage']),
@@ -165,29 +178,32 @@ class HrEmployeeController extends Controller
         ]);
     }
 
-    public function edit(Request $request, HrEmployee $hrEmployee): View
+    public function edit(Request $request, HrEmployee $employee): View
     {
         $institute = $this->requireInstitute($request);
-        $this->ensureSameInstitute($hrEmployee, $institute->id);
+        $this->ensureSameInstitute($employee, $institute->id);
 
         return view('hr.employees.form', [
             'institute' => $institute,
-            'employee' => $hrEmployee,
+            'employee' => $employee,
             'branches' => $this->branchOptions($institute->id),
             'departments' => HrDepartment::query()->where('is_active', true)->ordered()->get(),
             'designations' => HrDesignation::query()->where('is_active', true)->ordered()->get(),
-            'managers' => $this->managerOptions($hrEmployee->id),
+            'managers' => $this->managerOptions($employee->id),
             'statuses' => HrEmployee::EMPLOYMENT_STATUSES,
             'types' => HrEmployee::EMPLOYMENT_TYPES,
             'genders' => HrEmployee::GENDERS,
+            'presentAddress' => $this->addressData($employee, 'present_'),
+            'permanentAddress' => $this->addressData($employee, 'permanent_'),
+            'defaultCountryId' => $employee->present_country_id ?: $employee->permanent_country_id ?: $this->instituteCountryId($institute),
         ]);
     }
 
-    public function update(Request $request, HrEmployee $hrEmployee): RedirectResponse
+    public function update(Request $request, HrEmployee $employee): RedirectResponse
     {
         $institute = $this->requireInstitute($request);
-        $this->ensureSameInstitute($hrEmployee, $institute->id);
-        $data = $this->validated($request, $hrEmployee->id);
+        $this->ensureSameInstitute($employee, $institute->id);
+        $data = $this->validated($request, $employee->id);
 
         if ($request->hasFile('profile_photo')) {
             $data['profile_photo'] = $this->profileImage->processAndStore($request->file('profile_photo'), 'hr-employees');
@@ -197,26 +213,26 @@ class HrEmployeeController extends Controller
 
         $branchId = $this->resolveBranchId($request, $data['branch_id'] ?? null);
 
-        $this->employeeService->update($hrEmployee, $data, $institute->id, $branchId, $this->actorId($request));
+        $this->employeeService->update($employee, $data, $institute->id, $branchId, $this->actorId($request));
 
-        return redirect()->route('hr.employees.show', $hrEmployee)->with('status', 'Employee updated.');
+        return redirect()->route('hr.employees.show', $employee)->with('status', 'Employee updated.');
     }
 
-    public function destroy(Request $request, HrEmployee $hrEmployee): RedirectResponse
+    public function destroy(Request $request, HrEmployee $employee): RedirectResponse
     {
         $institute = $this->requireInstitute($request);
-        $this->ensureSameInstitute($hrEmployee, $institute->id);
-        $this->employeeService->delete($hrEmployee, $institute->id, $this->actorId($request), $this->actingBranchId($request));
+        $this->ensureSameInstitute($employee, $institute->id);
+        $this->employeeService->delete($employee, $institute->id, $this->actorId($request), $this->actingBranchId($request));
 
         return redirect()->route('hr.employees.index')->with('status', 'Employee deleted.');
     }
 
     // ---------------- HR-2 Lifecycle
 
-    public function transfer(Request $request, HrEmployee $hrEmployee): RedirectResponse
+    public function transfer(Request $request, HrEmployee $employee): RedirectResponse
     {
         $institute = $this->requireInstitute($request);
-        $this->ensureSameInstitute($hrEmployee, $institute->id);
+        $this->ensureSameInstitute($employee, $institute->id);
 
         $data = $request->validate([
             'effective_date' => ['required', 'date'],
@@ -231,15 +247,15 @@ class HrEmployeeController extends Controller
             'notes' => ['nullable', 'string', 'max:5000'],
         ]);
 
-        $this->lifecycle->transfer($hrEmployee, $data, $institute->id, $this->actingBranchId($request), $this->actorId($request));
+        $this->lifecycle->transfer($employee, $data, $institute->id, $this->actingBranchId($request), $this->actorId($request));
 
         return back()->with('status', 'Employment transfer recorded.');
     }
 
-    public function promote(Request $request, HrEmployee $hrEmployee): RedirectResponse
+    public function promote(Request $request, HrEmployee $employee): RedirectResponse
     {
         $institute = $this->requireInstitute($request);
-        $this->ensureSameInstitute($hrEmployee, $institute->id);
+        $this->ensureSameInstitute($employee, $institute->id);
 
         $data = $request->validate([
             'effective_date' => ['required', 'date'],
@@ -252,15 +268,15 @@ class HrEmployeeController extends Controller
             'notes' => ['nullable', 'string', 'max:5000'],
         ]);
 
-        $this->lifecycle->promote($hrEmployee, $data, $institute->id, $this->actingBranchId($request), $this->actorId($request));
+        $this->lifecycle->promote($employee, $data, $institute->id, $this->actingBranchId($request), $this->actorId($request));
 
         return back()->with('status', ucfirst($data['event_type'] ?? 'promotion').' recorded.');
     }
 
-    public function resign(Request $request, HrEmployee $hrEmployee): RedirectResponse
+    public function resign(Request $request, HrEmployee $employee): RedirectResponse
     {
         $institute = $this->requireInstitute($request);
-        $this->ensureSameInstitute($hrEmployee, $institute->id);
+        $this->ensureSameInstitute($employee, $institute->id);
 
         $data = $request->validate([
             'resignation_date' => ['required', 'date'],
@@ -269,7 +285,7 @@ class HrEmployeeController extends Controller
             'notes' => ['nullable', 'string', 'max:5000'],
         ]);
 
-        $this->lifecycle->resign($hrEmployee, $data, $institute->id, $this->actingBranchId($request), $this->actorId($request));
+        $this->lifecycle->resign($employee, $data, $institute->id, $this->actingBranchId($request), $this->actorId($request));
 
         return back()->with('status', 'Resignation recorded (pending approval).');
     }
@@ -286,10 +302,10 @@ class HrEmployeeController extends Controller
         return back()->with('status', 'Resignation '.($data['decision'] === 'approved' ? 'approved' : 'rejected').'.');
     }
 
-    public function terminate(Request $request, HrEmployee $hrEmployee): RedirectResponse
+    public function terminate(Request $request, HrEmployee $employee): RedirectResponse
     {
         $institute = $this->requireInstitute($request);
-        $this->ensureSameInstitute($hrEmployee, $institute->id);
+        $this->ensureSameInstitute($employee, $institute->id);
 
         $data = $request->validate([
             'termination_date' => ['required', 'date'],
@@ -297,15 +313,15 @@ class HrEmployeeController extends Controller
             'notes' => ['nullable', 'string', 'max:5000'],
         ]);
 
-        $this->lifecycle->terminate($hrEmployee, $data, $institute->id, $this->actingBranchId($request), $this->actorId($request));
+        $this->lifecycle->terminate($employee, $data, $institute->id, $this->actingBranchId($request), $this->actorId($request));
 
         return back()->with('status', 'Employee terminated.');
     }
 
-    public function reactivate(Request $request, HrEmployee $hrEmployee): RedirectResponse
+    public function reactivate(Request $request, HrEmployee $employee): RedirectResponse
     {
         $institute = $this->requireInstitute($request);
-        $this->ensureSameInstitute($hrEmployee, $institute->id);
+        $this->ensureSameInstitute($employee, $institute->id);
 
         $data = $request->validate([
             'effective_date' => ['required', 'date'],
@@ -313,7 +329,7 @@ class HrEmployeeController extends Controller
             'notes' => ['nullable', 'string', 'max:5000'],
         ]);
 
-        $this->lifecycle->reactivate($hrEmployee, $data, $institute->id, $this->actingBranchId($request), $this->actorId($request));
+        $this->lifecycle->reactivate($employee, $data, $institute->id, $this->actingBranchId($request), $this->actorId($request));
 
         return back()->with('status', 'Employee reactivated.');
     }
@@ -343,15 +359,35 @@ class HrEmployeeController extends Controller
      */
     private function validated(Request $request, ?int $ignoreId): array
     {
+        // The expertise chip input posts a JSON string in a hidden field.
+        $request->merge(['expertise' => $this->expertiseList($request->input('expertise'))]);
+
         return $request->validate([
             'first_name' => ['required', 'string', 'max:60'],
             'middle_name' => ['nullable', 'string', 'max:60'],
             'last_name' => ['required', 'string', 'max:60'],
             'gender' => ['nullable', Rule::in(HrEmployee::GENDERS)],
+            'blood_group' => ['nullable', Rule::in(HrEmployee::BLOOD_GROUPS)],
+            'marital_status' => ['nullable', Rule::in(HrEmployee::MARITAL_STATUSES)],
+            'education_qualification' => ['nullable', 'string', 'max:500'],
+            'expertise' => ['nullable', 'array'],
+            'expertise.*' => ['string', 'max:100'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
             'phone' => ['nullable', 'string', 'max:20', 'regex:/^\+?[0-9\s\-]{7,20}$/'],
             'email' => ['nullable', 'string', 'email', 'max:150'],
             'address' => ['nullable', 'string', 'max:2000'],
+            'present_address' => ['nullable', 'string', 'max:255'],
+            'permanent_address' => ['nullable', 'string', 'max:255'],
+            'present_country_id' => ['nullable', 'integer', Rule::exists('countries', 'id')],
+            'present_admin_1_id' => ['nullable', 'integer', Rule::exists('administrative_units', 'id')],
+            'present_admin_2_id' => ['nullable', 'integer', Rule::exists('administrative_units', 'id')],
+            'present_admin_3_id' => ['nullable', 'integer', Rule::exists('administrative_units', 'id')],
+            'present_zip_code' => ['nullable', 'string', 'max:10'],
+            'permanent_country_id' => ['nullable', 'integer', Rule::exists('countries', 'id')],
+            'permanent_admin_1_id' => ['nullable', 'integer', Rule::exists('administrative_units', 'id')],
+            'permanent_admin_2_id' => ['nullable', 'integer', Rule::exists('administrative_units', 'id')],
+            'permanent_admin_3_id' => ['nullable', 'integer', Rule::exists('administrative_units', 'id')],
+            'permanent_zip_code' => ['nullable', 'string', 'max:10'],
             'emergency_contact_name' => ['nullable', 'string', 'max:120'],
             'emergency_contact_phone' => ['nullable', 'string', 'max:20', 'regex:/^\+?[0-9\s\-]{7,20}$/'],
             'national_id' => ['nullable', 'string', 'max:60'],
@@ -366,6 +402,87 @@ class HrEmployeeController extends Controller
             'notes' => ['nullable', 'string', 'max:5000'],
             'profile_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:100'],
         ]);
+    }
+
+    /**
+     * Normalise the expertise hidden field (JSON string) into a trimmed,
+     * de-duplicated list of tags.
+     *
+     * @return array<int,string>
+     */
+    private function expertiseList(mixed $raw): array
+    {
+        if (is_string($raw)) {
+            $raw = json_decode($raw, true);
+        }
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $items = [];
+        foreach ($raw as $item) {
+            $item = trim((string) $item);
+            if ($item === '' || in_array($item, $items, true)) {
+                continue;
+            }
+            $items[] = mb_substr($item, 0, 100);
+        }
+
+        return $items;
+    }
+
+    /**
+     * Data for the country-neutral <x-address> selector: the selected country
+     * plus the per-level labels and unit options for the cascade.
+     *
+     * @return array{country: ?Country, level_labels: array<int, string>, level_options: array<int, array<int, string>>}
+     */
+    private function addressData(HrEmployee $employee, string $prefix, ?int $fallbackCountryId = null): array
+    {
+        $countryId = (int) ($employee->getAttribute($prefix.'country_id') ?? $fallbackCountryId) ?: 0;
+        $country = $countryId ? Country::find($countryId) : null;
+
+        $levelOptions = [1 => [], 2 => [], 3 => []];
+
+        if ($country) {
+            $levels = $country->selectableLevels()->orderBy('level_number')->get();
+            foreach ($levels as $level) {
+                $query = AdministrativeUnit::query()
+                    ->where('country_id', $country->id)
+                    ->where('administrative_level_id', $level->id)
+                    ->where('status', true);
+
+                if ($level->level_number > 1) {
+                    $parentAttr = $prefix.'admin_'.($level->level_number - 1).'_id';
+                    $query->where('parent_id', (int) ($employee->getAttribute($parentAttr) ?? 0));
+                } else {
+                    $query->whereNull('parent_id');
+                }
+
+                $levelOptions[$level->level_number] = $query
+                    ->orderBy('name')
+                    ->get()
+                    ->pluck('name', 'id')
+                    ->all();
+            }
+        }
+
+        return [
+            'country' => $country,
+            'level_labels' => $country ? GeoHierarchy::levelLabels($country) : [],
+            'level_options' => $levelOptions,
+        ];
+    }
+
+    /**
+     * Country of the institute, used so the address cascades render with a
+     * pre-selected country on a brand-new employee form.
+     */
+    private function instituteCountryId(Institute $institute): ?int
+    {
+        $id = Country::query()->where('name', $institute->country)->value('id');
+
+        return $id !== null ? (int) $id : null;
     }
 
     private function resolveBranchId(Request $request, ?int $validatedBranchId): ?int

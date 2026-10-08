@@ -4,6 +4,29 @@
 
 @section('content')
 
+@php
+    $addrLine = function (\App\Models\HrEmployee $employee, string $type): string {
+        $parts = [];
+        $l1 = (int) ($employee->{$type.'_admin_1_id'} ?? 0);
+        $l2 = (int) ($employee->{$type.'_admin_2_id'} ?? 0);
+        $l3 = (int) ($employee->{$type.'_admin_3_id'} ?? 0);
+        if ($l1 || $l2 || $l3) {
+            $unitIds = array_filter([$l1, $l2, $l3]);
+            $names = \App\Models\AdministrativeUnit::query()->whereIn('id', $unitIds)->pluck('name', 'id');
+            if ($l3 && $names->has($l3)) { $parts[] = $names[$l3]; }
+            if ($l2 && $names->has($l2)) { $parts[] = $names[$l2]; }
+            if ($l1 && $names->has($l1)) { $parts[] = $names[$l1]; }
+        }
+        if ($employee->{$type.'_country_id'}) {
+            $countryName = \App\Models\Country::query()->where('id', $employee->{$type.'_country_id'})->value('name');
+            if ($countryName) { $parts[] = $countryName; }
+        }
+        if ($employee->{$type.'_zip_code'}) { $parts[] = 'ZIP '.$employee->{$type.'_zip_code'}; }
+
+        return implode(', ', $parts);
+    };
+@endphp
+
 <div class="standalone-heading">
     <h4>{{ $employee->display_name }} <small class="text-muted"><code>{{ $employee->employee_code }}</code></small></h4>
     <p>{{ $employee->employment_status === 'active' ? 'Active' : ucfirst($employee->employment_status) }} @if($employee->employment_type) · {{ ucwords(str_replace('_',' ', $employee->employment_type)) }} @endif @if($currentPeriod) · Since <x-tdate :value="$currentPeriod->start_date" fallback="Y-m-d" /> @endif · {{ $totalServiceDays }} days total</p>
@@ -97,11 +120,38 @@
                 <div class="col-6"><span class="text-muted">Middle</span><br><strong>{{ $employee->middle_name ?? '—' }}</strong></div>
                 <div class="col-6"><span class="text-muted">Last</span><br><strong>{{ $employee->last_name }}</strong></div>
                 <div class="col-6"><span class="text-muted">Gender</span><br><strong>{{ $employee->gender ? ucfirst($employee->gender) : '—' }}</strong></div>
+                <div class="col-6"><span class="text-muted">Blood Group</span><br><strong>{{ $employee->blood_group ?? '—' }}</strong></div>
+                <div class="col-6"><span class="text-muted">Marital Status</span><br><strong>{{ $employee->marital_status ? ucwords($employee->marital_status) : '—' }}</strong></div>
                 <div class="col-6"><span class="text-muted">DOB</span><br><strong><x-tdate :value="$employee->date_of_birth" fallback="Y-m-d" empty="—" /></strong></div>
                 <div class="col-6"><span class="text-muted">Joining Date</span><br><strong><x-tdate :value="$employee->joining_date" fallback="Y-m-d" empty="—" /></strong></div>
                 <div class="col-6"><span class="text-muted">Phone</span><br><strong>{{ $employee->phone ?? '—' }}</strong></div>
                 <div class="col-6"><span class="text-muted">Email</span><br><strong>{{ $employee->email ?? '—' }}</strong></div>
+                <div class="col-12"><span class="text-muted">Education Qualification</span><br><strong>{{ $employee->education_qualification ?? '—' }}</strong></div>
+                <div class="col-12">
+                    <span class="text-muted">Expertise</span><br>
+                    @if (! empty($employee->expertise))
+                        @foreach ((array) $employee->expertise as $skill)
+                            <span class="badge text-bg-light border me-1">{{ $skill }}</span>
+                        @endforeach
+                    @else
+                        <strong>—</strong>
+                    @endif
+                </div>
                 <div class="col-12"><span class="text-muted">Address</span><br><strong>{{ $employee->address ?? '—' }}</strong></div>
+                <div class="col-6">
+                    <span class="text-muted">Present Address</span><br>
+                    <strong>{{ $employee->present_address ?? '—' }}</strong>
+                    @if ($addrLine($employee, 'present'))
+                        <div class="text-muted small">{{ $addrLine($employee, 'present') }}</div>
+                    @endif
+                </div>
+                <div class="col-6">
+                    <span class="text-muted">Permanent Address</span><br>
+                    <strong>{{ $employee->permanent_address ?? '—' }}</strong>
+                    @if ($addrLine($employee, 'permanent'))
+                        <div class="text-muted small">{{ $addrLine($employee, 'permanent') }}</div>
+                    @endif
+                </div>
                 <div class="col-6"><span class="text-muted">National ID</span><br><strong>{{ $employee->national_id ?? '—' }}</strong></div>
                 <div class="col-6"><span class="text-muted">Passport</span><br><strong>{{ $employee->passport_no ?? '—' }}</strong></div>
                 <div class="col-6"><span class="text-muted">Emergency Name</span><br><strong>{{ $employee->emergency_contact_name ?? '—' }}</strong></div>
