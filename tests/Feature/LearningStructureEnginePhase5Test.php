@@ -7,12 +7,15 @@ use App\Models\Country;
 use App\Models\Institute;
 use App\Models\InstituteUser;
 use App\Models\StructureTemplate;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 
 class LearningStructureEnginePhase5Test extends TestCase
 {
+    use DatabaseTransactions;
+
     protected function setUp(): void
     {
         parent::setUp();

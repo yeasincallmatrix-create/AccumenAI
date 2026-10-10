@@ -7,10 +7,13 @@ use App\Models\Invoice;
 use App\Models\User;
 use App\Services\MembershipService;
 use App\Services\UserAccountService;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class InvoicePolicyTest extends TestCase
 {
+    use DatabaseTransactions;
+
     protected function tenantOwner(string $email): array
     {
         $unique = strtolower(preg_replace('/[^a-z]/i', '', uniqid()));

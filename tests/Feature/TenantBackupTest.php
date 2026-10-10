@@ -5,10 +5,13 @@ namespace Tests\Feature;
 use App\Models\Backup;
 use App\Models\TenantBackupKey;
 use App\Services\Backup\EncryptionService;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class TenantBackupTest extends TestCase
 {
+    use DatabaseTransactions;
+
     public function test_dek_generated_per_tenant()
     {
         $svc = app(EncryptionService::class);

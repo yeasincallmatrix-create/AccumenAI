@@ -8,10 +8,13 @@ use App\Models\BackupChunkTrash;
 use App\Models\BackupManifest;
 use App\Services\Backup\ChunkReferenceService;
 use App\Services\Backup\OrphanCleanupService;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class ChunkRefcountStressTest extends TestCase
 {
+    use DatabaseTransactions;
+
     private const TENANTS = [999801, 999802, 999803, 999804, 999805];
 
     protected function tearDown(): void

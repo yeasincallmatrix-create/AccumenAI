@@ -8,6 +8,7 @@ use App\Models\InstituteUser;
 use App\Models\TenantDriveConnection;
 use App\Services\Backup\BackupService;
 use Tests\Support\FakeDriveService;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 /**
@@ -19,6 +20,8 @@ use Tests\TestCase;
  */
 class DriveCleanupTest extends TestCase
 {
+    use DatabaseTransactions;
+
     private FakeDriveService $fakeDrive;
 
     protected function setUp(): void

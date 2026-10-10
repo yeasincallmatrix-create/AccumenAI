@@ -3,10 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\Backup;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class BackupCleanupTest extends TestCase
 {
+    use DatabaseTransactions;
+
     public function test_old_backups_deleted()
     {
         $old = Backup::create([

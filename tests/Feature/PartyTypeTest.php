@@ -2,12 +2,15 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 use App\Models\Institute;
 use App\Models\Party;
 
 class PartyTypeTest extends TestCase
 {
+    use DatabaseTransactions;
+
     protected Institute $institute;
 
     protected function setUp(): void

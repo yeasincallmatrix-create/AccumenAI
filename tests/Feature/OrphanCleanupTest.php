@@ -140,7 +140,7 @@ class OrphanCleanupTest extends TestCase
 
     public function test_valid_users_are_untouched(): void
     {
-        $validUser = User::first();
+        $validUser = User::factory()->create();
         $this->assertNotNull($validUser);
         $service = app(OrphanCleanupService::class);
         $ius = $service->identifyInstitutionUsers();

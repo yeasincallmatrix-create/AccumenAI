@@ -5,10 +5,13 @@ namespace Tests\Feature\Settings;
 use App\Models\CountryTaxConfig;
 use App\Models\Institute;
 use App\Services\Accounting\CountryTaxConfigService;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class CountryTaxConfigTest extends TestCase
 {
+    use DatabaseTransactions;
+
     protected function makeInstitute(string $countryCode): Institute
     {
         $countryId = \DB::table('countries')->where('iso2', $countryCode)->value('id');

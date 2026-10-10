@@ -6,10 +6,13 @@ use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class GoogleAuthTest extends TestCase
 {
+    use DatabaseTransactions;
+
     public function test_redirect_route_exists()
     {
         $this->assertTrue(Route::has('auth.google.redirect'));

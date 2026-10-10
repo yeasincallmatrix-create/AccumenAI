@@ -9,6 +9,7 @@ use App\Services\System\DataSafetyGuard;
 use App\Services\System\TestDataCleanupService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 /**
@@ -22,6 +23,8 @@ use Tests\TestCase;
  */
 class DataSafetyGuardrailsTest extends TestCase
 {
+    use DatabaseTransactions;
+
     protected function setUp(): void
     {
         parent::setUp();

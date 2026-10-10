@@ -13,10 +13,13 @@ use App\Services\LearningStructureResolver;
 use App\Services\LearningStructureService;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class LearningStructureEnginePhase4Test extends TestCase
 {
+    use DatabaseTransactions;
+
     protected function setUp(): void
     {
         parent::setUp();

@@ -15,10 +15,13 @@ use App\Services\LearningStructureResolver;
 use App\Services\LearningStructureService;
 use App\Support\TenantContext;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class LearningStructureEnginePhase2Test extends TestCase
 {
+    use DatabaseTransactions;
+
     // No RefreshDatabase — monetix_test was seeded via schema import; we clean manually per test
 
     private function makeInstitute(array $overrides = []): Institute

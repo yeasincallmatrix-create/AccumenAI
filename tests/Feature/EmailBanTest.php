@@ -6,10 +6,13 @@ use App\Models\User;
 use App\Services\Auth\EmailBanService;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class EmailBanTest extends TestCase
 {
+    use DatabaseTransactions;
+
     private EmailBanService $banService;
 
     protected function setUp(): void

@@ -3,10 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\Backup;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class BackupAutoTest extends TestCase
 {
+    use DatabaseTransactions;
+
     public function test_auto_command_exists()
     {
         $this->assertTrue(

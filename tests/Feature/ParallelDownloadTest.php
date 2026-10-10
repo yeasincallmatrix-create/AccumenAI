@@ -13,10 +13,13 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
 use Tests\Support\FakeDriveService;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class ParallelDownloadTest extends TestCase
 {
+    use DatabaseTransactions;
+
     private const TENANT = 999701;
 
     protected function tearDown(): void

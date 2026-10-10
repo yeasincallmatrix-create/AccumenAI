@@ -13,10 +13,13 @@ use App\Models\User;
 use App\Services\AcademicStructureService;
 use App\Support\TenantContext;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class LearningStructureEnginePhase3Test extends TestCase
 {
+    use DatabaseTransactions;
+
     private function makeInstitute(array $overrides = []): Institute
     {
         $country = Country::first() ?? Country::create(['name' => 'Bangladesh', 'iso2' => 'BD', 'status' => true]);

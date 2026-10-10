@@ -8,10 +8,13 @@ use App\Models\User;
 use App\Services\Accounting\BusinessEntityService;
 use App\Services\MembershipService;
 use App\Services\UserAccountService;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class EntityTypeAdvancedTest extends TestCase
 {
+    use DatabaseTransactions;
+
     protected function tenantOwner(string $email, bool $advanced = false, string $entity = 'single_entity'): array
     {
         $unique = strtolower(\Illuminate\Support\Str::random(10));

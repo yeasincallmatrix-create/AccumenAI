@@ -7,6 +7,7 @@ use App\Models\Backup;
 use App\Services\Backup\BackupService;
 use Illuminate\Support\Carbon;
 use Tests\Support\FakeDriveService;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 /**
@@ -23,6 +24,8 @@ use Tests\TestCase;
  */
 class BackupRetentionRaceTest extends TestCase
 {
+    use DatabaseTransactions;
+
     private const TENANT_ID = 900301;
 
     protected function setUp(): void

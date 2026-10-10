@@ -242,7 +242,15 @@ class OfflineSyncTest extends TestCase
     public function test_foreign_institute_record_is_404(): void
     {
         $other = Institute::where('name', 'Halumoni Computer training center')->firstOrFail();
-        $foreignUser = InstituteUser::where('institute_id', $other->id)->firstOrFail();
+        $role = Role::where('slug', 'institute-owner')->firstOrFail();
+        $foreignUser = InstituteUser::create([
+            'institute_id' => $other->id,
+            'role_id' => $role->id,
+            'email' => 'halumoni-owner@example.test',
+            'phone' => '01700009999',
+            'password_hash' => bcrypt($this->password),
+            'status' => 'active',
+        ]);
 
         $foreignQueue = OfflineSyncQueue::query()->withoutGlobalScopes()->create([
             'client_uuid' => Str::uuid()->toString(),

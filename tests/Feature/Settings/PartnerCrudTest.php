@@ -7,10 +7,13 @@ use App\Models\Partner;
 use App\Models\User;
 use App\Services\MembershipService;
 use App\Services\UserAccountService;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class PartnerCrudTest extends TestCase
 {
+    use DatabaseTransactions;
+
     protected function tenantOwner(string $email): array
     {
         $unique = strtolower(\Illuminate\Support\Str::random(10));

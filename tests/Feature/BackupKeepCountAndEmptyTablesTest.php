@@ -9,6 +9,7 @@ use App\Models\TenantDriveConnection;
 use App\Services\Backup\BackupChunkService;
 use App\Services\Backup\BackupService;
 use Tests\Support\FakeDriveService;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 /**
@@ -23,6 +24,8 @@ use Tests\TestCase;
  */
 class BackupKeepCountAndEmptyTablesTest extends TestCase
 {
+    use DatabaseTransactions;
+
     private const TENANT_ID = 900101;
 
     private FakeDriveService $fakeDrive;

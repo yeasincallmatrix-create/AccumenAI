@@ -9,10 +9,13 @@ use App\Models\User;
 use App\Services\MembershipService;
 use App\Services\UserAccountService;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class PaymentPolicyTest extends TestCase
 {
+    use DatabaseTransactions;
+
     protected function tenantOwner(string $email): array
     {
         $unique = strtolower(preg_replace('/[^a-z]/i', '', uniqid()));

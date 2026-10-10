@@ -7,10 +7,13 @@ use App\Models\Backup;
 use App\Models\TenantDriveConnection;
 use App\Services\Backup\BackupService;
 use Tests\Support\FakeDriveService;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class BackupKeepLatestTest extends TestCase
 {
+    use DatabaseTransactions;
+
     private const TENANT_ID = 900101;
 
     private FakeDriveService $fakeDrive;

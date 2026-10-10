@@ -7,10 +7,13 @@ use App\Models\TenantDriveConnection;
 use App\Services\Backup\ManifestService;
 use App\Services\Backup\TenantLockService;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class ConcurrencyStressTest extends TestCase
 {
+    use DatabaseTransactions;
+
     protected function setUp(): void
     {
         parent::setUp();

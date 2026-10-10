@@ -10,10 +10,13 @@ use App\Models\RestoreLog;
 use App\Models\TenantDriveConnection;
 use App\Services\Backup\ProgressService;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class BackupQueueProgressTest extends TestCase
 {
+    use DatabaseTransactions;
+
     private const TENANT_ID = 900201;
 
     protected function tearDown(): void
