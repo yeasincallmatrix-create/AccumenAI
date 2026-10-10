@@ -4,10 +4,13 @@ namespace Tests\Feature\Helpers;
 
 use App\Models\Country;
 use App\Models\Institute;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
 class TenantCountryTest extends TestCase
 {
+    use DatabaseTransactions;
+
     protected function setUp(): void
     {
         parent::setUp();
