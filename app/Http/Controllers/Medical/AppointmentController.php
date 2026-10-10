@@ -14,6 +14,7 @@ use App\Models\Membership;
 use App\Models\Setting;
 use App\Services\Medical\AppointmentFeeService;
 use App\Services\Medical\EncounterAutoService;
+use App\Services\Medical\MedicalFeePostingService;
 use App\Services\Medical\MrNumberGenerator;
 use App\Services\Medical\QueueManager;
 use App\Support\MedicalScope;
@@ -43,10 +44,13 @@ class AppointmentController extends MedicalController implements HasMiddleware
 
     protected MrNumberGenerator $mrGenerator;
 
-    public function __construct(QueueManager $queueManager, MrNumberGenerator $mrGenerator)
+    protected MedicalFeePostingService $feePosting;
+
+    public function __construct(QueueManager $queueManager, MrNumberGenerator $mrGenerator, MedicalFeePostingService $feePosting)
     {
         $this->queueManager = $queueManager;
         $this->mrGenerator = $mrGenerator;
+        $this->feePosting = $feePosting;
     }
 
     /**
@@ -1166,6 +1170,13 @@ class AppointmentController extends MedicalController implements HasMiddleware
      * new cycle (new appointment → check-in → visit). An optional discount
      * (percent or flat) from the popup reduces the collected figure — the
      * gross stays in fee_applied, the NET lands in fee_collected_amount.
+     *
+     * Phase B (Option A): the terminal `complete` action also posts a
+     * receipt journal to the ledger (Dr Cash 1000.1 / Dr Discount Allowed
+     * 4000.5 / Cr Consultation Fees 4300.1) inside the same DB transaction
+     * as the appointment update, linked via appointments.journal_id
+     * (idempotent). `start` remains record-only — no journal until the
+     * visit is completed.
      */
     public function collectFee(Request $request, Appointment $appointment)
     {
@@ -1248,7 +1259,33 @@ class AppointmentController extends MedicalController implements HasMiddleware
             // Already stamped (e.g. pre-visit collection at Start): complete
             // the visit WITHOUT charging again.
             if ($alreadyPaid) {
-                $appointment->update(['status' => 'completed']);
+                try {
+                    DB::transaction(function () use ($appointment): void {
+                        $appointment->update(['status' => 'completed']);
+
+                        // Phase B (Option A): the fee was recorded earlier
+                        // (e.g. pre-visit at Start) without a ledger entry —
+                        // post the receipt now that the visit is terminal.
+                        // postOpdFeeJournal is idempotent via journal_id.
+                        $net = (float) ($appointment->fee_collected_amount ?? 0);
+                        $discount = (float) ($appointment->fee_discount_amount ?? 0);
+                        $journal = $this->feePosting->postOpdFeeJournal(
+                            $appointment->fresh(),
+                            $net + $discount,
+                            $discount,
+                            $this->resolvedActorId(),
+                        );
+                        if ($journal) {
+                            $appointment->forceFill(['journal_id' => $journal->id])->save();
+                        }
+                    });
+                } catch (\Throwable $e) {
+                    report($e);
+
+                    return redirect()->back()->withErrors(
+                        ['fee' => 'Fee could not be posted to the ledger: '.$e->getMessage()]
+                    );
+                }
 
                 return redirect()->route('medical.appointments.index', [
                     'tab' => 'queue',
@@ -1256,29 +1293,53 @@ class AppointmentController extends MedicalController implements HasMiddleware
                     'q_date' => '',
                 ])->with('status', 'Appointment completed! Fee was already on record — no additional charge.');
             }
-            $appointment->update([
-                'status' => 'completed',
-                'fee_collected_amount' => $net,
-                'fee_discount_type' => $discount['type'],
-                'fee_discount_value' => $discount['value'],
-                'fee_discount_amount' => $discount['amount'] > 0 ? $discount['amount'] : null,
-                'fee_collected_by_id' => $receiver['id'],
-                'fee_collected_by_name' => $receiver['name'],
-                'fee_collected_at' => now(),
-            ]);
-            QueueAuditLog::create([
-                'institute_id' => $appointment->institute_id,
-                'appointment_id' => $appointment->id,
-                'user_id' => $receiver['id'],
-                'user_type' => $receiver['type'],
-                'actor_name' => $receiver['name'],
-                'action' => 'fee_collected',
-                'new_order' => $appointment->queue_order ?? $appointment->serial_number ?? 0,
-                'amount' => $net,
-                // Post-visit fee confirmed by anyone other than the treating
-                // doctor still needs a doctor's verification.
-                'needs_verification' => ! $this->isTreatingDoctor($appointment),
-            ]);
+            try {
+                DB::transaction(function () use ($appointment, $net, $discount, $receiver, $amount): void {
+                    $appointment->update([
+                        'status' => 'completed',
+                        'fee_collected_amount' => $net,
+                        'fee_discount_type' => $discount['type'],
+                        'fee_discount_value' => $discount['value'],
+                        'fee_discount_amount' => $discount['amount'] > 0 ? $discount['amount'] : null,
+                        'fee_collected_by_id' => $receiver['id'],
+                        'fee_collected_by_name' => $receiver['name'],
+                        'fee_collected_at' => now(),
+                    ]);
+                    QueueAuditLog::create([
+                        'institute_id' => $appointment->institute_id,
+                        'appointment_id' => $appointment->id,
+                        'user_id' => $receiver['id'],
+                        'user_type' => $receiver['type'],
+                        'actor_name' => $receiver['name'],
+                        'action' => 'fee_collected',
+                        'new_order' => $appointment->queue_order ?? $appointment->serial_number ?? 0,
+                        'amount' => $net,
+                        // Post-visit fee confirmed by anyone other than the treating
+                        // doctor still needs a doctor's verification.
+                        'needs_verification' => ! $this->isTreatingDoctor($appointment),
+                    ]);
+
+                    // Phase B (Option A): post the receipt journal in the SAME
+                    // transaction as the appointment update + audit log, so a
+                    // ledger failure (missing account, closed period, ...)
+                    // rolls the whole collection back — no orphan fee state.
+                    $journal = $this->feePosting->postOpdFeeJournal(
+                        $appointment->fresh(),
+                        (float) $amount,
+                        (float) $discount['amount'],
+                        $this->resolvedActorId(),
+                    );
+                    if ($journal) {
+                        $appointment->forceFill(['journal_id' => $journal->id])->save();
+                    }
+                });
+            } catch (\Throwable $e) {
+                report($e);
+
+                return redirect()->back()->withErrors(
+                    ['fee' => 'Fee could not be posted to the ledger: '.$e->getMessage()]
+                );
+            }
             $message = $net > 0
                 ? 'Fee collected (৳'.number_format($net, 2).')'.$discountNote.'. Appointment completed!'
                 : 'Appointment completed!';
