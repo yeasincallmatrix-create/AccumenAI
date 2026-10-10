@@ -7,6 +7,7 @@ use App\Models\Medical\Admission;
 use App\Models\Medical\Invoice;
 use App\Models\Medical\NumberSequence;
 use App\Models\Medical\Patient;
+use App\Services\Accounting\AccountingSetupService;
 use App\Support\MedicalScope;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
@@ -19,12 +20,15 @@ use Illuminate\Support\Facades\DB;
 class BillingService
 {
     /**
-     * Phase 08 — single authoritative tax rule for medical billing.
-     * Bangladesh default 5%, applied server-side everywhere (creation and
-     * pending-invoice edits share computeTotals()); never client-submitted.
-     * Multi-jurisdiction VAT/GST is explicitly Phase 25 territory.
+     * Phase 08 — legacy hardcoded Bangladesh VAT rate. Kept as a documented
+     * constant for back-compat and tests; computeTotals() no longer reads it.
+     * The live rate is the per-institute `medical.vat_rate` accounting setting
+     * (default 0.00 — VAT must be opted into, not assumed).
      */
     public const TAX_RATE = 0.05;
+
+    /** Accounting-setting key holding the per-institute medical VAT rate. */
+    public const VAT_RATE_SETTING = 'medical.vat_rate';
 
     /**
      * Phase 08 — authoritative totals from line items. Math is identical to
@@ -32,11 +36,23 @@ class BillingService
      * rounded to 2dp to match DECIMAL(15,2) storage); it is centralized here
      * so creation, edits, PDFs and receipts can never diverge.
      * Items: [{amount, quantity, discount}].
+     *
+     * The VAT rate comes from the `medical.vat_rate` accounting setting for
+     * the given institute, defaulting to 0.00 when unset. Passing a null
+     * instituteId also yields 0.00 (no tenant → no VAT).
      */
-    public static function computeTotals(array $items): array
+    public static function computeTotals(array $items, ?int $instituteId = null): array
     {
+        $rate = $instituteId !== null
+            ? (float) app(AccountingSetupService::class)->getSetting(
+                $instituteId,
+                self::VAT_RATE_SETTING,
+                0.00,
+            )
+            : 0.00;
+
         $subtotal = collect($items)->sum(fn ($i) => ((float) ($i['amount'] ?? 0)) * ((int) ($i['quantity'] ?? 1)));
-        $tax = round($subtotal * self::TAX_RATE, 2);
+        $tax = round($subtotal * $rate, 2);
         $discount = round((float) collect($items)->sum('discount'), 2);
 
         return [
@@ -46,6 +62,7 @@ class BillingService
             'total' => round($subtotal + $tax - $discount, 2),
         ];
     }
+
     /**
      * Generate a unique invoice number (stored INV-YYYY-NNNNN, displayed
      * INV-YY-NNNNN) via the database-backed sequence (Phase 04).
@@ -96,7 +113,7 @@ class BillingService
         return DB::transaction(function () use ($patient, $type, $items, $admissionId, $branchId) {
             $instituteId = (int) $patient->institute_id;
 
-            $totals = self::computeTotals($items);
+            $totals = self::computeTotals($items, $instituteId);
 
             return Invoice::create([
                 'institute_id' => $instituteId,

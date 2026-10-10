@@ -10,7 +10,9 @@ use App\Models\Medical\TpaClaim;
 use App\Models\Membership;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Accounting\AccountingSetupService;
 use App\Services\Medical\BillingService;
+use App\Services\Medical\TpaService;
 use App\Support\Workspace;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -49,6 +51,13 @@ class Phase08FinancialIntegrityTest extends TestCase
             'country' => 'Bangladesh',
             'status' => 'active',
         ]);
+
+        // Phase A: VAT is now the per-institute medical.vat_rate setting
+        // (default 0.00). Pin 5% for the whole suite so the arithmetic
+        // assertions (62.50 tax on 1250, 525 on 500, …) keep exercising the
+        // same math as before the setting was introduced.
+        app(AccountingSetupService::class)
+            ->setSetting($this->institute->id, BillingService::VAT_RATE_SETTING, 0.05);
 
         $this->owner = User::factory()->create([
             'account_type' => 'owner',
@@ -91,7 +100,7 @@ class Phase08FinancialIntegrityTest extends TestCase
         return Patient::where('institute_id', $this->institute->id)->latest('id')->firstOrFail();
     }
 
-    private function createInvoice(Patient $patient, array $items = null): Invoice
+    private function createInvoice(Patient $patient, ?array $items = null): Invoice
     {
         $this->post(route('medical.billing.invoices.store'), [
             'patient_id' => $patient->id,
@@ -194,7 +203,8 @@ class Phase08FinancialIntegrityTest extends TestCase
             'items' => [['description' => 'X', 'amount' => 1000, 'quantity' => 1, 'discount' => 0]],
         ])->assertSessionHasNoErrors();
 
-        // Centralized 5% rule applies regardless of submitted tax fields.
+        // Centralized per-institute rate (pinned to 5% in setUp) applies
+        // regardless of submitted tax fields.
         $invoice = Invoice::where('institute_id', $this->institute->id)->latest('id')->firstOrFail();
         $this->assertSame(50.0, (float) $invoice->tax);
         $this->assertSame(1050.0, (float) $invoice->total);
@@ -346,7 +356,7 @@ class Phase08FinancialIntegrityTest extends TestCase
             'claim_amount' => 99999,
         ])->assertSessionHas('error');
 
-        $this->assertSame(0, \App\Models\Medical\TpaClaim::where('institute_id', $this->institute->id)->count());
+        $this->assertSame(0, TpaClaim::where('institute_id', $this->institute->id)->count());
     }
 
     public function test_approve_credits_invoice_bounded_and_idempotent(): void
@@ -359,7 +369,7 @@ class Phase08FinancialIntegrityTest extends TestCase
             'policy_number' => 'POL-1',
             'claim_amount' => 300,
         ])->assertSessionHasNoErrors();
-        $claim = \App\Models\Medical\TpaClaim::where('institute_id', $this->institute->id)->latest('id')->firstOrFail();
+        $claim = TpaClaim::where('institute_id', $this->institute->id)->latest('id')->firstOrFail();
 
         $this->post(route('medical.tpa.claims.approve', $claim), ['approved_amount' => 300])
             ->assertSessionHasNoErrors();
@@ -374,7 +384,7 @@ class Phase08FinancialIntegrityTest extends TestCase
         $this->assertSame(300.0, (float) $invoice->fresh()->paid_amount);
 
         try {
-            app(\App\Services\Medical\TpaService::class)->approveClaim($claim->fresh(), 100);
+            app(TpaService::class)->approveClaim($claim->fresh(), 100);
             $this->fail('Double approval must throw.');
         } catch (\RuntimeException $e) {
             $this->assertStringContainsString('pending', strtolower($e->getMessage()));

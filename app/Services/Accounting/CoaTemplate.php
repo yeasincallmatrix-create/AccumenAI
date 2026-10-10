@@ -29,8 +29,12 @@ namespace App\Services\Accounting;
  *                       are is_system = 1 and ChartOfAccount refuses to rename
  *                       them - so the seeder output is byte-stable.
  *   - childrenByParent() emits the legacy CHILDREN shape and applies only
- *                       CHILDREN_FLAGS, so the tenant seeding write-set is
- *                       unchanged (it never wrote cash_flow_category etc.).
+ *                       CHILDREN_FLAGS, so the VIEW stays byte-stable for
+ *                       its pinned test. TenantCoaSeederService now reads
+ *                       the canonical row's [7] flags directly (medical
+ *                       COA remediation) so onboarding matches
+ *                       installGroupsAndAccounts(); the view itself is
+ *                       unchanged.
  *   - flatTyped()       emits the legacy TEMPLATE shape in legacy order.
  */
 final class CoaTemplate
@@ -107,10 +111,10 @@ final class CoaTemplate
         ['4200', 'Training Income', '4', true, false, 'income', ['training_center'], []],
         ['4200.1', 'Course Fees', '4200', false, true, 'income', ['training_center'], []],
         ['4200.2', 'Registration Fees', '4200', false, true, 'income', ['training_center'], []],
-        ['4300', 'Medical Income', '4', true, false, 'income', ['medical'], []],
-        ['4300.1', 'Consultation Fees', '4300', false, true, 'income', ['medical'], []],
-        ['4300.2', 'Diagnostic Fees', '4300', false, true, 'income', ['medical'], []],
-        ['4300.3', 'Pharmacy Sales', '4300', false, true, 'income', ['medical'], []],
+        ['4300', 'Medical Income', '4', true, false, 'income', ['healthcare'], []],
+        ['4300.1', 'Consultation Fees', '4300', false, true, 'income', ['healthcare'], []],
+        ['4300.2', 'Diagnostic Fees', '4300', false, true, 'income', ['healthcare'], []],
+        ['4300.3', 'Pharmacy Sales', '4300', false, true, 'income', ['healthcare'], []],
         ['4400', 'Retail Income', '4', true, false, 'income', ['retail'], []],
         ['4400.1', 'Merchandise Sales', '4400', false, true, 'income', ['retail'], ['cash_flow_category' => 'operating']],
         ['4900', 'Other Income', '4', true, false, 'income', null, []],
@@ -154,14 +158,20 @@ final class CoaTemplate
     ];
 
     /**
-     * Codes outside the global anchor tree: 4400.2 (tenant-child only) plus the
-     * FX accounts 4901/5901 that only TEMPLATE knew about. Onboarding previously
-     * never created 4901/5901 while DEFAULT_SETTINGS pointed at them.
+     * Codes outside the global anchor tree: 4400.2 (tenant-child only), the
+     * FX accounts 4901/5901 that only TEMPLATE knew about, plus the four
+     * medical-ledger accounts added by the medical COA remediation.
+     * Onboarding previously never created 4901/5901 while DEFAULT_SETTINGS
+     * pointed at them.
      */
     private const EXTRA_ROWS = [
         ['4400.2', 'Other Sales Income', '4400', false, true, 'income', null, []],
         ['4901', 'Unrealized FX Gain', '4900', false, true, 'income', null, ['cash_flow_category' => 'operating']],
         ['5901', 'Unrealized FX Loss', '5900', false, true, 'expense', null, ['cash_flow_category' => 'operating']],
+        ['4000.5', 'Discount Allowed', '4000', false, true, 'income', ['healthcare'], []],
+        ['2400.3', 'Patient Advances & Deposits', '2400', false, true, 'liability', ['healthcare'], []],
+        ['1200.4', 'Insurance / TPA Receivable', '1200', false, true, 'asset', ['healthcare'], ['is_receivable' => true, 'cash_flow_category' => 'operating']],
+        ['2000.4', 'Doctor Commission Payable', '2000', false, true, 'liability', ['healthcare'], []],
     ];
 
     /** Legacy ChartOfAccountService::TEMPLATE order (flat typed view). */

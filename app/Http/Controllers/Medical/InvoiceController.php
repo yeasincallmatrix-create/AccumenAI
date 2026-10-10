@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Medical;
 use App\Http\Requests\Medical\InvoiceRequest;
 use App\Http\Requests\Medical\PaymentRequest;
 use App\Models\Medical\Admission;
+use App\Models\Medical\ClinicalAuditLog;
 use App\Models\Medical\Invoice;
 use App\Models\Medical\Patient;
 use App\Services\Medical\BillingService;
@@ -271,8 +272,9 @@ class InvoiceController extends MedicalController implements HasMiddleware
         }
 
         // Phase 08: totals come from the single authoritative rule so edits
-        // can never diverge from creation/PDF/receipt math.
-        $totals = \App\Services\Medical\BillingService::computeTotals($items);
+        // can never diverge from creation/PDF/receipt math. The VAT rate is
+        // the institute's `medical.vat_rate` setting (default 0.00).
+        $totals = BillingService::computeTotals($items, (int) $invoice->institute_id);
         $subtotal = $totals['subtotal'];
         $tax = $totals['tax'];
         $discount = $totals['discount'];
@@ -314,8 +316,8 @@ class InvoiceController extends MedicalController implements HasMiddleware
         }
 
         // Phase 03: financial record removal leaves an attributable trail.
-        \App\Models\Medical\ClinicalAuditLog::record($invoice, 'deleted', [
-            'old' => \App\Models\Medical\ClinicalAuditLog::snapshot($invoice),
+        ClinicalAuditLog::record($invoice, 'deleted', [
+            'old' => ClinicalAuditLog::snapshot($invoice),
         ]);
         $invoice->delete();
 

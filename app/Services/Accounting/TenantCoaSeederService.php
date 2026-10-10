@@ -46,6 +46,17 @@ class TenantCoaSeederService
                 [$code, $name] = $child;
                 $extra = $child[2] ?? [];
 
+                // Respect the child's OWN industry tag: a healthcare-only leaf
+                // (e.g. 4000.5 Discount Allowed) under a universal parent must
+                // not land in an education/training/retail tenant's tree.
+                $templateRow = CoaTemplate::findByCode((string) $code);
+                $childIndustries = $templateRow[6] ?? null;
+                if (! empty($childIndustries)) {
+                    if (! $tenantIndustry || ! in_array($tenantIndustry, $childIndustries)) {
+                        continue;
+                    }
+                }
+
                 $exists = ChartOfAccount::withoutGlobalScope('institute')
                     ->where('institute_id', $instituteId)
                     ->where('code', $code)
@@ -54,6 +65,13 @@ class TenantCoaSeederService
                 if ($exists) {
                     continue;
                 }
+
+                // Propagate the template's rich flags (is_cash, is_bank,
+                // is_receivable, is_payable, cash_flow_category) so the
+                // onboarding write-set matches installGroupsAndAccounts().
+                // childrenByParent() only carries CHILDREN_FLAGS (is_bank on
+                // 1100.1); the rest lives on the canonical row's [7].
+                $flags = $templateRow[7] ?? [];
 
                 ChartOfAccount::withoutGlobalScope('institute')->create(array_merge([
                     'institute_id' => $instituteId,
@@ -65,9 +83,9 @@ class TenantCoaSeederService
                     'is_header' => false,
                     'is_postable' => true,
                     'is_system' => false,
-                    'industries' => $parent->industries ?: null,
+                    'industries' => $childIndustries ?: ($parent->industries ?: null),
                     'is_active' => true,
-                ], $extra));
+                ], $flags, $extra));
 
                 $created++;
             }

@@ -36,7 +36,7 @@ class CodeMapConsistencyTest extends TestCase
             }
         }
 
-        $this->assertCount(83, $flat, '81 legacy children plus the two FX accounts.');
+        $this->assertCount(87, $flat, '81 legacy children plus the two FX accounts plus the four medical accounts.');
         $this->assertArrayHasKey('1100.1', $flat);
         $this->assertSame(['is_bank' => true], $flat['1100.1'][2], 'Only the legacy write-set extra.');
         $this->assertArrayNotHasKey('cash_flow_category', $flat['1200.1'][2] ?? [],
@@ -122,7 +122,7 @@ class CodeMapConsistencyTest extends TestCase
         $codes = array_column($all, 0);
 
         $this->assertSame($codes, array_values(array_unique($codes)), 'One row per code.');
-        $this->assertCount(117, $all);
+        $this->assertCount(121, $all);
 
         $headers = [];
         foreach ($all as $row) {

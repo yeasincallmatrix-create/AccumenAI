@@ -12,6 +12,8 @@ use App\Models\Medical\TpaClaim;
 use App\Models\Membership;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Accounting\AccountingSetupService;
+use App\Services\Medical\BillingService;
 use App\Support\Workspace;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -48,6 +50,12 @@ class MedicalPhase4Test extends TestCase
             'country' => 'Bangladesh',
             'status' => 'active',
         ]);
+
+        // Phase A: VAT is now the per-institute medical.vat_rate setting
+        // (default 0.00). Pin 5% so this suite's total assertions (525 = 500 + 5%)
+        // keep exercising the same math as before.
+        app(AccountingSetupService::class)
+            ->setSetting($this->institute->id, BillingService::VAT_RATE_SETTING, 0.05);
 
         $this->owner = User::factory()->create([
             'account_type' => 'owner',
@@ -123,7 +131,7 @@ class MedicalPhase4Test extends TestCase
         return LabOrder::where('institute_id', $this->institute->id)->latest('id')->firstOrFail();
     }
 
-    private function createInvoice(Patient $patient, array $items = null): Invoice
+    private function createInvoice(Patient $patient, ?array $items = null): Invoice
     {
         $response = $this->post(route('medical.billing.invoices.store'), [
             'patient_id' => $patient->id,
