@@ -1171,12 +1171,18 @@ class AppointmentController extends MedicalController implements HasMiddleware
      * (percent or flat) from the popup reduces the collected figure — the
      * gross stays in fee_applied, the NET lands in fee_collected_amount.
      *
-     * Phase B (Option A): the terminal `complete` action also posts a
-     * receipt journal to the ledger (Dr Cash 1000.1 / Dr Discount Allowed
-     * 4000.5 / Cr Consultation Fees 4300.1) inside the same DB transaction
-     * as the appointment update, linked via appointments.journal_id
-     * (idempotent). `start` remains record-only — no journal until the
-     * visit is completed.
+     * Phase C2 (two-stage accrual): the ledger leg depends on the doctor's
+     * collect_fee_before_visit setting. A pre-visit doctor takes the money
+     * at `start` — an advance receipt (Dr Cash 1000.1 / Dr Discount Allowed
+     * 4000.5 / Cr OPD Fees Advance 2400.3) posts inside the same DB
+     * transaction as the record — and `complete` releases that liability
+     * into income (Dr 2400.3 / Cr Consultation Fees 4300.1). A post-visit
+     * doctor stays record-only at `start`; `complete` posts a single
+     * direct-collection journal (Dr Cash + Dr Discount / Cr 4300.1).
+     * Every leg is idempotent via the appointments.fee_receipt_journal_id /
+     * fee_recognition_journal_id columns stamped by the service. The
+     * appointments.journal_id column still mirrors the receipt journal for
+     * Phase B compatibility.
      */
     public function collectFee(Request $request, Appointment $appointment)
     {
@@ -1228,25 +1234,51 @@ class AppointmentController extends MedicalController implements HasMiddleware
                     'status', 'Fee already recorded for this visit — no additional charge.'
                 );
             }
-            $appointment->update([
-                'fee_collected_amount' => $net,
-                'fee_discount_type' => $discount['type'],
-                'fee_discount_value' => $discount['value'],
-                'fee_discount_amount' => $discount['amount'] > 0 ? $discount['amount'] : null,
-                'fee_collected_by_id' => $receiver['id'],
-                'fee_collected_by_name' => $receiver['name'],
-                'fee_collected_at' => now(),
-            ]);
-            QueueAuditLog::create([
-                'institute_id' => $appointment->institute_id,
-                'appointment_id' => $appointment->id,
-                'user_id' => $receiver['id'],
-                'user_type' => $receiver['type'],
-                'actor_name' => $receiver['name'],
-                'action' => 'fee_collected',
-                'new_order' => $appointment->queue_order ?? $appointment->serial_number ?? 0,
-                'amount' => $net,
-            ]);
+            // Phase C2: pre-visit doctors take the money at Start — the
+            // advance receipt (Dr Cash / Cr 2400.3 unearned) posts in the
+            // SAME transaction as the record + audit log, so a ledger
+            // failure (missing account, closed period, ...) rolls the whole
+            // collection back. Post-visit doctors stay record-only here —
+            // their journal posts at Complete via direct collection.
+            $preVisit = $profile !== null && (bool) $profile->collect_fee_before_visit;
+            try {
+                DB::transaction(function () use ($appointment, $net, $discount, $receiver, $preVisit, $amount): void {
+                    $appointment->update([
+                        'fee_collected_amount' => $net,
+                        'fee_discount_type' => $discount['type'],
+                        'fee_discount_value' => $discount['value'],
+                        'fee_discount_amount' => $discount['amount'] > 0 ? $discount['amount'] : null,
+                        'fee_collected_by_id' => $receiver['id'],
+                        'fee_collected_by_name' => $receiver['name'],
+                        'fee_collected_at' => now(),
+                    ]);
+                    QueueAuditLog::create([
+                        'institute_id' => $appointment->institute_id,
+                        'appointment_id' => $appointment->id,
+                        'user_id' => $receiver['id'],
+                        'user_type' => $receiver['type'],
+                        'actor_name' => $receiver['name'],
+                        'action' => 'fee_collected',
+                        'new_order' => $appointment->queue_order ?? $appointment->serial_number ?? 0,
+                        'amount' => $net,
+                    ]);
+
+                    if ($preVisit) {
+                        $this->feePosting->postAdvanceReceipt(
+                            $appointment->fresh(),
+                            (float) $amount,
+                            (float) $discount['amount'],
+                            $this->resolvedActorId(),
+                        );
+                    }
+                });
+            } catch (\Throwable $e) {
+                report($e);
+
+                return redirect()->back()->withErrors(
+                    ['fee' => 'Fee could not be posted to the ledger: '.$e->getMessage()]
+                );
+            }
             $message = $net > 0
                 ? 'Fee collected (৳'.number_format($net, 2).')'.$discountNote.'. You may now start the consultation.'
                 : 'Recorded. You may now start the consultation.';
@@ -1260,19 +1292,43 @@ class AppointmentController extends MedicalController implements HasMiddleware
             // the visit WITHOUT charging again.
             if ($alreadyPaid) {
                 try {
-                    DB::transaction(function () use ($appointment): void {
+                    DB::transaction(function () use ($appointment, $profile): void {
                         $appointment->update(['status' => 'completed']);
 
-                        // Phase B (Option A): the fee was recorded earlier
-                        // (e.g. pre-visit at Start) without a ledger entry —
-                        // post the receipt now that the visit is terminal.
-                        // postOpdFeeJournal is idempotent via journal_id.
-                        $net = (float) ($appointment->fee_collected_amount ?? 0);
-                        $discount = (float) ($appointment->fee_discount_amount ?? 0);
-                        $journal = $this->feePosting->postOpdFeeJournal(
-                            $appointment->fresh(),
-                            $net + $discount,
-                            $discount,
+                        // Phase C2: the fee was stamped earlier (e.g.
+                        // pre-visit at Start). Post whichever ledger leg is
+                        // still outstanding — an unrecognised advance
+                        // receipt is released into income; a record-only
+                        // Start with no receipt collects directly now. Both
+                        // service methods are idempotent via their FK
+                        // columns. A visit whose receipt already credited
+                        // 4300.1 (direct collection) posts nothing further.
+                        $stored = (float) ($appointment->fee_collected_amount ?? 0);
+                        $storedDiscount = (float) ($appointment->fee_discount_amount ?? 0);
+                        $fresh = $appointment->fresh();
+
+                        $preVisit = $profile !== null && (bool) $profile->collect_fee_before_visit;
+
+                        if ($fresh->fee_recognition_journal_id !== null) {
+                            return; // already recognised — nothing left to do
+                        }
+
+                        if ($fresh->fee_receipt_journal_id !== null) {
+                            if ($preVisit) {
+                                $this->feePosting->postIncomeRecognition(
+                                    $fresh,
+                                    $stored + $storedDiscount,
+                                    $this->resolvedActorId(),
+                                );
+                            }
+
+                            return; // direct collection already credited income
+                        }
+
+                        $journal = $this->feePosting->postDirectCollection(
+                            $fresh,
+                            $stored + $storedDiscount,
+                            $storedDiscount,
                             $this->resolvedActorId(),
                         );
                         if ($journal) {
@@ -1319,11 +1375,15 @@ class AppointmentController extends MedicalController implements HasMiddleware
                         'needs_verification' => ! $this->isTreatingDoctor($appointment),
                     ]);
 
-                    // Phase B (Option A): post the receipt journal in the SAME
-                    // transaction as the appointment update + audit log, so a
-                    // ledger failure (missing account, closed period, ...)
-                    // rolls the whole collection back — no orphan fee state.
-                    $journal = $this->feePosting->postOpdFeeJournal(
+                    // Phase C2: first collection on a terminal action — a
+                    // single direct-collection journal (Dr Cash + Dr
+                    // Discount / Cr 4300.1) lands cash and revenue together
+                    // in the SAME transaction as the appointment update +
+                    // audit log, so a ledger failure (missing account,
+                    // closed period, ...) rolls the whole collection back —
+                    // no orphan fee state. Idempotent via
+                    // appointments.fee_receipt_journal_id.
+                    $journal = $this->feePosting->postDirectCollection(
                         $appointment->fresh(),
                         (float) $amount,
                         (float) $discount['amount'],

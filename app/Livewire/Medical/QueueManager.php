@@ -4,11 +4,13 @@ namespace App\Livewire\Medical;
 
 use App\Models\Branch;
 use App\Models\InstituteUser;
+use App\Models\Journal;
 use App\Models\Medical\Appointment;
 use App\Models\Medical\Doctor;
 use App\Models\Medical\QueueAuditLog;
 use App\Models\Medical\VitalSign;
 use App\Models\Membership;
+use App\Services\Accounting\JournalPostingService;
 use App\Services\Medical\EncounterAutoService;
 use App\Support\BranchContext;
 use App\Support\MedicalScope;
@@ -460,23 +462,61 @@ class QueueManager extends Component
             }
 
             $reversedAmount = (float) ($appointment->fee_collected_amount ?? 0);
-            $appointment->update([
-                'status' => 'cancelled',
-                'fee_collected_amount' => null,
-                'fee_collected_by_id' => null,
-                'fee_collected_by_name' => null,
-                'fee_collected_at' => null,
-            ]);
-            QueueAuditLog::create([
-                'institute_id' => $appointment->institute_id,
-                'appointment_id' => $appointment->id,
-                'user_id' => $actor['id'],
-                'user_type' => $actor['type'],
-                'actor_name' => $actor['name'],
-                'action' => 'fee_reversed',
-                'new_order' => $appointment->queue_order ?? $appointment->serial_number ?? 0,
-                'amount' => $reversedAmount,
-            ]);
+
+            try {
+                DB::transaction(function () use ($appointment, $actor, $reversedAmount): void {
+                    // Phase C2: reverse every ledger leg the fee collection
+                    // posted (advance receipt and/or income recognition) so
+                    // a cancelled visit leaves no cash, liability or revenue
+                    // trace behind — then detach the FKs and clear the fee
+                    // fields in the same transaction.
+                    $posting = app(JournalPostingService::class);
+
+                    foreach (['fee_receipt_journal_id', 'fee_recognition_journal_id'] as $fk) {
+                        if ($appointment->{$fk} === null) {
+                            continue;
+                        }
+                        $journal = Journal::where('institute_id', (int) $appointment->institute_id)
+                            ->find($appointment->{$fk});
+                        if ($journal !== null && $journal->status === 'posted') {
+                            $posting->reverse(
+                                $journal,
+                                (int) $appointment->institute_id,
+                                $actor['id'],
+                                'OPD fee cancelled — appointment #'.$appointment->id,
+                            );
+                        }
+                    }
+
+                    $appointment->forceFill([
+                        'status' => 'cancelled',
+                        'fee_collected_amount' => null,
+                        'fee_collected_by_id' => null,
+                        'fee_collected_by_name' => null,
+                        'fee_collected_at' => null,
+                        'fee_receipt_journal_id' => null,
+                        'fee_recognition_journal_id' => null,
+                    ])->save();
+
+                    QueueAuditLog::create([
+                        'institute_id' => $appointment->institute_id,
+                        'appointment_id' => $appointment->id,
+                        'user_id' => $actor['id'],
+                        'user_type' => $actor['type'],
+                        'actor_name' => $actor['name'],
+                        'action' => 'fee_reversed',
+                        'new_order' => $appointment->queue_order ?? $appointment->serial_number ?? 0,
+                        'amount' => $reversedAmount,
+                    ]);
+                });
+            } catch (\Throwable $e) {
+                report($e);
+                $this->statusMessage = '';
+                $this->errorMessage = 'Cancellation failed: '.$e->getMessage();
+
+                return;
+            }
+
             $this->errorMessage = '';
             $this->statusMessage = 'Appointment cancelled and payment of ৳'.number_format($reversedAmount, 2).' reversed.';
             $this->loadQueue();
