@@ -9,6 +9,7 @@ use App\Models\Journal;
 use App\Models\Medical\Appointment;
 use App\Services\Accounting\ChartOfAccountService;
 use App\Services\Accounting\JournalPostingService;
+use Illuminate\Support\Facades\DB;
 
 /**
  * OPD consultation-fee ledger posting (Phase B, Option A — direct receipt
@@ -41,6 +42,11 @@ use App\Services\Accounting\JournalPostingService;
  * resolve cleanly). A missing required account throws — the caller's
  * transaction rolls back, leaving the appointment uncollected rather than
  * half-updated with no ledger trace.
+ *
+ * Phase C1 (two-stage posting) supersedes postOpdFeeJournal() with
+ * postAdvanceReceipt() + postIncomeRecognition() (staged collection) or
+ * postDirectCollection() (same-visit cash-in). The legacy method below stays
+ * callable for existing wiring, but new callers must not use it.
  */
 class MedicalFeePostingService
 {
@@ -52,6 +58,11 @@ class MedicalFeePostingService
     /**
      * Post the receipt journal for a collected OPD fee, or return null when
      * there is nothing to post (already posted / zero gross).
+     *
+     * @deprecated Phase C1 replaces this with the two-stage pair
+     *             postAdvanceReceipt() + postIncomeRecognition() (or
+     *             postDirectCollection() for same-visit cash-in). Kept for
+     *             existing Phase B wiring; do not call from new code.
      */
     public function postOpdFeeJournal(Appointment $appointment, float $grossAmount, float $discountAmount, ?int $actorId = null): ?Journal
     {
@@ -109,6 +120,200 @@ class MedicalFeePostingService
     }
 
     /**
+     * Phase C1, stage 1 — the money-in receipt for a staged OPD fee. Cash
+     * lands now; the gross sits as an unearned liability until the service is
+     * recognised (postIncomeRecognition()).
+     *
+     *   Dr 1000.1 Cash             (net received)
+     *   Dr 4000.5 Discount Allowed (contra-revenue, only when discounted)
+     *   Cr 2400.3 OPD Fees Advance (gross, unearned)
+     *
+     * Idempotent on appointments.fee_receipt_journal_id; null on zero gross.
+     */
+    public function postAdvanceReceipt(Appointment $appointment, float $grossAmount, float $discountAmount, ?int $actorId = null): ?Journal
+    {
+        if ($appointment->fee_receipt_journal_id !== null) {
+            return null;
+        }
+
+        $gross = round($grossAmount, 2);
+        if ($gross <= 0) {
+            return null;
+        }
+
+        $entries = $this->cashSideEntries($appointment, $gross, $discountAmount);
+        $entries[] = $this->entry($appointment, '2400.3', 0, $gross);
+
+        return $this->postAndLink(
+            $appointment,
+            $entries,
+            'OPD advance fee receipt — appointment #'.$appointment->id,
+            'fee_receipt_journal_id',
+            $actorId,
+        );
+    }
+
+    /**
+     * Phase C1, stage 2 — recognise the gross that was parked as a liability
+     * by postAdvanceReceipt() once the service has been delivered.
+     *
+     *   Dr 2400.3 OPD Fees Advance (gross)
+     *   Cr 4300.1 Consultation Fees (gross)
+     *
+     * The discount, if any, was already expensed at receipt time, so the
+     * full gross is released. Idempotent on
+     * appointments.fee_recognition_journal_id; null on zero gross.
+     *
+     * @throws \RuntimeException when no advance receipt journal exists yet —
+     *                           recognising revenue the tenant never received
+     *                           would corrupt the liability account.
+     */
+    public function postIncomeRecognition(Appointment $appointment, float $grossAmount, ?int $actorId = null): ?Journal
+    {
+        if ($appointment->fee_recognition_journal_id !== null) {
+            return null;
+        }
+
+        if ($appointment->fee_receipt_journal_id === null) {
+            throw new \RuntimeException('Recognition requires a prior advance receipt journal.');
+        }
+
+        $gross = round($grossAmount, 2);
+        if ($gross <= 0) {
+            return null;
+        }
+
+        $entries = [
+            $this->entry($appointment, '2400.3', $gross, 0),
+            $this->entry($appointment, '4300.1', 0, $gross),
+        ];
+
+        return $this->postAndLink(
+            $appointment,
+            $entries,
+            'OPD fee revenue recognition — appointment #'.$appointment->id,
+            'fee_recognition_journal_id',
+            $actorId,
+        );
+    }
+
+    /**
+     * Phase C1 — same-visit collection: money in and revenue recognised in a
+     * single journal, no liability stage.
+     *
+     *   Dr 1000.1 Cash             (net received)
+     *   Dr 4000.5 Discount Allowed (contra-revenue, only when discounted)
+     *   Cr 4300.1 Consultation Fees (gross)
+     *
+     * Only fee_receipt_journal_id is linked (fee_recognition_journal_id stays
+     * null — there is no second stage). Idempotent on
+     * appointments.fee_receipt_journal_id; null on zero gross.
+     */
+    public function postDirectCollection(Appointment $appointment, float $grossAmount, float $discountAmount, ?int $actorId = null): ?Journal
+    {
+        if ($appointment->fee_receipt_journal_id !== null) {
+            return null;
+        }
+
+        $gross = round($grossAmount, 2);
+        if ($gross <= 0) {
+            return null;
+        }
+
+        $entries = $this->cashSideEntries($appointment, $gross, $discountAmount);
+        $entries[] = $this->entry($appointment, '4300.1', 0, $gross);
+
+        return $this->postAndLink(
+            $appointment,
+            $entries,
+            'OPD direct fee collection — appointment #'.$appointment->id,
+            'fee_receipt_journal_id',
+            $actorId,
+        );
+    }
+
+    /**
+     * One journal-entry line for a tenant account resolved by code.
+     *
+     * @return array{coa_id: int, debit: float, credit: float}
+     */
+    private function entry(Appointment $appointment, string $code, float $debit, float $credit): array
+    {
+        $instituteId = (int) $appointment->institute_id;
+        $branchId = $appointment->branch_id !== null ? (int) $appointment->branch_id : null;
+
+        return [
+            'coa_id' => $this->requireAccount($instituteId, $code, $branchId)->id,
+            'debit' => $debit,
+            'credit' => $credit,
+        ];
+    }
+
+    /**
+     * Shared cash-in side of both receipt shapes: Dr Cash (net) plus Dr
+     * Discount Allowed when a discount applies. The discount can never
+     * exceed the gross fee; clamped defensively so the ledger cannot go
+     * negative.
+     *
+     * @return array<int, array{coa_id: int, debit: float, credit: float}>
+     */
+    private function cashSideEntries(Appointment $appointment, float $gross, float $discountAmount): array
+    {
+        $discount = min(round($discountAmount, 2), $gross);
+        if ($discount < 0) {
+            $discount = 0.0;
+        }
+        $net = round($gross - $discount, 2);
+
+        $entries = [];
+        if ($net > 0) {
+            $entries[] = $this->entry($appointment, '1000.1', $net, 0);
+        }
+        if ($discount > 0) {
+            $entries[] = $this->entry($appointment, '4000.5', $discount, 0);
+        }
+
+        return $entries;
+    }
+
+    /**
+     * Create a posted receipt journal for the appointment and write the
+     * ledger link back onto it in the same DB transaction, so the journal
+     * and its idempotency column can never diverge.
+     *
+     * @param  array<int, array{coa_id: int, debit: float, credit: float}>  $entries
+     */
+    private function postAndLink(Appointment $appointment, array $entries, string $description, string $linkColumn, ?int $actorId): Journal
+    {
+        $instituteId = (int) $appointment->institute_id;
+        $branchId = $appointment->branch_id !== null ? (int) $appointment->branch_id : null;
+
+        $sumDebit = round(array_sum(array_column($entries, 'debit')), 2);
+        $sumCredit = round(array_sum(array_column($entries, 'credit')), 2);
+        if (abs($sumDebit - $sumCredit) > JournalPostingService::BALANCE_EPSILON) {
+            throw new \RuntimeException(
+                "OPD fee journal does not balance (debit {$sumDebit} vs credit {$sumCredit})."
+            );
+        }
+
+        return DB::transaction(function () use ($appointment, $entries, $description, $linkColumn, $actorId, $instituteId, $branchId): Journal {
+            $journal = $this->posting->create([
+                'institute_id' => $instituteId,
+                'branch_id' => $branchId,
+                'journal_date' => $appointment->fee_collected_at ?? now(),
+                'type' => 'receipt',
+                'currency_id' => $this->resolveCurrencyId($instituteId, $branchId),
+                'description' => $description,
+                'entries' => $entries,
+            ], $actorId, postNow: true);
+
+            $appointment->forceFill([$linkColumn => $journal->id])->save();
+
+            return $journal;
+        });
+    }
+
+    /**
      * Resolve a tenant-owned account by code, or fail loudly: the caller's
      * transaction must roll back rather than record fee money with no
      * ledger trace.
@@ -116,6 +321,14 @@ class MedicalFeePostingService
     private function requireAccount(int $instituteId, string $code, ?int $branchId): ChartOfAccount
     {
         $account = $this->coa->accountByCode($instituteId, $code, $branchId);
+
+        // H1: the Phase A medical COA install writes branch_id NULL rows. A
+        // branch-scoped lookup therefore misses on any appointment that
+        // carries a branch_id even though the tenant owns the account — fall
+        // back to the unscoped tenant row instead of aborting the posting.
+        if ($account === null && $branchId !== null) {
+            $account = $this->coa->accountByCode($instituteId, $code, null);
+        }
 
         if ($account === null) {
             throw new \RuntimeException(

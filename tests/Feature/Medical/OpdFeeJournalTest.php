@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Medical;
 
+use App\Models\Branch;
 use App\Models\ChartOfAccount;
 use App\Models\Institute;
 use App\Models\Journal;
@@ -13,6 +14,7 @@ use App\Models\Membership;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\Accounting\TenantCoaSeederService;
+use App\Services\Medical\MedicalFeePostingService;
 use App\Support\Workspace;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -28,6 +30,12 @@ use Tests\TestCase;
  * DB transaction as the appointment update. Idempotent through
  * appointments.journal_id. No medical_invoice is created (Option A);
  * VAT does not apply to the net OPD fee.
+ *
+ * Phase C1 (two-stage posting) is covered by the service-level tests at the
+ * bottom: advance receipt (Dr cash / Cr 2400.3 unearned), income
+ * recognition (Dr 2400.3 / Cr 4300.1), direct collection (Dr cash+discount
+ * / Cr 4300.1 in one journal), plus idempotency and the branch-null COA
+ * fallback. The five controller tests are Phase B and stay untouched.
  */
 class OpdFeeJournalTest extends TestCase
 {
@@ -91,7 +99,7 @@ class OpdFeeJournalTest extends TestCase
         Workspace::set($this->institute->id);
     }
 
-    private function checkedInAppointment(): Appointment
+    private function checkedInAppointment(?int $branchId = null): Appointment
     {
         $patient = Patient::create([
             'institute_id' => $this->institute->id,
@@ -105,6 +113,7 @@ class OpdFeeJournalTest extends TestCase
 
         return Appointment::create([
             'institute_id' => $this->institute->id,
+            'branch_id' => $branchId,
             'patient_id' => $patient->id,
             'doctor_id' => $this->doctorProfile->user_id,
             'appointment_date' => today()->format('Y-m-d'),
@@ -258,5 +267,157 @@ class OpdFeeJournalTest extends TestCase
             0,
             Journal::where('institute_id', $this->institute->id)->where('type', 'receipt')->count()
         );
+    }
+
+    public function test_advance_receipt_posts_cash_and_unearned_liability(): void
+    {
+        $appointment = $this->checkedInAppointment();
+
+        $journal = app(MedicalFeePostingService::class)
+            ->postAdvanceReceipt($appointment, 500.0, 0.0, $this->owner->id);
+
+        $this->assertNotNull($journal);
+        $this->assertSame('posted', $journal->status);
+
+        $totals = $this->journalEntryTotals($journal);
+        $this->assertSame(500.0, $totals['1000.1']);
+        $this->assertSame(500.0, $totals['2400.3']);
+        $this->assertArrayNotHasKey('4000.5', $totals);
+        $this->assertArrayNotHasKey('4300.1', $totals);
+
+        $appointment->refresh();
+        $this->assertSame($journal->id, (int) $appointment->fee_receipt_journal_id);
+        $this->assertNull($appointment->fee_recognition_journal_id);
+        $this->assertNull($appointment->journal_id);
+    }
+
+    public function test_advance_receipt_discount_posts_contra_entry(): void
+    {
+        $appointment = $this->checkedInAppointment();
+
+        $journal = app(MedicalFeePostingService::class)
+            ->postAdvanceReceipt($appointment, 500.0, 50.0, $this->owner->id);
+
+        $this->assertNotNull($journal);
+
+        $totals = $this->journalEntryTotals($journal);
+        $this->assertSame(450.0, $totals['1000.1']);
+        $this->assertSame(50.0, $totals['4000.5']);
+        $this->assertSame(500.0, $totals['2400.3']);
+
+        $sumDebit = (float) $journal->entries()->sum('debit');
+        $sumCredit = (float) $journal->entries()->sum('credit');
+        $this->assertEqualsWithDelta(500.0, $sumDebit, 0.001);
+        $this->assertEqualsWithDelta($sumDebit, $sumCredit, 0.001);
+    }
+
+    public function test_income_recognition_releases_liability_to_revenue(): void
+    {
+        $appointment = $this->checkedInAppointment();
+        $service = app(MedicalFeePostingService::class);
+
+        $receipt = $service->postAdvanceReceipt($appointment, 500.0, 0.0, $this->owner->id);
+        $this->assertNotNull($receipt);
+
+        $journal = $service->postIncomeRecognition($appointment, 500.0, $this->owner->id);
+
+        $this->assertNotNull($journal);
+        $this->assertSame('posted', $journal->status);
+        $this->assertNotSame($receipt->id, $journal->id);
+
+        $totals = $this->journalEntryTotals($journal);
+        $this->assertSame(500.0, $totals['2400.3']);
+        $this->assertSame(500.0, $totals['4300.1']);
+        $this->assertArrayNotHasKey('1000.1', $totals);
+
+        $appointment->refresh();
+        $this->assertSame($receipt->id, (int) $appointment->fee_receipt_journal_id);
+        $this->assertSame($journal->id, (int) $appointment->fee_recognition_journal_id);
+    }
+
+    public function test_income_recognition_requires_prior_advance_receipt(): void
+    {
+        $appointment = $this->checkedInAppointment();
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Recognition requires a prior advance receipt journal.');
+
+        app(MedicalFeePostingService::class)
+            ->postIncomeRecognition($appointment, 500.0, $this->owner->id);
+    }
+
+    public function test_direct_collection_posts_cash_and_revenue_in_one_journal(): void
+    {
+        $appointment = $this->checkedInAppointment();
+
+        $journal = app(MedicalFeePostingService::class)
+            ->postDirectCollection($appointment, 500.0, 50.0, $this->owner->id);
+
+        $this->assertNotNull($journal);
+        $this->assertSame('posted', $journal->status);
+
+        $totals = $this->journalEntryTotals($journal);
+        $this->assertSame(450.0, $totals['1000.1']);
+        $this->assertSame(50.0, $totals['4000.5']);
+        $this->assertSame(500.0, $totals['4300.1']);
+        $this->assertArrayNotHasKey('2400.3', $totals);
+
+        $appointment->refresh();
+        $this->assertSame($journal->id, (int) $appointment->fee_receipt_journal_id);
+        $this->assertNull($appointment->fee_recognition_journal_id);
+    }
+
+    public function test_two_stage_and_direct_posting_are_idempotent(): void
+    {
+        $appointment = $this->checkedInAppointment();
+        $service = app(MedicalFeePostingService::class);
+
+        $receipt = $service->postAdvanceReceipt($appointment, 500.0, 0.0, $this->owner->id);
+        $this->assertNotNull($receipt);
+        $this->assertNull($service->postAdvanceReceipt($appointment, 500.0, 0.0, $this->owner->id));
+
+        $recognition = $service->postIncomeRecognition($appointment, 500.0, $this->owner->id);
+        $this->assertNotNull($recognition);
+        $this->assertNull($service->postIncomeRecognition($appointment, 500.0, $this->owner->id));
+
+        // Receipt link already present — a direct collection must not post.
+        $this->assertNull($service->postDirectCollection($appointment, 500.0, 0.0, $this->owner->id));
+
+        $this->assertSame(
+            2,
+            Journal::where('institute_id', $this->institute->id)->where('type', 'receipt')->count()
+        );
+
+        $appointment->refresh();
+        $this->assertSame($receipt->id, (int) $appointment->fee_receipt_journal_id);
+        $this->assertSame($recognition->id, (int) $appointment->fee_recognition_journal_id);
+    }
+
+    public function test_branch_scoped_account_lookup_falls_back_to_tenant_row(): void
+    {
+        $branch = Branch::create([
+            'institute_id' => $this->institute->id,
+            'name' => 'Main Campus '.uniqid(),
+            'status' => 'active',
+        ]);
+        $appointment = $this->checkedInAppointment($branch->id);
+
+        // Phase A medical COA install writes branch_id NULL rows; with the
+        // appointment carrying a branch, the scoped lookup alone would miss.
+        $this->assertSame(
+            0,
+            ChartOfAccount::where('institute_id', $this->institute->id)
+                ->whereNotNull('branch_id')
+                ->count()
+        );
+
+        $service = app(MedicalFeePostingService::class);
+        $receipt = $service->postAdvanceReceipt($appointment, 500.0, 0.0, $this->owner->id);
+        $this->assertNotNull($receipt);
+        $this->assertNotNull($service->postIncomeRecognition($appointment, 500.0, $this->owner->id));
+
+        $totals = $this->journalEntryTotals($receipt);
+        $this->assertSame(500.0, $totals['1000.1']);
+        $this->assertSame(500.0, $totals['2400.3']);
     }
 }
