@@ -233,6 +233,56 @@ class MedicalFeePostingService
     }
 
     /**
+     * Reverse every posted OPD fee journal linked to the appointment and
+     * detach all three FK columns, in one transaction (Phase D).
+     *
+     * Covers fee_recognition_journal_id (C1 stage-2 income recognition),
+     * fee_receipt_journal_id (C1 receipt / direct collection) and the
+     * Phase B legacy journal_id mirror — the mirror is deduped so a
+     * journal that aliases fee_receipt_journal_id is reversed exactly once.
+     *
+     * Idempotent: when all three columns are already null this is a no-op.
+     * Errors from JournalPostingService::reverse() bubble so the caller's
+     * transaction rolls back — a cancel must never half-succeed leaving a
+     * live journal behind.
+     */
+    public function reverseFeeJournals(
+        Appointment $appointment,
+        ?int $actorId = null,
+        string $reason = 'Appointment cancelled'
+    ): void {
+        $instituteId = (int) $appointment->institute_id;
+
+        DB::transaction(function () use ($appointment, $actorId, $reason, $instituteId): void {
+            $reversedIds = [];
+
+            foreach (['fee_recognition_journal_id', 'fee_receipt_journal_id', 'journal_id'] as $fk) {
+                $journalId = $appointment->{$fk};
+
+                if ($journalId === null) {
+                    continue;
+                }
+
+                // The Phase B journal_id mirror may alias fee_receipt_journal_id —
+                // reverse each distinct journal once, but always detach the column.
+                if (! in_array((int) $journalId, $reversedIds, true)) {
+                    $journal = Journal::where('institute_id', $instituteId)->find($journalId);
+
+                    if ($journal !== null && $journal->status === 'posted') {
+                        $this->posting->reverse($journal, $instituteId, $actorId, $reason);
+                    }
+
+                    $reversedIds[] = (int) $journalId;
+                }
+
+                $appointment->forceFill([$fk => null]);
+            }
+
+            $appointment->save();
+        });
+    }
+
+    /**
      * One journal-entry line for a tenant account resolved by code.
      *
      * @return array{coa_id: int, debit: float, credit: float}

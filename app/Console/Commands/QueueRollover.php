@@ -6,6 +6,7 @@ use App\Models\Institute;
 use App\Models\Medical\Appointment;
 use App\Models\Medical\Doctor;
 use App\Models\Medical\QueueAuditLog;
+use App\Services\Medical\MedicalFeePostingService;
 use App\Services\Medical\QueueManager as QueueManagerService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
@@ -105,11 +106,18 @@ class QueueRollover extends Command
                         DB::transaction(function () use ($appointment, $target, $serial, $status, $oldSerial) {
                             // A new day means a new payment: yesterday's stamp
                             // must not travel forward (pre-visit rows paid
-                            // but unseen). Clear it and audit the reversal
-                            // so the cash trail stays intact.
+                            // but unseen). Reverse the posted fee journals,
+                            // clear the stamp and audit the reversal so the
+                            // cash trail stays intact (Phase D).
                             $reversedAmount = null;
                             if ($appointment->fee_collected_at !== null) {
                                 $reversedAmount = (float) ($appointment->fee_collected_amount ?? 0);
+
+                                app(MedicalFeePostingService::class)->reverseFeeJournals(
+                                    $appointment,
+                                    null,
+                                    'Queue rollover — appointment #'.$appointment->id,
+                                );
                             }
                             $appointment->update(array_merge([
                                 'appointment_date' => $target,

@@ -4,14 +4,13 @@ namespace App\Livewire\Medical;
 
 use App\Models\Branch;
 use App\Models\InstituteUser;
-use App\Models\Journal;
 use App\Models\Medical\Appointment;
 use App\Models\Medical\Doctor;
 use App\Models\Medical\QueueAuditLog;
 use App\Models\Medical\VitalSign;
 use App\Models\Membership;
-use App\Services\Accounting\JournalPostingService;
 use App\Services\Medical\EncounterAutoService;
+use App\Services\Medical\MedicalFeePostingService;
 use App\Support\BranchContext;
 use App\Support\MedicalScope;
 use App\Support\Workspace;
@@ -465,28 +464,16 @@ class QueueManager extends Component
 
             try {
                 DB::transaction(function () use ($appointment, $actor, $reversedAmount): void {
-                    // Phase C2: reverse every ledger leg the fee collection
-                    // posted (advance receipt and/or income recognition) so
-                    // a cancelled visit leaves no cash, liability or revenue
-                    // trace behind — then detach the FKs and clear the fee
-                    // fields in the same transaction.
-                    $posting = app(JournalPostingService::class);
-
-                    foreach (['fee_receipt_journal_id', 'fee_recognition_journal_id'] as $fk) {
-                        if ($appointment->{$fk} === null) {
-                            continue;
-                        }
-                        $journal = Journal::where('institute_id', (int) $appointment->institute_id)
-                            ->find($appointment->{$fk});
-                        if ($journal !== null && $journal->status === 'posted') {
-                            $posting->reverse(
-                                $journal,
-                                (int) $appointment->institute_id,
-                                $actor['id'],
-                                'OPD fee cancelled — appointment #'.$appointment->id,
-                            );
-                        }
-                    }
+                    // Phase D: shared helper reverses every ledger leg the fee
+                    // collection posted (advance receipt and/or income
+                    // recognition, plus the legacy journal_id mirror) and
+                    // detaches the FKs — then the fee fields are cleared in
+                    // the same transaction.
+                    app(MedicalFeePostingService::class)->reverseFeeJournals(
+                        $appointment,
+                        $actor['id'],
+                        'OPD fee cancelled — appointment #'.$appointment->id,
+                    );
 
                     $appointment->forceFill([
                         'status' => 'cancelled',
@@ -494,8 +481,6 @@ class QueueManager extends Component
                         'fee_collected_by_id' => null,
                         'fee_collected_by_name' => null,
                         'fee_collected_at' => null,
-                        'fee_receipt_journal_id' => null,
-                        'fee_recognition_journal_id' => null,
                     ])->save();
 
                     QueueAuditLog::create([

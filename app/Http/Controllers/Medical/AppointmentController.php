@@ -505,28 +505,45 @@ class AppointmentController extends MedicalController implements HasMiddleware
         $actor = $this->feeReceiverSnapshot($appointment->institute_id);
 
         if ($isPaid) {
-            // Reversing the payment: clear the collection stamp and leave a
-            // reversal entry in the Audit Log so the money trail stays intact.
+            // Reversing the payment: reverse every posted fee journal,
+            // clear the collection stamp and leave a reversal entry in the
+            // Audit Log so the money trail stays intact (Phase D).
             $reversedAmount = (float) ($appointment->fee_collected_amount ?? 0);
 
-            $appointment->update([
-                'status' => 'cancelled',
-                'fee_collected_amount' => null,
-                'fee_collected_by_id' => null,
-                'fee_collected_by_name' => null,
-                'fee_collected_at' => null,
-            ]);
+            try {
+                DB::transaction(function () use ($appointment, $actor, $reversedAmount): void {
+                    $this->feePosting->reverseFeeJournals(
+                        $appointment,
+                        $actor['id'],
+                        'OPD fee cancelled — appointment #'.$appointment->id,
+                    );
 
-            QueueAuditLog::create([
-                'institute_id' => $appointment->institute_id,
-                'appointment_id' => $appointment->id,
-                'user_id' => $actor['id'],
-                'user_type' => $actor['type'],
-                'actor_name' => $actor['name'],
-                'action' => 'fee_reversed',
-                'new_order' => $appointment->queue_order ?? $appointment->serial_number ?? 0,
-                'amount' => $reversedAmount,
-            ]);
+                    $appointment->update([
+                        'status' => 'cancelled',
+                        'fee_collected_amount' => null,
+                        'fee_collected_by_id' => null,
+                        'fee_collected_by_name' => null,
+                        'fee_collected_at' => null,
+                    ]);
+
+                    QueueAuditLog::create([
+                        'institute_id' => $appointment->institute_id,
+                        'appointment_id' => $appointment->id,
+                        'user_id' => $actor['id'],
+                        'user_type' => $actor['type'],
+                        'actor_name' => $actor['name'],
+                        'action' => 'fee_reversed',
+                        'new_order' => $appointment->queue_order ?? $appointment->serial_number ?? 0,
+                        'amount' => $reversedAmount,
+                    ]);
+                });
+            } catch (\Throwable $e) {
+                report($e);
+
+                return redirect()->back()->withErrors(
+                    ['appointment' => 'Cancellation failed: '.$e->getMessage()]
+                );
+            }
 
             $message = 'Appointment deleted and payment of ৳'.number_format($reversedAmount, 2).' reversed.';
         } else {
@@ -1518,23 +1535,44 @@ class AppointmentController extends MedicalController implements HasMiddleware
 
             $reversedAmount = (float) ($appointment->fee_collected_amount ?? 0);
             $actor = $this->feeReceiverSnapshot($appointment->institute_id);
-            $appointment->update([
-                'status' => 'cancelled',
-                'fee_collected_amount' => null,
-                'fee_collected_by_id' => null,
-                'fee_collected_by_name' => null,
-                'fee_collected_at' => null,
-            ]);
-            QueueAuditLog::create([
-                'institute_id' => $appointment->institute_id,
-                'appointment_id' => $appointment->id,
-                'user_id' => $actor['id'],
-                'user_type' => $actor['type'],
-                'actor_name' => $actor['name'],
-                'action' => 'fee_reversed',
-                'new_order' => $appointment->queue_order ?? $appointment->serial_number ?? 0,
-                'amount' => $reversedAmount,
-            ]);
+
+            try {
+                DB::transaction(function () use ($appointment, $actor, $reversedAmount): void {
+                    // Phase D: reverse every posted fee journal (advance
+                    // receipt / income recognition / legacy mirror) and
+                    // detach the FKs before the collection stamp is cleared.
+                    $this->feePosting->reverseFeeJournals(
+                        $appointment,
+                        $actor['id'],
+                        'OPD fee cancelled — appointment #'.$appointment->id,
+                    );
+
+                    $appointment->update([
+                        'status' => 'cancelled',
+                        'fee_collected_amount' => null,
+                        'fee_collected_by_id' => null,
+                        'fee_collected_by_name' => null,
+                        'fee_collected_at' => null,
+                    ]);
+
+                    QueueAuditLog::create([
+                        'institute_id' => $appointment->institute_id,
+                        'appointment_id' => $appointment->id,
+                        'user_id' => $actor['id'],
+                        'user_type' => $actor['type'],
+                        'actor_name' => $actor['name'],
+                        'action' => 'fee_reversed',
+                        'new_order' => $appointment->queue_order ?? $appointment->serial_number ?? 0,
+                        'amount' => $reversedAmount,
+                    ]);
+                });
+            } catch (\Throwable $e) {
+                report($e);
+
+                return redirect()->back()->withErrors(
+                    ['queue' => 'Cancellation failed: '.$e->getMessage()]
+                );
+            }
 
             return redirect()->back()->with(
                 'status', 'Appointment cancelled and payment of ৳'.number_format($reversedAmount, 2).' reversed.'
