@@ -128,6 +128,15 @@
                         </button>
                     </form>
                 @endif
+                @if($appointment->fee_collected_at !== null && ! in_array($appointment->status, ['completed', 'cancelled'], true))
+                    <form action="{{ route('medical.appointments.refund', $appointment) }}" method="POST"
+                          onsubmit="return confirm('Refund this appointment\'s fee? The journal will be reversed.')">
+                        @csrf
+                        <button type="submit" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Refund
+                        </button>
+                    </form>
+                @endif
             </div>
         </div>
     </div>

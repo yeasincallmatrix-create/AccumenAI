@@ -136,6 +136,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     Route::post('appointments/{appointment}/collect-fee', [AppointmentController::class, 'collectFee'])->name('appointments.collect-fee');
     Route::post('appointments/{appointment}/start', [AppointmentController::class, 'start'])->name('appointments.start');
     Route::post('appointments/{appointment}/cancel', [AppointmentController::class, 'cancel'])->name('appointments.cancel');
+    Route::post('appointments/{appointment}/refund', [AppointmentController::class, 'refund'])->name('appointments.refund');
 
     // Admissions (IPD)
     Route::get('admissions/current', [AdmissionController::class, 'current'])->name('admissions.current');

@@ -137,6 +137,15 @@ Start Consultation
                                             <i class="bi bi-x-lg"></i>
                                         </button>
                                     </form>
+                                    @if(!empty($item['fee_collected']))
+                                        <form action="{{ route('medical.appointments.refund', $item['id']) }}" method="POST" class="d-inline">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="Refund"
+                                                    onclick="return confirm('Refund this appointment\'s fee? The journal will be reversed.')">
+                                                <i class="bi bi-arrow-counterclockwise"></i>
+                                            </button>
+                                        </form>
+                                    @endif
                                 @endif
                             </td>
                         </tr>

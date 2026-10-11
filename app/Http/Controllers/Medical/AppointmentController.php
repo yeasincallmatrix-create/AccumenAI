@@ -1514,13 +1514,47 @@ class AppointmentController extends MedicalController implements HasMiddleware
      */
     public function cancel(Appointment $appointment)
     {
+        return $this->cancelOrRefund(
+            $appointment,
+            'OPD fee cancelled — appointment #'.$appointment->id,
+            'fee_reversed',
+        );
+    }
+
+    /**
+     * Refund a queue appointment's fee (Phase F). Customer-facing alias of
+     * cancel(): identical guards, journal reversal and field clears — only
+     * the audit action, reversal reason and wording differ. No partial
+     * refunds, no amount input, no schema change.
+     */
+    public function refund(Appointment $appointment)
+    {
+        return $this->cancelOrRefund(
+            $appointment,
+            'OPD fee refunded — appointment #'.$appointment->id,
+            'fee_refunded',
+        );
+    }
+
+    /**
+     * Shared cancel/refund body. Paid appointments reverse every posted fee
+     * journal via MedicalFeePostingService::reverseFeeJournals (treating
+     * doctor or administrator only) with an audit entry; unpaid ones simply
+     * cancel.
+     */
+    private function cancelOrRefund(Appointment $appointment, string $reversalReason, string $auditAction)
+    {
+        $isRefund = $auditAction === 'fee_refunded';
+
         $this->ensureSameInstitute($appointment, 'appointment');
         $this->ensureDoctorOwns($appointment, 'doctor_id', 'appointment');
         $this->ensureBranchAccess($appointment, 'branch_id', 'appointment');
 
         if (! in_array($appointment->status, ['checked_in', 'in_progress'], true)) {
             return redirect()->back()->withErrors(
-                ['queue' => 'Only active queue appointments can be cancelled.']
+                ['queue' => $isRefund
+                    ? 'Only active queue appointments can be refunded.'
+                    : 'Only active queue appointments can be cancelled.']
             );
         }
 
@@ -1529,7 +1563,9 @@ class AppointmentController extends MedicalController implements HasMiddleware
             $isOwnDoctor = $this->isOwnDoctor($appointment->doctor_id, $appointment->institute_id);
             if (! $isAdmin && ! $isOwnDoctor) {
                 return redirect()->back()->withErrors(
-                    ['queue' => 'Only the treating doctor or an administrator may cancel a paid appointment.']
+                    ['queue' => $isRefund
+                        ? 'Only the treating doctor or an administrator may refund a paid appointment.'
+                        : 'Only the treating doctor or an administrator may cancel a paid appointment.']
                 );
             }
 
@@ -1537,14 +1573,14 @@ class AppointmentController extends MedicalController implements HasMiddleware
             $actor = $this->feeReceiverSnapshot($appointment->institute_id);
 
             try {
-                DB::transaction(function () use ($appointment, $actor, $reversedAmount): void {
+                DB::transaction(function () use ($appointment, $actor, $reversedAmount, $reversalReason, $auditAction): void {
                     // Phase D: reverse every posted fee journal (advance
                     // receipt / income recognition / legacy mirror) and
                     // detach the FKs before the collection stamp is cleared.
                     $this->feePosting->reverseFeeJournals(
                         $appointment,
                         $actor['id'],
-                        'OPD fee cancelled — appointment #'.$appointment->id,
+                        $reversalReason,
                     );
 
                     $appointment->update([
@@ -1561,7 +1597,7 @@ class AppointmentController extends MedicalController implements HasMiddleware
                         'user_id' => $actor['id'],
                         'user_type' => $actor['type'],
                         'actor_name' => $actor['name'],
-                        'action' => 'fee_reversed',
+                        'action' => $auditAction,
                         'new_order' => $appointment->queue_order ?? $appointment->serial_number ?? 0,
                         'amount' => $reversedAmount,
                     ]);
@@ -1570,18 +1606,24 @@ class AppointmentController extends MedicalController implements HasMiddleware
                 report($e);
 
                 return redirect()->back()->withErrors(
-                    ['queue' => 'Cancellation failed: '.$e->getMessage()]
+                    ['queue' => ($isRefund ? 'Refund' : 'Cancellation').' failed: '.$e->getMessage()]
                 );
             }
 
             return redirect()->back()->with(
-                'status', 'Appointment cancelled and payment of ৳'.number_format($reversedAmount, 2).' reversed.'
+                'status',
+                $isRefund
+                    ? 'Refund of ৳'.number_format($reversedAmount, 2).' recorded.'
+                    : 'Appointment cancelled and payment of ৳'.number_format($reversedAmount, 2).' reversed.'
             );
         }
 
         $appointment->update(['status' => 'cancelled']);
 
-        return redirect()->back()->with('status', 'Appointment cancelled.');
+        return redirect()->back()->with(
+            'status',
+            $isRefund ? 'No fee to refund — appointment cancelled.' : 'Appointment cancelled.'
+        );
     }
 
     /**
