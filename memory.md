@@ -1,4 +1,41 @@
-# Phase 1 ACCEPTANCE RUN — memory.md
+# memory.md — status + Phase 1 acceptance run
+
+**Latest status:** see §0 (2026-10-09). Everything from §1 down is the historical 2026-09-18 Phase 1
+acceptance run — keep it as a record, don't treat its counts/registry as current.
+
+---
+
+## 0. Status — 2026-10-09 (session refresh)
+
+- **Repo:** branch `dev`, HEAD `a5e1180d` (359 commits on HEAD; 113 of them since 2026-09-25). Only `AGENTS.md`
+  modified in the working tree (uncommitted); nothing staged.
+- **What's landed since this file's Phase 1 run** (full detail in `docs/memory.md` → "Change log (recent)"):
+  industry matrix Phases 1-6 (09-24/25) → per-industry packages + geo pricing → Real Estate/POS/Restaurant
+  scaffolds (config+migrations+tests only, still 0 routes/models) → dealership Phases 1-5 → mobile API v1 +
+  Google OAuth/reCAPTCHA/email ban → backup Phases 1-3 (chunked, Google Drive, smart restore) → medical OPD
+  queue display + live broadcast → accounting/CoA hardening wave F-002…F-019 incl. C1 tenant-CoA re-anchor and
+  schema-drift closure → billing mandatory package selection → `AGENTS.md` (2026-10-09).
+- **Test baseline moved on:** this run recorded ~270 test classes / ~2,227 reached; the tree now has
+  **560 test files / ~4,800 tests**. Never run it sequentially — use `php tests/shards/run.php` /
+  `composer test:shards`; parallel artisan/composer variants are broken. Baseline failures still exist, so
+  filter by path before blaming a change.
+- **Security gate is still BLOCKED** (re-verified 2026-10-09 against the §12 PHASE 0 list):
+  `.env` has `APP_DEBUG=true` and `SESSION_ENCRYPT=false` (`SESSION_SECURE_COOKIE` unset);
+  `resources/views/mail/notification.blade.php:1` still renders `{!! $bodyText !!}`;
+  `BlockPlatformAdminEscalation` lists `guard`/`role` in `BLOCKED_KEYS` but the 403 `in_array` on line 20
+  omits them (SEC-002 open). Treat §12's PHASE 0 checklist as unresolved work, not done work.
+- **Newer/authoritative docs supersede parts of this file:** `AGENTS.md` (commands + architecture facts),
+  `docs/ROADMAP_CONSOLIDATED_V1.md` (phase status), `docs/PHASE_13_ACCEPTANCE_REPORT.md` (acceptance — 116/116
+  regression filters, 0 regressions), `docs/PHASE_12_SECURITY_AUDIT.md`, `docs/SCHEMA_DRIFT.md` (closed
+  2026-10-08), `docs/AI_HANDOFF.md` + `docs/ARCHITECTURE_AUDIT_REPORT.md`, `docs/AI_CONTEXT.md` /
+  `docs/AI_DEVELOPMENT_RULES.md`.
+- **Bugs registry (§5) is historical:** B1 fixed (SystemRoleSeeder); B2/B6/B8/B11/B12 class of pre-existing
+  failures were worked through in later phases — re-check against `docs/ROADMAP_CONSOLIDATED_V1.md` §19 before
+  acting on a B-number here.
+
+---
+
+# Phase 1 ACCEPTANCE RUN (2026-09-18)
 
 **Date:** 2026-09-18
 **Runner:** opencode (automated read-only verification)

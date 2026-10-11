@@ -12,13 +12,20 @@ Three portals: **Platform Admin** (`platform_admin`), **Institute Staff**
 See `docs/skill.md` for the full capability overview.
 See `docs/promptRules.md` for AI assistant rules of engagement.
 
-## Environment
+## Environment (refreshed 2026-10-09)
 
-- App root: `C:\xampp\htdocs\monetix`
-- PHP (CLI): `& "C:\xampp\php\php.exe"` (e.g. `& "C:\xampp\php\php.exe" artisan serve`)
-- MySQL: `C:\xampp\mysql\bin\mysql.exe -u root monetix` (root, no password)
-- Test suite: `& "C:\xampp\php\php.exe" vendor\bin\phpunit` (currently 281 tests / 1300 assertions)
-- Code style: `& "C:\xampp\php\php.exe" vendor\bin\pint <paths>`
+- App root: `C:\xampp\htdocs\AccumenAI` — the old `C:\xampp\htdocs\monetix` folder **no longer exists**.
+- PHP (CLI): `& "C:\xampp\php\php.exe"` → **PHP 8.2.12** (e.g. `& "C:\xampp\php\php.exe" artisan serve`).
+- MySQL: `C:\xampp\mysql\bin\mysql.exe -u root -h 127.0.0.1 <db> --table -e "…"` — `mysql`/`mysqldump` are
+  **not on PATH** (root, no password).
+- Databases: dev = **`accumen_ai`** (`.env`); test = **`monetix_test`** (`.env.testing`, loaded when
+  `APP_ENV=testing`). `.env.example` ships `DB_CONNECTION=sqlite` — copying it gives an empty SQLite DB.
+- Tests: `& "C:\xampp\php\php.exe" artisan test --filter=SomeTest` (PHPUnit 11.5.56; needs `phpunit.xml`).
+  **Never run the whole suite sequentially** — 560 test files / ~4,800 tests, times out. Use
+  `php tests/shards/run.php` (6 shards) or `composer test:shards`. Directory baseline = pass a **path**
+  (`php artisan test tests/Feature/Accounting/`), not a name filter. Canonical command reference: `AGENTS.md`.
+- Full dev stack: `composer dev` (artisan serve + **queue worker `--queue=default,notifications`** + pail + Vite).
+- Code style: `& "C:\xampp\php\php.exe" vendor\bin\pint <paths>` — the only style gate; nothing runs it for you.
 - `docs/` is the documentation home (markdown below).
 
 ## Golden rules (from the user)
@@ -531,6 +538,65 @@ P6 override wiring + test suite.
 
 ## Change log (recent)
 
+Entries are newest-first. The 2026-09-25 → 2026-10-09 block below was reconstructed from git history
+(`git log --since=2026-09-25`, HEAD `a5e1180d`) on 2026-10-09.
+
+- **AGENTS.md + memory refresh (2026-10-09)**: new `AGENTS.md` (`1dc7932d`) as the AI-contributor command/architecture
+  guide, then refined (still uncommitted at session end) with measured facts: authz gap **1,043 of 2,192
+  authenticated routes have no route-level gate** (`route:list --json`, 2026-10-09), 342 migrations, 458 model
+  files (273 with `$guarded = []`), 77 unscoped `app/Models/Medical/*` models (58 manual `MedicalScope` call
+  sites), 4 React entrypoints in `vite.config.js`, `EnsureLivewireContext` is load-bearing on the `web` group,
+  prod = one 2 GB cPanel box (`docs/cpanel-2gb-optimization/`), in-tree non-app packages `gateway/` and
+  `simulator/`. This file's Environment/test-baseline sections were re-synced against it.
+- **Billing / views / HR / mobile (2026-10-09)**: `a2b8a332` mandatory package selection + geo pricing + Livewire
+  tenant guard; `6623ba50` standalone layouts migrated onto the institute shell; `059dbf84` back nav hidden on the
+  public certificate verification page; `f59266aa` HR employee profile fields + geo address cascade;
+  `d766d6af` Google ID-token login for mobile (`AuthController`, `api_v1`); `a5e1180d` CoA listing dedup — a global
+  row is hidden once the tenant owns the same `code` (post-C1), wired through `ChartOfAccount::visible()` /
+  `AccountGroup::visible()`.
+- **Accounting / CoA hardening wave (2026-10-07 → 10-08)**: C1 re-anchors the tenant CoA into a self-contained tree
+  (`0d15f527`) + `account_groups` per tenant (`3ad2c98f`); tenant accounts reject global parents (locked by
+  `041b2283`); soft-deleted COA codes reusable via an alive-only unique index (`f2b93e4a`) + complete delete guard
+  (`ffdec2e6`); canonical `CoaTemplate` replaces scattered code maps (`56f8537c`); onboarding provisioning +
+  backfill command (`cc0d9b26`); audit trail on tenant CoA mutations (`b891820d`); permission middleware on CoA +
+  finance routes (`c76bc065`, F-003/F-008); `idx_coa_code` single-column index, `UpdateTenantAccountRequest::authorize()`
+  fixed `create`→`update`, 4 missing audit-report routes registered, `scopeOrdered()` natural numeric sort at 30
+  sites (`0481df53`); **schema drift closed** (`28badca4`, register in `docs/SCHEMA_DRIFT.md` — dump was UTF-16,
+  427 vs 494 tables, 366 orphan `migrations` rows); `7532dc47` adds `permission:finance.view` to 6 finance/report
+  routes and inverts `SecurityForensicTest`'s stale authz-gap assertion (A2).
+- **Medical OPD queue display + live broadcast (2026-10-06 → 10-09)**: read-only multi-doctor queue board
+  (`69e13234`…`851e2238`) with a per-doctor fullscreen live-broadcast view (`568aed11`, `e608ba97`), sidebar /
+  appointments-header / dashboard entry points (`aa9f83af`), patient-name-format setting (`0c0b744a`), doctor
+  resolved as `users.id` (`cfc4979d`), feed/tenancy/name-format tests (`0a8fbd1d`, `43e7595e`); then `2fd73c89`
+  visit-fee discount, inline booking, doctor contract fields and live-queue consolidation.
+- **Backup system phases 1-3 (2026-10-01 → 10-02)**: silent backup + OTP restore (`c42ab9a7`), hybrid weekly-auto /
+  30-day retention / max-5 (`7c4bc630`), Google Drive storage (`6d2d4a33`), content-addressed chunked backup with
+  manifest + GC + reference counting (`61bc119d`, `5d07dace`), async queue jobs with progress + parallel chunk
+  download (`cd30cbf6`), concurrency lock + atomic swap + validation (`69a2c68c`), smart time-aware restore with
+  preview + rollback (`1e988099`), plus retention-race / generated-column / `APP_URL`-based AJAX fixes. Queue
+  worker got hang prevention + health monitoring (`db0e9666`).
+- **Mobile API v1 + auth (2026-09-30 → 10-01)**: `routes/api_v1.php` (mounted under `/api` by the `then:` closure
+  in `bootstrap/app.php`) — auth, `/v1/me`, modules, idempotent sync (incl. dealership entities), devices
+  (`ebfccc64`, `e94f83ef`); mobile v1 accepts global user accounts (`f0cbd932`); Google OAuth on the web guard
+  (`8837b52c`) blocking soft-deleted/inactive users (`6b80a8ea`); permanent email ban system (`a563181d`); Google
+  reCAPTCHA on login/registration/password-reset (`a4a70f22`) + deployment doctor script.
+- **Dealership module (2026-09-29)**: phases 1-5 — module-group foundation, orders & collection, targets &
+  commission, reports & analytics, API infrastructure + push notifications (roadmap 273→299), with tenancy
+  (`institute_id` + `TenantScoped`) fixed in `9212441a`.
+- **Industry vertical scaffolds (2026-09-26)**: Real Estate (6 phases), POS (5 phases, then POS reverted from
+  industry to module group in `488d3713`), Restaurant (6 phases). All three remain **config + migrations + tests
+  only — still 0 routes / 0 models**, matching the "don't scaffold unless asked" note in `AGENTS.md`.
+- **Packages & geo pricing (2026-09-25 → 09-29)**: per-industry package configuration, 6 industries × 3 tiers,
+  retail wave 2, Mandatory/Default/Optional/Hidden category radios, "Locked upgrade" column + navbar hiding locked
+  modules (`79731215`), `package_country_prices` wired into signup (40 countries + 14 EU + SAARC, localized
+  currency with base fallback), PackageIndustrySeeder covering the full 43-row matrix.
+- **Accounting aging reports (2026-09-27)**: phase A report modules (`0564d315`) + phase B logic & views
+  (`d2713d9f`).
+- **Docs (2026-09-28 → 10-05)**: AI handoff package + architecture audit (`docs/AI_HANDOFF.md`,
+  `docs/ARCHITECTURE_AUDIT_REPORT.md`), `docs/ROADMAP_CONSOLIDATED_V1.md`, `docs/PHASE_12_SECURITY_AUDIT.md`,
+  `docs/PHASE_13_ACCEPTANCE_REPORT.md`, `docs/PHASE_0_SCOPED_PACKAGE_CONTRACT_V1.md`, `docs/PHASE_H_HYBRID_COA_COMPLETION.md`,
+  `CHANGELOG.md` (Phase H closure).
+
 - **Industry Matrix System (Phases 1-6)**: six-phase feature build complete
   (schema → services → seeders → resolution verification → admin UI →
   override wiring + tests). See the "Industry Matrix System (Phase 1-6
@@ -902,5 +968,18 @@ P6 override wiring + test suite.
   passes `subjects` + `logoDataUri`. Covered by
   `test_admin_certificate_show_page_renders_qr` (asserts uppercase name).
 
-### Test suite baseline
-Full suite: **501 tests / 2192 assertions** (all green), PHPUnit 11.5.56, PHP 8.5.8.
+### Test suite baseline (refreshed 2026-10-09)
+
+The old "501 tests / 2192 assertions (all green)" line below is **stale** — the suite has since grown to
+**560 test files / ~4,800 tests**. Current rules (see `AGENTS.md` for the canonical form):
+
+- Single class: `php artisan test --filter=SomeTest`; directory baseline: `php artisan test tests/Feature/<Dir>/`
+  (a name filter is a regex over FQNs and pulls in unrelated baseline failures).
+- **Never run the whole suite sequentially** — it times out (~1.4 s/test on Windows/MySQL). Use
+  `php tests/shards/run.php` (6 paratest shards; `1 3` = subset, `--processes=N`) or `composer test:shards`.
+- `php artisan test --parallel` / `composer test:parallel` / `composer ci:test` are **broken** (paratest
+  provisions empty per-token DBs; the schema is a data-only dump).
+- Test DB `monetix_test` is pre-seeded from `database/schema/full_data.sql`; tests use `DatabaseTransactions`
+  and **never migrate**. `tests/TestCase::setUp` auto-seeds missing global reference data.
+- **Baseline failures exist** — establish your own baseline with a filtered/path run before blaming new code.
+- PHP 8.2.12, PHPUnit 11.5.56 (not PHP 8.5 as an earlier line here claimed).
