@@ -49,11 +49,11 @@
                 <tr>
                     <th>Code</th>
                     <th>Account</th>
-                    <th class="text-end">Amount</th>
                     <th>Type</th>
                     <th>Statement</th>
                     <th>Flags</th>
                     <th>Status</th>
+                    <th class="text-end">Amount</th>
                     @if ($canManage)
                         <th class="text-end">Actions</th>
                     @endif
@@ -69,7 +69,6 @@
                                 <div class="text-muted small">Parent: {{ $account->parent->name }}</div>
                             @endif
                         </td>
-                        <td class="text-end">{{ number_format($account->balance ?? 0, 2) }}</td>
                         <td><span class="badge text-bg-light border">{{ ucfirst($account->type) }}</span></td>
                         <td>
                             @php($statement = $account->reportStatement())
@@ -87,6 +86,7 @@
                         <td>
                             <span class="badge text-bg-{{ $account->is_active ? 'success' : 'secondary' }}">{{ $account->is_active ? 'Active' : 'Inactive' }}</span>
                         </td>
+                        <td class="text-end">{{ number_format($account->balance ?? 0, 2) }}</td>
                         @if ($canManage)
                             <td class="text-end">
                                 @if (in_array($account->type, ['asset', 'liability', 'equity'], true))
