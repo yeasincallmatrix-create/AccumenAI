@@ -51,6 +51,7 @@ routes_list*.txt
 /backups/
 /demo/
 *.sql
+!gateway/src/queue/migrations.sql
 *.bak
 *.zip
 *.pdf

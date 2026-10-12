@@ -4,7 +4,8 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "postinstall": "npm --prefix gateway install"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
