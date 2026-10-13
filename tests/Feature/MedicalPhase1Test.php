@@ -198,6 +198,7 @@ class MedicalPhase1Test extends TestCase
     public function test_appointment_store_assigns_serials(): void
     {
         $patient = $this->createPatient();
+        $second = $this->createPatient();
         $date = now()->addDay()->format('Y-m-d');
 
         $payload = [
@@ -208,8 +209,13 @@ class MedicalPhase1Test extends TestCase
         ];
 
         $this->post(route('medical.appointments.store'), $payload)->assertRedirect();
-        $this->post(route('medical.appointments.store'), $payload + ['appointment_time' => '09:10'])
-            ->assertRedirect();
+        // Serials count per doctor+day: the second serial goes to a SECOND
+        // patient — one individual may only hold one (see
+        // AppointmentDuplicateSerialTest).
+        $this->post(route('medical.appointments.store'), array_merge($payload, [
+            'patient_id' => $second->id,
+            'appointment_time' => '09:10',
+        ]))->assertRedirect();
 
         $serials = Appointment::where('institute_id', $this->institute->id)
             ->orderBy('id')

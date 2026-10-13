@@ -29,6 +29,36 @@ class QueueManager
     }
 
     /**
+     * Existing non-cancelled appointment this patient already holds with
+     * this doctor on this date — the "one individual = one serial" guard.
+     *
+     * Keyed on patient_id, NEVER on the phone number: relatives legitimately
+     * share one number and are separate patients (each gets their own
+     * serial), while the same MR number may only hold one slot. A cancelled
+     * row frees the slot again. $exceptAppointmentId lets edit/transfer
+     * ignore the row being modified; $lockForUpdate closes the double-submit
+     * race when called inside a transaction.
+     */
+    public function duplicateFor(
+        int $instituteId,
+        int $doctorId,
+        int $patientId,
+        string $date,
+        ?int $exceptAppointmentId = null,
+        bool $lockForUpdate = false
+    ): ?Appointment {
+        return Appointment::where('institute_id', $instituteId)
+            ->where('doctor_id', $doctorId)
+            ->where('patient_id', $patientId)
+            ->whereDate('appointment_date', $date)
+            ->where('status', '!=', 'cancelled')
+            ->when($exceptAppointmentId !== null, fn ($q) => $q->whereKeyNot($exceptAppointmentId))
+            ->when($lockForUpdate, fn ($q) => $q->lockForUpdate())
+            ->orderBy('id')
+            ->first();
+    }
+
+    /**
      * Return queue status for one or more doctors on a given date.
      *
      * Built for the OPD Queue Display board (1-2 doctors per screen):
@@ -40,11 +70,10 @@ class QueueManager
      * Ordering mirrors Appointment::scopeInQueue() — manual queue_order
      * first, then serial_number, then appointment_time.
      *
-     * @param  int        $instituteId
-     * @param  int|null   $branchId    null = institute-wide; else branch + legacy NULL rows
-     * @param  array<int> $doctorIds   1 or 2 users.id values (the caller caps the count)
-     * @param  string     $date        Y-m-d, default today
-     * @return array<int, array>       keyed by doctor_id (input order preserved)
+     * @param  int|null  $branchId  null = institute-wide; else branch + legacy NULL rows
+     * @param  array<int>  $doctorIds  1 or 2 users.id values (the caller caps the count)
+     * @param  string  $date  Y-m-d, default today
+     * @return array<int, array> keyed by doctor_id (input order preserved)
      */
     public function getQueueForDoctors(
         int $instituteId,

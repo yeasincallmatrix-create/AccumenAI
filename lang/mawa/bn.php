@@ -9,6 +9,11 @@ return [
     'brand' => [
         'super_admin' => 'Super Admin Panel',
     ],
+    'loading' => [
+        'default' => 'লোড হচ্ছে…',
+        'signing_in' => 'সাইন ইন করা হচ্ছে…',
+        'switching_workspace' => 'ওয়ার্কস্পেস পরিবর্তন করা হচ্ছে…',
+    ],
     'verified' => 'Verified',
     'unverified' => 'Unverified',
     'logout' => 'Log Out',

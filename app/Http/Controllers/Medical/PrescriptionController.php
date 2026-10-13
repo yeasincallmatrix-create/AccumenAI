@@ -574,22 +574,37 @@ class PrescriptionController extends MedicalController implements HasMiddleware
         }
 
         $today = today()->format('Y-m-d');
-        $serial = app(QueueManager::class)->getNextSerial($instituteId, $doctorId, $today);
         $profile = Doctor::resolveForUser($doctorId, $instituteId);
         $preVisit = $profile && (bool) $profile->collect_fee_before_visit;
-        $quote = app(AppointmentFeeService::class)->calculateFor($doctorId, $patient, $instituteId);
+        $queues = app(QueueManager::class);
 
-        $appointment = Appointment::create([
-            'institute_id' => $instituteId,
-            'branch_id' => $branchId,
-            'patient_id' => $patient->id,
-            'doctor_id' => $doctorId,
-            'appointment_date' => $today,
-            'appointment_time' => now()->format('H:i'),
-            'serial_number' => $serial,
-            'status' => $preVisit ? 'checked_in' : 'in_progress',
-            'fee_applied' => $quote['fee'],
-        ]);
+        // One individual = one serial per doctor per day: when the patient
+        // already holds today's serial with this doctor, the walk-in reuses
+        // it (checked in if still waiting) instead of minting a second one.
+        $appointment = $queues->duplicateFor($instituteId, $doctorId, $patient->id, $today);
+        $reused = $appointment !== null;
+
+        if ($appointment !== null) {
+            $serial = $appointment->serial_number;
+            if ($appointment->status === 'scheduled') {
+                $appointment->update(['status' => $preVisit ? 'checked_in' : 'in_progress']);
+            }
+        } else {
+            $serial = $queues->getNextSerial($instituteId, $doctorId, $today);
+            $quote = app(AppointmentFeeService::class)->calculateFor($doctorId, $patient, $instituteId);
+
+            $appointment = Appointment::create([
+                'institute_id' => $instituteId,
+                'branch_id' => $branchId,
+                'patient_id' => $patient->id,
+                'doctor_id' => $doctorId,
+                'appointment_date' => $today,
+                'appointment_time' => now()->format('H:i'),
+                'serial_number' => $serial,
+                'status' => $preVisit ? 'checked_in' : 'in_progress',
+                'fee_applied' => $quote['fee'],
+            ]);
+        }
 
         if ($request->expectsJson()) {
             $amount = ($profile && $patient) ? $profile->getApplicableFee($patient) : 0.0;
@@ -610,7 +625,9 @@ class PrescriptionController extends MedicalController implements HasMiddleware
             'q_doctor' => $doctorId,
             'q_date' => $today,
             'fee_collect' => $appointment->id,
-        ])->with('status', 'Walk-in added! Serial: '.$serial.($preVisit ? ' Collect the fee to start.' : ''));
+        ])->with('status', $reused
+            ? 'Patient already has serial #'.$serial.' with this doctor today — the existing serial was reused.'
+            : 'Walk-in added! Serial: '.$serial.($preVisit ? ' Collect the fee to start.' : ''));
     }
 
     /**

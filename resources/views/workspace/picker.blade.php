@@ -11,6 +11,7 @@
     <link href="{{ asset('css/pages.css') }}" rel="stylesheet">
 </head>
 <body class="bg-body-tertiary">
+@include('partials.loading-screen')
 <div class="auth-section py-5">
     <div class="container">
         <div class="row justify-content-center">
@@ -32,14 +33,15 @@
                     @if($canCreateBusiness)
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <span class="small text-muted fw-semibold"><i class="bi bi-buildings"></i> Your Workspaces</span>
-                            <a href="{{ route('workspace.onboarding') }}" class="btn btn-primary btn-sm px-3" id="add-business-btn">
+                            <a href="{{ route('workspace.onboarding') }}" data-loading-text="{{ mawa_e('loading.default') }}" class="btn btn-primary btn-sm px-3" id="add-business-btn">
                                 <i class="bi bi-plus-lg me-1"></i> Add Business
                             </a>
                         </div>
                     @endif
 
                     @forelse ($memberships as $membership)
-                        <form method="POST" action="{{ route('workspace.switch', $membership->institution_id) }}" class="mb-2">
+                        <form method="POST" action="{{ route('workspace.switch', $membership->institution_id) }}" class="mb-2"
+                              data-loading-text="{{ mawa_e('loading.switching_workspace') }}">
                             @csrf
                             <button type="submit" class="btn btn-outline-primary w-100 text-start py-3 {{ $membership->institution_id === $activeId ? 'active' : '' }}">
                                 <div class="d-flex align-items-center justify-content-between">
@@ -58,14 +60,14 @@
 
                     @if($canCreateBusiness)
                         <div class="mt-3 pt-3 border-top">
-                            <a href="{{ route('workspace.onboarding') }}" class="btn btn-outline-primary w-100 py-2">
+                            <a href="{{ route('workspace.onboarding') }}" data-loading-text="{{ mawa_e('loading.default') }}" class="btn btn-outline-primary w-100 py-2">
                                 <i class="bi bi-building-add me-1"></i> Add Business — Prepare New Workspace
                             </a>
                             <div class="form-text text-center mt-1">Same as after OTP verification: pick country, industry &amp; create workspace</div>
                         </div>
                     @endif
 
-                    <form method="POST" action="{{ route('logout') }}" class="mt-3 text-center">
+                    <form method="POST" action="{{ route('logout') }}" data-loading-text="{{ mawa_e('loading.default') }}" class="mt-3 text-center">
                         @csrf
                         <button type="submit" class="btn btn-link btn-sm text-secondary"><i class="bi bi-box-arrow-right"></i> {{ mawa_e('auth.sign_out') }}</button>
                     </form>

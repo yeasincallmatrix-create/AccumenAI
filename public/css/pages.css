@@ -569,6 +569,74 @@ text-decoration:underline;
 
 }
 
+/* =========================
+Full-page loading screen (login / workspace picker)
+Overlay sits above everything while the document loads and while a
+form POST is in flight; fades out, then stops taking pointer events.
+========================= */
+
+.loading-screen{
+
+position:fixed;
+inset:0;
+z-index:4000;
+display:flex;
+align-items:center;
+justify-content:center;
+background:var(--white);
+transition:opacity .25s ease;
+
+}
+
+.loading-screen.loading-screen-hide{
+
+opacity:0;
+visibility:hidden;
+pointer-events:none;
+
+}
+
+.loading-screen-box{
+
+text-align:center;
+padding:24px;
+
+}
+
+.loading-screen-spin{
+
+width:2.4rem;
+height:2.4rem;
+
+}
+
+.loading-screen-text{
+
+margin-top:14px;
+font-size:15px;
+font-weight:600;
+color:var(--dark);
+
+}
+
+html.monetix-dark .loading-screen{
+
+background:#12151d;
+
+}
+
+html.monetix-dark .loading-screen-text{
+
+color:#e6e9ef;
+
+}
+
+@media (prefers-reduced-motion: reduce){
+
+.loading-screen{transition:none;}
+
+}
+
 @media(max-width:576px){
 
 .auth-card{
