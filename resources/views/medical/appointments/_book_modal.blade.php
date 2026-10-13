@@ -84,6 +84,12 @@
                                         <option value="{{ $patient->id }}"
                                                 data-search="{{ strtolower(trim($patient->full_name.' '.clinical_no($patient->mr_number).' '.($patient->phone ?? ''))) }}"
                                                 data-mr="{{ clinical_no($patient->mr_number) }}"
+                                                data-first-name="{{ $patient->first_name }}"
+                                                data-last-name="{{ $patient->last_name }}"
+                                                data-gender="{{ $patient->gender }}"
+                                                data-dob="{{ $patient->date_of_birth?->format('Y-m-d') }}"
+                                                data-blood="{{ $patient->blood_group ?? '' }}"
+                                                data-relation="{{ $patient->relation_to_primary }}"
                                                 @selected((string) old('patient_id') === (string) $patient->id)>
                                             {{ $patient->full_name }} ({{ clinical_no($patient->mr_number) }}){{ $patient->age !== null ? ', '.$patient->age.'y' : '' }}@if(!empty($ipdPatientIds[$patient->id] ?? null)) [IPD]@endif
                                         </option>
@@ -91,7 +97,8 @@
                                 </select>
                                 <div class="alert alert-info d-none align-items-center gap-2 mb-0 mt-2" id="bk_lookup_alert" role="alert">
                                     <i class="bi bi-person-check"></i>
-                                    <span>Found <strong id="bk_lookup_name"></strong> (<span id="bk_lookup_mr"></span>)</span>
+                                    <span>Found <strong id="bk_lookup_name"></strong><span id="bk_lookup_mr_wrap" class="d-none"> (<span id="bk_lookup_mr"></span>)</span></span>
+                                    <span class="text-warning d-none" id="bk_lookup_more"></span>
                                 </div>
                             </div>
                         </div>
@@ -267,8 +274,22 @@
 #bookAppointmentModal #bk_patient_combo {
     padding-left: 1.25rem;
 }
+#bookAppointmentModal #bk_patient_listbox {
+    left: 0;
+    right: 0;
+    width: auto;
+    max-width: 100%;
+    overflow-x: hidden;
+}
 #bookAppointmentModal #bk_patient_listbox .list-group-item {
     padding-left: 1.25rem;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+/* Found-patient line: long names wrap instead of pushing right. */
+#bookAppointmentModal #bk_lookup_alert span {
+    overflow-wrap: anywhere;
 }
 </style>
 @endpush
@@ -300,11 +321,7 @@
         });
     }
 
-    function renderList(filter) {
-        var q = (filter || '').trim().toLowerCase();
-        var rows = listedOptions().filter(function (o) {
-            return q === '' || o.search.indexOf(q) !== -1;
-        });
+    function paint(rows) {
         box.innerHTML = '';
         activeIndex = -1;
         if (rows.length === 0) {
@@ -326,6 +343,30 @@
         box.style.display = '';
         combo.setAttribute('aria-expanded', 'true');
     }
+
+    function renderList(filter) {
+        var q = (filter || '').trim().toLowerCase();
+        paint(listedOptions().filter(function (o) {
+            return q === '' || o.search.indexOf(q) !== -1;
+        }));
+    }
+
+    // Phone lookup with several people on one number: show just those rows
+    // in this same list (the Patient dropdown) instead of a second picker.
+    window.bkOpenPatientList = function (ids) {
+        var want = {};
+        (ids || []).forEach(function (i) { want[String(i)] = true; });
+        paint(listedOptions().filter(function (o) { return want[o.id]; }));
+    };
+    window.bkClosePatientList = closeList;
+
+    // A programmatic open (phone lookup) leaves the list box showing while
+    // the caret is still in the phone field — dismiss it on an outside click.
+    document.addEventListener('mousedown', function (e) {
+        if (box.style.display === 'none') return;
+        if (box.contains(e.target) || combo.contains(e.target)) return;
+        closeList();
+    });
 
     function closeList() {
         box.style.display = 'none';
@@ -404,7 +445,7 @@
         if (modeNote) {
             modeNote.textContent = creating
                 ? 'No patient selected — these details register a new patient on save.'
-                : 'Existing patient selected — the details below are ignored on save.';
+                : 'Existing patient selected — the details below show that record (ignored on save).';
         }
         if (mrInput) {
             var opt = sel.value ? sel.querySelector('option[value="' + sel.value + '"]') : null;
@@ -439,6 +480,10 @@
     var lookupBox = document.getElementById('bk_lookup_alert');
     var familyBtn = document.getElementById('bk_family_btn');
     var primaryInput = document.getElementById('bk_primary_contact_id');
+    var lookupName = document.getElementById('bk_lookup_name');
+    var lookupMr = document.getElementById('bk_lookup_mr');
+    var lookupMrWrap = document.getElementById('bk_lookup_mr_wrap');
+    var lookupMore = document.getElementById('bk_lookup_more');
     if (!qForm || !bkSelect) return;
 
     function repaint() {
@@ -446,14 +491,134 @@
         if (window.bkSyncPatientMode) window.bkSyncPatientMode();
     }
 
-    // Phone-first lookup: existing patient is selected automatically.
+    // Phone-first lookup: a single match is selected automatically; a phone
+    // shared by several people fills the dropdown so the right one can be
+    // picked, and the picked patient's details land in the form below.
     var bkTimer = null;
     var bkLastLookup = '';
+    var bkDefaultHint = bkHint ? bkHint.textContent : '';
+    var bkAutoFilled = false;
+    function bkCloseList() {
+        if (window.bkClosePatientList) window.bkClosePatientList();
+    }
     function bkResetLookup() {
         bkLastLookup = '';
+        if (bkHint) bkHint.textContent = bkDefaultHint;
         if (lookupBox) { lookupBox.classList.add('d-none'); lookupBox.classList.remove('d-flex'); }
+        if (lookupName) lookupName.textContent = '';
+        if (lookupMr) lookupMr.textContent = '';
+        if (lookupMrWrap) lookupMrWrap.classList.add('d-none');
+        if (lookupMore) { lookupMore.textContent = ''; lookupMore.classList.add('d-none'); }
+        bkCloseList();
         if (familyBtn) { familyBtn.style.display = 'none'; familyBtn.removeAttribute('data-primary-id'); }
         if (primaryInput) primaryInput.value = '';
+    }
+    function bkOptionLabel(p) {
+        var nm = ((p.first_name || '') + ' ' + (p.last_name || '')).trim();
+        return nm ? nm + ' (' + (p.mr_number || '') + ')' : (p.label || 'Patient #' + p.id);
+    }
+    function bkSetDetailAttrs(opt, p) {
+        if (!opt || !p || p.first_name === undefined) return;
+        opt.setAttribute('data-first-name', p.first_name || '');
+        opt.setAttribute('data-last-name', p.last_name || '');
+        opt.setAttribute('data-gender', p.gender || '');
+        opt.setAttribute('data-dob', p.date_of_birth || '');
+        opt.setAttribute('data-blood', p.blood_group || '');
+        opt.setAttribute('data-relation', p.relation || p.relation_to_primary || 'Self');
+    }
+    function bkEnsureOption(p, searchPhone) {
+        var opt = bkSelect.querySelector('option[value="' + p.id + '"]');
+        if (!opt) {
+            opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = bkOptionLabel(p);
+            opt.setAttribute('data-search', ((((p.first_name || '') + ' ' + (p.last_name || '')).trim() + ' ' + (p.mr_number || '') + ' ' + (searchPhone || '')).toLowerCase()));
+            opt.setAttribute('data-mr', p.mr_number || '');
+            bkSelect.appendChild(opt);
+        }
+        bkSetDetailAttrs(opt, p);
+        return opt;
+    }
+    function bkPickPatient(p, searchPhone) {
+        bkEnsureOption(p, searchPhone);
+        bkSelect.value = String(p.id);
+        bkSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    // Copy the selected patient into the inline Patient Details block so the
+    // booking screen shows who is being booked. Ignored by the server while
+    // patient_id is set — this is a display of the existing record.
+    function bkClearDetails() {
+        ['bk_first_name', 'bk_last_name', 'bk_age'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        ['male', 'female', 'other'].forEach(function (g) {
+            var r = document.getElementById('bk_gender_' + g);
+            if (r) r.checked = false;
+        });
+        var dob = document.getElementById('bk_dob');
+        if (dob) {
+            dob.value = '';
+            if (window.tdateSync) window.tdateSync('bk_dob');
+            try { dob.dispatchEvent(new Event('input', { bubbles: true })); } catch (e) {}
+        }
+        var bg = document.getElementById('bk_blood_group');
+        if (bg) bg.value = '';
+        var rel = document.getElementById('bk_relation');
+        if (rel) rel.value = 'Self';
+        bkAutoFilled = false;
+    }
+    function bkFillDetails(opt) {
+        if (!opt || !opt.hasAttribute('data-first-name')) {
+            if (bkAutoFilled) bkClearDetails();
+            return;
+        }
+        var first = document.getElementById('bk_first_name');
+        if (!first) return; // no inline block (create permission off) — nothing to show
+        var last = document.getElementById('bk_last_name');
+        if (last) last.value = opt.getAttribute('data-last-name') || '';
+        first.value = opt.getAttribute('data-first-name') || '';
+        var g = opt.getAttribute('data-gender') || '';
+        ['male', 'female', 'other'].forEach(function (x) {
+            var r = document.getElementById('bk_gender_' + x);
+            if (r) r.checked = (x === g);
+        });
+        var dob = document.getElementById('bk_dob');
+        if (dob) {
+            dob.value = opt.getAttribute('data-dob') || '';
+            if (window.tdateSync) window.tdateSync('bk_dob');
+            // Programmatic sets fire no events — the age box listens for input.
+            try { dob.dispatchEvent(new Event('input', { bubbles: true })); } catch (e) {}
+        }
+        var bg = document.getElementById('bk_blood_group');
+        if (bg) bg.value = opt.getAttribute('data-blood') || '';
+        var rel = document.getElementById('bk_relation');
+        if (rel) {
+            var rv = opt.getAttribute('data-relation') || 'Self';
+            rel.value = rv;
+            if (rel.value !== rv) rel.value = rv ? 'Other' : 'Self';
+        }
+        bkAutoFilled = true;
+    }
+    // Every selection path (lookup auto-pick, search list, quick-add) funnels
+    // through here to fill the Patient Details block.
+    function bkSyncSelection() {
+        var opt = bkSelect.value ? bkSelect.querySelector('option[value="' + bkSelect.value + '"]') : null;
+        bkFillDetails(opt);
+    }
+    bkSelect.addEventListener('change', bkSyncSelection);
+    // Preselected patient (old() round-trip): show its details too. Deferred
+    // so the age<->DOB listener in the script block below is already bound.
+    setTimeout(bkSyncSelection, 0);
+    function bkShowAlert(name, mr, more) {
+        if (lookupName) lookupName.textContent = name;
+        if (lookupMr) lookupMr.textContent = mr || '';
+        if (lookupMrWrap) lookupMrWrap.classList.toggle('d-none', !mr);
+        if (lookupMore) {
+            lookupMore.textContent = more || '';
+            lookupMore.classList.toggle('d-none', !more);
+        }
+        if (lookupBox) { lookupBox.classList.remove('d-none'); lookupBox.classList.add('d-flex'); }
     }
     function bkRunLookup() {
         var v = (bkPhone.value || '').trim();
@@ -467,33 +632,46 @@
                     if (bkHint) bkHint.textContent = 'No existing patient — pick from the list or add via + .';
                     return;
                 }
-                var list = data.patients || (data.patient ? [data.patient] : []);
-                var p = data.patient || list[0];
-                if (!p) return;
-                var label = ((p.first_name || '') + ' ' + (p.last_name || '')).trim() + ' (' + (p.mr_number || '') + ')';
-                var exists = bkSelect.querySelector('option[value="' + p.id + '"]');
-                if (!exists) {
-                    var opt = document.createElement('option');
-                    opt.value = p.id;
-                    opt.textContent = label;
-                    opt.setAttribute('data-search', ((p.first_name || '') + ' ' + (p.last_name || '') + ' ' + (p.mr_number || '') + ' ' + v).toLowerCase());
-                    opt.setAttribute('data-mr', p.mr_number || '');
-                    bkSelect.appendChild(opt);
+                var all = data.patients || (data.patient ? [data.patient] : []);
+                // Only bookable rows can go into patient_id (validation requires is_patient).
+                var list = all.filter(function (m) { return m.is_patient !== false; });
+                if (!list.length) {
+                    bkResetLookup(); bkLastLookup = v;
+                    if (bkHint) bkHint.textContent = 'No existing patient — pick from the list or add via + .';
+                    return;
                 }
-                bkSelect.value = String(p.id);
-                bkSelect.dispatchEvent(new Event('change', { bubbles: true }));
-                document.getElementById('bk_lookup_name').textContent = ((p.first_name || '') + ' ' + (p.last_name || '')).trim();
-                document.getElementById('bk_lookup_mr').textContent = p.mr_number || '';
-                if (lookupBox) { lookupBox.classList.remove('d-none'); lookupBox.classList.add('d-flex'); }
-                if (bkHint) bkHint.textContent = 'Existing patient selected automatically.';
                 if (addedBox) { addedBox.classList.add('d-none'); addedBox.classList.remove('d-flex'); }
 
                 // Relatives share this phone — offer the family shortcut.
-                var primary = list.find(function (m) { return !m.is_dependent; }) || list[0];
+                var primary = all.find(function (m) { return !m.is_dependent; }) || all[0];
                 if (familyBtn && primary) {
                     familyBtn.style.display = '';
                     familyBtn.setAttribute('data-primary-id', primary.id);
                 }
+
+                if (list.length === 1) {
+                    var p = list[0];
+                    bkPickPatient(p, v);
+                    bkShowAlert(((p.first_name || '') + ' ' + (p.last_name || '')).trim(), p.mr_number || '', '');
+                    bkCloseList();
+                    if (bkHint) bkHint.textContent = 'Existing patient selected automatically.';
+                    return;
+                }
+
+                // Shared number: don't guess — put everyone in the Patient
+                // dropdown itself and open it.
+                var ids = [];
+                list.forEach(function (m) {
+                    var o = bkEnsureOption(m, v);
+                    ids.push(o.value);
+                });
+                if (bkSelect.value) {
+                    bkSelect.value = '';
+                    bkSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+                if (window.bkOpenPatientList) window.bkOpenPatientList(ids);
+                bkShowAlert(list.length + ' patients', '', '');
+                if (bkHint) bkHint.textContent = 'This number belongs to ' + list.length + ' patients — pick one from the dropdown.';
             })
             .catch(function () { /* keep manual selection on lookup failure */ });
     }
@@ -524,6 +702,8 @@
         var relation = document.getElementById('bk_relation');
         if (relation && relation.value === 'Self') relation.value = 'Other';
         if (lookupBox) { lookupBox.classList.add('d-none'); lookupBox.classList.remove('d-flex'); }
+        bkCloseList();
+        bkAutoFilled = false;
         familyBtn.style.display = 'none';
         var note = document.getElementById('bk_mode_note');
         if (note) note.textContent = 'Registering a family member on the same phone — choose the relation below.';
@@ -593,6 +773,23 @@
                     opt.textContent = p.name + ' (' + p.mr_number + ')';
                     opt.setAttribute('data-search', (p.name + ' ' + p.mr_number + ' ' + (p.phone || '')).toLowerCase());
                     opt.setAttribute('data-mr', p.mr_number);
+                    // Carry the details just typed in the popup into the
+                    // booking form's Patient Details block.
+                    var qFirst = document.getElementById('q_first_name');
+                    var qLast = document.getElementById('q_last_name');
+                    var qDob = document.getElementById('q_date_of_birth');
+                    var qBg = document.getElementById('q_blood_group');
+                    var qRel = document.getElementById('q_relation');
+                    var qGender = ['male', 'female', 'other'].map(function (g) {
+                        var r = document.getElementById('q_gender_' + g);
+                        return r && r.checked ? g : '';
+                    }).filter(Boolean)[0] || '';
+                    opt.setAttribute('data-first-name', qFirst ? qFirst.value : '');
+                    opt.setAttribute('data-last-name', qLast ? qLast.value : '');
+                    opt.setAttribute('data-gender', qGender);
+                    opt.setAttribute('data-dob', qDob ? (qDob.value || '') : '');
+                    opt.setAttribute('data-blood', qBg ? qBg.value : '');
+                    opt.setAttribute('data-relation', qRel ? qRel.value : 'Self');
                     opt.selected = true;
                     bkSelect.appendChild(opt);
                     bkSelect.value = String(p.id);
