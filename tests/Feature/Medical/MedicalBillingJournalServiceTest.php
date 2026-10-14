@@ -106,6 +106,7 @@ class MedicalBillingJournalServiceTest extends TestCase
             ['code' => '4300.1', 'name' => 'Consultation Fees', 'type' => 'income', 'group' => $incomeGroup, 'flags' => []],
             ['code' => '4300.2', 'name' => 'Diagnostic Fees', 'type' => 'income', 'group' => $incomeGroup, 'flags' => []],
             ['code' => '4300.3', 'name' => 'Pharmacy Sales', 'type' => 'income', 'group' => $incomeGroup, 'flags' => []],
+            ['code' => '4300.4', 'name' => 'Surgery & IPD Room Revenue', 'type' => 'income', 'group' => $incomeGroup, 'flags' => []],
             ['code' => '4000.5', 'name' => 'Discount Allowed', 'type' => 'income', 'group' => $incomeGroup, 'flags' => []],
         ];
 
@@ -338,10 +339,9 @@ class MedicalBillingJournalServiceTest extends TestCase
         $this->assertEquals('4300.2', $this->service->incomeAccountFor('lab', $instituteId)->code);
         $this->assertEquals('4300.3', $this->service->incomeAccountFor('pharmacy', $instituteId)->code);
 
-        // 4300.4 absent from CoaTemplate registry → fallback to first active
-        // income account (4300.1 in this fixture). Reported in audit.
-        $this->assertEquals('4300.1', $this->service->incomeAccountFor('ipd', $instituteId)->code);
-        $this->assertEquals('4300.1', $this->service->incomeAccountFor('surgery', $instituteId)->code);
+        // 4300.4 in CoaTemplate registry since Task 3.5 — direct hits.
+        $this->assertEquals('4300.4', $this->service->incomeAccountFor('ipd', $instituteId)->code);
+        $this->assertEquals('4300.4', $this->service->incomeAccountFor('surgery', $instituteId)->code);
 
         // Invoice-model path resolves the same way
         $invoice = new \App\Models\Medical\Invoice(['institute_id' => $instituteId, 'type' => 'lab']);

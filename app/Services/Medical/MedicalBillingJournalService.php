@@ -317,16 +317,16 @@ class MedicalBillingJournalService
      *   opd      → 4300.1 Consultation Fees
      *   lab      → 4300.2 Diagnostic Fees
      *   pharmacy → 4300.3 Pharmacy Sales
-     *   ipd      → 4300.4 Surgery & IPD (not yet in CoaTemplate registry)
-     *   surgery  → 4300.4 Surgery & IPD (not yet in CoaTemplate registry)
+     *   ipd      → 4300.4 Surgery & IPD Room Revenue
+     *   surgery  → 4300.4 Surgery & IPD Room Revenue
      *
-     * NOTE: 4300.4 does not exist in CoaTemplate (verified 2026-10-14:
-     * registry holds only 4300.1/4300.2/4300.3). ipd/surgery therefore fall
-     * through to the fallback below until a 4300.4 migration + registry row
-     * lands. Fallback is the first active income account for the institute
-     * (branch row preferred, then unscoped), never a silent null — null is
-     * returned only when the tenant has no active income account at all
-     * (fail-soft, logged).
+     * NOTE: 4300.4 joined the CoaTemplate registry in Task 3.5. Tenants
+     * provisioned before that (or missing the medical subtree install) still
+     * resolve ipd/surgery through the fallback below. Fallback is the first
+     * active 43% revenue account for the institute (branch row preferred,
+     * then unscoped), then any active income account — never a silent null.
+     * Null is returned only when the tenant has no active income account at
+     * all (fail-soft, logged).
      */
     public function incomeAccountFor(Invoice|string $invoiceOrType, ?int $instituteId = null, ?int $branchId = null): ?ChartOfAccount
     {

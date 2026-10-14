@@ -159,7 +159,7 @@ final class CoaTemplate
 
     /**
      * Codes outside the global anchor tree: 4400.2 (tenant-child only), the
-     * FX accounts 4901/5901 that only TEMPLATE knew about, plus the four
+     * FX accounts 4901/5901 that only TEMPLATE knew about, plus the five
      * medical-ledger accounts added by the medical COA remediation.
      * Onboarding previously never created 4901/5901 while DEFAULT_SETTINGS
      * pointed at them.
@@ -169,6 +169,7 @@ final class CoaTemplate
         ['4901', 'Unrealized FX Gain', '4900', false, true, 'income', null, ['cash_flow_category' => 'operating']],
         ['5901', 'Unrealized FX Loss', '5900', false, true, 'expense', null, ['cash_flow_category' => 'operating']],
         ['4000.5', 'Discount Allowed', '4000', false, true, 'income', ['healthcare'], []],
+        ['4300.4', 'Surgery & IPD Room Revenue', '4300', false, true, 'income', ['healthcare'], []],
         ['2400.3', 'Patient Advances & Deposits', '2400', false, true, 'liability', ['healthcare'], []],
         ['1200.4', 'Insurance / TPA Receivable', '1200', false, true, 'asset', ['healthcare'], ['is_receivable' => true, 'cash_flow_category' => 'operating']],
         ['2000.4', 'Doctor Commission Payable', '2000', false, true, 'liability', ['healthcare'], []],
