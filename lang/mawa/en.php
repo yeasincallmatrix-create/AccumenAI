@@ -9,6 +9,11 @@ return [
     'brand' => [
         'super_admin' => 'Super Admin Panel',
     ],
+    'loading' => [
+        'default' => 'Loading…',
+        'signing_in' => 'Signing in…',
+        'switching_workspace' => 'Switching workspace…',
+    ],
     'verified' => 'Verified',
     'unverified' => 'Unverified',
     'logout' => 'Log Out',

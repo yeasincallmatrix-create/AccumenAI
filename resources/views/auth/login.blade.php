@@ -12,6 +12,7 @@
     <link rel="icon" href="{{ platform_logo_url() }}">
 </head>
 <body class="bg-body-tertiary">
+@include('partials.loading-screen')
 @php
     $portal = request()->routeIs('admin.login') ? 'admin' : 'institute';
     $loginTitle = $portal === 'admin' ? mawa_lang('auth.admin_login_title') : mawa_lang('auth.institute_login_title');
@@ -50,7 +51,7 @@
                         </div>
                     @endif
 
-                    <form method="POST" action="{{ $action }}">
+                    <form method="POST" action="{{ $action }}" data-loading-text="{{ mawa_e('loading.signing_in') }}">
                         @csrf
 
                         <div class="mb-3 text-start">
@@ -89,6 +90,7 @@
                     </div>
 
                     <a href="{{ route('auth.google.redirect') }}"
+                       data-loading-text="{{ mawa_e('loading.signing_in') }}"
                        class="btn btn-outline-dark w-100 d-flex align-items-center justify-content-center gap-2 mb-3"
                        style="padding: 10px 16px;">
                         <svg width="20" height="20" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
