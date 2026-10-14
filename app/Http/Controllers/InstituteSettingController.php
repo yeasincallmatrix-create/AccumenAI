@@ -21,6 +21,7 @@ use App\Services\Auth\PasswordService;
 use App\Services\CertificateApprovalModeService;
 use App\Services\Medical\DgdaService;
 use App\Services\Medical\MedicalBillingJournalService;
+use App\Services\ModuleAccessService;
 use App\Support\PasswordPolicy;
 use App\Support\TenantContext;
 use App\Support\Workspace;
@@ -69,6 +70,29 @@ class InstituteSettingController extends Controller
         $entityOptions = BusinessEntityType::advancedOptions();
         $suggestedAccounts = $advancedEnabled ? $entityService->suggestedAccounts($entityType) : [];
 
+        // Medical billing journal settings: same gates as the PUT route
+        // (permission:settings.accounting.manage + module_access:finance) so
+        // the form is never rendered for users who could only 403 on save.
+        $canManageMedicalBilling = false;
+        $medicalBillingMode = null;
+        $medicalBillingAutoPost = false;
+        if ($instituteId !== null) {
+            $holdsBillingPermission = $user instanceof InstituteUser
+                ? $user->hasPermission('settings.accounting.manage')
+                : ($membership?->hasPermission('settings.accounting.manage') ?? false);
+            $institute = Institute::query()->find($instituteId);
+            $financeEnabled = $institute !== null
+                && app(ModuleAccessService::class)->isEnabled($institute, 'finance');
+
+            $canManageMedicalBilling = $holdsBillingPermission && $financeEnabled;
+
+            if ($canManageMedicalBilling) {
+                $journalService = app(MedicalBillingJournalService::class);
+                $medicalBillingMode = $journalService->getRevenueMode((int) $instituteId);
+                $medicalBillingAutoPost = $journalService->getAutoPost((int) $instituteId);
+            }
+        }
+
         return view('settings.index', [
             'canManageSettings' => $canManageSettings,
             'canPromote' => $canPromote,
@@ -85,6 +109,9 @@ class InstituteSettingController extends Controller
             'entityOptions' => $entityOptions,
             'suggestedAccounts' => $suggestedAccounts,
             'advancedEnabled' => $advancedEnabled,
+            'canManageMedicalBilling' => $canManageMedicalBilling,
+            'medicalBillingMode' => $medicalBillingMode,
+            'medicalBillingAutoPost' => $medicalBillingAutoPost,
         ]);
     }
 

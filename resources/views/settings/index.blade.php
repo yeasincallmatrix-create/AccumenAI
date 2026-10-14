@@ -416,6 +416,52 @@
                         </div>
                         <button class="btn btn-primary" type="submit"><i class="bi bi-check-lg"></i> Save Queue Display Settings</button>
                     </form>
+
+                    @if ($canManageMedicalBilling)
+                        <hr class="my-4">
+
+                        <div class="table-toolbar">
+                            <div class="toolbar-info"><i class="bi bi-journal-text"></i> Medical Billing — Journal Settings</div>
+                        </div>
+
+                        <form method="POST" action="{{ route('settings.medical-billing.update') }}">
+                            @csrf
+                            @method('PUT')
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Revenue recognition mode</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="revenue_mode" value="accrual" id="rm-accrual"
+                                               @checked(old('revenue_mode', $medicalBillingMode) === 'accrual')>
+                                        <label class="form-check-label" for="rm-accrual">
+                                            <strong>Accrual</strong> — revenue posted when the invoice is created (Dr AR / Cr Revenue)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="revenue_mode" value="cash" id="rm-cash"
+                                               @checked(old('revenue_mode', $medicalBillingMode) === 'cash')>
+                                        <label class="form-check-label" for="rm-cash">
+                                            <strong>Cash</strong> — revenue posted when payment is received (Dr Cash / Cr Revenue)
+                                        </label>
+                                    </div>
+                                    <div class="form-text">Can only be changed at the start of a fiscal year — the switch is blocked once the current year has medical journals.</div>
+                                    @error('revenue_mode')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold" for="auto-post">Journal posting</label>
+                                    <div class="form-check form-switch">
+                                        <input type="hidden" name="auto_post" value="0">
+                                        <input class="form-check-input" type="checkbox" name="auto_post" value="1" id="auto-post"
+                                               @checked(old('auto_post', $medicalBillingAutoPost ? '1' : '0') === '1')>
+                                        <label class="form-check-label" for="auto-post">Post journals immediately (recommended)</label>
+                                    </div>
+                                    <div class="form-text">When off, medical journals are saved as drafts and must be posted manually from Accounting → Journals.</div>
+                                    @error('auto_post')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" type="submit"><i class="bi bi-check-lg"></i> Save Medical Billing Settings</button>
+                        </form>
+                    @endif
                 </div>
             @endif
 
