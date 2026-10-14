@@ -104,6 +104,9 @@ class MedicalBillingJournalServiceTest extends TestCase
             ['code' => '1200.1', 'name' => 'Trade Receivable', 'type' => 'asset', 'group' => $assetGroup, 'flags' => ['is_receivable' => true, 'cash_flow_category' => 'operating']],
             ['code' => '2100.1', 'name' => 'VAT Output Payable', 'type' => 'liability', 'group' => $liabilityGroup, 'flags' => ['cash_flow_category' => 'operating']],
             ['code' => '4300.1', 'name' => 'Consultation Fees', 'type' => 'income', 'group' => $incomeGroup, 'flags' => []],
+            ['code' => '4300.2', 'name' => 'Diagnostic Fees', 'type' => 'income', 'group' => $incomeGroup, 'flags' => []],
+            ['code' => '4300.3', 'name' => 'Pharmacy Sales', 'type' => 'income', 'group' => $incomeGroup, 'flags' => []],
+            ['code' => '4000.5', 'name' => 'Discount Allowed', 'type' => 'income', 'group' => $incomeGroup, 'flags' => []],
         ];
 
         foreach ($accounts as $acc) {
@@ -211,5 +214,193 @@ class MedicalBillingJournalServiceTest extends TestCase
         $this->assertNotNull($result, 'Sale journal should be created in accrual mode');
         $this->assertEquals('sale', $result->type);
         $this->assertEquals($medicalInvoice->id, $result->ref_id);
+    }
+
+    public function test_reverse_invoice_journals_reverses_sale_and_all_receipts(): void
+    {
+        \App\Models\Setting::set("medical.billing.revenue_mode.{$this->institute->id}", 'accrual');
+        \App\Models\Setting::set("medical.billing.auto_post.{$this->institute->id}", '1');
+
+        $medicalInvoice = \App\Models\Medical\Invoice::create([
+            'institute_id' => $this->institute->id,
+            'patient_id' => $this->patient->id,
+            'invoice_number' => 'TEST-' . uniqid(),
+            'invoice_date' => now()->toDateString(),
+            'due_date' => now()->addDays(15)->toDateString(),
+            'type' => 'opd',
+            'subtotal' => 1000,
+            'tax' => 0,
+            'discount' => 0,
+            'total' => 1000,
+            'paid_amount' => 0,
+            'due_amount' => 1000,
+            'status' => 'pending',
+        ]);
+
+        $sale = $this->service->postSaleJournal($medicalInvoice, (int) $this->owner->id);
+        $this->assertNotNull($sale);
+        $this->assertEquals('posted', $sale->refresh()->status);
+
+        $payments = [];
+        foreach ([400, 600] as $amount) {
+            $payment = \App\Models\Medical\Payment::create([
+                'institute_id' => $this->institute->id,
+                'invoice_id' => $medicalInvoice->id,
+                'amount' => $amount,
+                'payment_method' => 'cash',
+                'paid_at' => now(),
+            ]);
+            $receipt = $this->service->postReceiptJournal($payment, (int) $this->owner->id);
+            $this->assertNotNull($receipt);
+            $this->assertEquals('posted', $receipt->refresh()->status);
+            $payments[] = $payment->fresh();
+        }
+
+        $saleId = $medicalInvoice->fresh()->journal_id;
+        $receiptIds = array_map(fn ($p) => $p->journal_id, $payments);
+        $this->assertNotNull($saleId);
+        $this->assertNotContains(null, $receiptIds);
+
+        // a) + b) sale + ALL receipts reversed, c) second run is a no-op
+        $this->service->reverseInvoiceJournals($medicalInvoice->fresh(), (int) $this->owner->id);
+
+        $this->assertEquals('reversed', \App\Models\Journal::find($saleId)->status);
+        foreach ($receiptIds as $receiptId) {
+            $this->assertEquals('reversed', \App\Models\Journal::find($receiptId)->status);
+        }
+
+        // d) FK columns nulled
+        $this->assertNull($medicalInvoice->fresh()->journal_id);
+        foreach ($payments as $payment) {
+            $this->assertNull($payment->fresh()->journal_id);
+        }
+
+        // c) idempotent second run — no exception, FKs stay null
+        $this->service->reverseInvoiceJournals($medicalInvoice->fresh(), (int) $this->owner->id);
+        $this->assertNull($medicalInvoice->fresh()->journal_id);
+    }
+
+    public function test_cash_mode_partial_payment_allocates_revenue_and_vat_correctly(): void
+    {
+        \App\Models\Setting::set("medical.billing.revenue_mode.{$this->institute->id}", 'cash');
+        \App\Models\Setting::set("medical.billing.auto_post.{$this->institute->id}", '1');
+
+        // subtotal=1000, discount=100, tax=50, total=950; payment=500
+        $medicalInvoice = \App\Models\Medical\Invoice::create([
+            'institute_id' => $this->institute->id,
+            'patient_id' => $this->patient->id,
+            'invoice_number' => 'TEST-' . uniqid(),
+            'invoice_date' => now()->toDateString(),
+            'due_date' => now()->addDays(15)->toDateString(),
+            'type' => 'opd',
+            'subtotal' => 1000,
+            'tax' => 50,
+            'discount' => 100,
+            'total' => 950,
+            'paid_amount' => 0,
+            'due_amount' => 950,
+            'status' => 'pending',
+        ]);
+
+        $payment = \App\Models\Medical\Payment::create([
+            'institute_id' => $this->institute->id,
+            'invoice_id' => $medicalInvoice->id,
+            'amount' => 500,
+            'payment_method' => 'cash',
+            'paid_at' => now(),
+        ]);
+
+        $journal = $this->service->postReceiptJournal($payment, (int) $this->owner->id);
+        $this->assertNotNull($journal);
+        $this->assertEquals('receipt', $journal->type);
+
+        // Formula: taxOn = round(50 * 500/950, 2) = 26.32; revenue = 500 - 26.32 = 473.68
+        $byCode = [];
+        foreach ($journal->entries as $entry) {
+            $code = ChartOfAccount::where('id', $entry->coa_id)->value('code');
+            $byCode[$code] = $entry;
+        }
+
+        $this->assertEquals(500.0, round((float) $byCode['1000.1']->debit, 2));
+        $this->assertEquals(473.68, round((float) $byCode['4300.1']->credit, 2));
+        $this->assertEquals(26.32, round((float) $byCode['2100.1']->credit, 2));
+
+        $debit = round($journal->entries->sum('debit'), 2);
+        $credit = round($journal->entries->sum('credit'), 2);
+        $this->assertEquals($debit, $credit);
+    }
+
+    public function test_income_account_mapping_covers_all_five_invoice_types(): void
+    {
+        $instituteId = $this->institute->id;
+
+        $this->assertEquals('4300.1', $this->service->incomeAccountFor('opd', $instituteId)->code);
+        $this->assertEquals('4300.2', $this->service->incomeAccountFor('lab', $instituteId)->code);
+        $this->assertEquals('4300.3', $this->service->incomeAccountFor('pharmacy', $instituteId)->code);
+
+        // 4300.4 absent from CoaTemplate registry → fallback to first active
+        // income account (4300.1 in this fixture). Reported in audit.
+        $this->assertEquals('4300.1', $this->service->incomeAccountFor('ipd', $instituteId)->code);
+        $this->assertEquals('4300.1', $this->service->incomeAccountFor('surgery', $instituteId)->code);
+
+        // Invoice-model path resolves the same way
+        $invoice = new \App\Models\Medical\Invoice(['institute_id' => $instituteId, 'type' => 'lab']);
+        $this->assertEquals('4300.2', $this->service->incomeAccountFor($invoice)->code);
+    }
+
+    public function test_fail_soft_when_tenant_has_no_income_account(): void
+    {
+        \App\Models\Setting::set("medical.billing.revenue_mode.{$this->institute->id}", 'accrual');
+
+        ChartOfAccount::where('institute_id', $this->institute->id)
+            ->where('type', 'income')
+            ->delete();
+
+        $medicalInvoice = \App\Models\Medical\Invoice::create([
+            'institute_id' => $this->institute->id,
+            'patient_id' => $this->patient->id,
+            'invoice_number' => 'TEST-' . uniqid(),
+            'invoice_date' => now()->toDateString(),
+            'due_date' => now()->addDays(15)->toDateString(),
+            'type' => 'opd',
+            'subtotal' => 100,
+            'tax' => 0,
+            'discount' => 0,
+            'total' => 100,
+            'paid_amount' => 0,
+            'due_amount' => 100,
+            'status' => 'pending',
+        ]);
+
+        $this->assertNull($this->service->postSaleJournal($medicalInvoice, (int) $this->owner->id));
+        $this->assertNull($medicalInvoice->fresh()->journal_id);
+    }
+
+    public function test_fail_soft_when_tenant_has_no_receivable_account(): void
+    {
+        \App\Models\Setting::set("medical.billing.revenue_mode.{$this->institute->id}", 'accrual');
+
+        ChartOfAccount::where('institute_id', $this->institute->id)
+            ->where('code', '1200.1')
+            ->delete();
+
+        $medicalInvoice = \App\Models\Medical\Invoice::create([
+            'institute_id' => $this->institute->id,
+            'patient_id' => $this->patient->id,
+            'invoice_number' => 'TEST-' . uniqid(),
+            'invoice_date' => now()->toDateString(),
+            'due_date' => now()->addDays(15)->toDateString(),
+            'type' => 'opd',
+            'subtotal' => 100,
+            'tax' => 0,
+            'discount' => 0,
+            'total' => 100,
+            'paid_amount' => 0,
+            'due_amount' => 100,
+            'status' => 'pending',
+        ]);
+
+        $this->assertNull($this->service->postSaleJournal($medicalInvoice, (int) $this->owner->id));
+        $this->assertNull($medicalInvoice->fresh()->journal_id);
     }
 }

@@ -22,12 +22,23 @@ use Illuminate\Support\Facades\Log;
  *   medical.billing.auto_post.{institute_id}    = '1' | '0'
  *
  * Accrual mode:
- *   - Invoice creation → sale journal: Dr AR / Cr Revenue (+ Tax if applicable)
+ *   - Invoice creation → sale journal: Dr AR (total) / Dr Discount Allowed
+ *     (discount, 4000.5, only when > 0) / Cr Revenue (subtotal, per
+ *     incomeAccountFor()) / Cr VAT Output Payable (2100.1, only when > 0)
  *   - Payment → receipt journal: Dr Cash / Cr AR
  *
  * Cash mode:
  *   - Invoice creation → NO journal (revenue recognized on payment only)
- *   - Payment → single journal: Dr Cash / Cr Revenue (+ Tax if applicable)
+ *   - Payment → single journal: Dr Cash (amount) / Cr Revenue (amount minus
+ *     proportional VAT) / Cr VAT Output Payable (proportional VAT share).
+ *     Cash-mode partial-payment formula (option (a) for VAT, discount netted):
+ *       taxOnPayment     = round(invoice.tax * (payment.amount / invoice.total), 2)
+ *       revenueOnPayment = round(payment.amount - taxOnPayment, 2)
+ *     Discount is NOT a separate leg: BillingService::computeTotals() nets it
+ *     into total (total = subtotal + tax - discount), so each payment
+ *     implicitly recognizes revenue net of discount. Example: subtotal=1000,
+ *     discount=100, tax=50, total=950, payment=500 → Dr Cash 500 /
+ *     Cr Revenue 473.68 / Cr VAT 26.32 (26.32 = round(50 * 500/950, 2)).
  *
  * Both modes share:
  *   - Each medical_payment row gets its own receipt journal (medical_payments.journal_id)
@@ -80,9 +91,9 @@ class MedicalBillingJournalService
             return null;
         }
 
-        $revenue = $this->requireAccount($instituteId, '4300.1', $branchId);  // Consultation Fees (healthcare)
+        $revenue = $this->incomeAccountFor($invoice, $instituteId, $branchId);
         if ($revenue === null) {
-            return null;
+            return null; // already logged in incomeAccountFor
         }
         $taxAccount = null;
 
@@ -94,18 +105,32 @@ class MedicalBillingJournalService
             }
         }
 
-        // Build entries: Dr AR (total), Cr Revenue (subtotal), Cr VAT (if any)
+        // Discount is a contra-revenue leg: total = subtotal + tax - discount,
+        // so Dr AR (total) + Dr Discount Allowed (discount) = Cr Revenue
+        // (subtotal) + Cr VAT (tax). Without the discount leg a discounted
+        // invoice cannot balance.
+        $discount = round((float) $invoice->discount, 2);
+        $discountAccount = null;
+        if ($discount > 0) {
+            $discountAccount = $this->requireAccount($instituteId, '4000.5', $branchId); // Discount Allowed
+            if ($discountAccount === null) {
+                return null; // already logged in requireAccount
+            }
+        }
+
+        // Build entries: Dr AR (total) [+ Dr Discount], Cr Revenue (subtotal), Cr VAT (if any)
         $entries = [
             ['coa_id' => $ar->id, 'debit' => $total, 'credit' => 0],
             ['coa_id' => $revenue->id, 'debit' => 0, 'credit' => round((float) $invoice->subtotal, 2)],
         ];
 
+        if ($discount > 0 && $discountAccount !== null) {
+            $entries[] = ['coa_id' => $discountAccount->id, 'debit' => $discount, 'credit' => 0];
+        }
+
         if ($tax > 0 && $taxAccount !== null) {
             $entries[] = ['coa_id' => $taxAccount->id, 'debit' => 0, 'credit' => $tax];
         }
-
-        // Discount is embedded in subtotal (already netted), no separate discount ledger entry
-        // if needed, add Dr Discount Allowed (4000.5) here
 
         if (! $this->validateBalance($entries)) {
             return null;
@@ -136,8 +161,13 @@ class MedicalBillingJournalService
     /**
      * Post the receipt journal for a medical payment (both modes).
      *
-     * In accrual mode: Dr Cash / Cr AR
-     * In cash mode:    Dr Cash / Cr Revenue (+ VAT if applicable)
+     * In accrual mode: Dr Cash / Cr AR.
+     * In cash mode:    Dr Cash (amount) / Cr Revenue (amount minus
+     * proportional VAT) / Cr VAT Output Payable (proportional VAT share).
+     * Cash-mode partial-payment formula (VAT proportional, discount netted —
+     * see class docblock for the worked example):
+     *   taxOnPayment     = total > 0 ? round(tax * (amount / total), 2) : 0
+     *   revenueOnPayment = round(amount - taxOnPayment, 2)
      *
      * Returns null when:
      *   - payment already has journal_id (idempotent)
@@ -187,15 +217,14 @@ class MedicalBillingJournalService
             $entries[] = ['coa_id' => $ar->id, 'debit' => 0, 'credit' => $amount];
         } else {
             // Cash mode: Dr Cash, Cr Revenue (+ VAT if invoice has tax)
-            $revenue = $this->requireAccount($instituteId, '4300.1', $branchId); // Consultation Fees (healthcare)
+            $revenue = $this->incomeAccountFor($invoice, $instituteId, $branchId);
             if ($revenue === null) {
-                return null;
+                return null; // already logged in incomeAccountFor
             }
 
             // Prorate tax from invoice proportionally to payment amount
             $tax = round((float) $invoice->tax, 2);
             $total = round((float) $invoice->total, 2);
-            $subtotal = round((float) $invoice->subtotal, 2);
 
             $taxOnPayment = $total > 0 ? round($tax * ($amount / $total), 2) : 0;
             $revenueOnPayment = round($amount - $taxOnPayment, 2);
@@ -204,10 +233,11 @@ class MedicalBillingJournalService
             $entries[] = ['coa_id' => $revenue->id, 'debit' => 0, 'credit' => $revenueOnPayment];
 
             if ($taxOnPayment > 0) {
-                $taxAccount = $this->requireAccount($instituteId, '2400.1', $branchId);
-                if ($taxAccount !== null) {
-                    $entries[] = ['coa_id' => $taxAccount->id, 'debit' => 0, 'credit' => $taxOnPayment];
+                $taxAccount = $this->requireAccount($instituteId, '2100.1', $branchId); // VAT Output Payable
+                if ($taxAccount === null) {
+                    return null; // already logged in requireAccount
                 }
+                $entries[] = ['coa_id' => $taxAccount->id, 'debit' => 0, 'credit' => $taxOnPayment];
             }
         }
 
@@ -256,8 +286,10 @@ class MedicalBillingJournalService
                 $invoice->forceFill(['journal_id' => null])->save();
             }
 
-            // 2. Reverse all payment receipt journals
-            foreach ($invoice->payments as $payment) {
+            // 2. Reverse all payment receipt journals — one row per
+            // medical_payments record. Fresh query (not the possibly stale
+            // loaded relation) so a second run sees the nulled FKs.
+            foreach ($invoice->payments()->get() as $payment) {
                 if ($payment->journal_id === null) {
                     continue;
                 }
@@ -277,6 +309,79 @@ class MedicalBillingJournalService
                 $payment->forceFill(['journal_id' => null])->save();
             }
         });
+    }
+
+    /**
+     * Income account for a medical invoice by type.
+     *
+     *   opd      → 4300.1 Consultation Fees
+     *   lab      → 4300.2 Diagnostic Fees
+     *   pharmacy → 4300.3 Pharmacy Sales
+     *   ipd      → 4300.4 Surgery & IPD (not yet in CoaTemplate registry)
+     *   surgery  → 4300.4 Surgery & IPD (not yet in CoaTemplate registry)
+     *
+     * NOTE: 4300.4 does not exist in CoaTemplate (verified 2026-10-14:
+     * registry holds only 4300.1/4300.2/4300.3). ipd/surgery therefore fall
+     * through to the fallback below until a 4300.4 migration + registry row
+     * lands. Fallback is the first active income account for the institute
+     * (branch row preferred, then unscoped), never a silent null — null is
+     * returned only when the tenant has no active income account at all
+     * (fail-soft, logged).
+     */
+    public function incomeAccountFor(Invoice|string $invoiceOrType, ?int $instituteId = null, ?int $branchId = null): ?ChartOfAccount
+    {
+        $type = $invoiceOrType instanceof Invoice ? (string) $invoiceOrType->type : (string) $invoiceOrType;
+        $instituteId ??= $invoiceOrType instanceof Invoice ? (int) $invoiceOrType->institute_id : null;
+        $branchId ??= $invoiceOrType instanceof Invoice && $invoiceOrType->branch_id !== null
+            ? (int) $invoiceOrType->branch_id
+            : null;
+
+        if ($instituteId === null || $instituteId <= 0) {
+            Log::warning('MedicalBillingJournalService: income mapping without institute', ['type' => $type]);
+            return null;
+        }
+
+        $code = match (strtolower($type)) {
+            'opd' => '4300.1',
+            'lab' => '4300.2',
+            'pharmacy' => '4300.3',
+            'ipd', 'surgery' => '4300.4',
+            default => null,
+        };
+
+        if ($code !== null) {
+            $mapped = $this->coa->accountByCode($instituteId, $code, $branchId)
+                ?? ($branchId !== null ? $this->coa->accountByCode($instituteId, $code, null) : null);
+            if ($mapped !== null) {
+                return $mapped;
+            }
+        }
+
+        // Fallback: first active income account (branch row preferred), revenue
+        // (43%) before other income so contra-revenue 4000.5 Discount Allowed
+        // never wins the fallback.
+        foreach ([$branchId, null] as $scope) {
+            foreach ([true, false] as $revenueFirst) {
+                $query = ChartOfAccount::query()
+                    ->where('institute_id', $instituteId)
+                    ->where('type', 'income')
+                    ->where('is_active', true);
+                $scope !== null ? $query->where('branch_id', $scope) : $query->whereNull('branch_id');
+                $revenueFirst ? $query->where('code', 'like', '43%') : $query->where('code', 'not like', '43%');
+                $fallback = $query->orderBy('code')->first();
+                if ($fallback !== null) {
+                    return $fallback;
+                }
+            }
+        }
+
+        Log::warning('MedicalBillingJournalService: tenant has no active income account', [
+            'institute_id' => $instituteId,
+            'branch_id' => $branchId,
+            'type' => $type,
+        ]);
+
+        return null;
     }
 
     /**

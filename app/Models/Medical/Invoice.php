@@ -3,7 +3,10 @@
 namespace App\Models\Medical;
 
 use App\Models\Institute;
+use App\Models\Journal;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Invoice extends Model
 {
@@ -31,6 +34,7 @@ class Invoice extends Model
         'payment_reference',
         'items_data',
         'notes',
+        'journal_id',
     ];
 
     protected $casts = [
@@ -64,9 +68,19 @@ class Invoice extends Model
         return $this->belongsTo(Admission::class);
     }
 
-    public function tpaClaims()
+    public function tpaClaims(): HasMany
     {
         return $this->hasMany(TpaClaim::class, 'invoice_id');
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class, 'invoice_id');
+    }
+
+    public function journal(): BelongsTo
+    {
+        return $this->belongsTo(Journal::class, 'journal_id');
     }
 
     public function scopePending($query)
