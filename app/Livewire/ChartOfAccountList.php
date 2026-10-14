@@ -595,8 +595,15 @@ class ChartOfAccountList extends DataTable
         foreach ($collection as $account) {
             $account->is_global_flag = $account->isGlobal();
             $account->is_editable = $account->isEditableBy($instituteId);
+            // Raw Dr-Cr net stays as the internal value; the column renders the
+            // account's normal side (QuickBooks style): asset/expense show on the
+            // debit side, liability/equity/income on the credit side. A minus only
+            // survives when the balance sits on the wrong side (e.g. overdrawn bank).
             $account->balance = (($account->opening_debit ?? 0) - ($account->opening_credit ?? 0))
                 + (($account->total_debit ?? 0) - ($account->total_credit ?? 0));
+            $account->display_balance = $account->isDebitNormal()
+                ? $account->balance
+                : -$account->balance;
         }
 
         return view(self::VIEW, [

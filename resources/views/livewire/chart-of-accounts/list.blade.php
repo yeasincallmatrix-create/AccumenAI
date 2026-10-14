@@ -86,7 +86,7 @@
                         <td>
                             <span class="badge text-bg-{{ $account->is_active ? 'success' : 'secondary' }}">{{ $account->is_active ? 'Active' : 'Inactive' }}</span>
                         </td>
-                        <td class="text-end">{{ number_format($account->balance ?? 0, 2) }}</td>
+                        <td class="text-end">{{ number_format($account->display_balance ?? 0, 2) }}</td>
                         @if ($canManage)
                             <td class="text-end">
                                 @if (in_array($account->type, ['asset', 'liability', 'equity'], true))
