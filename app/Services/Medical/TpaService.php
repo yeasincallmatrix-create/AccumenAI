@@ -4,6 +4,7 @@ namespace App\Services\Medical;
 
 use App\Models\Medical\Invoice;
 use App\Models\Medical\NumberSequence;
+use App\Models\Medical\Payment;
 use App\Models\Medical\TpaClaim;
 use App\Support\MedicalScope;
 use Illuminate\Support\Facades\DB;
@@ -91,6 +92,24 @@ class TpaService
                         'Approved amount exceeds the invoice outstanding due (৳'.number_format($due, 2).').'
                     );
                 }
+                // Task 5: ledger the TPA money-in as its own payment row
+                // before touching invoice totals, mirroring
+                // BillingService::processPayment(). Fail-soft inside
+                // postReceiptJournal — a missing CoA leaves
+                // payment.journal_id null but never blocks the approval.
+                $payment = Payment::create([
+                    'institute_id' => $invoice->institute_id,
+                    'branch_id' => $invoice->branch_id,
+                    'invoice_id' => $invoice->id,
+                    'amount' => round($approvedAmount, 2),
+                    'payment_method' => 'tpa',
+                    'payment_reference' => $claim->claim_number,
+                    'paid_at' => now(),
+                    'received_by' => null, // TPA approval is a system action
+                    'notes' => "TPA claim #{$claim->id} approved",
+                ]);
+                app(MedicalBillingJournalService::class)->postReceiptJournal($payment);
+
                 $newPaid = round((float) $invoice->paid_amount + $approvedAmount, 2);
                 $newDue = round((float) $invoice->total - $newPaid, 2);
 
