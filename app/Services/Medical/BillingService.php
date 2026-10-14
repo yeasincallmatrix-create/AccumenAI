@@ -7,6 +7,8 @@ use App\Models\Medical\Admission;
 use App\Models\Medical\Invoice;
 use App\Models\Medical\NumberSequence;
 use App\Models\Medical\Patient;
+use App\Models\Medical\Payment;
+use App\Models\User;
 use App\Services\Accounting\AccountingSetupService;
 use App\Support\MedicalScope;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -115,7 +117,7 @@ class BillingService
 
             $totals = self::computeTotals($items, $instituteId);
 
-            return Invoice::create([
+            $invoice = Invoice::create([
                 'institute_id' => $instituteId,
                 'patient_id' => $patient->id,
                 'admission_id' => $admissionId,
@@ -133,6 +135,13 @@ class BillingService
                 'status' => 'pending',
                 'items_data' => json_encode(array_values($items)),
             ]);
+
+            // Task 4: post the accrual-mode sale journal inside the same
+            // transaction. Null is OK — cash mode skips, missing CoA fails
+            // soft inside postSaleJournal, never blocking invoice creation.
+            app(MedicalBillingJournalService::class)->postSaleJournal($invoice);
+
+            return $invoice;
         });
     }
 
@@ -162,6 +171,22 @@ class BillingService
                 return ['success' => false, 'message' => 'Amount exceeds due amount (৳'.number_format($invoice->due_amount, 2).').'];
             }
 
+            // Task 4: ledger the money-in event as its own payment row before
+            // touching invoice totals, so every receipt has a journal link.
+            // Fail-soft inside postReceiptJournal — a missing CoA leaves
+            // payment.journal_id null but never blocks the payment.
+            $payment = Payment::create([
+                'institute_id' => $invoice->institute_id,
+                'branch_id' => $invoice->branch_id,
+                'invoice_id' => $invoice->id,
+                'amount' => round($amount, 2),
+                'payment_method' => $method,
+                'payment_reference' => $reference,
+                'paid_at' => now(),
+                'received_by' => auth()->user() instanceof User ? auth()->id() : null,
+            ]);
+            app(MedicalBillingJournalService::class)->postReceiptJournal($payment);
+
             $newPaid = round((float) $invoice->paid_amount + $amount, 2);
             $newDue = round((float) $invoice->total - $newPaid, 2);
 
@@ -177,6 +202,7 @@ class BillingService
                 'success' => true,
                 'message' => 'Payment of ৳'.number_format($amount, 2).' recorded successfully.',
                 'invoice' => $invoice->fresh(),
+                'payment' => $payment->fresh(),
             ];
         });
     }
