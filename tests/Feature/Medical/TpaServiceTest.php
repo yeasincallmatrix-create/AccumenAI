@@ -102,6 +102,7 @@ class TpaServiceTest extends TestCase
         foreach ([
             ['code' => '1000.1', 'name' => 'Cash in Hand', 'type' => 'asset', 'group' => $assetGroup, 'flags' => ['is_cash' => true]],
             ['code' => '1200.1', 'name' => 'Trade Receivable', 'type' => 'asset', 'group' => $assetGroup, 'flags' => ['is_receivable' => true, 'cash_flow_category' => 'operating']],
+            ['code' => '1200.4', 'name' => 'Insurance / TPA Receivable', 'type' => 'asset', 'group' => $assetGroup, 'flags' => ['is_receivable' => true, 'cash_flow_category' => 'operating']],
             ['code' => '2100.1', 'name' => 'VAT Output Payable', 'type' => 'liability', 'group' => $liabilityGroup, 'flags' => ['cash_flow_category' => 'operating']],
             ['code' => '4300.1', 'name' => 'Consultation Fees', 'type' => 'income', 'group' => $incomeGroup, 'flags' => []],
             ['code' => '4300.4', 'name' => 'Surgery & IPD Room Revenue', 'type' => 'income', 'group' => $incomeGroup, 'flags' => []],
@@ -193,7 +194,9 @@ class TpaServiceTest extends TestCase
             $byCode[ChartOfAccount::where('id', $entry->coa_id)->value('code')] = $entry;
         }
 
-        $this->assertEquals(1050.0, round((float) $byCode['1000.1']->debit, 2));
+        // TPA debits the insurance receivable, never cash
+        $this->assertArrayNotHasKey('1000.1', $byCode);
+        $this->assertEquals(1050.0, round((float) $byCode['1200.4']->debit, 2));
         $this->assertEquals(1000.0, round((float) $byCode['4300.1']->credit, 2));
         $this->assertEquals(50.0, round((float) $byCode['2100.1']->credit, 2));
         $this->assertEquals('paid', $invoice->fresh()->status);
@@ -216,7 +219,8 @@ class TpaServiceTest extends TestCase
             $byCode[ChartOfAccount::where('id', $entry->coa_id)->value('code')] = $entry;
         }
 
-        $this->assertEquals(400.0, round((float) $byCode['1000.1']->debit, 2));
+        $this->assertArrayNotHasKey('1000.1', $byCode);
+        $this->assertEquals(400.0, round((float) $byCode['1200.4']->debit, 2));
         $this->assertEquals(400.0, round((float) $byCode['1200.1']->credit, 2));
     }
 
@@ -228,8 +232,17 @@ class TpaServiceTest extends TestCase
 
         $claim = $this->pendingClaim($invoice, 500);
         $this->assertTrue($this->tpa->approveClaim($claim, 500));
-        $this->assertEquals(1, Payment::where('invoice_id', $invoice->id)->count());
 
+        // a) first approve → 1 payment row, 1 receipt journal
+        $this->assertEquals(1, Payment::where('invoice_id', $invoice->id)->count());
+        $firstJournalId = Payment::where('invoice_id', $invoice->id)->value('journal_id');
+        $this->assertNotNull($firstJournalId);
+        $this->assertEquals(
+            1,
+            Journal::where('institute_id', $this->institute->id)->where('type', 'receipt')->count()
+        );
+
+        // b) second approve → exception
         try {
             $this->tpa->approveClaim($claim->fresh(), 500);
             $this->fail('Second approval of a non-pending claim must throw.');
@@ -237,7 +250,13 @@ class TpaServiceTest extends TestCase
             $this->assertStringContainsString('pending', $e->getMessage());
         }
 
-        $this->assertEquals(1, Payment::where('invoice_id', $invoice->id)->count());
+        // c) still exactly 1 payment row and 1 receipt journal — no doubles
+        $this->assertDatabaseCount('medical_payments', 1);
+        $this->assertEquals(
+            1,
+            Journal::where('institute_id', $this->institute->id)->where('type', 'receipt')->count()
+        );
+        $this->assertEquals($firstJournalId, Payment::where('invoice_id', $invoice->id)->value('journal_id'));
         $this->assertEquals(500.0, (float) $invoice->fresh()->paid_amount);
     }
 }

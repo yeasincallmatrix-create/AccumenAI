@@ -25,12 +25,14 @@ use Illuminate\Support\Facades\Log;
  *   - Invoice creation → sale journal: Dr AR (total) / Dr Discount Allowed
  *     (discount, 4000.5, only when > 0) / Cr Revenue (subtotal, per
  *     incomeAccountFor()) / Cr VAT Output Payable (2100.1, only when > 0)
- *   - Payment → receipt journal: Dr Cash / Cr AR
+ *   - Payment → receipt journal: Dr Cash (or 1200.4 Insurance/TPA Receivable
+ *     for method 'tpa', per debitAccountFor()) / Cr AR
  *
  * Cash mode:
  *   - Invoice creation → NO journal (revenue recognized on payment only)
- *   - Payment → single journal: Dr Cash (amount) / Cr Revenue (amount minus
- *     proportional VAT) / Cr VAT Output Payable (proportional VAT share).
+ *   - Payment → single journal: Dr Cash (or 1200.4 for 'tpa') / Cr Revenue
+ *     (amount minus proportional VAT) / Cr VAT Output Payable (proportional
+ *     VAT share).
  *     Cash-mode partial-payment formula (option (a) for VAT, discount netted):
  *       taxOnPayment     = round(invoice.tax * (payment.amount / invoice.total), 2)
  *       revenueOnPayment = round(payment.amount - taxOnPayment, 2)
@@ -198,22 +200,22 @@ class MedicalBillingJournalService
         $branchId = $invoice->branch_id !== null ? (int) $invoice->branch_id : null;
         $revenueMode = $this->getRevenueMode($instituteId);
 
-        // Resolve accounts (fail-soft)
-        $cash = $this->requireAccount($instituteId, '1000.1', $branchId);
-        if ($cash === null) {
-            return null;
+        // Resolve debit account by payment method (fail-soft)
+        $debit = $this->debitAccountFor($payment, $instituteId, $branchId);
+        if ($debit === null) {
+            return null; // already logged in debitAccountFor
         }
 
         $entries = [];
 
         if ($revenueMode === 'accrual') {
-            // Accrual: Dr Cash (net), Cr AR (full payment amount)
+            // Accrual: Dr Cash/TPA-receivable (net), Cr AR (full payment amount)
             $ar = $this->requireAccount($instituteId, '1200.1', $branchId);
             if ($ar === null) {
                 return null;
             }
 
-            $entries[] = ['coa_id' => $cash->id, 'debit' => $amount, 'credit' => 0];
+            $entries[] = ['coa_id' => $debit->id, 'debit' => $amount, 'credit' => 0];
             $entries[] = ['coa_id' => $ar->id, 'debit' => 0, 'credit' => $amount];
         } else {
             // Cash mode: Dr Cash, Cr Revenue (+ VAT if invoice has tax)
@@ -229,7 +231,7 @@ class MedicalBillingJournalService
             $taxOnPayment = $total > 0 ? round($tax * ($amount / $total), 2) : 0;
             $revenueOnPayment = round($amount - $taxOnPayment, 2);
 
-            $entries[] = ['coa_id' => $cash->id, 'debit' => $amount, 'credit' => 0];
+            $entries[] = ['coa_id' => $debit->id, 'debit' => $amount, 'credit' => 0];
             $entries[] = ['coa_id' => $revenue->id, 'debit' => 0, 'credit' => $revenueOnPayment];
 
             if ($taxOnPayment > 0) {
@@ -382,6 +384,40 @@ class MedicalBillingJournalService
         ]);
 
         return null;
+    }
+
+    /**
+     * Debit account for a receipt by payment method.
+     *
+     *   tpa     → 1200.4 Insurance / TPA Receivable (the insurer owes the
+     *             hospital; no cash has moved yet)
+     *   default → 1000.1 Cash in Hand
+     *
+     * Falls back to 1000.1 only when 1200.4 is missing for the tenant;
+     * returns null (logged) when even the cash account is absent.
+     */
+    public function debitAccountFor(Payment|string $paymentOrMethod, ?int $instituteId = null, ?int $branchId = null): ?ChartOfAccount
+    {
+        $method = strtolower($paymentOrMethod instanceof Payment
+            ? (string) $paymentOrMethod->payment_method
+            : (string) $paymentOrMethod);
+        $instituteId ??= $paymentOrMethod instanceof Payment ? (int) $paymentOrMethod->invoice->institute_id : null;
+
+        if ($instituteId === null || $instituteId <= 0) {
+            Log::warning('MedicalBillingJournalService: debit mapping without institute', ['method' => $method]);
+            return null;
+        }
+
+        if ($method === 'tpa') {
+            $tpa = $this->coa->accountByCode($instituteId, '1200.4', $branchId)
+                ?? ($branchId !== null ? $this->coa->accountByCode($instituteId, '1200.4', null) : null);
+            if ($tpa !== null) {
+                return $tpa;
+            }
+            // Fall through to cash when the tenant lacks the TPA receivable.
+        }
+
+        return $this->requireAccount($instituteId, '1000.1', $branchId);
     }
 
     /**

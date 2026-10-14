@@ -102,6 +102,7 @@ class MedicalBillingJournalServiceTest extends TestCase
         $accounts = [
             ['code' => '1000.1', 'name' => 'Cash in Hand', 'type' => 'asset', 'group' => $assetGroup, 'flags' => ['is_cash' => true]],
             ['code' => '1200.1', 'name' => 'Trade Receivable', 'type' => 'asset', 'group' => $assetGroup, 'flags' => ['is_receivable' => true, 'cash_flow_category' => 'operating']],
+            ['code' => '1200.4', 'name' => 'Insurance / TPA Receivable', 'type' => 'asset', 'group' => $assetGroup, 'flags' => ['is_receivable' => true, 'cash_flow_category' => 'operating']],
             ['code' => '2100.1', 'name' => 'VAT Output Payable', 'type' => 'liability', 'group' => $liabilityGroup, 'flags' => ['cash_flow_category' => 'operating']],
             ['code' => '4300.1', 'name' => 'Consultation Fees', 'type' => 'income', 'group' => $incomeGroup, 'flags' => []],
             ['code' => '4300.2', 'name' => 'Diagnostic Fees', 'type' => 'income', 'group' => $incomeGroup, 'flags' => []],
@@ -346,6 +347,63 @@ class MedicalBillingJournalServiceTest extends TestCase
         // Invoice-model path resolves the same way
         $invoice = new \App\Models\Medical\Invoice(['institute_id' => $instituteId, 'type' => 'lab']);
         $this->assertEquals('4300.2', $this->service->incomeAccountFor($invoice)->code);
+    }
+
+    public function test_tpa_receipt_journal_debits_insurance_receivable_not_cash(): void
+    {
+        \App\Models\Setting::set("medical.billing.revenue_mode.{$this->institute->id}", 'accrual');
+        \App\Models\Setting::set("medical.billing.auto_post.{$this->institute->id}", '1');
+
+        $medicalInvoice = \App\Models\Medical\Invoice::create([
+            'institute_id' => $this->institute->id,
+            'patient_id' => $this->patient->id,
+            'invoice_number' => 'TEST-' . uniqid(),
+            'invoice_date' => now()->toDateString(),
+            'due_date' => now()->addDays(15)->toDateString(),
+            'type' => 'opd',
+            'subtotal' => 1000,
+            'tax' => 0,
+            'discount' => 0,
+            'total' => 1000,
+            'paid_amount' => 0,
+            'due_amount' => 1000,
+            'status' => 'pending',
+        ]);
+
+        $payment = \App\Models\Medical\Payment::create([
+            'institute_id' => $this->institute->id,
+            'invoice_id' => $medicalInvoice->id,
+            'amount' => 600,
+            'payment_method' => 'tpa',
+            'paid_at' => now(),
+        ]);
+
+        $journal = $this->service->postReceiptJournal($payment, (int) $this->owner->id);
+        $this->assertNotNull($journal);
+
+        $byCode = [];
+        foreach ($journal->entries as $entry) {
+            $byCode[ChartOfAccount::where('id', $entry->coa_id)->value('code')] = $entry;
+        }
+
+        $this->assertArrayNotHasKey('1000.1', $byCode, 'TPA must not touch cash');
+        $this->assertEquals(600.0, round((float) $byCode['1200.4']->debit, 2));
+        $this->assertEquals(600.0, round((float) $byCode['1200.1']->credit, 2));
+
+        // Cash payments still debit cash
+        $cashPayment = \App\Models\Medical\Payment::create([
+            'institute_id' => $this->institute->id,
+            'invoice_id' => $medicalInvoice->id,
+            'amount' => 100,
+            'payment_method' => 'cash',
+            'paid_at' => now(),
+        ]);
+        $cashJournal = $this->service->postReceiptJournal($cashPayment, (int) $this->owner->id);
+        $cashByCode = [];
+        foreach ($cashJournal->entries as $entry) {
+            $cashByCode[ChartOfAccount::where('id', $entry->coa_id)->value('code')] = $entry;
+        }
+        $this->assertEquals(100.0, round((float) $cashByCode['1000.1']->debit, 2));
     }
 
     public function test_fail_soft_when_tenant_has_no_income_account(): void
