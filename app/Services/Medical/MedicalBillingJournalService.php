@@ -193,6 +193,7 @@ class MedicalBillingJournalService
             Log::warning('MedicalBillingJournalService: payment missing invoice relation', [
                 'payment_id' => $payment->id,
             ]);
+
             return null;
         }
 
@@ -299,6 +300,7 @@ class MedicalBillingJournalService
                 $journalId = (int) $payment->journal_id;
                 if (in_array($journalId, $reversedIds, true)) {
                     $payment->forceFill(['journal_id' => null])->save();
+
                     continue;
                 }
 
@@ -340,6 +342,7 @@ class MedicalBillingJournalService
 
         if ($instituteId === null || $instituteId <= 0) {
             Log::warning('MedicalBillingJournalService: income mapping without institute', ['type' => $type]);
+
             return null;
         }
 
@@ -405,6 +408,7 @@ class MedicalBillingJournalService
 
         if ($instituteId === null || $instituteId <= 0) {
             Log::warning('MedicalBillingJournalService: debit mapping without institute', ['method' => $method]);
+
             return null;
         }
 
@@ -422,8 +426,11 @@ class MedicalBillingJournalService
 
     /**
      * Get per-institute revenue mode, falling back to config.
+     *
+     * Public: the settings UI reads through this so the form and the posting
+     * pipeline can never disagree on the fallback chain.
      */
-    protected function getRevenueMode(int $instituteId): string
+    public function getRevenueMode(int $instituteId): string
     {
         return Setting::get(
             "medical.billing.revenue_mode.{$instituteId}",
@@ -433,8 +440,10 @@ class MedicalBillingJournalService
 
     /**
      * Get per-institute auto-post setting, falling back to config.
+     *
+     * Public: settings UI + posting pipeline share one resolver.
      */
-    protected function getAutoPost(int $instituteId): bool
+    public function getAutoPost(int $instituteId): bool
     {
         $value = Setting::get(
             "medical.billing.auto_post.{$instituteId}",
@@ -466,6 +475,7 @@ class MedicalBillingJournalService
                 'branch_id' => $branchId,
                 'code' => $code,
             ]);
+
             return null;
         }
 
@@ -486,6 +496,7 @@ class MedicalBillingJournalService
                 'credit' => $sumCredit,
                 'entries' => $entries,
             ]);
+
             return false;
         }
 

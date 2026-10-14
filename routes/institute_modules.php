@@ -1674,6 +1674,7 @@ Route::middleware($tenant)->group(function () {
     Route::put('settings/dgda', [\App\Http\Controllers\InstituteSettingController::class, 'updateDgda'])->name('settings.dgda.update');
     Route::post('settings/dgda/dismiss-migrate', [\App\Http\Controllers\InstituteSettingController::class, 'dismissMigrate'])->name('settings.dgda.dismiss-migrate');
     Route::put('settings/queue-display', [\App\Http\Controllers\InstituteSettingController::class, 'updateQueueDisplay'])->name('settings.queue-display.update');
+    Route::put('settings/medical-billing', [\App\Http\Controllers\InstituteSettingController::class, 'updateMedicalBilling'])->name('settings.medical-billing.update')->middleware(['permission:settings.accounting.manage', 'module_access:finance']);
     Route::put('settings/password', [\App\Http\Controllers\InstituteSettingController::class, 'updatePassword'])->name('settings.password');
 
     // ─── WORKFLOWS ─────────────────────────────────────────────────────────

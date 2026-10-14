@@ -2,25 +2,35 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\BusinessEntityType;
 use App\Models\AuditLog;
+use App\Models\FiscalYear;
 use App\Models\IndustrySetting;
 use App\Models\Institute;
 use App\Models\InstituteSetting;
 use App\Models\InstituteUser;
+use App\Models\Journal;
+use App\Models\Medical\Medicine;
 use App\Models\PlatformAdmin;
 use App\Models\Setting;
 use App\Models\Theme;
 use App\Models\User;
+use App\Services\Accounting\BusinessEntityService;
+use App\Services\Accounting\TenantAccountingModeService;
+use App\Services\Auth\PasswordService;
 use App\Services\CertificateApprovalModeService;
+use App\Services\Medical\DgdaService;
+use App\Services\Medical\MedicalBillingJournalService;
+use App\Support\PasswordPolicy;
+use App\Support\TenantContext;
 use App\Support\Workspace;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use App\Services\Auth\PasswordService;
-use App\Support\PasswordHash;
-use App\Support\TenantContext;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class InstituteSettingController extends Controller
@@ -53,10 +63,10 @@ class InstituteSettingController extends Controller
 
         $instituteId = $this->resolveInstituteId($user);
 
-        $advancedEnabled = app(\App\Services\Accounting\TenantAccountingModeService::class)->isAdvancedEnabled();
-        $entityService = app(\App\Services\Accounting\BusinessEntityService::class);
+        $advancedEnabled = app(TenantAccountingModeService::class)->isAdvancedEnabled();
+        $entityService = app(BusinessEntityService::class);
         $entityType = $entityService->getType((int) tenant_id());
-        $entityOptions = \App\Enums\BusinessEntityType::advancedOptions();
+        $entityOptions = BusinessEntityType::advancedOptions();
         $suggestedAccounts = $advancedEnabled ? $entityService->suggestedAccounts($entityType) : [];
 
         return view('settings.index', [
@@ -131,7 +141,7 @@ class InstituteSettingController extends Controller
         ]);
 
         // Graceful while the date_format migration is pending on an environment.
-        if (! \Illuminate\Support\Facades\Schema::hasColumn('institute_settings', 'date_format')) {
+        if (! Schema::hasColumn('institute_settings', 'date_format')) {
             unset($data['date_format']);
         }
 
@@ -158,7 +168,7 @@ class InstituteSettingController extends Controller
         ]);
 
         // Master switch wins: tenants cannot opt in while platform is off.
-        if (! \App\Services\Medical\DgdaService::enabled()) {
+        if (! DgdaService::enabled()) {
             return redirect()
                 ->route('settings.index', '#pane-medical')
                 ->withErrors(['dgda_enabled' => 'DGDA is disabled at the platform level.']);
@@ -194,7 +204,7 @@ class InstituteSettingController extends Controller
 
         // If just turned ON and custom medicines exist → show migrate prompt
         if (! $previous && $newValue) {
-            $customCount = \App\Models\Medical\Medicine::where('institute_id', $instituteId)
+            $customCount = Medicine::where('institute_id', $instituteId)
                 ->whereNull('deleted_at')
                 ->whereNull('dgda_code')
                 ->count();
@@ -257,6 +267,93 @@ class InstituteSettingController extends Controller
             ->with('status', 'Queue display settings saved.');
     }
 
+    /**
+     * Medical billing journal settings (medical.billing.*).
+     *
+     * revenue_mode is fiscal-year fenced: switching mid-year would produce a
+     * mixed accrual/cash reporting period, so the switch is refused once any
+     * medical journal exists in the current open fiscal year.
+     */
+    public function updateMedicalBilling(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $canManage = $user instanceof InstituteUser
+            ? $user->hasPermission('settings.manage')
+            : (Workspace::membershipFor($user)?->hasPermission('settings.manage') ?? false);
+        abort_unless($canManage, 403);
+
+        $instituteId = TenantContext::id();
+        abort_unless($instituteId, 403);
+
+        $validated = $request->validate([
+            'revenue_mode' => ['required', Rule::in(['accrual', 'cash'])],
+            'auto_post' => ['sometimes', 'boolean'],
+        ]);
+
+        $journalService = app(MedicalBillingJournalService::class);
+        $currentMode = $journalService->getRevenueMode((int) $instituteId);
+        $currentAutoPost = $journalService->getAutoPost((int) $instituteId) ? '1' : '0';
+        $newAutoPost = $request->boolean('auto_post') ? '1' : '0';
+
+        // Fiscal-year switch guard: only enforced when the mode actually
+        // changes; auto_post stays freely toggleable year-round.
+        if ($validated['revenue_mode'] !== $currentMode) {
+            $fy = FiscalYear::query()
+                ->where('institute_id', $instituteId)
+                ->where('is_current', true)
+                ->first();
+
+            if ($fy !== null && $this->hasMedicalJournalsInFiscalYear((int) $instituteId, $fy)) {
+                throw ValidationException::withMessages([
+                    'revenue_mode' => 'Revenue mode can only be changed at the start of a fiscal year. Current fiscal year has existing medical journals.',
+                ]);
+            }
+        }
+
+        Setting::set("medical.billing.revenue_mode.{$instituteId}", $validated['revenue_mode']);
+        Setting::set("medical.billing.auto_post.{$instituteId}", $newAutoPost);
+
+        if ($validated['revenue_mode'] !== $currentMode || $newAutoPost !== $currentAutoPost) {
+            AuditLog::create([
+                'institute_id' => $instituteId,
+                'user_type' => $user instanceof InstituteUser ? 'institute_user' : 'system',
+                'user_id' => $user->getKey(),
+                'action' => 'medical_billing_settings_updated',
+                'module' => 'settings',
+                'record_id' => $instituteId,
+                'old_values' => json_encode([
+                    'revenue_mode' => $currentMode,
+                    'auto_post' => $currentAutoPost,
+                ]),
+                'new_values' => json_encode([
+                    'revenue_mode' => $validated['revenue_mode'],
+                    'auto_post' => $newAutoPost,
+                ]),
+                'ip_address' => $request->ip(),
+                'user_agent' => substr((string) $request->userAgent(), 0, 255),
+                'created_at' => now(),
+            ]);
+        }
+
+        return redirect()
+            ->route('settings.index', '#pane-medical')
+            ->with('status', 'Medical billing settings saved.');
+    }
+
+    /**
+     * Any sale/receipt/reversal journal the medical billing pipeline wrote
+     * inside the given fiscal year (ref_type is what
+     * MedicalBillingJournalService stamps on every journal it creates).
+     */
+    private function hasMedicalJournalsInFiscalYear(int $instituteId, FiscalYear $fy): bool
+    {
+        return Journal::query()
+            ->where('institute_id', $instituteId)
+            ->where('ref_type', 'medical_invoice')
+            ->whereBetween('journal_date', [$fy->start_date, $fy->end_date])
+            ->exists();
+    }
+
     public function dismissMigrate(): RedirectResponse
     {
         return redirect()
@@ -279,7 +376,7 @@ class InstituteSettingController extends Controller
         if ($previousMode === $newMode) {
             return redirect()
                 ->route('settings.index', '#pane-academic-setting')
-                ->with('status', 'Certificate approval mode is already set to ' . ($newMode === 'admin' ? 'Admin Controlled' : 'Super Admin Required') . '.');
+                ->with('status', 'Certificate approval mode is already set to '.($newMode === 'admin' ? 'Admin Controlled' : 'Super Admin Required').'.');
         }
 
         $this->approvalModeService->setMode($instituteId, $newMode);
@@ -309,7 +406,7 @@ class InstituteSettingController extends Controller
     {
         $data = $request->validate([
             'current_password' => ['required', 'string'],
-            'password' => \App\Support\PasswordPolicy::rules(),
+            'password' => PasswordPolicy::rules(),
         ]);
 
         $user = $request->user();
@@ -325,7 +422,7 @@ class InstituteSettingController extends Controller
     public function uploadLogo(Request $request): RedirectResponse
     {
         $request->validate([
-            'logo' => ['required','image','mimes:jpeg,png,jpg,gif,svg,webp','max:2048'],
+            'logo' => ['required', 'image', 'mimes:jpeg,png,jpg,gif,svg,webp', 'max:2048'],
         ]);
 
         $instituteId = $this->resolveInstituteId($request->user()) ?? TenantContext::id() ?? Workspace::id();
@@ -337,13 +434,13 @@ class InstituteSettingController extends Controller
         $path = 'institutes/'.$institute->id.'/logo.'.$ext;
 
         $oldPath = $institute->logo_path_resolved;
-        if (!empty($oldPath) && $oldPath !== $path && Storage::disk('public')->exists($oldPath)) {
+        if (! empty($oldPath) && $oldPath !== $path && Storage::disk('public')->exists($oldPath)) {
             Storage::disk('public')->delete($oldPath);
         }
-        if (!empty($institute->logo) && $institute->logo !== $path && $institute->logo !== $oldPath && Storage::disk('public')->exists($institute->logo)) {
+        if (! empty($institute->logo) && $institute->logo !== $path && $institute->logo !== $oldPath && Storage::disk('public')->exists($institute->logo)) {
             Storage::disk('public')->delete($institute->logo);
         }
-        if (!empty($institute->logo_path) && $institute->logo_path !== $path && $institute->logo_path !== $oldPath && Storage::disk('public')->exists($institute->logo_path)) {
+        if (! empty($institute->logo_path) && $institute->logo_path !== $path && $institute->logo_path !== $oldPath && Storage::disk('public')->exists($institute->logo_path)) {
             Storage::disk('public')->delete($institute->logo_path);
         }
 
@@ -363,7 +460,7 @@ class InstituteSettingController extends Controller
 
         $paths = array_filter([$institute->logo, $institute->logo_path, $institute->logo_path_resolved]);
         foreach (array_unique($paths) as $p) {
-            if (!empty($p) && Storage::disk('public')->exists($p)) {
+            if (! empty($p) && Storage::disk('public')->exists($p)) {
                 Storage::disk('public')->delete($p);
             }
         }
