@@ -9,9 +9,11 @@ use App\Models\Medical\ClinicalAuditLog;
 use App\Models\Medical\Invoice;
 use App\Models\Medical\Patient;
 use App\Services\Medical\BillingService;
+use App\Services\Medical\MedicalBillingJournalService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
 
 class InvoiceController extends MedicalController implements HasMiddleware
 {
@@ -23,6 +25,7 @@ class InvoiceController extends MedicalController implements HasMiddleware
             new Middleware('permission:medical_billing.edit', only: ['edit', 'update']),
             new Middleware('permission:medical_billing.delete', only: ['destroy']),
             new Middleware('permission:medical_billing.process', only: ['payment']),
+            new Middleware('permission:medical_billing.cancel', only: ['cancel']),
         ];
     }
 
@@ -323,6 +326,46 @@ class InvoiceController extends MedicalController implements HasMiddleware
 
         return redirect()->route('medical.billing.invoices.index')
             ->with('status', 'Invoice deleted successfully!');
+    }
+
+    /**
+     * Cancel an unpaid invoice: reverse its sale + receipt journals and flip
+     * status to cancelled. destroy() stays for record removal; cancel() is
+     * the reversible-safe financial action and the primary UI affordance.
+     */
+    public function cancel(Request $request, Invoice $invoice)
+    {
+        $this->ensureSameInstitute($invoice, 'invoice');
+        $this->ensureInvoiceVisible($invoice);
+        // Phase 18: invoices are branch-owned transactions.
+        $this->ensureBranchAccess($invoice, 'branch_id', 'invoice');
+
+        if ($invoice->status === 'cancelled') {
+            return redirect()->back()->withErrors(['cancel' => 'Invoice is already cancelled.']);
+        }
+
+        if ((float) $invoice->paid_amount > 0) {
+            return redirect()->back()->withErrors([
+                'cancel' => 'Cannot cancel an invoice with payments. Reverse the payments first.',
+            ]);
+        }
+
+        $previous = $invoice->status;
+
+        DB::transaction(function () use ($invoice, $previous) {
+            app(MedicalBillingJournalService::class)
+                ->reverseInvoiceJournals($invoice, auth()->id(), 'Invoice cancelled');
+
+            $invoice->update(['status' => 'cancelled']);
+
+            ClinicalAuditLog::record($invoice, 'cancelled', [
+                'old' => ['status' => $previous],
+                'new' => ['status' => 'cancelled'],
+            ]);
+        });
+
+        return redirect()->route('medical.billing.invoices.index')
+            ->with('status', 'Invoice '.$invoice->invoice_number.' cancelled.');
     }
 
     public function payment(PaymentRequest $request, Invoice $invoice)

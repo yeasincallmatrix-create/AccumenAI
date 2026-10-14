@@ -92,6 +92,7 @@ class MedicalPermissionSeeder extends Seeder
                 'create' => 'Create Invoices',
                 'edit' => 'Edit Invoices',
                 'delete' => 'Delete Invoices',
+                'cancel' => 'Cancel Invoices',
             ],
             'medical_tpa' => [
                 'view' => 'View TPA Claims',
@@ -238,6 +239,32 @@ class MedicalPermissionSeeder extends Seeder
                     ['slug' => $module.'.'.$action],
                     ['module' => $module, 'name' => $label]
                 );
+            }
+        }
+
+        // Task 6 — invoice cancel (additive). Granted to hospital admins,
+        // institute owners and accountants; owners bypass checks anyway.
+        $cancelPermId = Permission::firstOrCreate(
+            ['slug' => 'medical_billing.cancel'],
+            ['module' => 'medical_billing', 'name' => 'Cancel Invoices']
+        )->id;
+
+        $cancelRoleIds = Role::whereIn('slug', ['hospital-admin', 'institute-owner', 'accountant'])
+            ->pluck('id')
+            ->toArray();
+
+        if (! empty($cancelRoleIds)) {
+            $existing = DB::table('role_permissions')
+                ->where('permission_id', $cancelPermId)
+                ->whereIn('role_id', $cancelRoleIds)
+                ->pluck('role_id')
+                ->toArray();
+
+            foreach (array_diff($cancelRoleIds, $existing) as $roleId) {
+                DB::table('role_permissions')->insert([
+                    'role_id' => $roleId,
+                    'permission_id' => $cancelPermId,
+                ]);
             }
         }
 

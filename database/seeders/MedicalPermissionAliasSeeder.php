@@ -76,6 +76,7 @@ class MedicalPermissionAliasSeeder extends Seeder
             'medical_billing.edit'          => 'medical.billing.invoices.edit',
             'medical_billing.delete'        => 'medical.billing.invoices.delete',
             'medical_billing.process'       => 'medical.billing.invoices.process',
+            'medical_billing.cancel'        => 'medical.billing.invoices.cancel',
             'medical_tpa.view'              => 'medical.billing.tpa.view',
             'medical_tpa.create'            => 'medical.billing.tpa.create',
             'medical_tpa.edit'              => 'medical.billing.tpa.edit',

@@ -124,7 +124,7 @@ class MedicalModuleActivator
             'medical_billing' => [
                 'view' => 'View Billing', 'create' => 'Create Invoices',
                 'edit' => 'Edit Invoices', 'delete' => 'Delete Invoices',
-                'process' => 'Process Payments',
+                'process' => 'Process Payments', 'cancel' => 'Cancel Invoices',
             ],
             'medical_tpa' => [
                 'view' => 'View TPA Claims', 'create' => 'Create TPA Claims',
