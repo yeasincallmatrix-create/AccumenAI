@@ -27,6 +27,7 @@ use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class AppointmentController extends MedicalController implements HasMiddleware
 {
@@ -223,6 +224,43 @@ class AppointmentController extends MedicalController implements HasMiddleware
     }
 
     /**
+     * One individual = one serial per doctor per day.
+     *
+     * Relatives may share a phone number, so the rule keys on patient_id
+     * (MR number) — never on the phone. A cancelled row frees the slot.
+     * Throws a validation error naming the serial already held, which
+     * rolls back the surrounding transaction (inline patient creation
+     * included).
+     */
+    private function assertNoDuplicateSerial(
+        int $instituteId,
+        int $doctorId,
+        int $patientId,
+        string $date,
+        ?int $exceptAppointmentId = null,
+        bool $lockForUpdate = false
+    ): void {
+        $duplicate = $this->queueManager->duplicateFor(
+            $instituteId,
+            $doctorId,
+            $patientId,
+            $date,
+            $exceptAppointmentId,
+            $lockForUpdate
+        );
+
+        if ($duplicate === null) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'appointment_date' => 'This patient already has serial #'.$duplicate->serial_number
+                .' with this doctor on '.Carbon::parse($date)->format('d M Y')
+                .'. One patient can hold only one serial per doctor per day.',
+        ]);
+    }
+
+    /**
      * Store a new appointment.
      */
     public function store(AppointmentRequest $request, AppointmentFeeService $feeService)
@@ -261,17 +299,27 @@ class AppointmentController extends MedicalController implements HasMiddleware
                 $data['patient_id'] = $this->createInlinePatient($newPatient)->id;
             }
 
+            $patient = Patient::where('institute_id', $instituteId)->findOrFail($data['patient_id']);
+            if (! $this->mayActOnPatient($patient)) {
+                abort(403, 'You do not have permission to book for this patient.');
+            }
+
+            // One individual = one serial per doctor per day. Locked, so a
+            // double-submit of the booking form cannot mint a second serial.
+            $this->assertNoDuplicateSerial(
+                $instituteId,
+                (int) $data['doctor_id'],
+                (int) $data['patient_id'],
+                (string) $data['appointment_date'],
+                lockForUpdate: true
+            );
+
             // Generate serial number (institute + doctor + date scoped).
             $data['serial_number'] = $this->queueManager->getNextSerial(
                 $instituteId,
                 $data['doctor_id'],
                 $data['appointment_date']
             );
-
-            $patient = Patient::where('institute_id', $instituteId)->findOrFail($data['patient_id']);
-            if (! $this->mayActOnPatient($patient)) {
-                abort(403, 'You do not have permission to book for this patient.');
-            }
 
             // First-visit vs follow-up fee (null when the doctor user has no
             // Doctor profile — booking then continues exactly as before).
@@ -459,13 +507,33 @@ class AppointmentController extends MedicalController implements HasMiddleware
             }
         }
 
+        // Doctor / date / patient may each move — resolve the target slot.
+        $targetDate = $request->input('appointment_date')
+            ?: $appointment->appointment_date->format('Y-m-d');
+        $targetDoctor = (int) ($data['doctor_id'] ?? $appointment->doctor_id);
+        $targetPatient = (int) ($data['patient_id'] ?? $appointment->patient_id);
+        $doctorChanged = $targetDoctor !== (int) $appointment->doctor_id;
+        $dateChanged = $targetDate !== $appointment->appointment_date->format('Y-m-d');
+
+        // Re-pointing the appointment at another patient/doctor/day must not
+        // land on a slot this individual already holds (one serial per
+        // person per doctor per day) — the row being edited is ignored.
+        if ($doctorChanged || $dateChanged || $targetPatient !== (int) $appointment->patient_id) {
+            $this->assertNoDuplicateSerial(
+                (int) $appointment->institute_id,
+                $targetDoctor,
+                $targetPatient,
+                $targetDate,
+                $appointment->id
+            );
+        }
+
         // If doctor or date changed, regenerate serial.
-        if ((int) ($data['doctor_id'] ?? $request->doctor_id) !== (int) $appointment->doctor_id
-            || $request->appointment_date !== $appointment->appointment_date->format('Y-m-d')) {
+        if ($doctorChanged || $dateChanged) {
             $data['serial_number'] = $this->queueManager->getNextSerial(
                 $appointment->institute_id,
-                (int) ($data['doctor_id'] ?? $request->doctor_id),
-                $request->appointment_date
+                $targetDoctor,
+                $targetDate
             );
         }
 
@@ -1157,6 +1225,16 @@ class AppointmentController extends MedicalController implements HasMiddleware
                 ['appointment_date' => 'Appointment is already on this date. Pick a different date.']
             )->withInput();
         }
+
+        // The patient must be free on the target day: transferring may not
+        // hand the same individual a second serial with this doctor.
+        $this->assertNoDuplicateSerial(
+            (int) $appointment->institute_id,
+            (int) $appointment->doctor_id,
+            (int) $appointment->patient_id,
+            $newDate,
+            $appointment->id
+        );
 
         $serial = $this->queueManager->getNextSerial(
             $appointment->institute_id,

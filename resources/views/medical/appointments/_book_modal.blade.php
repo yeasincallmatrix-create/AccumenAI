@@ -464,6 +464,20 @@
     if (m && window.bootstrap) window.bootstrap.Modal.getOrCreateInstance(m).show();
 })();
 @endif
+
+// One serial per patient: lock the Book button as soon as the form is
+// submitted so a double-click cannot fire a second booking (the server
+// refuses a duplicate anyway — this just stops the double round-trip).
+(function () {
+    var bkForm = document.getElementById('book-appointment-form');
+    if (!bkForm) return;
+    bkForm.addEventListener('submit', function () {
+        var btn = bkForm.querySelector('button[type="submit"]');
+        if (!btn || btn.disabled) return;
+        btn.disabled = true;
+        setTimeout(function () { btn.disabled = false; }, 5000);
+    });
+})();
 </script>
 
 <script>

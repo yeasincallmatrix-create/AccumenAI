@@ -16,7 +16,7 @@
 
 <div class="card">
     <div class="card-body">
-        <form action="{{ route('medical.appointments.update', $appointment) }}" method="POST">
+        <form action="{{ route('medical.appointments.update', $appointment) }}" method="POST" id="appointment-edit-form">
             @csrf
             @method('PUT')
 
@@ -94,4 +94,18 @@
         </form>
     </div>
 </div>
+<script>
+// One serial per patient: lock the button on send so a double-click
+// cannot fire a second update before the first round-trip.
+(function () {
+    var f = document.getElementById('appointment-edit-form');
+    if (!f) return;
+    f.addEventListener('submit', function () {
+        var b = f.querySelector('button[type="submit"]');
+        if (!b || b.disabled) return;
+        b.disabled = true;
+        setTimeout(function () { b.disabled = false; }, 5000);
+    });
+})();
+</script>
 @endsection

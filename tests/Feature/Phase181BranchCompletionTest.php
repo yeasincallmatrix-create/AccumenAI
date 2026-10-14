@@ -479,9 +479,10 @@ class Phase181BranchCompletionTest extends TestCase
 
     public function test_queue_serials_unchanged_by_branch(): void
     {
-        $patient = $this->createPatient();
         $date = now()->addDay()->format('Y-m-d');
-        $mk = function () use ($patient, $date) {
+        // Two different patients: serials count per doctor+day, and one
+        // individual may only hold one of them.
+        $mk = function (Patient $patient) use ($date) {
             $this->post(route('medical.appointments.store'), [
                 'patient_id' => $patient->id,
                 'doctor_id' => $this->legacyDoctor->id,
@@ -491,8 +492,8 @@ class Phase181BranchCompletionTest extends TestCase
 
             return Appointment::where('institute_id', $this->instituteA->id)->latest('id')->firstOrFail();
         };
-        $first = $mk();
-        $second = $mk();
+        $first = $mk($this->createPatient('QueueFirst'));
+        $second = $mk($this->createPatient('QueueSecond'));
         $this->assertSame(1, (int) $first->serial_number);
         $this->assertSame(2, (int) $second->serial_number);
     }

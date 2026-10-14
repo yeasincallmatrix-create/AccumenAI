@@ -16,7 +16,7 @@
 
 <div class="card">
     <div class="card-body">
-        <form action="{{ route('medical.appointments.store') }}" method="POST">
+        <form action="{{ route('medical.appointments.store') }}" method="POST" id="appointment-create-form">
             @csrf
 
             <div class="row">
@@ -92,4 +92,18 @@
         </form>
     </div>
 </div>
+<script>
+// One serial per patient: lock the button on send so a double-click
+// cannot fire a second booking before the first round-trip.
+(function () {
+    var f = document.getElementById('appointment-create-form');
+    if (!f) return;
+    f.addEventListener('submit', function () {
+        var b = f.querySelector('button[type="submit"]');
+        if (!b || b.disabled) return;
+        b.disabled = true;
+        setTimeout(function () { b.disabled = false; }, 5000);
+    });
+})();
+</script>
 @endsection

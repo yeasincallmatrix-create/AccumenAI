@@ -88,6 +88,73 @@ class QueueRollover extends Command
                         (int) $appointment->doctor_id,
                         $date
                     );
+
+                    // One individual = one serial per doctor per day: a
+                    // patient who already holds a serial on the target day
+                    // keeps that one — the carried visit is auto-cancelled
+                    // instead of being issued a second serial.
+                    $duplicate = $queues->duplicateFor(
+                        (int) $appointment->institute_id,
+                        (int) $appointment->doctor_id,
+                        (int) $appointment->patient_id,
+                        $target,
+                        $appointment->id
+                    );
+
+                    if ($duplicate !== null) {
+                        $this->line("skip #{$appointment->serial_number} ({$appointment->status}): patient already holds ".
+                            "serial #{$duplicate->serial_number} on {$target} — auto-cancelled, not carried");
+
+                        if (! $dry) {
+                            DB::transaction(function () use ($appointment) {
+                                $reversedAmount = null;
+                                if ($appointment->fee_collected_at !== null) {
+                                    $reversedAmount = (float) ($appointment->fee_collected_amount ?? 0);
+
+                                    app(MedicalFeePostingService::class)->reverseFeeJournals(
+                                        $appointment,
+                                        null,
+                                        'Queue rollover — duplicate slot on target day, appointment #'.$appointment->id,
+                                    );
+                                }
+                                $appointment->update(array_merge([
+                                    'status' => 'cancelled',
+                                ], $reversedAmount !== null ? [
+                                    'fee_collected_amount' => null,
+                                    'fee_collected_by_id' => null,
+                                    'fee_collected_by_name' => null,
+                                    'fee_collected_at' => null,
+                                ] : []));
+                                if ($reversedAmount !== null) {
+                                    QueueAuditLog::create([
+                                        'institute_id' => $appointment->institute_id,
+                                        'appointment_id' => $appointment->id,
+                                        'user_id' => null,
+                                        'user_type' => 'system',
+                                        'actor_name' => 'End-of-day rollover',
+                                        'action' => 'fee_reversed',
+                                        'old_order' => $appointment->serial_number,
+                                        'new_order' => $appointment->serial_number,
+                                        'amount' => $reversedAmount,
+                                    ]);
+                                }
+                                QueueAuditLog::create([
+                                    'institute_id' => $appointment->institute_id,
+                                    'appointment_id' => $appointment->id,
+                                    'user_id' => null,
+                                    'user_type' => 'system',
+                                    'actor_name' => 'End-of-day rollover',
+                                    'action' => 'auto_cancelled',
+                                    'old_order' => $appointment->queue_order ?? $appointment->serial_number ?? 0,
+                                    'new_order' => 0,
+                                ]);
+                            });
+                        }
+                        $cancelled++;
+
+                        continue;
+                    }
+
                     // Carried visits restart as plain appointments — a new day
                     // means a new check-in, so yesterday's queue state (and
                     // any collected fee) must not travel forward.
