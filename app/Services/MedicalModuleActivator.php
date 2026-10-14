@@ -7,6 +7,7 @@ use App\Models\InstituteModuleOverride;
 use App\Models\ModuleRegistry;
 use App\Models\Permission;
 use App\Models\Role;
+use App\Models\Setting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -44,6 +45,7 @@ class MedicalModuleActivator
 
         $this->seedPermissions();
         $this->assignToAdminRole($institute);
+        $this->seedMedicalBillingSettings($institute);
 
         try {
             app(\App\Services\ModuleAccessService::class)->flushCache($institute->id);
@@ -184,5 +186,24 @@ class MedicalModuleActivator
                 ]);
             }
         }
+    }
+
+    /**
+     * Seed medical billing settings for a new healthcare institute.
+     * Idempotent — uses Setting::set() which only writes if key doesn't exist.
+     */
+    private function seedMedicalBillingSettings(Institute $institute): void
+    {
+        $prefix = 'medical.billing';
+
+        Setting::set(
+            "{$prefix}.revenue_mode.{$institute->id}",
+            config('medical_billing.revenue_mode', 'accrual')
+        );
+
+        Setting::set(
+            "{$prefix}.auto_post.{$institute->id}",
+            config('medical_billing.auto_post', true) ? '1' : '0'
+        );
     }
 }
