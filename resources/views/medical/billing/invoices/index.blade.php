@@ -86,6 +86,15 @@
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                 @endif
+                                @if($invoice->status !== 'cancelled' && (float) $invoice->paid_amount == 0)
+                                    <form method="POST" action="{{ route('medical.billing.invoices.cancel', $invoice) }}"
+                                          onsubmit="return confirm('Cancel this invoice? This cannot be undone.')" class="d-inline">
+                                        @csrf
+                                        <button class="btn btn-outline-danger" title="Cancel">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
                         </td>
                     </tr>
