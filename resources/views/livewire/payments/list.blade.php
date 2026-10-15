@@ -46,7 +46,8 @@
                     <tr>
                         @if (in_array('serial', $visibleColumns, true))<td class="text-muted">{{ $payments->firstItem() + $loop->index }}</td>@endif
                         @if (in_array('invoice', $visibleColumns, true))<td>
-                            <a href="{{ route('finance.invoices.show', $payment->invoice) }}" class="text-decoration-none">{{ $payment->invoice?->invoice_number ?? '—' }}</a>
+                            {{-- Unified route — invoice can be Finance or Sales --}}
+                            <a href="{{ route('invoices.show', $payment->invoice) }}" class="text-decoration-none">{{ $payment->invoice?->invoice_number ?? '—' }}</a>
                         </td>@endif
                         @if (in_array('customer', $visibleColumns, true))<td>{{ $payment->party?->name ?? '—' }}</td>@endif
                         @if (in_array('method', $visibleColumns, true))<td>

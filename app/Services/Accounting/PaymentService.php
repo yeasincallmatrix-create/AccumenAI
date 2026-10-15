@@ -11,6 +11,7 @@ use App\Models\Payment;
 use App\Models\PaymentMethod;
 use App\Models\Student;
 use App\Services\Notification\NotificationService;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -58,7 +59,7 @@ class PaymentService
 
             $this->assertNoOverpayment($invoice, (float) $fxMeta['applied_amount']);
 
-            $payment = (new Payment())->forceFill([
+            $payment = (new Payment)->forceFill([
                 'institute_id' => $instituteId,
                 'invoice_id' => $invoice->id,
                 'party_id' => $invoice->party_id,
@@ -164,7 +165,8 @@ class PaymentService
                 'category' => 'finance_payment',
                 'title' => 'Payment received',
                 'message' => "Payment of {$amountFormatted} received for invoice {$invoiceNumber}.",
-                'link_url' => route('finance.invoices.show', $payment->invoice_id),
+                // Unified route — invoice can be Finance or Sales
+                'link_url' => route('invoices.show', $payment->invoice_id),
                 'created_by_type' => 'institute_user',
                 'created_by_id' => $actorId,
                 'created_at' => now(),
@@ -302,7 +304,6 @@ class PaymentService
      * amount. base_amount is the cash-side base value at the settlement rate.
      *
      * @param  array<string, mixed>  $data
-     *
      * @return array{currency_id: ?int, exchange_rate: string, base_amount: string, applied_amount: string, is_foreign: bool}
      */
     private function resolvePaymentFx(Invoice $invoice, ?int $branchId, array $data, float $amount): array
@@ -324,7 +325,7 @@ class PaymentService
         }
 
         $paidDate = isset($data['paid_at'])
-            ? \Illuminate\Support\Carbon::parse($data['paid_at'])->toDateString()
+            ? Carbon::parse($data['paid_at'])->toDateString()
             : now()->toDateString();
 
         $resolved = $this->fx->resolveRate(
@@ -358,7 +359,6 @@ class PaymentService
 
     /**
      * @param  array{currency_id: ?int, exchange_rate: string, base_amount: string, applied_amount: string, is_foreign: bool}  $fxMeta
-     *
      * @return array<string, mixed>
      */
     private function receiptJournalPayload(Invoice $invoice, array $fxMeta, ?int $branchId, ?int $paymentMethodId = null, ?string $paymentMethod = null, ?string $paidAt = null): array
@@ -459,7 +459,7 @@ class PaymentService
         return [
             'institute_id' => $invoice->institute_id,
             'branch_id' => $branchId,
-            'journal_date' => $paidAt !== null ? \Illuminate\Support\Carbon::parse($paidAt)->toDateString() : now()->toDateString(),
+            'journal_date' => $paidAt !== null ? Carbon::parse($paidAt)->toDateString() : now()->toDateString(),
             'currency_id' => $invoice->currency_id ?? $this->resolveCurrencyId($invoice->institute_id, $branchId),
             'exchange_rate' => $rate,
             'type' => 'receipt',

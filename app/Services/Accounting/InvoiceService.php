@@ -80,7 +80,7 @@ class InvoiceService
         $fxMeta = $this->resolveInvoiceFx($instituteId, $branchId, $data, $payable);
 
         $invoice = DB::transaction(function () use ($instituteId, $branchId, $data, $actorId, $totalAmount, $discount, $payable, $fxMeta) {
-            $invoice = (new Invoice())->forceFill([
+            $invoice = (new Invoice)->forceFill([
                 'institute_id' => $instituteId,
                 'student_id' => $data['student_id'] ?? null,
                 'party_id' => $data['party_id'] ?? null,
@@ -166,7 +166,8 @@ class InvoiceService
                 'category' => 'finance_invoice',
                 'title' => 'Invoice created',
                 'message' => 'Invoice '.$invoice->invoice_number.' created for '.number_format((float) $invoice->payable_amount, 2).'.',
-                'link_url' => route('finance.invoices.show', $invoice->id),
+                // Unified route — invoice can be Finance or Sales
+                'link_url' => route('invoices.show', $invoice->id),
                 'created_by_type' => 'institute_user',
                 'created_by_id' => $actorId,
                 'created_at' => now(),
@@ -516,7 +517,6 @@ class InvoiceService
      * base currency with BCMath. A missing rate fails safely.
      *
      * @param  array<string, mixed>  $data
-     *
      * @return array{exchange_rate: string, base_payable_amount: string, currency_id: ?int, is_foreign: bool}
      */
     private function resolveInvoiceFx(int $instituteId, ?int $branchId, array $data, float $payable): array
@@ -554,7 +554,6 @@ class InvoiceService
 
     /**
      * @param  array{exchange_rate: string, base_payable_amount: string, currency_id: ?int, is_foreign: bool}  $fxMeta
-     *
      * @return array<string, mixed>
      */
     private function saleJournalPayload(Invoice $invoice, float $totalAmount, float $discount, float $payable, ?int $branchId, array $fxMeta): array
@@ -681,7 +680,7 @@ class InvoiceService
     private function createInstallments(Invoice $invoice, array $installments, ?int $actorId): void
     {
         foreach ($installments as $index => $row) {
-            $inst = (new Installment())->forceFill([
+            $inst = (new Installment)->forceFill([
                 'institute_id' => $invoice->institute_id,
                 'invoice_id' => $invoice->id,
                 'student_id' => $invoice->student_id,
