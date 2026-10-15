@@ -72,7 +72,7 @@
                         @if (in_array('invoice', $visibleColumns, true))<td>
                             <a href="{{ route('invoices.show', $invoice) }}" class="text-decoration-none">{{ $invoice->invoice_number }}</a>
                         </td>@endif
-                        @if (in_array('customer', $visibleColumns, true))<td>{{ $invoice->party?->name ?? $invoice->student?->name ?? '—' }}</td>@endif
+                        @if (in_array('customer', $visibleColumns, true))<td>{{ $invoice->party?->name ?? $invoice->student?->full_name ?? '—' }}</td>@endif
                         @if (in_array('source', $visibleColumns, true))<td>
                             @if ($invoice->sales_order_id !== null)
                                 <span class="badge text-bg-primary">Sales</span>

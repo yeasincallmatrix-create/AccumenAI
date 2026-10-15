@@ -9,12 +9,12 @@
 <div class="standalone-heading">
     <h4>Invoice {{ $invoice->invoice_number }}</h4>
     <p>
-        {{ $invoice->party?->name ?? $invoice->student?->name ?? 'Walk-in' }}
+        {{ $invoice->party?->name ?? $invoice->student?->full_name ?? 'Walk-in' }}
         @if ($invoice->invoice_type) · {{ str_replace('_', ' ', $invoice->invoice_type) }} @endif
         · <x-tdate :value="$invoice->created_at" fallback="Y-m-d" />
     </p>
     <div class="d-flex gap-2 flex-wrap align-items-center">
-        @if ($invoice->status !== 'cancelled' && (float) $invoice->paid_amount === 0)
+        @if ($invoice->status !== 'cancelled' && (float) $invoice->paid_amount <= 0)
             {{-- Unified cancel reuses the existing finance cancel route (finance.manage). --}}
             <form method="POST" action="{{ route('finance.invoices.cancel', $invoice) }}" class="d-inline" data-ajax-submit="1" data-confirm="Cancel this invoice? Its sale journal will be reversed.">
                 @csrf
@@ -46,7 +46,7 @@
         <div class="col-lg-4 col-md-6">
             <div class="admin-card mb-0">
                 <h6 class="card-title">Student</h6>
-                <p class="mb-0">{{ $invoice->student->name }}</p>
+                <p class="mb-0">{{ $invoice->student->full_name }}</p>
                 @if ($invoice->student->student_id ?? null)<p class="text-muted small mb-0">ID: {{ $invoice->student->student_id }}</p>@endif
             </div>
         </div>
