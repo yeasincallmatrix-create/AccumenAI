@@ -88,7 +88,8 @@ class MedicalBillingJournalService
         $branchId = $invoice->branch_id !== null ? (int) $invoice->branch_id : null;
 
         // Resolve accounts (fail-soft: missing CoA → log + return null)
-        $ar = $this->requireAccount($instituteId, '1200.1', $branchId);      // Trade Receivable
+        $ctx = ['invoice_id' => (int) $invoice->id];
+        $ar = $this->requireAccount($instituteId, '1200.1', $branchId, $ctx);      // Trade Receivable
         if ($ar === null) {
             return null;
         }
@@ -101,7 +102,7 @@ class MedicalBillingJournalService
 
         $tax = round((float) $invoice->tax, 2);
         if ($tax > 0) {
-            $taxAccount = $this->requireAccount($instituteId, '2100.1', $branchId); // VAT Output Payable
+            $taxAccount = $this->requireAccount($instituteId, '2100.1', $branchId, $ctx); // VAT Output Payable
             if ($taxAccount === null) {
                 return null; // already logged in requireAccount
             }
@@ -114,7 +115,7 @@ class MedicalBillingJournalService
         $discount = round((float) $invoice->discount, 2);
         $discountAccount = null;
         if ($discount > 0) {
-            $discountAccount = $this->requireAccount($instituteId, '4000.5', $branchId); // Discount Allowed
+            $discountAccount = $this->requireAccount($instituteId, '4000.5', $branchId, $ctx); // Discount Allowed
             if ($discountAccount === null) {
                 return null; // already logged in requireAccount
             }
@@ -208,10 +209,11 @@ class MedicalBillingJournalService
         }
 
         $entries = [];
+        $ctx = ['invoice_id' => (int) $invoice->id, 'payment_id' => (int) $payment->id];
 
         if ($revenueMode === 'accrual') {
             // Accrual: Dr Cash/TPA-receivable (net), Cr AR (full payment amount)
-            $ar = $this->requireAccount($instituteId, '1200.1', $branchId);
+            $ar = $this->requireAccount($instituteId, '1200.1', $branchId, $ctx);
             if ($ar === null) {
                 return null;
             }
@@ -236,7 +238,7 @@ class MedicalBillingJournalService
             $entries[] = ['coa_id' => $revenue->id, 'debit' => 0, 'credit' => $revenueOnPayment];
 
             if ($taxOnPayment > 0) {
-                $taxAccount = $this->requireAccount($instituteId, '2100.1', $branchId); // VAT Output Payable
+                $taxAccount = $this->requireAccount($instituteId, '2100.1', $branchId, $ctx); // VAT Output Payable
                 if ($taxAccount === null) {
                     return null; // already logged in requireAccount
                 }
@@ -384,6 +386,8 @@ class MedicalBillingJournalService
             'institute_id' => $instituteId,
             'branch_id' => $branchId,
             'type' => $type,
+            'invoice_id' => $invoiceOrType instanceof Invoice ? (int) $invoiceOrType->id : null,
+            'action_required' => "php artisan medical:provision-coa --institute={$instituteId} --execute",
         ]);
 
         return null;
@@ -421,7 +425,10 @@ class MedicalBillingJournalService
             // Fall through to cash when the tenant lacks the TPA receivable.
         }
 
-        return $this->requireAccount($instituteId, '1000.1', $branchId);
+        return $this->requireAccount($instituteId, '1000.1', $branchId, array_filter([
+            'payment_id' => $paymentOrMethod instanceof Payment ? (int) $paymentOrMethod->id : null,
+            'invoice_id' => $paymentOrMethod instanceof Payment ? $paymentOrMethod->invoice_id : null,
+        ], fn ($v) => $v !== null));
     }
 
     /**
@@ -456,8 +463,14 @@ class MedicalBillingJournalService
     /**
      * Resolve a tenant-owned account by code with branch fallback.
      * Fail-soft: logs warning and returns null (caller must check).
+     *
+     * The warning carries invoice/payment ids from $context plus an
+     * action_required remediation command so an operator can fix the missing
+     * CoA directly from the log line.
+     *
+     * @param  array<string, mixed>  $context  e.g. ['invoice_id' => X, 'payment_id' => Y]
      */
-    private function requireAccount(int $instituteId, string $code, ?int $branchId): ?ChartOfAccount
+    private function requireAccount(int $instituteId, string $code, ?int $branchId, array $context = []): ?ChartOfAccount
     {
         $account = $this->coa->accountByCode($instituteId, $code, $branchId);
 
@@ -470,11 +483,12 @@ class MedicalBillingJournalService
         }
 
         if ($account === null) {
-            Log::warning('MedicalBillingJournalService: required account missing', [
+            Log::warning('MedicalBillingJournalService: required account missing', array_merge([
                 'institute_id' => $instituteId,
                 'branch_id' => $branchId,
                 'code' => $code,
-            ]);
+                'action_required' => "php artisan medical:provision-coa --institute={$instituteId} --execute",
+            ], $context));
 
             return null;
         }
