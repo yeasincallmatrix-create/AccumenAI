@@ -20,6 +20,7 @@ the project evolves.
 | [`medical-billing-journal.md`](medical-billing-journal.md) | Medical Billing Journal Integration. |
 | [`medical-billing-test-report.md`](medical-billing-test-report.md) | Medical Billing Test Report (Task 9 + Gaps 1–2 + Task 10 snapshot). |
 | [`TESTING_SETUP.md`](TESTING_SETUP.md) | How to run medical billing tests + full regression. |
+| [`unified-invoices.md`](unified-invoices.md) | Unified Finance + Sales invoice list/detail (`/invoices`). |
 
 > The `demo/` folder keeps database backups (`.sql`) and the demo dashboard ZIP;
 > documentation lives in `docs/`.
