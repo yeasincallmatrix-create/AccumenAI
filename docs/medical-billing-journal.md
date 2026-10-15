@@ -77,5 +77,35 @@ skipped onboarding (or predates the industry filter fix) owns none of
    all targets succeeded, 1 otherwise.
 
 2. Invoices created **before** the fix keep `journal_id` NULL — the pipeline
-   runs once at creation. Re-post them with **Post Journal** on the invoice
-   page (see *Manual Posting* below); new invoices post automatically.
+   runs once at creation, and the manual Post Journal action only posts
+   *existing draft* journals (see *Manual Posting* below). Cancel and reissue
+   an unpaid pre-fix invoice once provisioning succeeded — the new copy posts
+   automatically; invoices created after the fix post at creation as usual.
+
+## Manual Posting
+
+When `auto_post` is off, `postSaleJournal()` creates the sale journal as a
+**draft** — the invoice exists, but the GL does not reflect it until someone
+posts it.
+
+- **Where:** invoice page → **Post Journal** button in the header actions.
+- **Visibility:** only when the invoice carries a journal whose status is
+  `draft`, and the user holds `medical_billing.post` (granted to
+  hospital-admin, institute-owner and accountant by
+  `MedicalPermissionSeeder`; institute owners pass through the owner
+  super-user rule regardless).
+- **Route:** `POST medical/billing/invoices/{invoice}/post-journal` →
+  `medical.billing.invoices.post-journal`, gated by
+  `permission:medical_billing.post` on top of the medical module + billing
+  feature gates.
+- **What it does:** `JournalPostingService::post()` — the same path as every
+  other posting: draft-only, institute match, balance and open-period
+  assertions; sets `posted_by` / `posted_at` (AccountingAuditTrail entry)
+  and writes a `journal_posted` ClinicalAuditLog row on the invoice.
+- **Guard rails:** already-posted, non-draft and journal-less invoices are
+  rejected with a validation error — a journal can never be posted twice
+  through this path.
+
+It does **not** create journals: an invoice with `journal_id` NULL (CoA was
+missing at creation) must be recovered via `medical:provision-coa` first —
+see the symptom section above.
