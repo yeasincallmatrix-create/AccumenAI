@@ -596,7 +596,7 @@
                     </div>
                 @endif
                 @if ($workspaceAllowedSales ?? false)
-                    @php $salesOpen = request()->routeIs('sales.*') ? true : false; @endphp
+                    @php $salesOpen = request()->routeIs('sales.*','invoices.*') ? true : false; @endphp
                     <div class="nav-group">
                         <button class="nav-link w-100 d-flex align-items-center justify-content-between {{ $salesOpen ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#salesNavGroup" aria-expanded="{{ $salesOpen ? 'true' : 'false' }}" aria-controls="salesNavGroup">
                             <span class="d-flex align-items-center gap-2"><i class="bi bi-cart-fill"></i><span class="sidebar-label fw-semibold">Sales</span></span>
@@ -605,6 +605,10 @@
                         <div class="collapse {{ $salesOpen ? 'show' : '' }}" id="salesNavGroup">
                             <a class="nav-link sub {{ request()->routeIs('sales.invoices.*') ? 'active' : '' }}" href="{{ route('sales.invoices.index') }}">
                                 <i class="bi bi-receipt"></i><span class="sidebar-label">Invoice</span>
+                            </a>
+                            {{-- Unified invoice list (Finance + Sales) --}}
+                            <a class="nav-link sub {{ request()->routeIs('invoices.*') ? 'active' : '' }}" href="{{ route('invoices.index') }}">
+                                <i class="bi bi-receipt-cutoff"></i><span class="sidebar-label">All Invoices</span>
                             </a>
                             <a class="nav-link sub {{ request()->routeIs('sales.payments.*') ? 'active' : '' }}" href="{{ route('sales.payments.index') }}">
                                 <i class="bi bi-cash"></i><span class="sidebar-label">Receive Payment</span>
@@ -900,7 +904,7 @@
                             'finance.opening-balances.*',
                             'finance.audit.*'
                         );
-                        $financeNavOpen = ! $accountingNavOpen && request()->routeIs('finance.*','sync.*');
+                        $financeNavOpen = ! $accountingNavOpen && request()->routeIs('finance.*','sync.*','invoices.*');
                         $canViewBudgets = $user instanceof \App\Models\InstituteUser
                             ? $user->hasPermission('budget.view')
                             : (\App\Support\Workspace::membership()?->hasPermission('budget.view') ?? false);
@@ -913,6 +917,10 @@
                         <div class="collapse {{ $financeNavOpen ? 'show' : '' }}" id="financeNavGroup">
                             <a class="nav-link sub {{ request()->routeIs('finance.dashboard') ? 'active' : '' }}" href="{{ route('finance.dashboard') }}">
                                 <i class="bi bi-cash-coin"></i><span class="sidebar-label">Finance Dashboard</span>
+                            </a>
+                            {{-- Unified invoice list (Finance + Sales) --}}
+                            <a class="nav-link sub {{ request()->routeIs('invoices.*') ? 'active' : '' }}" href="{{ route('invoices.index') }}">
+                                <i class="bi bi-receipt-cutoff"></i><span class="sidebar-label">All Invoices</span>
                             </a>
                             <a class="nav-link sub {{ request()->routeIs('finance.invoices.*') || request()->routeIs('finance.payments.*') ? 'active' : '' }}" href="{{ route('finance.invoices.index') }}">
                                 <i class="bi bi-receipt-cutoff"></i><span class="sidebar-label">Invoices</span>
