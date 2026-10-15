@@ -134,3 +134,23 @@
 - [ ] Run `php artisan accounting:health-check --institute=<id>` per tenant
 - [ ] Run `php artisan test --filter=Accounting` — all green
 - [ ] Run full suite, classify failures (pre-existing vs new)
+
+## 25. Deploying Medical Billing Journal Integration
+
+Pre-deploy:
+
+- [ ] Run migrations: `php artisan migrate --force`
+- [ ] Provision CoA for existing healthcare tenants:
+      `php artisan medical:provision-coa --all-healthcare --dry-run`
+      then `php artisan medical:provision-coa --all-healthcare --execute`
+- [ ] Verify accounts: `SELECT * FROM chart_of_accounts WHERE code LIKE '4300.%'`
+- [ ] Verify settings rows exist per healthcare tenant:
+      `SELECT * FROM settings WHERE `key` LIKE 'medical.billing.%'`
+
+Post-deploy:
+
+- [ ] Test: create a medical invoice → verify journal posted (Finance → GL)
+- [ ] Test: check GL in Finance → Journals (sale + receipt entries visible)
+- [ ] Test: Settings → Medical billing form shows correct revenue mode + auto post
+- [ ] Rollback: reverse migrations if needed (rare; journals posted by tenants
+      must be reversed via the UI first — posted journals are immutable)

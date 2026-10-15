@@ -117,3 +117,39 @@ php artisan test tests/Feature/Medical/ --testdox
 ```
 
 Never run the full repo suite sequentially (timeout); use `php tests/shards/run.php`.
+
+---
+
+## Task 9 — Full Coverage Extension
+
+New test classes added:
+
+- MedicalBillingLifecycleTest (3 tests) — full accrual/cash/cancel flows (`96dc764a`)
+- MedicalBillingManualPostTest (2 tests) — draft → HTTP post → GL (`e05c1c3d`)
+- MedicalBillingModeSwitchTest (3 tests) — FY guard + rollover (`d8bc02ff`)
+- MedicalBillingTenantIsolationTest (5 tests) — cross-tenant security (`269971c3`)
+- MedicalBillingFailSoftTest (5 tests) — missing CoA recovery (`207db963`)
+- ReceiptJournalRefTypeTest (2 tests) — Gap 1 fix (`54605120`)
+- ModeSwitchReceiptBehaviorTest (5 tests) — Gap 2 fix (`13f9d9f2`)
+
+## Final Totals
+
+| Directory | Tests | Assertions |
+|---|---|---|
+| tests/Feature/Medical/ | 115 | 914 |
+| tests/Feature/Settings/MedicalBillingSettingsTest | 8 | 34 |
+| **Medical + related** | **123** | **948** |
+
+## Regression Snapshot (Task 10)
+
+Full suite via shards: 4,955 tests, 6 shards
+
+- **0 failures in changed domains** (Medical, Accounting, Finance, Settings, Hr, Sales, Purchase, Institute*)
+- ~1,122 pre-existing baseline failures unrelated to this work
+- Known baselines: InstituteSettingsTest (promotions link), InstituteModuleEntitlementTest (migration rollback on data-only schema)
+
+## Coverage Gaps (acknowledged)
+
+- No concurrency/race tests (row lock verified manually only)
+- No multi-currency tests (feature not supported)
+- No refund flow tests (feature not implemented)

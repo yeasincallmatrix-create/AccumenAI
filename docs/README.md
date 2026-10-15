@@ -17,6 +17,9 @@ the project evolves.
 | [`localization.md`](localization.md) | How localization works. |
 | [`geodata.md`](geodata.md) | Country / industry / sub-category data. |
 | [`accounting-hr-inventory.md`](accounting-hr-inventory.md) | **Current** Accounting · HR · Inventory features (2026-08-22). |
+| [`medical-billing-journal.md`](medical-billing-journal.md) | Medical Billing Journal Integration. |
+| [`medical-billing-test-report.md`](medical-billing-test-report.md) | Medical Billing Test Report (Task 9 + Gaps 1–2 + Task 10 snapshot). |
+| [`TESTING_SETUP.md`](TESTING_SETUP.md) | How to run medical billing tests + full regression. |
 
 > The `demo/` folder keeps database backups (`.sql`) and the demo dashboard ZIP;
 > documentation lives in `docs/`.
