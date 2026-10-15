@@ -259,6 +259,8 @@ class MedicalBillingJournalService
                 'branch_id' => $branchId,
                 'journal_date' => $payment->paid_at?->toDateString() ?? now()->toDateString(),
                 'type' => 'receipt',
+                'ref_type' => 'medical_invoice',
+                'ref_id' => (int) $payment->invoice_id,
                 'currency_id' => $this->resolveCurrencyId($instituteId, $branchId),
                 'description' => 'Medical receipt — payment for invoice '.$payment->invoice->invoice_number,
                 'entries' => $entries,
