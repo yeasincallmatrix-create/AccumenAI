@@ -29,7 +29,7 @@ class UnifiedInvoiceController extends Controller
         Gate::authorize('view', $invoice);
 
         $invoice->load([
-            'items', 'payments', 'journal', 'installments',
+            'items.coa', 'payments', 'journal', 'installments',
             'salesOrder', 'salesDelivery', 'student', 'party',
             'currency',
         ]);
