@@ -750,6 +750,18 @@ Route::middleware($tenant)->group(function () {
         Route::post('{invoice}/cancel', [$finInv, 'cancel'])->middleware(['permission:finance.manage', 'module_access:finance'])->name('cancel');
     });
 
+    // Unified Invoices (Finance + Sales soft merge, read-only)
+    // Top-level /invoices URI. Inherits the $tenant stack from the outer
+    // group (auth:institute_user,web, tenant, verified, ...). NOTE:
+    // deny.teacher.finance is URI-scoped to finance*/accounting* and does
+    // NOT match /invoices — teachers still fail-closed at
+    // permission:finance.view (no teacher role holds it).
+    $unifiedInv = \App\Http\Controllers\UnifiedInvoiceController::class;
+    Route::middleware(['permission:finance.view', 'module_access:finance'])->group(function () use ($unifiedInv) {
+        Route::get('invoices', [$unifiedInv, 'index'])->name('invoices.index');
+        Route::get('invoices/{invoice}', [$unifiedInv, 'show'])->name('invoices.show');
+    });
+
     // Progressive Contracts
     $progContr = \App\Http\Controllers\ProgressiveContractController::class;
     Route::prefix('finance/progressive-contracts')->name('finance.progressive-contracts.')->group(function () use ($progContr) {
