@@ -31,6 +31,16 @@
                 </button>
             </form>
         @endif
+        @if($invoice->journal_id !== null && $invoice->journal?->status === 'draft'
+            && $user && $user->hasPermission('medical_billing.post'))
+            <form method="POST" action="{{ route('medical.billing.invoices.post-journal', $invoice) }}"
+                  onsubmit="return confirm('Post this journal to the ledger? This cannot be undone.')" class="d-inline">
+                @csrf
+                <button class="btn btn-outline-primary">
+                    <i class="bi bi-journal-check me-1"></i>Post Journal
+                </button>
+            </form>
+        @endif
         <a class="btn btn-secondary" href="{{ route('medical.billing.invoices.index') }}">
             <i class="bi bi-arrow-left me-1"></i>Back
         </a>
