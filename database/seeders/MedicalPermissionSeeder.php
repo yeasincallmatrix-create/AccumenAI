@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
+use App\Models\Institute;
 use App\Models\Permission;
 use App\Models\Role;
-use App\Models\Institute;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -268,6 +268,33 @@ class MedicalPermissionSeeder extends Seeder
             }
         }
 
+        // Task 8.5 — manual journal post (additive). Same role grant set as
+        // cancel: hospital admins, institute owners and accountants; owners
+        // bypass checks anyway. Idempotent like the cancel block above.
+        $postPermId = Permission::firstOrCreate(
+            ['slug' => 'medical_billing.post'],
+            ['module' => 'medical_billing', 'name' => 'Post Invoice Journals']
+        )->id;
+
+        $postRoleIds = Role::whereIn('slug', ['hospital-admin', 'institute-owner', 'accountant'])
+            ->pluck('id')
+            ->toArray();
+
+        if (! empty($postRoleIds)) {
+            $existing = DB::table('role_permissions')
+                ->where('permission_id', $postPermId)
+                ->whereIn('role_id', $postRoleIds)
+                ->pluck('role_id')
+                ->toArray();
+
+            foreach (array_diff($postRoleIds, $existing) as $roleId) {
+                DB::table('role_permissions')->insert([
+                    'role_id' => $roleId,
+                    'permission_id' => $postPermId,
+                ]);
+            }
+        }
+
         // Doctor management (additive). Department → Specialty → Doctor with
         // weekly availability; slugs stay `module.action` like the rest.
         $doctorExtras = [
@@ -400,12 +427,12 @@ class MedicalPermissionSeeder extends Seeder
         // Emergency permissions (additive). Granted to doctor, receptionist, nurse roles.
         $emergencyPerms = [
             'medical_emergency' => [
-                'view'       => 'View Emergency Visits',
-                'create'     => 'Register Emergency Patients',
-                'edit'       => 'Edit Emergency Visits',
-                'triage'     => 'Perform Triage',
-                'discharge'  => 'Discharge Emergency Patients',
-                'delete'     => 'Delete Emergency Visits',
+                'view' => 'View Emergency Visits',
+                'create' => 'Register Emergency Patients',
+                'edit' => 'Edit Emergency Visits',
+                'triage' => 'Perform Triage',
+                'discharge' => 'Discharge Emergency Patients',
+                'delete' => 'Delete Emergency Visits',
             ],
         ];
 
@@ -440,7 +467,7 @@ class MedicalPermissionSeeder extends Seeder
                 foreach ($emergencyPermIds as $permId) {
                     if (! isset($have[$roleId.'-'.$permId])) {
                         DB::table('role_permissions')->insert([
-                            'role_id'       => $roleId,
+                            'role_id' => $roleId,
                             'permission_id' => $permId,
                         ]);
                     }
@@ -454,13 +481,13 @@ class MedicalPermissionSeeder extends Seeder
         // otherwise to hospital_admin.
         $radiologyPerms = [
             'medical_radiology' => [
-                'view'     => 'View Radiology Orders',
-                'create'   => 'Create Radiology Orders',
-                'edit'     => 'Edit Radiology Orders',
-                'delete'   => 'Delete Radiology Orders',
-                'perform'  => 'Perform Radiology Studies',
-                'report'   => 'Write Radiology Reports',
-                'verify'   => 'Verify Radiology Reports',
+                'view' => 'View Radiology Orders',
+                'create' => 'Create Radiology Orders',
+                'edit' => 'Edit Radiology Orders',
+                'delete' => 'Delete Radiology Orders',
+                'perform' => 'Perform Radiology Studies',
+                'report' => 'Write Radiology Reports',
+                'verify' => 'Verify Radiology Reports',
             ],
         ];
 
@@ -497,7 +524,7 @@ class MedicalPermissionSeeder extends Seeder
                 foreach ($radiologyBasicPermIds as $permId) {
                     if (! isset($have[$roleId.'-'.$permId])) {
                         DB::table('role_permissions')->insert([
-                            'role_id'       => $roleId,
+                            'role_id' => $roleId,
                             'permission_id' => $permId,
                         ]);
                     }
@@ -528,7 +555,7 @@ class MedicalPermissionSeeder extends Seeder
                 foreach ($radiologyAllPermIds as $permId) {
                     if (! isset($have[$roleId.'-'.$permId])) {
                         DB::table('role_permissions')->insert([
-                            'role_id'       => $roleId,
+                            'role_id' => $roleId,
                             'permission_id' => $permId,
                         ]);
                     }
@@ -539,11 +566,11 @@ class MedicalPermissionSeeder extends Seeder
         // Blood Bank permissions (additive). Granted to doctor, receptionist, nurse, hospital-admin roles.
         $bloodBankPerms = [
             'medical_bloodbank' => [
-                'view'     => 'View Blood Bank',
-                'create'   => 'Manage Blood Donors & Units',
-                'edit'     => 'Edit Blood Bank Records',
-                'delete'   => 'Delete Blood Bank Records',
-                'issue'    => 'Issue & Return Blood Units',
+                'view' => 'View Blood Bank',
+                'create' => 'Manage Blood Donors & Units',
+                'edit' => 'Edit Blood Bank Records',
+                'delete' => 'Delete Blood Bank Records',
+                'issue' => 'Issue & Return Blood Units',
             ],
         ];
 
@@ -580,7 +607,7 @@ class MedicalPermissionSeeder extends Seeder
                 foreach ($bloodBankBasicPermIds as $permId) {
                     if (! isset($have[$roleId.'-'.$permId])) {
                         DB::table('role_permissions')->insert([
-                            'role_id'       => $roleId,
+                            'role_id' => $roleId,
                             'permission_id' => $permId,
                         ]);
                     }
@@ -611,7 +638,7 @@ class MedicalPermissionSeeder extends Seeder
                 foreach ($bloodBankAllPermIds as $permId) {
                     if (! isset($have[$roleId.'-'.$permId])) {
                         DB::table('role_permissions')->insert([
-                            'role_id'       => $roleId,
+                            'role_id' => $roleId,
                             'permission_id' => $permId,
                         ]);
                     }
@@ -622,9 +649,9 @@ class MedicalPermissionSeeder extends Seeder
         // Physiotherapy permissions (additive). Granted to doctor, receptionist, nurse, hospital-admin roles.
         $physioPerms = [
             'medical.physiotherapy' => [
-                'view'     => 'View Physiotherapy',
+                'view' => 'View Physiotherapy',
                 'plan.create' => 'Create Physiotherapy Plans',
-                'plan.edit'   => 'Edit Physiotherapy Plans',
+                'plan.edit' => 'Edit Physiotherapy Plans',
                 'session.attend' => 'Record Session Attendance',
                 'exercise.manage' => 'Manage Exercise Library',
             ],
@@ -662,7 +689,7 @@ class MedicalPermissionSeeder extends Seeder
                 foreach ($physioBasicPermIds as $permId) {
                     if (! isset($have[$roleId.'-'.$permId])) {
                         DB::table('role_permissions')->insert([
-                            'role_id'       => $roleId,
+                            'role_id' => $roleId,
                             'permission_id' => $permId,
                         ]);
                     }
@@ -692,7 +719,7 @@ class MedicalPermissionSeeder extends Seeder
                 foreach ($physioAllPermIds as $permId) {
                     if (! isset($have[$roleId.'-'.$permId])) {
                         DB::table('role_permissions')->insert([
-                            'role_id'       => $roleId,
+                            'role_id' => $roleId,
                             'permission_id' => $permId,
                         ]);
                     }
@@ -703,12 +730,12 @@ class MedicalPermissionSeeder extends Seeder
         // Dental permissions
         $dentalPerms = [
             'medical.dental' => [
-                'view'              => 'View Dental',
-                'chart.edit'        => 'Edit Dental Charts',
-                'procedure.create'  => 'Create Dental Procedures',
-                'procedure.edit'    => 'Edit Dental Procedures',
-                'plan.manage'       => 'Manage Dental Treatment Plans',
-                'catalog.manage'    => 'Manage Dental Procedure Catalog',
+                'view' => 'View Dental',
+                'chart.edit' => 'Edit Dental Charts',
+                'procedure.create' => 'Create Dental Procedures',
+                'procedure.edit' => 'Edit Dental Procedures',
+                'plan.manage' => 'Manage Dental Treatment Plans',
+                'catalog.manage' => 'Manage Dental Procedure Catalog',
             ],
         ];
 
@@ -745,7 +772,7 @@ class MedicalPermissionSeeder extends Seeder
                 foreach ($dentalBasicPermIds as $permId) {
                     if (! isset($have[$roleId.'-'.$permId])) {
                         DB::table('role_permissions')->insert([
-                            'role_id'       => $roleId,
+                            'role_id' => $roleId,
                             'permission_id' => $permId,
                         ]);
                     }
@@ -776,7 +803,7 @@ class MedicalPermissionSeeder extends Seeder
                 foreach ($dentalAllPermIds as $permId) {
                     if (! isset($have[$roleId.'-'.$permId])) {
                         DB::table('role_permissions')->insert([
-                            'role_id'       => $roleId,
+                            'role_id' => $roleId,
                             'permission_id' => $permId,
                         ]);
                     }
@@ -787,11 +814,11 @@ class MedicalPermissionSeeder extends Seeder
         // Vaccination permissions
         $vaccinationPerms = [
             'medical.vaccination' => [
-                'view'              => 'View Vaccination',
-                'manage'            => 'Manage Vaccine Masters',
-                'schedule'          => 'Create Vaccination Schedules',
-                'administer'        => 'Administer Vaccinations',
-                'stock.manage'      => 'Manage Vaccine Stock',
+                'view' => 'View Vaccination',
+                'manage' => 'Manage Vaccine Masters',
+                'schedule' => 'Create Vaccination Schedules',
+                'administer' => 'Administer Vaccinations',
+                'stock.manage' => 'Manage Vaccine Stock',
             ],
         ];
 
@@ -828,7 +855,7 @@ class MedicalPermissionSeeder extends Seeder
                 foreach ($vaccinationBasicPermIds as $permId) {
                     if (! isset($have[$roleId.'-'.$permId])) {
                         DB::table('role_permissions')->insert([
-                            'role_id'       => $roleId,
+                            'role_id' => $roleId,
                             'permission_id' => $permId,
                         ]);
                     }
@@ -859,7 +886,7 @@ class MedicalPermissionSeeder extends Seeder
                 foreach ($vaccinationAllPermIds as $permId) {
                     if (! isset($have[$roleId.'-'.$permId])) {
                         DB::table('role_permissions')->insert([
-                            'role_id'       => $roleId,
+                            'role_id' => $roleId,
                             'permission_id' => $permId,
                         ]);
                     }

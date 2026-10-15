@@ -487,6 +487,7 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
             // Invoice extras
             Route::post('invoices/{invoice}/payment', [InvoiceController::class, 'payment'])->name('invoices.payment');
             Route::post('invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])->name('invoices.cancel');
+            Route::post('invoices/{invoice}/post-journal', [InvoiceController::class, 'postJournal'])->name('invoices.post-journal');
             Route::get('invoices/{invoice}/print', [InvoiceController::class, 'print'])->name('invoices.print');
 
             // Payments

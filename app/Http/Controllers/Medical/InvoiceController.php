@@ -8,6 +8,7 @@ use App\Models\Medical\Admission;
 use App\Models\Medical\ClinicalAuditLog;
 use App\Models\Medical\Invoice;
 use App\Models\Medical\Patient;
+use App\Services\Accounting\JournalPostingService;
 use App\Services\Medical\BillingService;
 use App\Services\Medical\MedicalBillingJournalService;
 use Illuminate\Http\Request;
@@ -26,6 +27,7 @@ class InvoiceController extends MedicalController implements HasMiddleware
             new Middleware('permission:medical_billing.delete', only: ['destroy']),
             new Middleware('permission:medical_billing.process', only: ['payment']),
             new Middleware('permission:medical_billing.cancel', only: ['cancel']),
+            new Middleware('permission:medical_billing.post', only: ['postJournal']),
         ];
     }
 
@@ -191,7 +193,7 @@ class InvoiceController extends MedicalController implements HasMiddleware
         $this->ensureInvoiceVisible($invoice);
         // Phase 18: invoices are branch-owned transactions.
         $this->ensureBranchAccess($invoice, 'branch_id', 'invoice');
-        $invoice->load(['patient', 'admission', 'tpaClaims']);
+        $invoice->load(['patient', 'admission', 'tpaClaims', 'journal']);
         $items = json_decode($invoice->items_data ?? '[]', true);
 
         return view('medical.billing.invoices.show', compact('invoice', 'items'));
@@ -366,6 +368,54 @@ class InvoiceController extends MedicalController implements HasMiddleware
 
         return redirect()->route('medical.billing.invoices.index')
             ->with('status', 'Invoice '.$invoice->invoice_number.' cancelled.');
+    }
+
+    /**
+     * Manually post the invoice's sale journal (Task 8.5). The pipeline
+     * creates journals as draft when auto_post is off; this action posts an
+     * existing draft through JournalPostingService::post — same period/balance
+     * assertions as every other posting path. Creation itself stays untouched:
+     * a fail-soft invoice with journal_id NULL has nothing to post here and is
+     * recovered via medical:provision-coa (docs: "Symptom" section).
+     */
+    public function postJournal(Request $request, Invoice $invoice)
+    {
+        $this->ensureSameInstitute($invoice, 'invoice');
+        $this->ensureInvoiceVisible($invoice);
+        // Phase 18: invoices are branch-owned transactions.
+        $this->ensureBranchAccess($invoice, 'branch_id', 'invoice');
+
+        $invoice->loadMissing('journal');
+
+        if ($invoice->journal_id === null || $invoice->journal === null) {
+            return redirect()->back()->withErrors(['journal' => 'Invoice has no journal to post.']);
+        }
+
+        if ($invoice->journal->status === 'posted') {
+            return redirect()->back()->withErrors(['journal' => 'Journal is already posted.']);
+        }
+
+        if ($invoice->journal->status !== 'draft') {
+            return redirect()->back()->withErrors(['journal' => 'Only draft journals can be posted.']);
+        }
+
+        try {
+            app(JournalPostingService::class)->post(
+                $invoice->journal,
+                $this->instituteId(),
+                auth()->id()
+            );
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', 'Could not post journal: '.$e->getMessage());
+        }
+
+        ClinicalAuditLog::record($invoice, 'journal_posted', [
+            'new' => ['journal_id' => $invoice->journal_id, 'status' => 'posted'],
+        ]);
+
+        return redirect()
+            ->route('medical.billing.invoices.show', $invoice)
+            ->with('status', 'Journal posted for invoice '.$invoice->invoice_number.'.');
     }
 
     public function payment(PaymentRequest $request, Invoice $invoice)
