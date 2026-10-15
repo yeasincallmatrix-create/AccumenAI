@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class Setting extends Model
@@ -49,12 +51,22 @@ class Setting extends Model
         if (! filled($val)) {
             return 'NOT CONFIGURED';
         }
+
         return 'Configured ••••••••';
     }
 
     public static function isConfigured(string $key): bool
     {
         return filled(static::get($key));
+    }
+
+    /**
+     * Whether the key exists as a row, bypassing the get() caches —
+     * the accurate "has it been written yet?" check for write guards.
+     */
+    public static function has(string $key): bool
+    {
+        return static::query()->where('key', $key)->exists();
     }
 
     protected static array $memoryCache = [];
@@ -70,24 +82,34 @@ class Setting extends Model
         // Try 60s cache first to collapse duplicate concurrent lookups
         $cacheKey = 'setting:'.$key;
         try {
-            if (\Illuminate\Support\Facades\Cache::has($cacheKey)) {
-                $val = \Illuminate\Support\Facades\Cache::get($cacheKey);
+            if (Cache::has($cacheKey)) {
+                $val = Cache::get($cacheKey);
                 self::$memoryCache[$key] = $val;
+
                 return $val ?? $default;
             }
-        } catch (Throwable) {}
+        } catch (Throwable) {
+        }
 
         try {
             $row = static::query()->where('key', $key)->first();
         } catch (Throwable $e) {
             // Tablespace missing / DB down — fail open to $default instead of 500 (see 194 error on settings)
-            try { \Illuminate\Support\Facades\Log::warning('Setting::get fallback', ['key' => $key, 'error' => $e->getMessage()]); } catch (Throwable) {}
+            try {
+                Log::warning('Setting::get fallback', ['key' => $key, 'error' => $e->getMessage()]);
+            } catch (Throwable) {
+            }
+
             return $default;
         }
 
         if (! $row) {
             self::$memoryCache[$key] = null;
-            try { \Illuminate\Support\Facades\Cache::put($cacheKey, null, 60); } catch (Throwable) {}
+            try {
+                Cache::put($cacheKey, null, 60);
+            } catch (Throwable) {
+            }
+
             return $default;
         }
 
@@ -99,12 +121,20 @@ class Setting extends Model
                 $val = $row->value;
             }
             self::$memoryCache[$key] = $val;
-            try { \Illuminate\Support\Facades\Cache::put($cacheKey, $val, 60); } catch (Throwable) {}
+            try {
+                Cache::put($cacheKey, $val, 60);
+            } catch (Throwable) {
+            }
+
             return $val;
         }
 
         self::$memoryCache[$key] = $row->value;
-        try { \Illuminate\Support\Facades\Cache::put($cacheKey, $row->value, 60); } catch (Throwable) {}
+        try {
+            Cache::put($cacheKey, $row->value, 60);
+        } catch (Throwable) {
+        }
+
         return $row->value;
     }
 
@@ -121,6 +151,9 @@ class Setting extends Model
 
         // Invalidate caches on write (both request-memory and 60s cache).
         unset(self::$memoryCache[$key]);
-        try { \Illuminate\Support\Facades\Cache::forget('setting:'.$key); } catch (Throwable) {}
+        try {
+            Cache::forget('setting:'.$key);
+        } catch (Throwable) {
+        }
     }
 }

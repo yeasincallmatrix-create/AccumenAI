@@ -48,7 +48,7 @@ class MedicalModuleActivator
         $this->seedMedicalBillingSettings($institute);
 
         try {
-            app(\App\Services\ModuleAccessService::class)->flushCache($institute->id);
+            app(ModuleAccessService::class)->flushCache($institute->id);
         } catch (\Throwable $e) {
             Log::warning('MedicalModuleActivator: cache flush failed', [
                 'institute_id' => $institute->id,
@@ -165,6 +165,7 @@ class MedicalModuleActivator
             Log::warning('MedicalModuleActivator: no admin role found for institute', [
                 'institute_id' => $institute->id,
             ]);
+
             return;
         }
 
@@ -189,21 +190,31 @@ class MedicalModuleActivator
     }
 
     /**
-     * Seed medical billing settings for a new healthcare institute.
-     * Idempotent — uses Setting::set() which only writes if key doesn't exist.
+     * Seed default medical billing settings for a NEW institute.
+     *
+     * Idempotent: if the setting already exists (e.g. the owner has
+     * customized it), it is NOT overwritten. Only seeds defaults when the
+     * key is absent — Setting::set() is an unconditional updateOrCreate, so
+     * reactivation of the medical module must not silently reset a
+     * tenant's revenue_mode / auto_post choice (Verify-3).
      */
     private function seedMedicalBillingSettings(Institute $institute): void
     {
-        $prefix = 'medical.billing';
+        $revenueKey = "medical.billing.revenue_mode.{$institute->id}";
+        $autoPostKey = "medical.billing.auto_post.{$institute->id}";
 
-        Setting::set(
-            "{$prefix}.revenue_mode.{$institute->id}",
-            config('medical_billing.revenue_mode', 'accrual')
-        );
+        if (! Setting::has($revenueKey)) {
+            Setting::set(
+                $revenueKey,
+                config('medical_billing.revenue_mode', 'accrual')
+            );
+        }
 
-        Setting::set(
-            "{$prefix}.auto_post.{$institute->id}",
-            config('medical_billing.auto_post', true) ? '1' : '0'
-        );
+        if (! Setting::has($autoPostKey)) {
+            Setting::set(
+                $autoPostKey,
+                config('medical_billing.auto_post', true) ? '1' : '0'
+            );
+        }
     }
 }
