@@ -162,11 +162,22 @@ class MedicalBillingJournalService
     }
 
     /**
-     * Post the receipt journal for a medical payment (both modes).
+     * Post the receipt journal for a medical payment.
      *
-     * In accrual mode: Dr Cash / Cr AR.
-     * In cash mode:    Dr Cash (amount) / Cr Revenue (amount minus
-     * proportional VAT) / Cr VAT Output Payable (proportional VAT share).
+     * The receipt shape follows the INVOICE's original revenue treatment,
+     * NOT the tenant's current revenue_mode setting:
+     *   - invoice has a sale journal (accrual invoice): Dr Cash / Cr AR.
+     *   - invoice has no sale journal (cash invoice):    Dr Cash (amount) /
+     *     Cr Revenue (amount minus proportional VAT) / Cr VAT Output Payable.
+     *
+     * Why invoice-scoped: revenue_mode is a tenant-level setting that can
+     * switch mid-life (allowed at fiscal-year rollover). Keying receipts on
+     * the CURRENT mode would post cash-style entries for an old accrual
+     * invoice — double-counting revenue the sale journal already recognized
+     * and never relieving AR — or accrual-style entries for a cash invoice,
+     * crediting an AR that was never debited. postSaleJournal() keeps using
+     * the tenant mode so NEW invoices follow the current setting.
+     *
      * Cash-mode partial-payment formula (VAT proportional, discount netted —
      * see class docblock for the worked example):
      *   taxOnPayment     = total > 0 ? round(tax * (amount / total), 2) : 0
@@ -200,7 +211,33 @@ class MedicalBillingJournalService
 
         $instituteId = (int) $invoice->institute_id;
         $branchId = $invoice->branch_id !== null ? (int) $invoice->branch_id : null;
-        $revenueMode = $this->getRevenueMode($instituteId);
+
+        // Invoice-scoped mode decision (Gap 2 / Option 4): a sale journal on
+        // the invoice means the sale was accrued at creation, so this receipt
+        // must relieve AR. journal_id null means revenue was never recognized
+        // (cash invoice), so the receipt recognizes it now. The tenant's
+        // current revenue_mode still governs NEW invoices via postSaleJournal
+        // and must not leak into receipts of invoices created under the
+        // other mode.
+        $wasAccrual = false;
+        if ($invoice->journal_id !== null) {
+            $saleExists = Journal::where('id', $invoice->journal_id)
+                ->where('type', 'sale')
+                ->exists();
+            if ($saleExists) {
+                $wasAccrual = true;
+            } else {
+                // Edge (d): journal_id points at a non-sale journal (legacy
+                // corruption). Treat as cash — revenue is only ever claimed
+                // once — and surface the anomaly.
+                Log::warning('MedicalBillingJournalService: invoice journal_id is not a sale journal; posting cash-style receipt', [
+                    'institute_id' => $instituteId,
+                    'invoice_id' => (int) $invoice->id,
+                    'payment_id' => (int) $payment->id,
+                    'journal_id' => (int) $invoice->journal_id,
+                ]);
+            }
+        }
 
         // Resolve debit account by payment method (fail-soft)
         $debit = $this->debitAccountFor($payment, $instituteId, $branchId);
@@ -211,7 +248,7 @@ class MedicalBillingJournalService
         $entries = [];
         $ctx = ['invoice_id' => (int) $invoice->id, 'payment_id' => (int) $payment->id];
 
-        if ($revenueMode === 'accrual') {
+        if ($wasAccrual) {
             // Accrual: Dr Cash/TPA-receivable (net), Cr AR (full payment amount)
             $ar = $this->requireAccount($instituteId, '1200.1', $branchId, $ctx);
             if ($ar === null) {

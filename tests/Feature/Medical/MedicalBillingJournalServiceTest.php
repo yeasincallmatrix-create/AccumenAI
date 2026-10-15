@@ -2,12 +2,21 @@
 
 namespace Tests\Feature\Medical;
 
-use App\Models\Country;
-use App\Models\Institute;
-use App\Models\Role;
-use App\Models\ChartOfAccount;
 use App\Models\AccountGroup;
+use App\Models\ChartOfAccount;
+use App\Models\Country;
+use App\Models\FiscalYear;
+use App\Models\Institute;
+use App\Models\InstituteUser;
+use App\Models\Journal;
+use App\Models\Medical\Invoice;
+use App\Models\Medical\Patient;
+use App\Models\Medical\Payment;
+use App\Models\Role;
+use App\Models\Setting;
+use App\Services\Medical\BillingService;
 use App\Services\Medical\MedicalBillingJournalService;
+use App\Services\MedicalModuleActivator;
 use App\Services\ModuleAccessService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
@@ -26,8 +35,8 @@ class MedicalBillingJournalServiceTest extends TestCase
         );
 
         $this->institute = Institute::create([
-            'name' => 'Test Hospital ' . uniqid(),
-            'slug' => 'test-hospital-' . uniqid(),
+            'name' => 'Test Hospital '.uniqid(),
+            'slug' => 'test-hospital-'.uniqid(),
             'country' => $country->name,
             'country_id' => $country->id,
             'industry' => 'healthcare',
@@ -38,23 +47,23 @@ class MedicalBillingJournalServiceTest extends TestCase
         app(ModuleAccessService::class)->enableModule($this->institute, 'medical');
 
         $role = Role::where('slug', 'institute-owner')->firstOrFail();
-        $this->owner = \App\Models\InstituteUser::create([
+        $this->owner = InstituteUser::create([
             'institute_id' => $this->institute->id,
             'role_id' => $role->id,
             'first_name' => 'Test',
             'last_name' => 'Owner',
-            'email' => 'test-owner-' . uniqid() . '@example.test',
-            'phone' => '01700' . rand(100000, 999999),
+            'email' => 'test-owner-'.uniqid().'@example.test',
+            'phone' => '01700'.rand(100000, 999999),
             'password_hash' => bcrypt('secret12345'),
             'status' => 'active',
         ]);
 
-        $this->patient = \App\Models\Medical\Patient::create([
+        $this->patient = Patient::create([
             'institute_id' => $this->institute->id,
-            'mr_number' => 'MR-' . uniqid(),
+            'mr_number' => 'MR-'.uniqid(),
             'first_name' => 'Test',
             'last_name' => 'Patient',
-            'phone' => '017' . rand(10000000, 99999999),
+            'phone' => '017'.rand(10000000, 99999999),
             'gender' => 'male',
             'date_of_birth' => '1990-01-01',
         ]);
@@ -129,10 +138,10 @@ class MedicalBillingJournalServiceTest extends TestCase
 
     protected function createFiscalYear(): void
     {
-        \App\Models\FiscalYear::firstOrCreate(
+        FiscalYear::firstOrCreate(
             ['institute_id' => $this->institute->id, 'branch_id' => null, 'is_current' => true],
             [
-                'name' => 'FY ' . date('Y'),
+                'name' => 'FY '.date('Y'),
                 'start_date' => date('Y-01-01'),
                 'end_date' => date('Y-12-31'),
                 'status' => 'open',
@@ -143,11 +152,11 @@ class MedicalBillingJournalServiceTest extends TestCase
     public function test_service_instantiates_and_reads_settings(): void
     {
         // Activate medical module (seeds billing settings)
-        app(\App\Services\MedicalModuleActivator::class)->activateForHealthcare($this->institute);
+        app(MedicalModuleActivator::class)->activateForHealthcare($this->institute);
 
         // Verify settings are readable
-        $revenueMode = \App\Models\Setting::get("medical.billing.revenue_mode.{$this->institute->id}");
-        $autoPost = \App\Models\Setting::get("medical.billing.auto_post.{$this->institute->id}");
+        $revenueMode = Setting::get("medical.billing.revenue_mode.{$this->institute->id}");
+        $autoPost = Setting::get("medical.billing.auto_post.{$this->institute->id}");
 
         $this->assertEquals('accrual', $revenueMode);
         $this->assertEquals('1', $autoPost);
@@ -159,17 +168,17 @@ class MedicalBillingJournalServiceTest extends TestCase
     public function test_post_salejournal_returns_null_on_cash_mode(): void
     {
         // Force cash mode
-        \App\Models\Setting::set("medical.billing.revenue_mode.{$this->institute->id}", 'cash');
-        \App\Models\Setting::set("medical.billing.auto_post.{$this->institute->id}", '1');
+        Setting::set("medical.billing.revenue_mode.{$this->institute->id}", 'cash');
+        Setting::set("medical.billing.auto_post.{$this->institute->id}", '1');
 
-        $invoice = \App\Services\Medical\BillingService::computeTotals([
+        $invoice = BillingService::computeTotals([
             ['amount' => 100, 'quantity' => 1, 'discount' => 0],
         ]);
 
-        $medicalInvoice = \App\Models\Medical\Invoice::create([
+        $medicalInvoice = Invoice::create([
             'institute_id' => $this->institute->id,
             'patient_id' => $this->patient->id,
-            'invoice_number' => 'TEST-' . uniqid(),
+            'invoice_number' => 'TEST-'.uniqid(),
             'invoice_date' => now()->toDateString(),
             'due_date' => now()->addDays(15)->toDateString(),
             'type' => 'opd',
@@ -189,17 +198,17 @@ class MedicalBillingJournalServiceTest extends TestCase
     public function test_post_salejournal_creates_journal_in_accrual_mode(): void
     {
         // Ensure accrual mode
-        \App\Models\Setting::set("medical.billing.revenue_mode.{$this->institute->id}", 'accrual');
-        \App\Models\Setting::set("medical.billing.auto_post.{$this->institute->id}", '1');
+        Setting::set("medical.billing.revenue_mode.{$this->institute->id}", 'accrual');
+        Setting::set("medical.billing.auto_post.{$this->institute->id}", '1');
 
-        $invoice = \App\Services\Medical\BillingService::computeTotals([
+        $invoice = BillingService::computeTotals([
             ['amount' => 100, 'quantity' => 1, 'discount' => 0],
         ]);
 
-        $medicalInvoice = \App\Models\Medical\Invoice::create([
+        $medicalInvoice = Invoice::create([
             'institute_id' => $this->institute->id,
             'patient_id' => $this->patient->id,
-            'invoice_number' => 'TEST-' . uniqid(),
+            'invoice_number' => 'TEST-'.uniqid(),
             'invoice_date' => now()->toDateString(),
             'due_date' => now()->addDays(15)->toDateString(),
             'type' => 'opd',
@@ -220,13 +229,13 @@ class MedicalBillingJournalServiceTest extends TestCase
 
     public function test_reverse_invoice_journals_reverses_sale_and_all_receipts(): void
     {
-        \App\Models\Setting::set("medical.billing.revenue_mode.{$this->institute->id}", 'accrual');
-        \App\Models\Setting::set("medical.billing.auto_post.{$this->institute->id}", '1');
+        Setting::set("medical.billing.revenue_mode.{$this->institute->id}", 'accrual');
+        Setting::set("medical.billing.auto_post.{$this->institute->id}", '1');
 
-        $medicalInvoice = \App\Models\Medical\Invoice::create([
+        $medicalInvoice = Invoice::create([
             'institute_id' => $this->institute->id,
             'patient_id' => $this->patient->id,
-            'invoice_number' => 'TEST-' . uniqid(),
+            'invoice_number' => 'TEST-'.uniqid(),
             'invoice_date' => now()->toDateString(),
             'due_date' => now()->addDays(15)->toDateString(),
             'type' => 'opd',
@@ -245,7 +254,7 @@ class MedicalBillingJournalServiceTest extends TestCase
 
         $payments = [];
         foreach ([400, 600] as $amount) {
-            $payment = \App\Models\Medical\Payment::create([
+            $payment = Payment::create([
                 'institute_id' => $this->institute->id,
                 'invoice_id' => $medicalInvoice->id,
                 'amount' => $amount,
@@ -266,9 +275,9 @@ class MedicalBillingJournalServiceTest extends TestCase
         // a) + b) sale + ALL receipts reversed, c) second run is a no-op
         $this->service->reverseInvoiceJournals($medicalInvoice->fresh(), (int) $this->owner->id);
 
-        $this->assertEquals('reversed', \App\Models\Journal::find($saleId)->status);
+        $this->assertEquals('reversed', Journal::find($saleId)->status);
         foreach ($receiptIds as $receiptId) {
-            $this->assertEquals('reversed', \App\Models\Journal::find($receiptId)->status);
+            $this->assertEquals('reversed', Journal::find($receiptId)->status);
         }
 
         // d) FK columns nulled
@@ -284,14 +293,14 @@ class MedicalBillingJournalServiceTest extends TestCase
 
     public function test_cash_mode_partial_payment_allocates_revenue_and_vat_correctly(): void
     {
-        \App\Models\Setting::set("medical.billing.revenue_mode.{$this->institute->id}", 'cash');
-        \App\Models\Setting::set("medical.billing.auto_post.{$this->institute->id}", '1');
+        Setting::set("medical.billing.revenue_mode.{$this->institute->id}", 'cash');
+        Setting::set("medical.billing.auto_post.{$this->institute->id}", '1');
 
         // subtotal=1000, discount=100, tax=50, total=950; payment=500
-        $medicalInvoice = \App\Models\Medical\Invoice::create([
+        $medicalInvoice = Invoice::create([
             'institute_id' => $this->institute->id,
             'patient_id' => $this->patient->id,
-            'invoice_number' => 'TEST-' . uniqid(),
+            'invoice_number' => 'TEST-'.uniqid(),
             'invoice_date' => now()->toDateString(),
             'due_date' => now()->addDays(15)->toDateString(),
             'type' => 'opd',
@@ -304,7 +313,7 @@ class MedicalBillingJournalServiceTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $payment = \App\Models\Medical\Payment::create([
+        $payment = Payment::create([
             'institute_id' => $this->institute->id,
             'invoice_id' => $medicalInvoice->id,
             'amount' => 500,
@@ -345,19 +354,19 @@ class MedicalBillingJournalServiceTest extends TestCase
         $this->assertEquals('4300.4', $this->service->incomeAccountFor('surgery', $instituteId)->code);
 
         // Invoice-model path resolves the same way
-        $invoice = new \App\Models\Medical\Invoice(['institute_id' => $instituteId, 'type' => 'lab']);
+        $invoice = new Invoice(['institute_id' => $instituteId, 'type' => 'lab']);
         $this->assertEquals('4300.2', $this->service->incomeAccountFor($invoice)->code);
     }
 
     public function test_tpa_receipt_journal_debits_insurance_receivable_not_cash(): void
     {
-        \App\Models\Setting::set("medical.billing.revenue_mode.{$this->institute->id}", 'accrual');
-        \App\Models\Setting::set("medical.billing.auto_post.{$this->institute->id}", '1');
+        Setting::set("medical.billing.revenue_mode.{$this->institute->id}", 'accrual');
+        Setting::set("medical.billing.auto_post.{$this->institute->id}", '1');
 
-        $medicalInvoice = \App\Models\Medical\Invoice::create([
+        $medicalInvoice = Invoice::create([
             'institute_id' => $this->institute->id,
             'patient_id' => $this->patient->id,
-            'invoice_number' => 'TEST-' . uniqid(),
+            'invoice_number' => 'TEST-'.uniqid(),
             'invoice_date' => now()->toDateString(),
             'due_date' => now()->addDays(15)->toDateString(),
             'type' => 'opd',
@@ -370,7 +379,12 @@ class MedicalBillingJournalServiceTest extends TestCase
             'status' => 'pending',
         ]);
 
-        $payment = \App\Models\Medical\Payment::create([
+        // Option 4: receipts follow the INVOICE's mode — a genuine accrual
+        // invoice must carry its sale journal or the receipt posts cash-style.
+        $this->assertNotNull($this->service->postSaleJournal($medicalInvoice, (int) $this->owner->id));
+        $this->assertNotNull($medicalInvoice->fresh()->journal_id);
+
+        $payment = Payment::create([
             'institute_id' => $this->institute->id,
             'invoice_id' => $medicalInvoice->id,
             'amount' => 600,
@@ -391,7 +405,7 @@ class MedicalBillingJournalServiceTest extends TestCase
         $this->assertEquals(600.0, round((float) $byCode['1200.1']->credit, 2));
 
         // Cash payments still debit cash
-        $cashPayment = \App\Models\Medical\Payment::create([
+        $cashPayment = Payment::create([
             'institute_id' => $this->institute->id,
             'invoice_id' => $medicalInvoice->id,
             'amount' => 100,
@@ -408,16 +422,16 @@ class MedicalBillingJournalServiceTest extends TestCase
 
     public function test_fail_soft_when_tenant_has_no_income_account(): void
     {
-        \App\Models\Setting::set("medical.billing.revenue_mode.{$this->institute->id}", 'accrual');
+        Setting::set("medical.billing.revenue_mode.{$this->institute->id}", 'accrual');
 
         ChartOfAccount::where('institute_id', $this->institute->id)
             ->where('type', 'income')
             ->delete();
 
-        $medicalInvoice = \App\Models\Medical\Invoice::create([
+        $medicalInvoice = Invoice::create([
             'institute_id' => $this->institute->id,
             'patient_id' => $this->patient->id,
-            'invoice_number' => 'TEST-' . uniqid(),
+            'invoice_number' => 'TEST-'.uniqid(),
             'invoice_date' => now()->toDateString(),
             'due_date' => now()->addDays(15)->toDateString(),
             'type' => 'opd',
@@ -436,16 +450,16 @@ class MedicalBillingJournalServiceTest extends TestCase
 
     public function test_fail_soft_when_tenant_has_no_receivable_account(): void
     {
-        \App\Models\Setting::set("medical.billing.revenue_mode.{$this->institute->id}", 'accrual');
+        Setting::set("medical.billing.revenue_mode.{$this->institute->id}", 'accrual');
 
         ChartOfAccount::where('institute_id', $this->institute->id)
             ->where('code', '1200.1')
             ->delete();
 
-        $medicalInvoice = \App\Models\Medical\Invoice::create([
+        $medicalInvoice = Invoice::create([
             'institute_id' => $this->institute->id,
             'patient_id' => $this->patient->id,
-            'invoice_number' => 'TEST-' . uniqid(),
+            'invoice_number' => 'TEST-'.uniqid(),
             'invoice_date' => now()->toDateString(),
             'due_date' => now()->addDays(15)->toDateString(),
             'type' => 'opd',
