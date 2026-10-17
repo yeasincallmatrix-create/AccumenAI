@@ -203,7 +203,7 @@ class OpdFeeFlowTest extends TestCase
         $this->assertSame(500.0, $receiptTotals['2400.3']);
         $this->assertCount(2, $receipt->entries()->get());
 
-        $this->assertSame('completed', $appointment->status);
+        $this->assertSame('checked_in', $appointment->status);
     }
 
     public function test_post_visit_doctor_complete_posts_direct_collection(): void
@@ -226,7 +226,7 @@ class OpdFeeFlowTest extends TestCase
         $appointment->refresh();
         $this->assertSame($journal->id, (int) $appointment->fee_receipt_journal_id);
         $this->assertNull($appointment->fee_recognition_journal_id);
-        $this->assertSame('completed', $appointment->status);
+        $this->assertSame('checked_in', $appointment->status);
     }
 
     public function test_pre_visit_start_only_keeps_liability_no_income(): void
@@ -335,5 +335,56 @@ class OpdFeeFlowTest extends TestCase
             0,
             QueueAuditLog::where('appointment_id', $appointment->id)->count()
         );
+    }
+
+    public function test_collect_fee_rx_continue_lands_on_prescription_create_without_completing_visit(): void
+    {
+        // Auto-continue chain: the Rx form's fee popup posts redirect_to
+        // (prescriptions/create?patient_id=…&fee_appointment_id=…&rx_continue=1),
+        // the controller carries doctor_id into it, and the landing page
+        // renders — while the appointment stays open (payment alone never
+        // completes a visit).
+        $this->createDoctor(preVisit: false);
+        $appointment = $this->checkedInAppointment();
+
+        $this->post(route('medical.appointments.start', $appointment))
+            ->assertSessionHasNoErrors();
+        $this->assertSame('in_progress', $appointment->fresh()->status);
+
+        $landing = route('medical.prescriptions.create', [
+            'patient_id' => $appointment->patient_id,
+            'fee_appointment_id' => $appointment->id,
+            'rx_continue' => 1,
+        ]);
+
+        $response = $this->post(route('medical.appointments.collect-fee', $appointment), [
+            'action' => 'collect',
+            'redirect_to' => $landing,
+        ]);
+        $response->assertSessionHasNoErrors();
+
+        // Fee on record, direct-collection journal posted…
+        $appointment->refresh();
+        $this->assertNotNull($appointment->fee_collected_at);
+        $journal = Journal::find($appointment->fee_receipt_journal_id);
+        $this->assertNotNull($journal);
+        $this->assertSame('posted', $journal->status);
+
+        // …but the visit is untouched: payment never completes it.
+        $this->assertSame('in_progress', $appointment->status);
+        $this->assertSame(
+            1,
+            $this->instituteJournals()->where('type', 'receipt')->count()
+        );
+
+        // The landing URL keeps the chain params and gains doctor_id.
+        $expected = $landing.'&doctor_id='.$appointment->doctor_id;
+        $response->assertRedirect($expected);
+        $this->assertStringContainsString('rx_continue=1', $expected);
+        $this->assertStringContainsString('patient_id='.$appointment->patient_id, $expected);
+        $this->assertStringContainsString('fee_appointment_id='.$appointment->id, $expected);
+
+        // And the chain landing page actually renders for the Rx form.
+        $this->get($expected)->assertOk();
     }
 }

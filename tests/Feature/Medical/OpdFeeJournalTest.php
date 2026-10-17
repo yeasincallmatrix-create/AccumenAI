@@ -163,7 +163,7 @@ class OpdFeeJournalTest extends TestCase
         $appointment->refresh();
         $this->assertNotNull($appointment->journal_id);
         $this->assertSame($journal->id, (int) $appointment->journal_id);
-        $this->assertSame('completed', $appointment->status);
+        $this->assertSame('checked_in', $appointment->status);
         $this->assertSame(500.0, (float) $appointment->fee_collected_amount);
     }
 
@@ -220,7 +220,7 @@ class OpdFeeJournalTest extends TestCase
             Journal::where('institute_id', $this->institute->id)->where('type', 'receipt')->count()
         );
         $this->assertSame($journalId, (int) $appointment->fresh()->journal_id);
-        $this->assertSame('completed', $appointment->fresh()->status);
+        $this->assertSame('checked_in', $appointment->fresh()->status);
     }
 
     public function test_opd_fee_rolls_back_when_account_missing(): void
@@ -261,7 +261,7 @@ class OpdFeeJournalTest extends TestCase
 
         $appointment->refresh();
         $this->assertNotNull($appointment->fee_collected_at);
-        $this->assertSame('completed', $appointment->status);
+        $this->assertSame('checked_in', $appointment->status);
         $this->assertNull($appointment->journal_id);
         $this->assertSame(
             0,

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Medical;
 
+use App\Console\Commands\QueueRollover;
 use App\Http\Controllers\Medical\AppointmentController;
 use App\Models\ChartOfAccount;
 use App\Models\Institute;
@@ -90,7 +91,7 @@ class OpdFeeRefundButtonTest extends TestCase
         ]);
     }
 
-    private function checkedInAppointment(): Appointment
+    private function checkedInAppointment(?string $onDate = null): Appointment
     {
         $patient = Patient::create([
             'institute_id' => $this->institute->id,
@@ -106,7 +107,7 @@ class OpdFeeRefundButtonTest extends TestCase
             'institute_id' => $this->institute->id,
             'patient_id' => $patient->id,
             'doctor_id' => $this->doctorUser->id,
-            'appointment_date' => $this->date,
+            'appointment_date' => $onDate ?? $this->date,
             'appointment_time' => '10:00',
             'serial_number' => 1,
             'status' => 'checked_in',
@@ -255,5 +256,68 @@ class OpdFeeRefundButtonTest extends TestCase
         $this->assertIsString($statusMessage);
         $this->assertStringContainsString('cancelled', $statusMessage);
         $this->assertStringNotContainsString('Refund', $statusMessage);
+    }
+
+    public function test_rollover_leaves_a_refunded_appointment_untouched(): void
+    {
+        // A refunded row is terminal (cancelled, fee stamp cleared, journals
+        // reversed). End-of-day QueueRollover must never carry it forward,
+        // auto-complete it, reverse its journals a second time, or write a
+        // rollover audit row for it — the sweep query only selects
+        // checked_in / in_progress / scheduled statuses.
+        $yesterday = today()->subDay()->format('Y-m-d');
+        $this->createDoctor(preVisit: true);
+        $appointment = $this->checkedInAppointment($yesterday);
+        $this->startFee($appointment);
+
+        $receipt = Journal::find($appointment->fresh()->fee_receipt_journal_id);
+        $this->assertNotNull($receipt);
+
+        $this->post(route('medical.appointments.refund', $appointment))
+            ->assertSessionHasNoErrors();
+
+        $appointment->refresh();
+        $this->assertSame('cancelled', $appointment->status);
+        $this->assertSame('reversed', $receipt->fresh()->status);
+
+        $journalsAfterRefund = Journal::where('institute_id', $this->institute->id)->count();
+        $reversalsAfterRefund = Journal::where('institute_id', $this->institute->id)
+            ->where('reversal_of', $receipt->id)
+            ->count();
+        $this->assertSame(1, $reversalsAfterRefund);
+
+        $this->artisan(QueueRollover::class, [
+            '--date' => $yesterday,
+            '--institute' => $this->institute->id,
+        ])->assertSuccessful();
+
+        // Row untouched: still cancelled, fee stamp still cleared.
+        $appointment->refresh();
+        $this->assertSame('cancelled', $appointment->status);
+        $this->assertNull($appointment->fee_collected_at);
+        $this->assertNull($appointment->fee_collected_amount);
+        $this->assertAllFksNull($appointment);
+        $this->assertSame($yesterday, $appointment->appointment_date->format('Y-m-d'));
+
+        // Money trail unchanged: no second reversal, no new journals.
+        $this->assertSame($journalsAfterRefund, Journal::where('institute_id', $this->institute->id)->count());
+        $this->assertSame(1, Journal::where('institute_id', $this->institute->id)
+            ->where('reversal_of', $receipt->id)
+            ->count());
+        $this->assertSame('reversed', $receipt->fresh()->status);
+
+        // No rollover-path audit rows for the refunded visit; the refund
+        // audit survives as the only sweep-related entry.
+        $this->assertSame(
+            0,
+            QueueAuditLog::where('institute_id', $this->institute->id)
+                ->where('appointment_id', $appointment->id)
+                ->whereIn('action', ['rollover', 'rollover_completed', 'auto_cancelled', 'fee_reversed'])
+                ->count()
+        );
+        QueueAuditLog::where('institute_id', $this->institute->id)
+            ->where('appointment_id', $appointment->id)
+            ->where('action', 'fee_refunded')
+            ->sole();
     }
 }

@@ -201,9 +201,9 @@ class OpdFeeCancelReversalTest extends TestCase
 
     public function test_destroy_reverses_both_receipt_and_recognition(): void
     {
-        // Both journals exist only after Complete, which sets status
-        // 'completed' — the cancel route guards active-queue rows only, so
-        // the reachable path for a completed visit is destroy (admin-gated).
+        // startFee + completeFee posts both journals; Phase 1 no longer flips
+        // the row to 'completed' at fee time, so destroy (admin-gated) is
+        // exercised here as the path that must reverse BOTH journals.
         $this->createDoctor(preVisit: true);
         $appointment = $this->checkedInAppointment();
         $this->startFee($appointment);

@@ -9,6 +9,7 @@ use App\Models\Medical\Patient;
 use App\Models\Membership;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Medical\NumberSequenceService;
 use App\Support\Workspace;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -130,7 +131,7 @@ class MedicalPhase1Test extends TestCase
         // Display shape shortens the year (MR-2026-00002 → MR-26-00002).
         $this->assertSame(
             'MR-'.substr(now()->format('Y'), 2).'-'.substr($second->mr_number, -5),
-            \App\Services\Medical\NumberSequenceService::display($second->mr_number)
+            NumberSequenceService::display($second->mr_number)
         );
     }
 
@@ -242,7 +243,16 @@ class MedicalPhase1Test extends TestCase
         $this->get(route('medical.appointments.index', ['date' => $date]))->assertOk();
         $this->get(route('medical.appointments.show', $appointment))->assertOk();
 
+        // The queue route is a permalink that redirects onto the index's
+        // queue tab (a4db4ded); assert the landing renders the same badge.
         $this->get(route('medical.appointments.queue', ['doctor_id' => $this->doctor->id, 'date' => $date]))
+            ->assertRedirect();
+
+        $this->get(route('medical.appointments.index', [
+            'tab' => 'queue',
+            'q_doctor' => $this->doctor->id,
+            'q_date' => $date,
+        ]))
             ->assertOk()
             ->assertSee('Total: 1');
 
