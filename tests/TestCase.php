@@ -6,7 +6,10 @@ use App\Models\ApprovalWorkflow;
 use App\Models\AssessmentType;
 use App\Models\ChartOfAccount;
 use App\Models\Component;
+use App\Models\CrmLeadSource;
+use App\Models\CrmLeadStatus;
 use App\Models\Currency;
+use App\Models\DocumentCategory;
 use App\Models\ExamType;
 use App\Models\FiscalYear;
 use App\Models\Industry;
@@ -15,15 +18,32 @@ use App\Models\InstituteUser;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\SubscriptionPackage;
+use App\Models\Theme;
 use App\Support\BranchContext;
 use App\Support\TenantContext;
-use Database\Seeders\CurrencySeeder;
-use Database\Seeders\IndustryTaxonomyTestSeeder;
-use Database\Seeders\RoleSeeder;
-use Database\Seeders\SystemRoleSeeder;
 use Database\Seeders\AccountingPermissionSeeder;
+use Database\Seeders\AiToolPermissionSeeder;
+use Database\Seeders\CountryTaxConfigSeeder;
+use Database\Seeders\CrmLeadStatusSeeder;
+use Database\Seeders\CurrencySeeder;
+use Database\Seeders\DocumentCategorySeeder;
+use Database\Seeders\IndustryTaxonomyTestSeeder;
+use Database\Seeders\ModuleRegistrySeeder;
+use Database\Seeders\ModuleTogglePermissionSeeder;
+use Database\Seeders\PackageSubModuleMappingSeeder;
+use Database\Seeders\PurchaseSubModuleSeeder;
+use Database\Seeders\RolePermissionSeeder;
+use Database\Seeders\RoleSeeder;
+use Database\Seeders\SalesPurchaseFeatureSeeder;
+use Database\Seeders\SalesPurchasePermissionSeeder;
+use Database\Seeders\SalesSubModuleSeeder;
+use Database\Seeders\SystemRoleSeeder;
+use Database\Seeders\TaxDeductionRuleSeeder;
 use Database\Seeders\TaxPermissionSeeder;
 use Database\Seeders\TestInstituteFixtureSeeder;
+use Database\Seeders\ThemeSeeder;
+use Illuminate\Database\DeadlockException;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -63,23 +83,23 @@ abstract class TestCase extends BaseTestCase
 
         // Module registry + package modules (idempotent — updateOrCreate).
         if (Schema::hasTable('module_registry')) {
-            (new \Database\Seeders\ModuleRegistrySeeder)->run();
-            (new \Database\Seeders\SalesSubModuleSeeder)->run();
-            (new \Database\Seeders\PurchaseSubModuleSeeder)->run();
-            (new \Database\Seeders\PackageSubModuleMappingSeeder)->run();
+            (new ModuleRegistrySeeder)->run();
+            (new SalesSubModuleSeeder)->run();
+            (new PurchaseSubModuleSeeder)->run();
+            (new PackageSubModuleMappingSeeder)->run();
             if (Schema::hasTable('feature_registry')) {
-                (new \Database\Seeders\SalesPurchaseFeatureSeeder)->run();
+                (new SalesPurchaseFeatureSeeder)->run();
             }
         }
 
         // TDS deduction rules (idempotent — updateOrInsert).
         if (Schema::hasTable('tax_deduction_rules')) {
-            (new \Database\Seeders\TaxDeductionRuleSeeder)->run();
+            (new TaxDeductionRuleSeeder)->run();
         }
 
         // Phase J.3: country tax configs (idempotent — updateOrInsert).
         if (Schema::hasTable('country_tax_configs')) {
-            (new \Database\Seeders\CountryTaxConfigSeeder)->run();
+            (new CountryTaxConfigSeeder)->run();
         }
 
         // B82: global reference rows tests resolve via firstOrFail()
@@ -188,13 +208,13 @@ abstract class TestCase extends BaseTestCase
         // Slug-specific guard: seed when the anchor rows tests resolve
         // are missing, even if the table already holds other rows.
         if (Schema::hasTable('document_categories')
-            && \App\Models\DocumentCategory::where('slug', 'photo')->doesntExist()) {
-            (new \Database\Seeders\DocumentCategorySeeder)->run();
+            && DocumentCategory::where('slug', 'photo')->doesntExist()) {
+            (new DocumentCategorySeeder)->run();
         }
 
         if (Schema::hasTable('crm_lead_statuses')
-            && \App\Models\CrmLeadStatus::where('is_default', true)->doesntExist()) {
-            (new \Database\Seeders\CrmLeadStatusSeeder)->run();
+            && CrmLeadStatus::where('is_default', true)->doesntExist()) {
+            (new CrmLeadStatusSeeder)->run();
         }
 
         // B87: ensure CRM lead sources tests resolve by slug exist
@@ -206,15 +226,15 @@ abstract class TestCase extends BaseTestCase
                 ['slug' => 'walk_in', 'name' => 'Walk-in', 'display_order' => 1],
                 ['slug' => 'referral', 'name' => 'Referral', 'display_order' => 2],
             ] as $row) {
-                if (\App\Models\CrmLeadSource::where('slug', $row['slug'])->doesntExist()) {
+                if (CrmLeadSource::where('slug', $row['slug'])->doesntExist()) {
                     try {
-                        \App\Models\CrmLeadSource::firstOrCreate(
+                        CrmLeadSource::firstOrCreate(
                             ['slug' => $row['slug']],
                             ['name' => $row['name'], 'display_order' => $row['display_order'], 'status' => 'active'],
                         );
-                    } catch (\Illuminate\Database\QueryException $e) {
+                    } catch (QueryException $e) {
                         // Parallel worker won the race — row exists now.
-                        if (\App\Models\CrmLeadSource::where('slug', $row['slug'])->doesntExist()) {
+                        if (CrmLeadSource::where('slug', $row['slug'])->doesntExist()) {
                             throw $e;
                         }
                     }
@@ -225,8 +245,8 @@ abstract class TestCase extends BaseTestCase
         // Slug-specific guard: the themes table ships with committed rows
         // that lack ocean-blue, so count() === 0 would never fire.
         if (Schema::hasTable('themes')
-            && \App\Models\Theme::where('slug', 'ocean-blue')->doesntExist()) {
-            (new \Database\Seeders\ThemeSeeder)->run();
+            && Theme::where('slug', 'ocean-blue')->doesntExist()) {
+            (new ThemeSeeder)->run();
         }
     }
 
@@ -299,8 +319,8 @@ abstract class TestCase extends BaseTestCase
         if (Permission::where('slug', 'finance.view')->doesntExist()
             || Permission::where('slug', 'crm.view')->doesntExist()) {
             try {
-                (new \Database\Seeders\AiToolPermissionSeeder)->run();
-            } catch (\Illuminate\Database\QueryException | \Illuminate\Database\DeadlockException $e) {
+                (new AiToolPermissionSeeder)->run();
+            } catch (QueryException|DeadlockException $e) {
                 if (Permission::where('slug', 'finance.view')->doesntExist()
                     || Permission::where('slug', 'crm.view')->doesntExist()) {
                     throw $e;
@@ -311,8 +331,8 @@ abstract class TestCase extends BaseTestCase
         if (Permission::where('slug', 'institute.settings.module.view')->doesntExist()
             || Permission::where('slug', 'institute.settings.module.toggle')->doesntExist()) {
             try {
-                (new \Database\Seeders\ModuleTogglePermissionSeeder)->run();
-            } catch (\Illuminate\Database\QueryException | \Illuminate\Database\DeadlockException $e) {
+                (new ModuleTogglePermissionSeeder)->run();
+            } catch (QueryException|DeadlockException $e) {
                 if (Permission::where('slug', 'institute.settings.module.view')->doesntExist()
                     || Permission::where('slug', 'institute.settings.module.toggle')->doesntExist()) {
                     throw $e;
@@ -323,8 +343,8 @@ abstract class TestCase extends BaseTestCase
         if (Permission::where('slug', 'sales.view')->doesntExist()
             || Permission::where('slug', 'purchase.view')->doesntExist()) {
             try {
-                (new \Database\Seeders\SalesPurchasePermissionSeeder)->run();
-            } catch (\Illuminate\Database\QueryException | \Illuminate\Database\DeadlockException $e) {
+                (new SalesPurchasePermissionSeeder)->run();
+            } catch (QueryException|DeadlockException $e) {
                 if (Permission::where('slug', 'sales.view')->doesntExist()
                     || Permission::where('slug', 'purchase.view')->doesntExist()) {
                     throw $e;
@@ -335,8 +355,8 @@ abstract class TestCase extends BaseTestCase
         // Attach sales/purchase grants to owner/admin/manager/accountant roles.
         // RolePermissionSeeder is idempotent (array_diff) — safe every setUp.
         try {
-            (new \Database\Seeders\RolePermissionSeeder)->run();
-        } catch (\Illuminate\Database\QueryException | \Illuminate\Database\DeadlockException $e) {
+            (new RolePermissionSeeder)->run();
+        } catch (QueryException|DeadlockException $e) {
             // parallel worker may race inserts — only rethrow if grants missing
             if (DB::table('role_permissions')
                 ->whereIn('role_id', DB::table('roles')->whereIn('slug', ['institute-owner'])->whereNull('institute_id')->pluck('id'))
@@ -344,6 +364,20 @@ abstract class TestCase extends BaseTestCase
                 ->doesntExist()) {
                 throw $e;
             }
+        }
+
+        // Medical Master Complete (Phase 2b): ensure the slug row exists so
+        // permission checks in feature tests resolve against a real row.
+        // ONLY the one row — running the full MedicalPermissionSeeder here
+        // would re-run inside every test's DatabaseTransactions rollback.
+        // Grants are created per-test by the fixtures that need them
+        // (tests/Feature/MedicalQueueActionsTest master-complete tests);
+        // owner bypass + receptionist denial work with or without grants.
+        if (Permission::where('slug', 'medical_appointments.master_complete')->doesntExist()) {
+            Permission::firstOrCreate(
+                ['slug' => 'medical_appointments.master_complete'],
+                ['module' => 'medical_appointments', 'name' => 'Master Complete Visits']
+            );
         }
     }
 

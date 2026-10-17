@@ -11,6 +11,7 @@ use App\Services\Medical\QueueManager as QueueManagerService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * End-of-day queue rollover (per doctor).
@@ -19,6 +20,11 @@ use Illuminate\Support\Facades\DB;
  *   working day with a fresh serial, restarted as plain appointments
  *   (status scheduled — yesterday's check-in never travels forward).
  *   One audit row (action=rollover) each.
+ * - EXCEPTION: a post-visit doctor's paid in_progress row (fee_collected_at
+ *   set, collect_fee_before_visit = false) is CLOSED as completed instead —
+ *   the consultation ran and the money is on record, so there is nothing to
+ *   carry and nothing to reverse (audit action=rollover_completed). Pre-visit
+ *   paid rows keep the reverse+carry path (money in, service not delivered).
  * - scheduled appointments that never checked in are auto-cancelled with an
  *   audit row (action=auto_cancelled).
  * - completed / cancelled / no_show rows are never touched.
@@ -72,6 +78,8 @@ class QueueRollover extends Command
 
         $moved = 0;
         $cancelled = 0;
+        $completed = 0;
+        $doctorProfiles = [];
 
         foreach ($instituteIds as $instituteId) {
             $rows = Appointment::where('institute_id', $instituteId)
@@ -82,6 +90,38 @@ class QueueRollover extends Command
                 ->get();
 
             foreach ($rows as $appointment) {
+                // Phase 1b: a post-visit doctor's paid in_progress row means
+                // the consultation happened and the money is on record —
+                // close it as completed instead of carrying it forward (or
+                // auto-cancelling it in the duplicate-slot branch below) and
+                // never reverse its fee. Pre-visit paid rows keep the old
+                // reverse+carry / cancel+reverse path: money in, service not
+                // delivered. Hoisted above the duplicate check on purpose.
+                if ($appointment->fee_collected_at !== null
+                    && $appointment->status === 'in_progress'
+                    && ! $this->collectsFeeBeforeVisit($appointment, $doctorProfiles)) {
+                    $this->line("complete #{$appointment->serial_number} (in_progress, fee on record, post-visit doctor) — service rendered, fee kept");
+
+                    if (! $dry) {
+                        DB::transaction(function () use ($appointment) {
+                            $appointment->update(['status' => 'completed']);
+                            QueueAuditLog::create([
+                                'institute_id' => $appointment->institute_id,
+                                'appointment_id' => $appointment->id,
+                                'user_id' => null,
+                                'user_type' => 'system',
+                                'actor_name' => 'End-of-day rollover',
+                                'action' => 'rollover_completed',
+                                'old_order' => $appointment->queue_order ?? $appointment->serial_number ?? 0,
+                                'new_order' => $appointment->serial_number ?? 0,
+                            ]);
+                        });
+                    }
+                    $completed++;
+
+                    continue;
+                }
+
                 if (in_array($appointment->status, ['checked_in', 'in_progress'], true)) {
                     $target = $this->nextWorkingDay(
                         (int) $appointment->institute_id,
@@ -246,9 +286,35 @@ class QueueRollover extends Command
             }
         }
 
-        $this->info(($dry ? '[dry-run] ' : '')."Done: {$moved} carried, {$cancelled} auto-cancelled for {$date}.");
+        $this->info(($dry ? '[dry-run] ' : '')."Done: {$moved} carried, {$completed} completed (paid, post-visit), {$cancelled} auto-cancelled for {$date}.");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Whether the appointment's doctor takes the fee before the visit
+     * (profile memoised per doctor for the run). Missing profile → treat as
+     * post-visit (the safe default here: a paid in_progress row with no
+     * profile still holds rendered-service money, so it completes).
+     */
+    private function collectsFeeBeforeVisit(Appointment $appointment, array &$cache): bool
+    {
+        $key = $appointment->institute_id.':'.$appointment->doctor_id;
+        if (! array_key_exists($key, $cache)) {
+            $profile = Doctor::resolveForUser((int) $appointment->doctor_id, (int) $appointment->institute_id);
+            $cache[$key] = $profile;
+            if ($profile === null) {
+                Log::warning('queue-rollover: no doctor profile for visit; defaulting to post-visit fee handling', [
+                    'institute_id' => $appointment->institute_id,
+                    'doctor_id' => $appointment->doctor_id,
+                    'appointment_id' => $appointment->id,
+                ]);
+            }
+        }
+
+        $profile = $cache[$key];
+
+        return $profile !== null && (bool) $profile->collect_fee_before_visit;
     }
 
     /**

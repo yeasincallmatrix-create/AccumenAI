@@ -9,6 +9,7 @@ use App\Models\Journal;
 use App\Models\Medical\Appointment;
 use App\Models\Medical\Doctor;
 use App\Models\Medical\Patient;
+use App\Models\Medical\QueueAuditLog;
 use App\Models\Membership;
 use App\Models\Role;
 use App\Models\User;
@@ -284,6 +285,80 @@ class OpdFeeCancelReversalTest extends TestCase
         $this->assertSame('scheduled', $appointment->fresh()->status);
         $this->assertSame(0.0, $this->netLedgerImpact('1000.1'));
         $this->assertSame(0.0, $this->netLedgerImpact('2400.3'));
+    }
+
+    public function test_rollover_closes_paid_post_visit_in_progress_without_reversal(): void
+    {
+        // Phase 1b: a post-visit doctor's PAID in-progress row is closed as
+        // completed — the consultation ran and the money is on record, so
+        // there is nothing to carry and nothing to reverse.
+        $this->createDoctor(preVisit: false);
+        $yesterday = today()->subDay()->format('Y-m-d');
+        $appointment = $this->checkedInAppointment($yesterday);
+        $this->completeFee($appointment);
+        $appointment->update(['status' => 'in_progress']);
+
+        $receipt = Journal::find($appointment->fresh()->fee_receipt_journal_id);
+        $this->assertNotNull($receipt);
+        $this->assertSame('posted', $receipt->fresh()->status);
+
+        $this->artisan(QueueRollover::class, [
+            '--date' => $yesterday,
+            '--institute' => $this->institute->id,
+        ])->assertSuccessful();
+
+        $appointment->refresh();
+        $this->assertSame('completed', $appointment->status);
+        $this->assertNotNull($appointment->fee_collected_at);
+        // Receipt untouched: no reversal, FKs stay stamped.
+        $this->assertSame('posted', $receipt->fresh()->status);
+        $this->assertSame(0, Journal::where('institute_id', $this->institute->id)
+            ->where('reversal_of', $receipt->id)->count());
+        $this->assertNotNull($appointment->fee_receipt_journal_id);
+
+        QueueAuditLog::where('institute_id', $this->institute->id)
+            ->where('appointment_id', $appointment->id)
+            ->where('action', 'rollover_completed')
+            ->sole();
+        $this->assertSame(0, QueueAuditLog::where('institute_id', $this->institute->id)
+            ->where('appointment_id', $appointment->id)
+            ->where('action', 'rollover')->count());
+    }
+
+    public function test_rollover_reverses_and_carries_paid_pre_visit_in_progress(): void
+    {
+        // Pre-visit money for an undelivered (still in-progress) consult
+        // keeps the reverse+carry path: cash back to the ledger, row moved
+        // to the next working day as a plain appointment.
+        $this->createDoctor(preVisit: true);
+        $yesterday = today()->subDay()->format('Y-m-d');
+        $appointment = $this->checkedInAppointment($yesterday);
+        $this->startFee($appointment);
+        $appointment->update(['status' => 'in_progress']);
+
+        $receipt = Journal::find($appointment->fresh()->fee_receipt_journal_id);
+        $this->assertNotNull($receipt);
+
+        $this->artisan(QueueRollover::class, [
+            '--date' => $yesterday,
+            '--institute' => $this->institute->id,
+        ])->assertSuccessful();
+
+        $appointment->refresh();
+        $this->assertSame('scheduled', $appointment->status);
+        $this->assertSame('reversed', $receipt->fresh()->status);
+        $this->assertAllFksNull($appointment);
+        $this->assertNull($appointment->fee_collected_at);
+        $this->assertSame(0.0, $this->netLedgerImpact('1000.1'));
+        $this->assertSame(0.0, $this->netLedgerImpact('2400.3'));
+
+        QueueAuditLog::where('institute_id', $this->institute->id)
+            ->where('appointment_id', $appointment->id)
+            ->where('action', 'rollover')
+            ->sole();
+        $this->assertSame(0, QueueAuditLog::where('institute_id', $this->institute->id)
+            ->where('appointment_id', $appointment->id)
+            ->where('action', 'rollover_completed')->count());
     }
 
     public function test_cancel_noop_when_no_journal(): void

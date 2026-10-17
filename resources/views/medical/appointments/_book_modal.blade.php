@@ -11,7 +11,13 @@
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title">Book Appointment</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <div class="d-flex align-items-center gap-2 ms-auto">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="bk_refresh_btn"
+                                title="Reload the popup with fresh data" aria-label="Refresh">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
                 </div>
                 <div class="modal-body">
                     @if($errors->any())
@@ -291,6 +297,13 @@
 #bookAppointmentModal #bk_lookup_alert span {
     overflow-wrap: anywhere;
 }
+/* Header refresh button: spin the icon while the page reloads. */
+#bookAppointmentModal #bk_refresh_btn.refreshing i {
+    animation: bk-refresh-spin .8s linear infinite;
+}
+@keyframes bk-refresh-spin {
+    to { transform: rotate(360deg); }
+}
 </style>
 @endpush
 
@@ -464,6 +477,25 @@
     if (m && window.bootstrap) window.bootstrap.Modal.getOrCreateInstance(m).show();
 })();
 @endif
+
+// Refresh: reload the page so the popup comes back with fresh patients,
+// doctors and queue data (the popup is reopened afterwards).
+(function () {
+    var refreshBtn = document.getElementById('bk_refresh_btn');
+    if (refreshBtn) refreshBtn.addEventListener('click', function () {
+        try { sessionStorage.setItem('bkAppointmentRefresh', '1'); } catch (e) {}
+        refreshBtn.classList.add('refreshing');
+        refreshBtn.disabled = true;
+        window.location.reload();
+    });
+    try {
+        if (sessionStorage.getItem('bkAppointmentRefresh') === '1') {
+            sessionStorage.removeItem('bkAppointmentRefresh');
+            var bkModal = document.getElementById('bookAppointmentModal');
+            if (bkModal && window.bootstrap) window.bootstrap.Modal.getOrCreateInstance(bkModal).show();
+        }
+    } catch (e) {}
+})();
 
 // One serial per patient: lock the Book button as soon as the form is
 // submitted so a double-click cannot fire a second booking (the server

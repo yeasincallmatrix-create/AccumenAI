@@ -111,8 +111,20 @@
         </div>
 
         <div class="card card-fill-screen">
-            <div class="card-header">
-                <h6 class="mb-0" data-queue-wait-title>Queue — {{ $queue['status']['estimated_wait_minutes'] ?? 0 }} mins estimated wait</h6>
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <h6 class="mb-0" data-queue-wait-title>Queue �?" {{ $queue['status']['estimated_wait_minutes'] ?? 0 }} mins estimated wait</h6>
+                @if(($canCompleteQueue ?? false) && !empty($queue['doctorId']))
+                    <form action="{{ route('medical.appointments.master-complete') }}" method="POST" class="d-inline">
+                        @csrf
+                        <input type="hidden" name="q_doctor" value="{{ (int) $queue['doctorId'] }}">
+                        <input type="hidden" name="q_date" value="{{ $queue['date'] ?? date('Y-m-d') }}">
+                        <button type="submit" class="btn btn-sm btn-outline-success"
+                                title="Close all finished (in-progress, paid) visits for this queue"
+                                onclick="return confirm('Master Complete: close all finished visits (in progress, fee on record) for this queue? Not-started or unpaid rows are skipped.')">
+                            <i class="bi bi-check-all me-1"></i>Master Complete
+                        </button>
+                    </form>
+                @endif
             </div>
             <div class="card-body">
                 @if(!empty($queue['doctorId']))
@@ -342,6 +354,12 @@
                                                 <span class="badge text-bg-info">Carried Forward</span>
                                             @elseif(($log['action'] ?? '') === 'auto_cancelled')
                                                 <span class="badge text-bg-secondary">Auto-cancelled</span>
+                                            @elseif(($log['action'] ?? '') === 'completed')
+                                                <span class="badge text-bg-primary">Visit Completed</span>
+                                            @elseif(($log['action'] ?? '') === 'rollover_completed')
+                                                <span class="badge text-bg-info">Completed (EOD)</span>
+                                            @elseif(($log['action'] ?? '') === 'master_complete')
+                                                <span class="badge text-bg-warning text-dark">Master Complete</span>
                                             @else
                                                 <span class="badge text-bg-primary">Reorder</span>
                                             @endif
@@ -359,6 +377,12 @@
                                                 <span class="text-muted small">next working day</span>
                                             @elseif(($log['action'] ?? '') === 'auto_cancelled')
                                                 <span class="text-muted small">Never checked in</span>
+                                            @elseif(($log['action'] ?? '') === 'completed')
+                                                <span class="text-muted small">Visit closed</span>
+                                            @elseif(($log['action'] ?? '') === 'rollover_completed')
+                                                <span class="text-muted small">Closed at end of day</span>
+                                            @elseif(($log['action'] ?? '') === 'master_complete')
+                                                <span class="text-muted small">Bulk closed</span>
                                             @else
                                                 <span class="badge text-bg-light border">#{{ $log['old'] ?? '—' }} → #{{ $log['new'] }}</span>
                                             @endif

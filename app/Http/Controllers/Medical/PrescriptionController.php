@@ -6,6 +6,7 @@ use App\Http\Requests\Medical\PrescriptionItemRequest;
 use App\Http\Requests\Medical\PrescriptionRequest;
 use App\Models\Country;
 use App\Models\Institute;
+use App\Models\InstituteUser;
 use App\Models\Medical\Appointment;
 use App\Models\Medical\CdsFinding;
 use App\Models\Medical\ClinicalAuditLog;
@@ -16,7 +17,9 @@ use App\Models\Medical\Patient;
 use App\Models\Medical\Prescription;
 use App\Models\Medical\PrescriptionAuditLog;
 use App\Models\Medical\PrescriptionItem;
+use App\Models\Medical\QueueAuditLog;
 use App\Models\Medical\VitalSign;
+use App\Models\Membership;
 use App\Services\Medical\AppointmentFeeService;
 use App\Services\Medical\CdsEngine;
 use App\Services\Medical\CdsEvaluation;
@@ -608,7 +611,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
 
         if ($request->expectsJson()) {
             $amount = ($profile && $patient) ? $profile->getApplicableFee($patient) : 0.0;
-            $action = $preVisit ? 'start' : 'complete';
+            $action = $preVisit ? 'start' : 'collect';
 
             return response()->json([
                 'collect_url' => route('medical.appointments.collect-fee', $appointment),
@@ -720,7 +723,7 @@ class PrescriptionController extends MedicalController implements HasMiddleware
             ? $profile->getApplicableFee($visit->patient)
             : 0.0;
 
-        $action = $visit->status === 'checked_in' ? 'start' : 'complete';
+        $action = $visit->status === 'checked_in' ? 'start' : 'collect';
 
         return [
             'url' => route('medical.appointments.index', [
@@ -993,9 +996,12 @@ class PrescriptionController extends MedicalController implements HasMiddleware
             $status .= ' '.$dgdaWarning;
         }
 
-        // Post-visit doctor flow: prescription saved → chain straight into
-        // the fee popup, confirming which completes the visit.
-        if (($feeAppointment = $this->validFeeAppointment($request)) !== null) {
+        // Post-visit doctor flow: an UNPAID chain still needs the fee —
+        // chain straight into the fee popup first. A paid chain falls
+        // through: payment never completes the visit, the Save & Print
+        // below (completeOpenVisit) does.
+        if (($feeAppointment = $this->validFeeAppointment($request)) !== null
+            && $feeAppointment->fee_collected_at === null) {
             return redirect()->route('medical.appointments.index', [
                 'tab' => 'queue',
                 'q_doctor' => $feeAppointment->doctor_id,
@@ -1040,9 +1046,72 @@ class PrescriptionController extends MedicalController implements HasMiddleware
             return null;
         }
         $this->ensureDoctorOwns($visit, 'doctor_id', 'appointment');
-        $visit->update(['status' => 'completed']);
+
+        $actor = $this->visitCompletionActor((int) $visit->institute_id);
+        DB::transaction(function () use ($visit, $actor) {
+            $visit->update(['status' => 'completed']);
+            QueueAuditLog::create([
+                'institute_id' => $visit->institute_id,
+                'appointment_id' => $visit->id,
+                'user_id' => $actor['id'],
+                'user_type' => $actor['type'],
+                'actor_name' => $actor['name'],
+                'action' => 'completed',
+                'old_order' => $visit->queue_order ?? $visit->serial_number ?? 0,
+                'new_order' => $visit->serial_number ?? 0,
+            ]);
+        });
 
         return $visit;
+    }
+
+    /**
+     * Snapshot of the staff member completing the visit (queue audit row).
+     * Mirrors AppointmentController::feeReceiverSnapshot: institute owner
+     * → owner, linked doctor profile → doctor, otherwise the role slug.
+     *
+     * @return array{id: ?int, type: string, name: ?string}
+     */
+    private function visitCompletionActor(int $instituteId): array
+    {
+        $staff = auth('institute_user')->user() ?? auth('web')->user() ?? auth()->user();
+
+        $type = 'staff';
+        $id = null;
+        $name = null;
+
+        if ($staff) {
+            $id = $staff->getKey();
+            $name = $staff->name ?? trim(($staff->first_name ?? '').' '.($staff->last_name ?? '')) ?: null;
+
+            if ($staff instanceof InstituteUser && $staff->isOwner()) {
+                $type = 'owner';
+            } elseif (MedicalScope::ownDoctorUserId($instituteId) !== null) {
+                $type = 'doctor';
+            } else {
+                try {
+                    if ($staff instanceof InstituteUser) {
+                        $slug = $staff->role?->slug;
+                    } else {
+                        $slug = Membership::where('user_id', $staff->getKey())
+                            ->where('institution_id', $instituteId)
+                            ->where('status', 'active')
+                            ->with('role')
+                            ->first()
+                            ?->role?->slug;
+                    }
+                    if ($slug === 'institute-owner') {
+                        $type = 'owner';
+                    } elseif (is_string($slug) && $slug !== '') {
+                        $type = $slug;
+                    }
+                } catch (\Throwable) {
+                    // keep default 'staff'
+                }
+            }
+        }
+
+        return ['id' => $id, 'type' => $type, 'name' => $name];
     }
 
     /**
@@ -1282,6 +1351,25 @@ class PrescriptionController extends MedicalController implements HasMiddleware
             $status .= ' Warning: '.implode(' | ', $safety['warnings']);
         }
         $status .= $this->cdsStatusSuffix($cds);
+
+        // Same chain rule as store: an unpaid chained visit routes to the
+        // fee popup instead of completing on print. A paid chain falls
+        // through to completeOpenVisit below.
+        //
+        // NOTE: defensive / currently unreachable from the normal UI — the
+        // fee_appointment_id hidden input only renders in create mode
+        // (_rx_form.blade), so edit submissions never carry the chain.
+        // Kept as future-proofing if edit-mode chaining is ever added;
+        // delete this block if that is never planned.
+        if (($feeAppointment = $this->validFeeAppointment($request)) !== null
+            && $feeAppointment->fee_collected_at === null) {
+            return redirect()->route('medical.appointments.index', [
+                'tab' => 'queue',
+                'q_doctor' => $feeAppointment->doctor_id,
+                'q_date' => $feeAppointment->appointment_date->format('Y-m-d'),
+                'fee_collect' => $feeAppointment->id,
+            ])->with('status', $status);
+        }
 
         if ($saveAndPrint) {
             if ($this->completeOpenVisit($patient, (int) $data['doctor_id'])) {

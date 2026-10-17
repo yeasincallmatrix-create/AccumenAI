@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Institute;
 use App\Models\Permission;
 use App\Models\Role;
+use Database\Seeders\MedicalRoleSeeder;
 use Illuminate\Support\Collection;
 
 /**
@@ -34,19 +35,22 @@ class RoleTemplateService
         // Specialized functional roles per medical sub-module. Shared with
         // MedicalRoleSeeder (single source of truth) so new institutes and
         // backfilled institutes receive identical bundles.
-        $medicalSpecialistRoles = \Database\Seeders\MedicalRoleSeeder::roles();
+        $medicalSpecialistRoles = MedicalRoleSeeder::roles();
 
         return [
             'healthcare' => array_merge([
                 'hospital-admin' => [
                     'name' => 'Hospital Administrator',
-                    'permissions' => ['medical_*', 'staff.manage', 'roles.manage'],
+                    // medical_* wildcard covers medical_appointments.master_complete
+                    // too; listed explicitly so a late-created slug is still granted.
+                    'permissions' => ['medical_*', 'medical_appointments.master_complete', 'staff.manage', 'roles.manage'],
                 ],
                 'doctor' => [
                     'name' => 'Doctor',
                     'permissions' => [
                         'medical_patients.view', 'medical_patients.create', 'medical_patients.edit',
                         'medical_appointments.view', 'medical_appointments.create', 'medical_appointments.edit',
+                        'medical_appointments.master_complete',
                         'medical_queue.reorder',
                         'medical_prescriptions.view', 'medical_prescriptions.create', 'medical_prescriptions.edit', 'medical_prescriptions.amend',
                         'medical_encounters.view', 'medical_encounters.create', 'medical_encounters.edit',
@@ -206,7 +210,7 @@ class RoleTemplateService
         foreach ($slugs as $slug) {
             if (str_ends_with($slug, '_*')) {
                 $prefix = substr($slug, 0, -1);
-                $expanded = array_merge($expanded, Permission::where('module', 'LIKE', $prefix . '%')->pluck('slug')->all());
+                $expanded = array_merge($expanded, Permission::where('module', 'LIKE', $prefix.'%')->pluck('slug')->all());
             } else {
                 $expanded[] = $slug;
             }

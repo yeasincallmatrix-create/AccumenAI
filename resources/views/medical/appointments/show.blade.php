@@ -99,15 +99,16 @@
                 @if(in_array($appointment->status, ['scheduled', 'checked_in', 'in_progress'], true))
                     @if(!empty($feePopup))
                         {{-- Post-visit doctor, fee not yet on record: accept the
-                             fee through the popup — confirming completes the visit. --}}
+                             fee through the popup — records the payment, the
+                             visit stays open (complete it separately). --}}
                         <button type="button" class="btn btn-success btn-sm"
                                 data-fee-url="{{ $feePopup['url'] }}"
-                                data-fee-action="complete"
+                                data-fee-action="collect"
                                 data-fee-patient="{{ $feePopup['patient'] }}"
                                 data-fee-amount="{{ $feePopup['amount'] }}"
                                 data-fee-type="{{ $feePopup['type'] }}"
                                 onclick="openFeeModal(this)">
-                            <i class="bi bi-cash-coin me-1"></i>Complete
+                            <i class="bi bi-cash-coin me-1"></i>Collect Fee
                         </button>
                     @else
                         <form action="{{ route('medical.appointments.complete', $appointment) }}" method="POST">

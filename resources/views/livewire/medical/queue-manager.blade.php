@@ -56,6 +56,9 @@
                             <td>
                                 @if(!empty($item['fee_collected']))
                                     <span class="badge bg-success">Paid</span>
+                                    @if(!empty($item['needs_verification']))
+                                        <span class="badge bg-warning text-dark" title="Collected by counter staff, not the treating doctor — verify before closing the visit.">Verify</span>
+                                    @endif
                                 @elseif(!empty($item['fee_required']))
                                     <span class="badge bg-danger">Unpaid</span>
                                 @else
@@ -98,15 +101,15 @@ Start Consultation
                                             </form>
                                         @endif
                                     @else
-                                        @if($item['fee_required'])
-                                            <button type="button" class="btn btn-sm btn-outline-success" title="Complete — fee due"
+                                        @if($item['fee_required'] && empty($item['fee_collected']))
+                                            <button type="button" class="btn btn-sm btn-outline-success" title="Collect Visit Fee"
                                                     data-fee-url="{{ route('medical.appointments.collect-fee', $item['id']) }}"
-                                                    data-fee-action="complete"
+                                                    data-fee-action="collect"
                                                     data-fee-patient="{{ $item['patient_name'] }}"
                                                     data-fee-amount="{{ number_format((float) $item['fee_amount'], 2, '.', '') }}"
                                                     data-fee-type="{{ $item['fee_type'] }}"
                                                     onclick="openFeeModal(this)">
-                                                <i class="bi bi-check-circle"></i>
+                                                <i class="bi bi-cash-coin"></i>
                                             </button>
                                         @else
                                             <form action="{{ route('medical.appointments.complete', $item['id']) }}" method="POST" class="d-inline">

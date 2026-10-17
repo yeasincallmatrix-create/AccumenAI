@@ -39,6 +39,7 @@ class MedicalPermissionSeeder extends Seeder
                 'create' => 'Book Appointments',
                 'edit' => 'Manage Appointment Queue',
                 'delete' => 'Cancel Appointments',
+                'master_complete' => 'Master Complete Visits',
             ],
             // Seeded now so Phase 2+ (IPD, Pharmacy, Lab, Billing) can rely
             // on the slugs existing; no Phase 1 code references them yet.
@@ -337,6 +338,33 @@ class MedicalPermissionSeeder extends Seeder
                 DB::table('role_permissions')->insert([
                     'role_id' => $roleId,
                     'permission_id' => $queuePermission->id,
+                ]);
+            }
+        }
+
+        // Master Complete (additive): bulk-close finished queue visits.
+        // Granted to doctor + hospital-admin ONLY — receptionists collect
+        // fees, they never close visits. Institute owners bypass checks.
+        $masterCompletePermission = Permission::firstOrCreate(
+            ['slug' => 'medical_appointments.master_complete'],
+            ['module' => 'medical_appointments', 'name' => 'Master Complete Visits']
+        );
+
+        $masterCompleteRoleIds = Role::whereIn('slug', ['doctor', 'hospital-admin'])
+            ->pluck('id')
+            ->toArray();
+
+        if (! empty($masterCompleteRoleIds)) {
+            $existing = DB::table('role_permissions')
+                ->where('permission_id', $masterCompletePermission->id)
+                ->whereIn('role_id', $masterCompleteRoleIds)
+                ->pluck('role_id')
+                ->toArray();
+
+            foreach (array_diff($masterCompleteRoleIds, $existing) as $roleId) {
+                DB::table('role_permissions')->insert([
+                    'role_id' => $roleId,
+                    'permission_id' => $masterCompletePermission->id,
                 ]);
             }
         }

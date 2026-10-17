@@ -7,12 +7,16 @@ use App\Models\Institute;
 use App\Models\Medical\Appointment;
 use App\Models\Medical\Doctor;
 use App\Models\Medical\Patient;
+use App\Models\Medical\QueueAuditLog;
 use App\Models\Membership;
+use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use App\Support\Workspace;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\DB;
+use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -103,7 +107,7 @@ class MedicalQueueActionsTest extends TestCase
         ]);
     }
 
-    private function queue(): \Livewire\Features\SupportTesting\Testable
+    private function queue(): Testable
     {
         return Livewire::test(QueueManager::class, [
             'doctorUserId' => $this->doctor->id,
@@ -279,11 +283,11 @@ class MedicalQueueActionsTest extends TestCase
     private function grantDeleteToRole(string $roleSlug, int $userId): void
     {
         $role = Role::where('slug', $roleSlug)->firstOrFail();
-        $permission = \App\Models\Permission::firstOrCreate(
+        $permission = Permission::firstOrCreate(
             ['slug' => 'medical_appointments.delete'],
             ['module' => 'medical_appointments', 'name' => 'Cancel Appointments']
         );
-        \Illuminate\Support\Facades\DB::table('role_permissions')->insertOrIgnore([
+        DB::table('role_permissions')->insertOrIgnore([
             'role_id' => $role->id,
             'permission_id' => $permission->id,
         ]);
@@ -365,11 +369,11 @@ class MedicalQueueActionsTest extends TestCase
 
         // Grant the delete permission so the request reaches the
         // finalized-record guard (rather than failing on middleware).
-        $permission = \App\Models\Permission::firstOrCreate(
+        $permission = Permission::firstOrCreate(
             ['slug' => 'medical_appointments.delete'],
             ['module' => 'medical_appointments', 'name' => 'Cancel Appointments']
         );
-        \Illuminate\Support\Facades\DB::table('role_permissions')->insertOrIgnore([
+        DB::table('role_permissions')->insertOrIgnore([
             'role_id' => $role->id,
             'permission_id' => $permission->id,
         ]);
@@ -414,11 +418,11 @@ class MedicalQueueActionsTest extends TestCase
 
         // Queue manage permission (but NOT admin) so the request reaches
         // the paid-record guard inside the component.
-        $permission = \App\Models\Permission::firstOrCreate(
+        $permission = Permission::firstOrCreate(
             ['slug' => 'medical_appointments.edit'],
             ['module' => 'medical_appointments', 'name' => 'Edit Appointments']
         );
-        \Illuminate\Support\Facades\DB::table('role_permissions')->insertOrIgnore([
+        DB::table('role_permissions')->insertOrIgnore([
             'role_id' => $role->id,
             'permission_id' => $permission->id,
         ]);
@@ -477,10 +481,11 @@ class MedicalQueueActionsTest extends TestCase
         $this->assertSame(2, (int) $orders[$reversed[1]]);
         $this->assertSame(3, (int) $orders[$reversed[2]]);
 
-        $this->assertSame(3, \App\Models\Medical\QueueAuditLog::whereIn('appointment_id', $ids)->count());
+        $this->assertSame(3, QueueAuditLog::whereIn('appointment_id', $ids)->count());
     }
 
-    public function test_queue_tab_shows_working_refresh_button(): void    {
+    public function test_queue_tab_shows_working_refresh_button(): void
+    {
         $appointment = $this->checkedInAppointment();
 
         $response = $this->get(route('medical.appointments.index', [
@@ -504,7 +509,7 @@ class MedicalQueueActionsTest extends TestCase
     {
         // Pre-visit fee collection so every card takes the fee path (the
         // old N+1 hotspot: 2 extra queries per card).
-        \App\Models\Medical\Doctor::where('institute_id', $this->institute->id)
+        Doctor::where('institute_id', $this->institute->id)
             ->where('user_id', $this->doctor->id)
             ->update(['collect_fee_before_visit' => true]);
 
@@ -533,10 +538,10 @@ class MedicalQueueActionsTest extends TestCase
         $this->assertCount(5, $component->get('items'));
         $this->assertTrue(collect($component->get('items'))->every(fn ($it) => $it['fee_required'] === true));
 
-        \Illuminate\Support\Facades\DB::enableQueryLog();
-        \Illuminate\Support\Facades\DB::flushQueryLog();
+        DB::enableQueryLog();
+        DB::flushQueryLog();
         $component->call('loadQueue');
-        $queries = \Illuminate\Support\Facades\DB::getQueryLog();
+        $queries = DB::getQueryLog();
         $queueQueries = array_values(array_filter(
             $queries,
             fn ($q) => str_contains($q['query'], '`appointments`')
@@ -550,7 +555,8 @@ class MedicalQueueActionsTest extends TestCase
         $this->assertCount(4, $queueQueries, 'loadQueue data queries: '.count($queueQueries));
     }
 
-    public function test_queue_actions_have_no_view_or_edit_buttons(): void    {
+    public function test_queue_actions_have_no_view_or_edit_buttons(): void
+    {
         // Regression guard: the View (eye) and Edit (pencil) icon buttons
         // were removed from the Live Queue actions. If they ever reappear
         // in the widget markup, this test fails loudly.
@@ -566,7 +572,7 @@ class MedicalQueueActionsTest extends TestCase
 
     public function test_token_page_prints_serial_room_and_hospital(): void
     {
-        \App\Models\Medical\Doctor::where('institute_id', $this->institute->id)
+        Doctor::where('institute_id', $this->institute->id)
             ->where('user_id', $this->doctor->id)
             ->update(['room_no' => 'Room 12']);
 
@@ -578,5 +584,93 @@ class MedicalQueueActionsTest extends TestCase
             ->assertSee('#'.$appointment->serial_number, false)
             ->assertSee('Room No: Room 12', false)
             ->assertSee('window.print()', false);
+    }
+
+    public function test_master_complete_rejects_receptionist_without_grant(): void
+    {
+        $appointment = $this->checkedInAppointment();
+        $appointment->update(['status' => 'in_progress']);
+
+        $receptionist = User::factory()->create([
+            'account_type' => 'staff',
+            'email_verified_at' => now(),
+            'status' => 'active',
+        ]);
+        Membership::create([
+            'user_id' => $receptionist->id,
+            'institution_id' => $this->institute->id,
+            'role_id' => Role::where('slug', 'receptionist')->value('id'),
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($receptionist, 'web');
+        Workspace::set($this->institute->id);
+
+        $this->post(route('medical.appointments.master-complete'), [
+            'q_doctor' => $this->doctor->id,
+            'q_date' => $this->date,
+        ])->assertForbidden();
+
+        // Nothing moved, nothing audited.
+        $this->assertSame('in_progress', $appointment->fresh()->status);
+        $this->assertSame(0, QueueAuditLog::where('appointment_id', $appointment->id)->count());
+    }
+
+    public function test_master_complete_closes_paid_in_progress_rows_and_skips_rest(): void
+    {
+        // Deterministic post-visit profile: once in progress the fee is
+        // still due, so an unpaid in-progress row must be skipped.
+        Doctor::where('user_id', $this->doctor->id)->update(['collect_fee_before_visit' => false]);
+
+        $paid = $this->checkedInAppointment(1);
+        $paid->update(['status' => 'in_progress', 'fee_collected_at' => now(), 'fee_collected_amount' => 500]);
+
+        $unpaid = $this->checkedInAppointment(2);
+        $unpaid->update(['status' => 'in_progress']);
+
+        $waiting = $this->checkedInAppointment(3); // never started → skip
+
+        // Doctor fixture: role grant + membership (grantDeleteToRole pattern).
+        // The test dump carries no global 'doctor' role — create it inside
+        // this test's transaction so the grant path is actually exercised.
+        $role = Role::firstOrCreate(
+            ['institute_id' => null, 'slug' => 'doctor'],
+            ['name' => 'Doctor', 'is_system' => true, 'status' => 'active'],
+        );
+        $permission = Permission::firstOrCreate(
+            ['slug' => 'medical_appointments.master_complete'],
+            ['module' => 'medical_appointments', 'name' => 'Master Complete Visits']
+        );
+        DB::table('role_permissions')->insertOrIgnore([
+            'role_id' => $role->id,
+            'permission_id' => $permission->id,
+        ]);
+        Membership::create([
+            'user_id' => $this->doctor->id,
+            'institution_id' => $this->institute->id,
+            'role_id' => $role->id,
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($this->doctor, 'web');
+        Workspace::set($this->institute->id);
+
+        $this->post(route('medical.appointments.master-complete'), [
+            'q_doctor' => $this->doctor->id,
+            'q_date' => $this->date,
+        ])->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->assertSame('completed', $paid->fresh()->status);
+        $this->assertSame('in_progress', $unpaid->fresh()->status);
+        $this->assertSame('checked_in', $waiting->fresh()->status);
+
+        QueueAuditLog::where('appointment_id', $paid->id)
+            ->where('action', 'master_complete')
+            ->sole();
+        $this->assertSame(0, QueueAuditLog::whereIn('appointment_id', [$unpaid->id, $waiting->id])
+            ->where('action', 'master_complete')
+            ->count());
+
+        $this->assertStringContainsString('Master complete: 1', (string) session('status'));
     }
 }

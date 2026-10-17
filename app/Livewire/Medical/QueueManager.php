@@ -147,8 +147,22 @@ class QueueManager extends Component
                 'blood_sugar', 'weight', 'height', 'notes',
             ]));
 
+        // Payments collected by counter staff (not the treating doctor)
+        // carry needs_verification on their fee audit row — one batched
+        // lookup so the Paid badge can flag them for the doctor.
+        $verifyPending = $appointments->isEmpty()
+            ? []
+            : QueueAuditLog::whereIn('appointment_id', $appointments->pluck('id')->all())
+                ->where('action', 'fee_collected')
+                ->where('needs_verification', true)
+                ->pluck('appointment_id')
+                ->map(fn ($v) => (int) $v)
+                ->unique()
+                ->flip()
+                ->all();
+
         $this->items = $appointments
-            ->map(function (Appointment $a, int $i) use ($profile, $lastVisitDates, $followUpWindow, $latestVitals, $feeTiming) {
+            ->map(function (Appointment $a, int $i) use ($profile, $lastVisitDates, $followUpWindow, $latestVitals, $feeTiming, $verifyPending) {
                 $feeRequired = false;
                 $feeAmount = 0.0;
                 $feeType = '';
@@ -186,6 +200,7 @@ class QueueManager extends Component
                     'queue_order' => $a->queue_order,
                     'fee_required' => $feeRequired,
                     'fee_collected' => $a->fee_collected_at !== null,
+                    'needs_verification' => isset($verifyPending[$a->id]),
                     'fee_timing' => $feeTiming,
                     'latest_vitals' => $latestVitals->get($a->id),
                     'fee_amount' => $feeAmount,
@@ -318,7 +333,22 @@ class QueueManager extends Component
         $this->assertBranchVisible($appointment);
 
         if (in_array($appointment->status, ['checked_in', 'in_progress'], true)) {
-            $appointment->update(['status' => 'completed']);
+            // One 'completed' audit row per trigger — the Livewire row
+            // action leaves the same trail as the route + Save & Print.
+            $actor = $this->actorSnapshot();
+            DB::transaction(function () use ($appointment, $actor) {
+                $appointment->update(['status' => 'completed']);
+                QueueAuditLog::create([
+                    'institute_id' => $appointment->institute_id,
+                    'appointment_id' => $appointment->id,
+                    'user_id' => $actor['id'],
+                    'user_type' => $actor['type'],
+                    'actor_name' => $actor['name'],
+                    'action' => 'completed',
+                    'old_order' => $appointment->queue_order ?? $appointment->serial_number ?? 0,
+                    'new_order' => $appointment->serial_number ?? 0,
+                ]);
+            });
             $this->errorMessage = '';
             $this->statusMessage = 'Appointment completed!';
         }

@@ -122,6 +122,12 @@ class AppointmentController extends MedicalController implements HasMiddleware
             ? $user->hasPermission('medical_prescriptions.view')
             : (Workspace::membershipFor($user)?->hasPermission('medical_prescriptions.view') ?? false);
 
+        // Master Complete (bulk queue close) is a separate, stricter grant:
+        // doctors + admins only; receptionists collect fees, not visits.
+        $canCompleteQueue = $user instanceof InstituteUser
+            ? $user->hasPermission('medical_appointments.master_complete')
+            : (Workspace::membershipFor($user)?->hasPermission('medical_appointments.master_complete') ?? false);
+
         $allowedTabs = ['queue', 'report', 'audit'];
         if ($canViewPrescriptions) {
             $allowedTabs[] = 'prescriptions';
@@ -151,7 +157,7 @@ class AppointmentController extends MedicalController implements HasMiddleware
                     $amount = $profile->getApplicableFee($candidate->patient);
                     $autoFee = [
                         'data-fee-url' => route('medical.appointments.collect-fee', $candidate),
-                        'data-fee-action' => 'complete',
+                        'data-fee-action' => 'collect',
                         'data-fee-patient' => $candidate->patient->full_name ?? 'N/A',
                         'data-fee-amount' => number_format($amount, 2, '.', ''),
                         'data-fee-type' => $profile->hasFollowUpRateFor($candidate->patient) ? 'follow-up' : 'first visit',
@@ -192,7 +198,7 @@ class AppointmentController extends MedicalController implements HasMiddleware
             'appointments', 'doctors', 'patients', 'countries',
             'defaultCountryId', 'previewMr', 'canCreatePatient',
             'activeTab', 'queue', 'report', 'instituteId', 'reactProps', 'autoFee',
-            'ipdPatientIds', 'canViewPrescriptions'
+            'ipdPatientIds', 'canViewPrescriptions', 'canCompleteQueue'
         ));
     }
 
@@ -904,6 +910,9 @@ class AppointmentController extends MedicalController implements HasMiddleware
             'fee_reversed' => 'Fee Reversed',
             'deleted' => 'Deleted',
             'rollover' => 'Carried Forward',
+            'rollover_completed' => 'Completed (EOD)',
+            'completed' => 'Visit Completed',
+            'master_complete' => 'Master Complete',
             'auto_cancelled' => 'Auto-cancelled',
         ];
         $auditActions = [];
@@ -1256,8 +1265,10 @@ class AppointmentController extends MedicalController implements HasMiddleware
      *
      * Pre-visit doctors collect on checked-in rows WITHOUT changing status —
      * the Start Consultation button appears only after the fee is recorded.
-     * Post-visit doctors collect on completion (checked_in/in_progress →
-     * completed). The amount is always recomputed server-side — the popup
+     * Post-visit doctors collect on checked_in/in_progress rows WITHOUT
+     * changing status either — receiving money never completes a visit;
+     * completion is a separate trigger (Save & Print, the queue Complete
+     * action, or Master Complete). The amount is always recomputed server-side — the popup
      * figure is informational only. The receiver (current staff member) is
      * stamped on the appointment and written to the Audit Log so it is
      * clear who received the payment. Each appointment charges at most
@@ -1286,7 +1297,10 @@ class AppointmentController extends MedicalController implements HasMiddleware
         $this->ensureBranchAccess($appointment, 'branch_id', 'appointment');
 
         $validated = $request->validate([
-            'action' => 'required|in:start,complete',
+            // 'collect' records the fee without touching status (payment
+            // never completes a visit). 'complete' is the legacy alias kept
+            // for old links/tests — both fall through to the same branch.
+            'action' => 'required|in:start,collect,complete',
             'discount_type' => 'nullable|in:none,percent,flat',
             'discount_value' => 'nullable|numeric|min:0',
         ]);
@@ -1380,16 +1394,15 @@ class AppointmentController extends MedicalController implements HasMiddleware
         } else {
             if (! in_array($appointment->status, ['checked_in', 'in_progress'], true)) {
                 return redirect()->back()->withErrors(
-                    ['fee' => 'Only active queue appointments can be completed.']
+                    ['fee' => 'Only active queue appointments can record a fee.']
                 );
             }
-            // Already stamped (e.g. pre-visit collection at Start): complete
-            // the visit WITHOUT charging again.
+            // Already stamped (e.g. pre-visit collection at Start): post the
+            // outstanding ledger leg WITHOUT charging again and WITHOUT
+            // touching status — receiving money never completes a visit.
             if ($alreadyPaid) {
                 try {
                     DB::transaction(function () use ($appointment, $profile): void {
-                        $appointment->update(['status' => 'completed']);
-
                         // Phase C2: the fee was stamped earlier (e.g.
                         // pre-visit at Start). Post whichever ledger leg is
                         // still outstanding — an unrecognised advance
@@ -1442,12 +1455,11 @@ class AppointmentController extends MedicalController implements HasMiddleware
                     'tab' => 'queue',
                     'q_doctor' => $appointment->doctor_id,
                     'q_date' => '',
-                ])->with('status', 'Appointment completed! Fee was already on record — no additional charge.');
+                ])->with('status', 'Fee was already on record — no additional charge. Visit not completed yet — finish it via Save & Print or Complete.');
             }
             try {
                 DB::transaction(function () use ($appointment, $net, $discount, $receiver, $amount): void {
                     $appointment->update([
-                        'status' => 'completed',
                         'fee_collected_amount' => $net,
                         'fee_discount_type' => $discount['type'],
                         'fee_discount_value' => $discount['value'],
@@ -1496,16 +1508,29 @@ class AppointmentController extends MedicalController implements HasMiddleware
                 );
             }
             $message = $net > 0
-                ? 'Fee collected (৳'.number_format($net, 2).')'.$discountNote.'. Appointment completed!'
-                : 'Appointment completed!';
+                ? 'Fee collected (৳'.number_format($net, 2).')'.$discountNote.'. Visit not completed yet — finish it via Save & Print or Complete.'
+                : 'Fee recorded. Visit not completed yet — finish it via Save & Print or Complete.';
         }
 
         // Land back on the Live Queue tab for the same doctor (date left
         // blank so the queue defaults to today) — no manual refresh needed.
         $redirectTo = $request->input('redirect_to');
         if ($redirectTo && str_starts_with($redirectTo, url('/'))) {
+            // Carry patient/doctor into the landing page (the prescription
+            // form preselects them) — append only what the URL lacks.
+            $parts = parse_url($redirectTo);
+            $existing = [];
+            if (! empty($parts['query'])) {
+                parse_str($parts['query'], $existing);
+            }
             $separator = str_contains($redirectTo, '?') ? '&' : '?';
-            $redirectTo .= $separator.'patient_id='.$appointment->patient_id.'&doctor_id='.$appointment->doctor_id;
+            if (! array_key_exists('patient_id', $existing)) {
+                $redirectTo .= $separator.'patient_id='.$appointment->patient_id;
+                $separator = '&';
+            }
+            if (! array_key_exists('doctor_id', $existing)) {
+                $redirectTo .= $separator.'doctor_id='.$appointment->doctor_id;
+            }
 
             return redirect($redirectTo)->with('status', $message);
         }
@@ -1572,16 +1597,116 @@ class AppointmentController extends MedicalController implements HasMiddleware
     }
 
     /**
-     * Complete appointment.
+     * Complete appointment (per-row queue Complete button / legacy route).
+     *
+     * Writes one 'completed' audit row — the queue trail must show who
+     * closed the visit regardless of which trigger (this route, the
+     * Livewire row action, Save & Print or Master Complete) fired.
      */
     public function complete(Appointment $appointment)
     {
         $this->ensureSameInstitute($appointment, 'appointment');
         $this->ensureDoctorOwns($appointment, 'doctor_id', 'appointment');
         $this->ensureBranchAccess($appointment, 'branch_id', 'appointment');
-        $this->queueManager->complete($appointment);
+
+        if (in_array($appointment->status, ['checked_in', 'in_progress'], true)) {
+            $actor = $this->feeReceiverSnapshot((int) $appointment->institute_id);
+            DB::transaction(function () use ($appointment, $actor) {
+                $this->queueManager->complete($appointment);
+                $this->queueCompletionAudit($appointment, $actor, 'completed');
+            });
+        }
 
         return redirect()->back()->with('status', 'Appointment completed!');
+    }
+
+    /**
+     * Master Complete — bulk-close the queue's finished visits.
+     *
+     * Completion trigger #3 (alongside Save & Print and the per-row queue
+     * Complete): closes every in-progress row whose fee is on record (or
+     * not required), leaving not-started rows and post-visit fees still
+     * pending untouched. Each closed row gets one 'master_complete' audit
+     * row; money movement is never touched here — payment stays a
+     * separate action.
+     */
+    public function completeQueue(Request $request)
+    {
+        $doctorId = (int) $request->input('q_doctor');
+        $date = (string) $request->input('q_date', '');
+
+        if ($doctorId <= 0) {
+            return redirect()->back()->with('error', 'Select a doctor before using Master Complete.');
+        }
+
+        try {
+            $date = $date !== '' ? Carbon::parse($date)->format('Y-m-d') : today()->format('Y-m-d');
+        } catch (\Throwable) {
+            $date = today()->format('Y-m-d');
+        }
+
+        // Fenced doctors may only master-complete their own queue; owners
+        // and unfenced staff may target any visible doctor.
+        $fence = $this->doctorFenceId();
+        if ($fence !== null && $fence !== $doctorId) {
+            abort(403, 'You may only master-complete your own queue.');
+        }
+
+        $instituteId = $this->instituteId();
+        $profile = Doctor::resolveForUser($doctorId, $instituteId);
+        $preVisit = $profile === null || (bool) $profile->collect_fee_before_visit;
+
+        $query = Appointment::where('institute_id', $instituteId)
+            ->where('doctor_id', $doctorId)
+            ->whereDate('appointment_date', $date)
+            ->inQueue();
+        $this->scopeBranch($query);
+        $rows = $query->get();
+
+        $completed = 0;
+        $skipped = 0;
+        $actor = $this->feeReceiverSnapshot($instituteId);
+        DB::transaction(function () use ($rows, $profile, $preVisit, $actor, &$completed, &$skipped) {
+            foreach ($rows as $row) {
+                // Same eligibility rule as the per-row Complete button: a
+                // post-visit fee still pending (or a row never started)
+                // never closes — money must not be lost to a bulk click.
+                $feePending = $profile !== null && ! $preVisit && $row->fee_collected_at === null;
+                if ($row->status !== 'in_progress' || $feePending) {
+                    $skipped++;
+
+                    continue;
+                }
+                $row->update(['status' => 'completed']);
+                $this->queueCompletionAudit($row, $actor, 'master_complete');
+                $completed++;
+            }
+        });
+
+        return redirect()->back()->with('status', sprintf(
+            'Master complete: %d visit(s) closed, %d skipped (not started or fee pending).',
+            $completed,
+            $skipped,
+        ));
+    }
+
+    /**
+     * One queue-audit row for a visit closed by a completion trigger.
+     *
+     * @param  array{id: ?int, type: string, name: ?string}  $actor
+     */
+    private function queueCompletionAudit(Appointment $appointment, array $actor, string $action): void
+    {
+        QueueAuditLog::create([
+            'institute_id' => $appointment->institute_id,
+            'appointment_id' => $appointment->id,
+            'user_id' => $actor['id'],
+            'user_type' => $actor['type'],
+            'actor_name' => $actor['name'],
+            'action' => $action,
+            'old_order' => $appointment->queue_order ?? $appointment->serial_number ?? 0,
+            'new_order' => $appointment->serial_number ?? 0,
+        ]);
     }
 
     /**

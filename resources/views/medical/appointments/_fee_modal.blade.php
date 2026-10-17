@@ -81,7 +81,13 @@ function openFeeModal(btn) {
     form.action = btn.getAttribute('data-fee-url') || '';
     var action = btn.getAttribute('data-fee-action') || 'start';
     document.getElementById('fee_action').value = action;
-    document.getElementById('fee_redirect_to').value = btn.getAttribute('data-fee-redirect') || '';
+    var redirect = btn.getAttribute('data-fee-redirect') || '';
+    // Auto-continue flow (prescription page): after collecting, return to the
+    // form with rx_continue=1 so it auto-submits Save & Print once.
+    if (btn.getAttribute('data-fee-continue') && redirect && redirect.indexOf('rx_continue=') === -1) {
+        redirect += (redirect.indexOf('?') !== -1 ? '&' : '?') + 'rx_continue=1';
+    }
+    document.getElementById('fee_redirect_to').value = redirect;
     document.getElementById('fee_patient').textContent = btn.getAttribute('data-fee-patient') || '—';
     document.getElementById('fee_type').textContent = btn.getAttribute('data-fee-type') || '—';
     var amount = btn.getAttribute('data-fee-amount') || '0';
@@ -93,10 +99,10 @@ function openFeeModal(btn) {
     document.getElementById('fee_discount_value').value = '';
     recalcFeePayable();
     var isStart = action === 'start';
-    document.getElementById('fee_step').textContent = isStart ? 'Record fee (stay Checked In)' : 'Complete visit (Completed)';
+    document.getElementById('fee_step').textContent = isStart ? 'Record fee (stay Checked In)' : 'Record fee (visit stays open)';
     document.getElementById('fee_note').textContent = isStart
         ? 'This doctor collects the fee before the visit. Confirm to record it — the Start Consultation button appears after.'
-        : 'This doctor collects the fee after the visit. Confirm collection to complete the visit.';
+        : 'This doctor collects the fee after the visit. Confirm to record the payment — the visit stays open, complete it later via Save & Print or the queue Complete button.';
     var modalEl = document.getElementById('feeCollectModal');
     if (modalEl && window.bootstrap) { window.bootstrap.Modal.getOrCreateInstance(modalEl).show(); }
 }

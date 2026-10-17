@@ -386,7 +386,8 @@ $defaultFollowUp = $isCreate ? date('Y-m-d') : $prescription->follow_up_date?->f
                             data-fee-patient="{{ $infoPatient['fee']['patient'] ?? $selectedPatient->full_name ?? '—' }}"
                             data-fee-type="{{ $infoPatient['fee']['fee_type'] }}"
                             data-fee-amount="{{ $infoPatient['fee']['amount'] }}"
-                            data-fee-redirect="{{ url()->current() }}"
+                            data-fee-redirect="{{ request()->fullUrl() }}"
+                            data-fee-continue="1"
                             onclick="{{ $isCreate ? 'saveRxDraft(); ' : '' }}openFeeModal(this)">
                             <i class="bi bi-cash-coin me-1"></i>Accept Fee
                         </button>
@@ -397,7 +398,8 @@ $defaultFollowUp = $isCreate ? date('Y-m-d') : $prescription->follow_up_date?->f
                             data-patient-id="{{ $selectedPatient->id }}"
                             data-doctor-id="{{ $cardDoctor }}"
                             data-url="{{ route('medical.prescriptions.walk-in') }}"
-                            data-fee-redirect="{{ url()->current() }}">
+                            data-fee-redirect="{{ request()->fullUrl() }}"
+                            data-fee-continue="1">
                             <i class="bi bi-cash-coin me-1"></i>Accept Fee
                         </button>
                     @else
@@ -1339,7 +1341,7 @@ $defaultFollowUp = $isCreate ? date('Y-m-d') : $prescription->follow_up_date?->f
                     @if($isCreate)
                     saveRxDraft();
                     @endif
-                    var map = { 'data-fee-url': data.collect_url, 'data-fee-action': data.action, 'data-fee-patient': data.patient, 'data-fee-type': data.fee_type, 'data-fee-amount': data.amount, 'data-fee-redirect': walkinBtn.getAttribute('data-fee-redirect') || '' };
+                    var map = { 'data-fee-url': data.collect_url, 'data-fee-action': data.action, 'data-fee-patient': data.patient, 'data-fee-type': data.fee_type, 'data-fee-amount': data.amount, 'data-fee-redirect': walkinBtn.getAttribute('data-fee-redirect') || '', 'data-fee-continue': walkinBtn.getAttribute('data-fee-continue') || '' };
                     openFeeModal({ getAttribute: function (k) { return map[k] || ''; } });
                 }
                 walkinBtn.disabled = false;
@@ -1369,16 +1371,20 @@ $defaultFollowUp = $isCreate ? date('Y-m-d') : $prescription->follow_up_date?->f
         var rows = [];
         document.querySelectorAll('#rx-items-body tr').forEach(function (tr) {
             var med = tr.querySelector('[name$="[medicine_id]"]');
+            var name = tr.querySelector('[name$="[medicine_name]"]');
+            var dose = tr.querySelector('[name$="[dosage]"]');
             var qty = tr.querySelector('[name$="[quantity]"]');
             var freq = tr.querySelector('[name$="[frequency]"]');
-            var dur = tr.querySelector('[name$="[duration]"]');
-            var instr = tr.querySelector('[name$="[instructions]"]');
+            var dur = tr.querySelector('[name$="[duration_days]"]');
+            var instr = tr.querySelector('[name$="[special_instructions]"]');
             if (med) rows.push({
                 medicine_id: med.value,
+                medicine_name: name ? name.value : '',
+                dosage: dose ? dose.value : '',
                 quantity: qty ? qty.value : '',
                 frequency: freq ? freq.value : '',
-                duration: dur ? dur.value : '',
-                instructions: instr ? instr.value : ''
+                duration_days: dur ? dur.value : '',
+                special_instructions: instr ? instr.value : ''
             });
         });
         draft.items = rows;
@@ -1426,16 +1432,28 @@ $defaultFollowUp = $isCreate ? date('Y-m-d') : $prescription->follow_up_date?->f
                 var lastRow = document.querySelector('#rx-items-body tr:last-child');
                 if (!lastRow) return;
                 var med = lastRow.querySelector('[name$="[medicine_id]"]');
+                var name = lastRow.querySelector('[name$="[medicine_name]"]');
+                var dose = lastRow.querySelector('[name$="[dosage]"]');
                 var qty = lastRow.querySelector('[name$="[quantity]"]');
                 var freq = lastRow.querySelector('[name$="[frequency]"]');
-                var dur = lastRow.querySelector('[name$="[duration]"]');
-                var instr = lastRow.querySelector('[name$="[instructions]"]');
+                var dur = lastRow.querySelector('[name$="[duration_days]"]');
+                var instr = lastRow.querySelector('[name$="[special_instructions]"]');
                 if (med) med.value = item.medicine_id || '';
+                if (name && item.medicine_name) name.value = item.medicine_name;
+                if (dose) dose.value = item.dosage || '';
                 if (qty) qty.value = item.quantity || '';
                 if (freq) freq.value = item.frequency || '';
-                if (dur) dur.value = item.duration || '';
-                if (instr) instr.value = item.instructions || '';
+                if (dur) dur.value = item.duration_days || item.duration || '';
+                if (instr) instr.value = item.special_instructions || item.instructions || '';
             });
+            // The create form starts with one empty placeholder row; once the
+            // draft rows are back, drop any row still missing a medicine name
+            // so its required inputs don't block the auto-submitted save.
+            document.querySelectorAll('#rx-items-body tr[data-rx-row]').forEach(function (tr) {
+                var name = tr.querySelector('[name$="[medicine_name]"]');
+                if (name && !String(name.value || '').trim()) tr.remove();
+            });
+            renumberRows();
         }
     }
     restoreRxDraft();
@@ -1648,5 +1666,85 @@ $defaultFollowUp = $isCreate ? date('Y-m-d') : $prescription->follow_up_date?->f
 })();
 </script>
 @endpush
+
+@if($isCreate && request()->has('rx_continue') && !$errors->any())
+@push('scripts')
+<script>
+(function () {
+    /* One-shot guard, URL-scoped: a later visit in the same tab still
+       auto-fires, but Back/reload of THIS URL never double-submits. */
+    var KEY = 'rxAutoPrint:' + window.location.pathname + window.location.search;
+    function armed() { try { return sessionStorage.getItem(KEY) === '1'; } catch (e) { return false; } }
+    function mark() { try { sessionStorage.setItem(KEY, '1'); } catch (e) {} }
+
+    if (armed()) {
+        console.log('[rx-auto-print] skipped: already submitted for this URL (one-shot guard).');
+        return;
+    }
+
+    var btn = document.querySelector('button[name="save_action"][value="print"]');
+    if (!btn) {
+        console.log('[rx-auto-print] skipped: Save & Print button not found.');
+        return;
+    }
+
+    /* Draft restore runs in an earlier push block in the SAME inline
+       script stack, so it is guaranteed done before this executes —
+       the delay below is only to give the doctor a cancel window. */
+    var fired = false, cancelled = false, timer = null;
+
+    function fire() {
+        if (fired || cancelled) return;
+        if (armed()) { console.log('[rx-auto-print] aborted: guard already set.'); return; }
+        fired = true;
+        mark();
+        console.log('[rx-auto-print] firing: submitting form via Save & Print.');
+        btn.click();
+    }
+
+    function cancel(reason) {
+        if (fired || cancelled) return;
+        cancelled = true;
+        if (timer) { clearTimeout(timer); timer = null; }
+        console.log('[rx-auto-print] cancelled: ' + reason);
+    }
+
+    /* Toast with an explicit Cancel so the auto-submit is visible and
+       interruptible; any manual dismissal (X) also cancels. */
+    try {
+        var wrap = document.createElement('div');
+        wrap.className = 'toast-container position-fixed top-0 end-0 p-3';
+        wrap.innerHTML = '<div class="toast align-items-center text-bg-primary border-0" role="alert" aria-live="assertive" aria-atomic="true">'
+            + '<div class="d-flex"><div class="toast-body">Fee collected. Save &amp; Print starting&hellip;'
+            + '<button type="button" class="btn btn-sm btn-outline-light ms-2" data-rx-auto-cancel>Cancel</button></div>'
+            + '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>'
+            + '</div></div>';
+        document.body.appendChild(wrap);
+        var toastEl = wrap.querySelector('.toast');
+        var cancelBtn = wrap.querySelector('[data-rx-auto-cancel]');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', function () {
+                cancel('Cancel button clicked');
+                var body = toastEl.querySelector('.toast-body');
+                if (body) body.textContent = 'Auto-print cancelled. Use Save & Print when ready.';
+                if (window.bootstrap) { try { window.bootstrap.Toast.getOrCreateInstance(toastEl).hide(); } catch (e) {} }
+            });
+        }
+        /* Any hide (X, Cancel, or natural expiry) cancels if we have not
+           fired yet; after firing, hide is a no-op. */
+        toastEl.addEventListener('hide.bs.toast', function () { cancel('toast dismissed'); });
+        if (window.bootstrap) {
+            window.bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 8000 }).show();
+        }
+    } catch (e) {
+        console.log('[rx-auto-print] toast unavailable: ' + e);
+    }
+
+    console.log('[rx-auto-print] armed: Save & Print in 1500ms (Cancel to abort).');
+    timer = setTimeout(fire, 1500);
+})();
+</script>
+@endpush
+@endif
 
 @include('medical.appointments._fee_modal')

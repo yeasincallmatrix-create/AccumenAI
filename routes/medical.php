@@ -132,6 +132,12 @@ Route::middleware(['auth:institute_user,web', 'tenant', 'medical'])->prefix('med
     Route::resource('appointments', AppointmentController::class);
     Route::post('appointments/{appointment}/checkin', [AppointmentController::class, 'checkin'])->name('appointments.checkin');
     Route::post('appointments/{appointment}/complete', [AppointmentController::class, 'complete'])->name('appointments.complete');
+    // Master Complete: bulk-close the queue's finished visits. Its own
+    // grant (doctors + admins, receptionists excluded) — deliberately
+    // stricter than the per-row complete above.
+    Route::post('appointments/master-complete', [AppointmentController::class, 'completeQueue'])
+        ->name('appointments.master-complete')
+        ->middleware('permission:medical_appointments.master_complete');
     Route::post('appointments/{appointment}/transfer', [AppointmentController::class, 'transfer'])->name('appointments.transfer');
     Route::post('appointments/{appointment}/collect-fee', [AppointmentController::class, 'collectFee'])->name('appointments.collect-fee');
     Route::post('appointments/{appointment}/start', [AppointmentController::class, 'start'])->name('appointments.start');
